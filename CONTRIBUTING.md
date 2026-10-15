@@ -1,32 +1,49 @@
-# Contributing
+# Contributing to GPUPanel
 
-As a contributor, you should agree that:
+GPUPanel is an **independent GPL-3.0 fork** of [1Panel](https://github.com/1Panel-dev/1Panel). We prioritize Linux Host usability, safe development environments and integrations instead of duplicating mature AI runtimes. See [中文入门](docs/gpupanel/GETTING_STARTED.zh-CN.md) or [English quick start](docs/gpupanel/GETTING_STARTED.md).
 
-- The producer can adjust the open-source agreement to be more strict or relaxed as deemed necessary.
-- Your contributed code may be used for commercial purposes, including but not limited to its cloud business operations.
+## Scope and issue routing
 
-## Create pull request
-PR are always welcome, even if they only contain small fixes like typos or a few lines of code. If there will be a significant effort, please document it as an issue and get a discussion going before starting to work on it.
+- For GPUPanel branding, onboarding, Host UX, Ubuntu bootstrap, provider adapters or integration issues, [file an issue here](https://github.com/avaargsh/gpupanel/issues).
+- For bugs reproducible in unmodified 1Panel, link to a relevant upstream issue where appropriate. Do not assume GPUPanel maintainers can fix upstream releases.
+- For security vulnerabilities, follow [SECURITY.md](SECURITY.md) and **never publish exploit details, tokens or customer data**.
+- Prioritize one outcome per PR; discuss large breaking changes or unverified vendor drivers before implementation.
 
-Please submit a PR broken down into small changes bit by bit. A PR consisting of a lot of features and code changes may be hard to review. It is recommended to submit PRs in an incremental fashion.
+## Before your first PR
 
-Note: If you split your pull request to small changes, please make sure any of the changes goes to master will not break anything. Otherwise, it can not be merged until this feature complete.
+On Ubuntu 24.04, without root privileges:
 
-## Add a new translation
+```bash
+python3 scripts/gpupanel-bootstrap.py doctor --human
+python3 scripts/gpupanel-bootstrap.py self-test --human
+python3 -m unittest discover -s scripts/tests -p 'test_gpupanel_*.py' -v
+```
 
-If you'd like to help translate 1Panel into a new language, please read the [Translation Contribution Guide](docs/TRANSLATION.md). It lists every file you need to create or modify, along with a reference PR you can use as a concrete example.
+Frontend development (requires Node/npm and dependencies):
 
-## Report issues
-It is a great way to contribute by reporting an issue. Well-written and complete bug reports are always welcome! Please open an issue and follow the template to fill in required information.
+```bash
+cd frontend
+npm ci
+npm run build:pro
+npm run type-check
+```
 
-Before opening any issue, please look up the existing issues to avoid submitting a duplication.
-If you find a match, you can "subscribe" to it to get notified on updates. If you have additional helpful information about the issue, please leave a comment.
+Go changes: run focused tests against the module, and record the exact Go version and any hardware dependencies. Do not claim a production-ready feature from a compiled package alone.
 
-When reporting issues, always include:
+## Acceptance evidence
 
-* Which version you are using.
-* Steps to reproduce the issue.
-* Snapshots or log files if needed
+Every PR should state: base branch and commit, changed paths, end-user outcome, automated test output, manual smoke status, security impact, rollback path, and remaining limitations. UI pages require permission-aware routing, keyboard/navigation smoke checks and responsive behavior. High-risk Host actions require authorization and observable outcome contracts.
 
-Because the issues are open to the public, when submitting files, be sure to remove any sensitive information, e.g. user name, password, IP address, and company name. You can
-replace those parts with "REDACTED" or other strings like "****".
+Do not mask failing type checks with `any`, `@ts-ignore` or ignored CI. Where a baseline problem is unrelated, create a separate small repair PR.
+
+## Compatibility and licensing
+
+- Preserve GPL-3.0 notices and the upstream attribution in NOTICE.md; do not claim endorsement by 1Panel.
+- Do not globally replace `1panel` in Go import paths, runtime data paths, installer binaries or API routes without a migration and rollback plan.
+- Do not copy upstream paid/proprietary features or bundled branding without permission.
+- No unreviewed `curl | bash` installation recipes; externally downloaded binaries must have immutable version, source/provenance, license and SHA-256 verification.
+- New GPU integrations must be read-only until hardware fixtures and live tests exist; Kueue stays the single admission path for Kubernetes workloads.
+
+## Issue reports
+
+Use the repository's bug form, redact passwords, access tokens, node addresses, hostnames, serial numbers, tenant identifiers and private process arguments. If a screenshot contains user data, remove it before uploading. A minimal local reproduction is usually more helpful than a full production log.

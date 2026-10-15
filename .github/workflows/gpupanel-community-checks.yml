@@ -1,0 +1,22 @@
+name: GPUPanel community documents
+on:
+  pull_request:
+    paths:
+      - 'CONTRIBUTING.md'
+      - 'SECURITY.md'
+      - '.github/ISSUE_TEMPLATE/**'
+      - '.github/PULL_REQUEST_TEMPLATE.md'
+      - 'scripts/tests/test_gpupanel_community_docs.py'
+      - '.github/workflows/gpupanel-community-checks.yml'
+  workflow_dispatch:
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python3 -m unittest discover -s scripts/tests -p 'test_gpupanel_community_docs.py' -v

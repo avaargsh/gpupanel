@@ -1,9 +1,19 @@
-#### What this PR does / why we need it?
+## User outcome
+<!-- What becomes easier/safer? Which workflow is affected? -->
 
-#### Summary of your change
+## Scope and upstream compatibility
+- Base ref/commit:
+- Files and API contracts changed:
+- Does it touch upstream imports, runtime paths, licensing, host privileges or public APIs?
 
-#### Please indicate you've done the following:
+## Evidence
+- [ ] Focused tests passed (include exact commands and relevant outputs)
+- [ ] Frontend build + type-check where UI changed
+- [ ] Permission boundary and failure path covered
+- [ ] Manual smoke performed, or explicitly NOT RUN with reason
+- [ ] Docs and rollback/compatibility considered
+- [ ] No secrets or identifying customer information added
+- [ ] GPL notices and upstream attribution preserved
 
-- [ ] Made sure tests are passing and test coverage is added if needed.
-- [ ] Made sure commit message follow the rule of [Conventional Commits specification](https://www.conventionalcommits.org/).
-- [ ] Considered the docs impact and opened a new docs issue or PR with docs changes if needed.
+## Limitations / follow-up
+<!-- No production claim without real end-to-end evidence. -->

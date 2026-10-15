@@ -1,5 +1,8 @@
 blank_issues_enabled: false
 contact_links:
-  - name: Questions & Discussions
-    url: https://github.com/1Panel-dev/1Panel/discussions
-    about: Raise questions about the installation, deployment, use and other aspects of the project.
+  - name: "GPUPanel getting started / 上手指南"
+    url: https://github.com/avaargsh/gpupanel/blob/dev-v2/docs/gpupanel/GETTING_STARTED.zh-CN.md
+    about: "Read supported workflows and limitations before opening an issue."
+  - name: "Security reporting"
+    url: https://github.com/avaargsh/gpupanel/blob/dev-v2/SECURITY.md
+    about: "Do not disclose unpatched vulnerabilities in public issues."
