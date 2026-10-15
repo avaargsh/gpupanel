@@ -101,8 +101,12 @@ class ArtifactLicenseTests(unittest.TestCase):
     def test_missing_or_unrelated_git_evidence_fails_closed(self):
         with self.assertRaises(audit.AttestationError):
             self.inspect(baseline="f" * 40)
+        self.write("module.go", "package changed\n")
+        self.git("add", ".")
+        self.git("commit", "-qm", "new commit after archived source")
+        future = self.git("rev-parse", "HEAD").strip()
         with self.assertRaises(audit.AttestationError):
-            self.inspect(baseline=self.source) if self.source != self.baseline else None
+            self.inspect(baseline=future)
 
     def test_unknown_source_revision_is_not_a_provenance_claim(self):
         with self.assertRaisesRegex(audit.AttestationError, "full Git SHA"):
