@@ -18,4 +18,4 @@ jobs:
         with:
           python-version: '3.12'
       - run: python3 -m unittest discover -s scripts/tests -p 'test_gpupanel_install_preflight.py' -v
-      - run: python3 scripts/gpupanel-install-preflight.py --human
+      - run: python3 scripts/gpupanel-install-preflight.py
