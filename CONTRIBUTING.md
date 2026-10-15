@@ -34,6 +34,14 @@ Report NOT RUN instead of substituting a passing unit test for a real browser/AP
 - For security vulnerabilities, follow [SECURITY.md](SECURITY.md) and **never publish exploit details, tokens or customer data**.
 - Prioritize one outcome per PR; discuss large breaking changes or unverified vendor drivers before implementation.
 
+## Branch policy
+
+`main` is the canonical integration branch. Open new PRs against `main`; retain
+`dev-v2` as the migration baseline, not a second integration target. Existing
+unmerged and Draft PRs keep their scope and evidence requirements. A green
+mainline baseline is source-level evidence only; M0 G3–G6 remain NO-GO until
+their live acceptance gates pass. See [mainline migration](docs/gpupanel/MAINLINE_MIGRATION.md).
+
 ## Before your first PR
 
 On Ubuntu 24.04, without root privileges:

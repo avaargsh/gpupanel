@@ -1,0 +1,76 @@
+name: GPUPanel mainline baseline
+on:
+  pull_request:
+    branches: [main, dev-v2]
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: mainline-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  python-contracts:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: '0.12.23'
+      - run: python3 -m unittest discover -s scripts/tests -p 'test_gpupanel_*.py' -v
+  frontend-baseline:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+        working-directory: frontend
+      - run: npm run type-check
+        working-directory: frontend
+      - run: npm run build:pro
+        working-directory: frontend
+  backend-safety:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: core/go.mod
+          cache-dependency-path: |
+            core/go.sum
+            agent/go.sum
+      - name: CI-only embed fixtures (not release assets)
+        run: |
+          mkdir -p core/cmd/server/web/assets
+          printf '<html>CI test fixture</html>\n' > core/cmd/server/web/index.html
+          printf 'CI test fixture\n' > core/cmd/server/web/assets/fixture.txt
+      - name: Core real session and HTTP forwarding denial tests
+        working-directory: core
+        run: go test ./init/router -count=1 -v
+      - name: Agent socket safety
+        working-directory: agent
+        run: go test ./server -run 'Test(EnsureMasterSocketVacant|PrepareMasterSocketDir)' -count=1 -v
+      - name: Agent concurrent admission and UNKNOWN controls
+        working-directory: agent
+        run: go test ./app/service -run '^(TestAppInstallTaskAdmission|TestAppInstallPreparation|TestInterruptedAppInstallationUnknown|TestUnknownAppInstallation|TestAppInstallAdmissionReceipt)' -count=1 -v
+      - name: Agent restart receipt
+        working-directory: agent
+        run: go test ./app/repo -run '^TestInterruptedAppInstallTask' -count=1 -v
+      - name: Docker exact-name matching (no daemon mutation)
+        working-directory: agent
+        run: go test ./utils/docker -run TestFilterContainersByExactName -count=1 -v
+      - run: go build ./cmd/server
+        working-directory: core
+      - run: go build -o /tmp/gpupanel-agent ./cmd/server
+        working-directory: agent

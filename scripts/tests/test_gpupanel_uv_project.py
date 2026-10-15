@@ -63,6 +63,7 @@ class UVProjectTest(unittest.TestCase):
         self.assertFalse(self.target.exists())
         self.assertNotIn("PRIVATE_SECRET", str(result))
         self.assertEqual(commands[0][0][:2], ["/usr/bin/uv", "init"])
+        self.assertIn("--no-package", commands[0][0])
         self.assertIn("--offline", commands[0][0])
         self.assertIn("--no-python-downloads", commands[0][0])
         self.assertIn("--no-config", commands[0][0])

@@ -147,7 +147,7 @@ def create(target: Path, home: Path, approved: bool, *, uv_path: str | None = No
     with tempfile.TemporaryDirectory(prefix=".gpupanel-uv-project-", dir=dst.parent) as tmp:
         stage = Path(tmp) / "starter"
         commands = [
-            [preview["uv"], "init", "--app", "--no-workspace", "--vcs", "none",
+            [preview["uv"], "init", "--app", "--no-package", "--no-workspace", "--vcs", "none",
              "--no-pin-python", "--no-config", "--offline",
              "--no-python-downloads", "--no-managed-python",
              "--name", NAME, "--python", preview["python"], str(stage)],

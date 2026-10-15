@@ -1,8 +1,8 @@
 blank_issues_enabled: false
 contact_links:
   - name: "GPUPanel getting started / 上手指南"
-    url: https://github.com/avaargsh/gpupanel/blob/dev-v2/docs/gpupanel/GETTING_STARTED.zh-CN.md
+    url: https://github.com/avaargsh/gpupanel/blob/main/docs/gpupanel/GETTING_STARTED.zh-CN.md
     about: "Read supported workflows and limitations before opening an issue."
   - name: "Security reporting"
-    url: https://github.com/avaargsh/gpupanel/blob/dev-v2/SECURITY.md
+    url: https://github.com/avaargsh/gpupanel/blob/main/SECURITY.md
     about: "Do not disclose unpatched vulnerabilities in public issues."
