@@ -4,6 +4,7 @@ on:
     paths:
       - 'frontend/src/views/app-store/detail/install/**'
       - 'frontend/src/utils/app-install-pending.ts'
+      - 'frontend/src/utils/app-install-pending.test.mjs'
       - 'frontend/src/lang/modules/zh.ts'
       - 'frontend/src/lang/modules/en.ts'
       - 'scripts/tests/test_gpupanel_app_install_submission.py'
@@ -24,3 +25,8 @@ jobs:
         run: python3 -m unittest discover -s scripts/tests -p 'test_gpupanel_app_install_submission.py' -v
       - name: Install reload recovery and node scope contract
         run: python3 -m unittest discover -s scripts/tests -p 'test_gpupanel_app_install_reload.py' -v
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Execute browser receipt storage negative tests in Node
+        run: node --experimental-strip-types --test frontend/src/utils/app-install-pending.test.mjs
