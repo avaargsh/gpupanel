@@ -109,6 +109,67 @@ class ReleaseTests(unittest.TestCase):
                 self.assertEqual(env["GOPROXY"], "off")
                 self.assertEqual(env["CGO_ENABLED"], "0")
 
+    def test_verifier_rejects_bounded_member_before_extracting(self):
+        self.package()
+        with patch.object(release, "MAX_BINARY_BYTES", 8):
+            with self.assertRaisesRegex(release.ReleaseError, "oversized archive member"):
+                release.verify(self.archive)
+
+    def test_packager_rejects_oversized_artifacts_and_manifest(self):
+        with patch.object(release, "MAX_TEXT_BYTES", 8):
+            with self.assertRaisesRegex(release.ReleaseError, "size limit"):
+                self.package()
+        self.assertFalse(self.archive.exists())
+        with patch.object(release, "MAX_MANIFEST_BYTES", 100):
+            with self.assertRaisesRegex(release.ReleaseError, "manifest"):
+                self.package()
+        self.assertFalse(self.archive.exists())
+
+    def test_verifier_rejects_expanded_tar_bomb_without_parsing(self):
+        self.package()
+        with patch.object(release, "MAX_RAW_TAR_BYTES", 64):
+            with patch.object(release.tarfile, "open", side_effect=AssertionError("parsed unbounded tar")):
+                with self.assertRaisesRegex(release.ReleaseError, "expanded tar size"):
+                    release.verify(self.archive)
+
+    def test_does_not_eagerly_collect_tar_members(self):
+        self.package()
+        with patch.object(release.tarfile.TarFile, "getmembers",
+                          side_effect=AssertionError("getmembers is unbounded")):
+            self.assertTrue(release.verify(self.archive)["verified"])
+
+    def test_rejects_duplicate_member_and_malformed_manifest(self):
+        self.package()
+        duplicate = self.root / "duplicate.tar.gz"
+        with tarfile.open(self.archive, "r:gz") as src, tarfile.open(duplicate, "w:gz") as dst:
+            for member in src:
+                blob = src.extractfile(member).read()
+                dst.addfile(member, io.BytesIO(blob))
+            member = tarfile.TarInfo("gpupanel/LICENSE")
+            member.size = 1
+            dst.addfile(member, io.BytesIO(b"x"))
+        with self.assertRaisesRegex(release.ReleaseError, "duplicate"):
+            release.verify(duplicate)
+
+        malformed = self.root / "malformed.tar.gz"
+        with tarfile.open(self.archive, "r:gz") as src, tarfile.open(malformed, "w:gz") as dst:
+            for member in src:
+                blob = src.extractfile(member).read()
+                if member.name == "gpupanel/manifest.json":
+                    obj = json.loads(blob)
+                    obj["files"] = None
+                    blob = json.dumps(obj).encode()
+                member.size = len(blob)
+                dst.addfile(member, io.BytesIO(blob))
+        with self.assertRaisesRegex(release.ReleaseError, "manifest contract"):
+            release.verify(malformed)
+
+    def test_protected_manifest_fields_cannot_be_overridden(self):
+        with self.assertRaisesRegex(release.ReleaseError, "protected"):
+            release.package(self.stage, self.archive, "dev", {"status": "installable"})
+        self.assertFalse(self.archive.exists())
+
+
 
 if __name__ == "__main__":
     unittest.main()
