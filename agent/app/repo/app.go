@@ -19,6 +19,7 @@ type IAppRepo interface {
 	GetRecommend() DBOption
 	WithResource(resource string) DBOption
 	WithNotLocal() DBOption
+	WithNotRemote() DBOption
 	WithByLikeName(name string) DBOption
 	WithKeyIn(keys []string) DBOption
 	WithArch(arch string) DBOption
@@ -92,6 +93,13 @@ func (a AppRepo) WithNotLocal() DBOption {
 	}
 }
 
+func (a AppRepo) WithNotRemote() DBOption {
+	return func(g *gorm.DB) *gorm.DB {
+		// Never delete remote records here: existing installations may still reference them.
+		return g.Where("resource != ?", "remote")
+	}
+}
+
 func (a AppRepo) WithArch(arch string) DBOption {
 	return func(g *gorm.DB) *gorm.DB {
 		return g.Where("architectures like ?", fmt.Sprintf("%%%s%%", arch))
@@ -136,7 +144,7 @@ func (a AppRepo) GetTopRecommend() ([]string, error) {
 		apps  []model.App
 		names []string
 	)
-	db := getDb().Model(&model.App{})
+	db := getDb().Model(&model.App{}).Where("resource != ?", "remote")
 	if err := db.Order("recommend asc").Limit(6).Find(&apps).Error; err != nil {
 		return names, err
 	}

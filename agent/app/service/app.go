@@ -68,7 +68,7 @@ func NewIAppService() IAppService {
 
 func (a AppService) PageApp(ctx *gin.Context, req request.AppSearch) (*response.AppRes, error) {
 	var opts []repo.DBOption
-	opts = append(opts, appRepo.OrderByRecommend())
+	opts = append(opts, appRepo.OrderByRecommend(), appRepo.WithNotRemote())
 	if req.Name != "" {
 		opts = append(opts, appRepo.WithByLikeName(strings.TrimSpace(req.Name)))
 	}
@@ -846,6 +846,10 @@ func (a AppService) SyncAppListFromLocal(TaskID string) {
 }
 
 func (a AppService) GetAppUpdate() (*response.AppUpdateRes, error) {
+	if !LegacyRemoteCatalogEnabled() {
+		// Do not phone home to the inherited 1Panel app repository.
+		return &response.AppUpdateRes{}, nil
+	}
 	res := &response.AppUpdateRes{
 		CanUpdate: false,
 	}
@@ -986,6 +990,9 @@ func deleteCustomApp() {
 }
 
 func (a AppService) SyncAppListFromRemote(taskID string) (err error) {
+	if !LegacyRemoteCatalogEnabled() {
+		return fmt.Errorf("legacy upstream 1Panel application catalog is retired in GPUPanel")
+	}
 	if xpack.MultiNodeProvider.IsUseCustomApp() {
 		return nil
 	}
