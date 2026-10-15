@@ -14,6 +14,11 @@ class CatalogPortalTest(unittest.TestCase):
         for forbidden in ("syncApp(", "syncCutomAppStore(", "syncLocalApp(", "openInstall(", "Install ref=", "<AppCard"):
             self.assertNotIn(forbidden, src)
         self.assertIn("disabled class=", src)
+        self.assertIn("item.id === 'gpupanel.dev.python-stdlib'", src)
+        self.assertIn("showStarterGuide = true", src)
+        self.assertIn("navigator.clipboard.writeText(pythonStarterCommands)", src)
+        self.assertNotIn("exec(", src)
+        self.assertNotIn("syncApp(", src)
     def test_installed_management_link_stays(self):
         index = (ROOT / "frontend/src/views/app-store/index.vue").read_text()
         self.assertIn("'/apps/installed'", index)
