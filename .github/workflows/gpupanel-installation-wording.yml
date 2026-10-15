@@ -1,0 +1,22 @@
+name: GPUPanel installation wording safety
+on:
+  pull_request:
+    paths:
+      - 'README.md'
+      - 'catalog/README.md'
+      - 'docs/gpupanel/GETTING_STARTED*'
+      - 'docs/gpupanel/PREVIEW_STAGING.md'
+      - 'scripts/tests/test_gpupanel_installation_wording.py'
+      - '.github/workflows/gpupanel-installation-wording.yml'
+  workflow_dispatch:
+jobs:
+  wording-contract:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python3 -m unittest discover -s scripts/tests -p 'test_gpupanel_installation_wording.py' -v

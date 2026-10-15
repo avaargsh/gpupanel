@@ -30,6 +30,11 @@ python3 scripts/gpupanel-catalog-workspace.py install --approve
 python3 scripts/gpupanel-catalog-workspace.py status
 python3 scripts/gpupanel-catalog-workspace.py list
 python3 ~/GPUPanel/projects/python-stdlib-starter/main.py
+```
+
+**Optional cleanup: run separately; never paste with the creation commands.**
+
+```bash
 python3 scripts/gpupanel-catalog-workspace.py uninstall --approve
 ```
 
@@ -42,6 +47,11 @@ python3 scripts/gpupanel-preview-stage.py plan dist/gpupanel-preview.tar.gz
 # After reviewing destination and checksum:
 python3 scripts/gpupanel-preview-stage.py stage dist/gpupanel-preview.tar.gz --approve
 python3 scripts/gpupanel-preview-stage.py status dev
+```
+
+**Optional cleanup: run separately; never paste with the creation commands.**
+
+```bash
 python3 scripts/gpupanel-preview-stage.py remove dev --approve
 ```
 

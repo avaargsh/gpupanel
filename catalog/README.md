@@ -45,6 +45,11 @@ python3 scripts/gpupanel-catalog-workspace.py install --approve
 python3 scripts/gpupanel-catalog-workspace.py status
 python3 scripts/gpupanel-catalog-workspace.py list
 python3 ~/GPUPanel/projects/python-stdlib-starter/main.py
+```
+
+**Optional uninstall (separate from creation):**
+
+```bash
 python3 scripts/gpupanel-catalog-workspace.py uninstall --approve
 ```
 

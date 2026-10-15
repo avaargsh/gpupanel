@@ -34,6 +34,11 @@ python3 scripts/gpupanel-catalog-workspace.py status
 python3 scripts/gpupanel-catalog-workspace.py list
 python3 ~/GPUPanel/projects/python-stdlib-starter/main.py
 # 可选：修改过的项目会拒绝删除：
+```
+
+**可选清理：以下命令需单独执行，避免整段复制时创建后立即删除。**
+
+```bash
 python3 scripts/gpupanel-catalog-workspace.py uninstall --approve
 ```
 
@@ -46,6 +51,11 @@ python3 scripts/gpupanel-preview-stage.py plan dist/gpupanel-preview.tar.gz
 # 检查来源、摘要、目录后才手动批准暂存：
 python3 scripts/gpupanel-preview-stage.py stage dist/gpupanel-preview.tar.gz --approve
 python3 scripts/gpupanel-preview-stage.py status dev
+```
+
+**可选清理：以下命令需单独执行，避免整段复制时创建后立即删除。**
+
+```bash
 python3 scripts/gpupanel-preview-stage.py remove dev --approve
 ```
 
