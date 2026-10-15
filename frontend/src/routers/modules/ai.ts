@@ -14,6 +14,9 @@ const aiRouter = {
         {
             path: '/ai/agents/agent',
             name: 'Agents',
+            // Advanced runtime configuration remains routable for compatibility,
+            // but does not belong in the personal workstation's default navigation.
+            hidden: true,
             component: () => import('@/views/ai/agents/agent/index.vue'),
             meta: {
                 icon: 'p-jiqiren2',
@@ -45,6 +48,9 @@ const aiRouter = {
         {
             path: '/ai/mcp',
             name: 'MCPServer',
+            // Advanced runtime configuration remains routable for compatibility,
+            // but does not belong in the personal workstation's default navigation.
+            hidden: true,
             component: () => import('@/views/ai/mcp/server/index.vue'),
             meta: {
                 icon: 'p-mcp-menu',
