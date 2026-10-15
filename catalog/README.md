@@ -7,7 +7,7 @@ This directory is a separate, versioned **GPUPanel Catalog contract** for planne
 ## Three separate entities
 
 - `ApplicationDefinition`: stable identity, category (application/devtool/workspace/model/workflow), supported targets, descriptions and maturity.
-- `PackageRevision`: immutable revision, provider adapter and preapproved recipe ID, pinned HTTPS artifact with SHA-256; must refer to an existing definition.
+- `PackageRevision`: revision ID must equal the SHA-256 of canonical revision JSON (excluding the ID), with provider adapter and preapproved recipe ID, pinned HTTPS artifact and checksum; must refer to an existing definition. Changing source, version, recipe or digest invalidates the revision ID.
 - `Installation`: mutable execution/observed state owned by the actual Host or Docker provider, with authorization and independent verification. **Never store installation ownership or success in this static Catalog index.**
 
 CLI commands (Python stdlib, offline, no root):
@@ -25,7 +25,7 @@ python3 scripts/gpupanel-catalog.py plan gpupanel.dev.python
 
 Discover → Plan → Resolve trusted source → Approve RBAC → Download → Verify digest / signature → Execute through allowlisted Provider → Independent observation → Reconcile/rollback → Audit.
 
-A Catalog entry **cannot** supply shell commands, URLs with credentials, unverified HTTP downloads or new Provider implementations. Recipe IDs are allowlisted *in executable code* (`APPROVED_RECIPES`, initially empty), not granted by the downloaded index. ModelScope/ACR are optional source adapters after origin policy, digest and failover tests; they are not default package repositories. OCI images require digest-based deployment through the existing Docker/Compose App Store; no digest-free `latest` assumption.
+A Catalog entry **cannot** supply shell commands, URLs with credentials, unverified HTTP downloads or new Provider implementations. Recipe IDs are allowlisted *in executable code* (`APPROVED_RECIPES`, initially empty), not granted by the downloaded index. ModelScope/ACR are optional source adapters after origin policy, digest and failover tests; they are not default package repositories. Local offline bundles require a separate approved source adapter and are **not** authorized by the current HTTPS-only contract. OCI images require digest-based deployment through the existing Docker/Compose App Store; no digest-free `latest` assumption.
 
 Target order: Host / Docker App Store product loop → pinned personal Ubuntu dev environment → optionally workspace / GPU compute via external platform.
 
