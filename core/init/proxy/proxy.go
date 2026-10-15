@@ -20,11 +20,18 @@ var (
 )
 
 func Init() {
+	LocalAgentProxy = NewLocalAgentProxyForSocket(SockPath)
+}
+
+// NewLocalAgentProxyForSocket constructs the same Unix-socket reverse proxy as
+// production Init, with an explicit path for isolated integration acceptance.
+// Constructing a proxy does not open or replace a socket.
+func NewLocalAgentProxyForSocket(socketPath string) *httputil.ReverseProxy {
 	dialer := &net.Dialer{
 		Timeout: 5 * time.Second,
 	}
 	dialUnix := func(ctx context.Context, network, addr string) (net.Conn, error) {
-		return dialer.DialContext(ctx, "unix", SockPath)
+		return dialer.DialContext(ctx, "unix", socketPath)
 	}
 	transport := &http.Transport{
 		DialContext:         dialUnix,
@@ -33,7 +40,7 @@ func Init() {
 		MaxIdleConnsPerHost: 50,
 		IdleConnTimeout:     30 * time.Second,
 	}
-	LocalAgentProxy = newLocalAgentProxy(transport)
+	return newLocalAgentProxy(transport)
 }
 
 func newLocalAgentProxy(transport http.RoundTripper) *httputil.ReverseProxy {
