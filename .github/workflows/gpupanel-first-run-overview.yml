@@ -1,0 +1,24 @@
+name: GPUPanel first-run read-only overview
+on:
+  pull_request:
+    paths:
+      - 'scripts/gpupanel-first-run-overview.py'
+      - 'scripts/tests/test_gpupanel_first_run_overview.py'
+      - 'scripts/gpupanel-install-preflight.py'
+      - 'scripts/gpupanel-runtime-namespace.py'
+      - 'catalog/index.json'
+      - '.github/workflows/gpupanel-first-run-overview.yml'
+  workflow_dispatch:
+jobs:
+  first-run-overview:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python3 -m py_compile scripts/gpupanel-first-run-overview.py
+      - run: python3 -m unittest discover -s scripts/tests -p 'test_gpupanel_first_run_overview.py' -v
+      - run: python3 scripts/gpupanel-first-run-overview.py --human
