@@ -8,7 +8,7 @@ const appStoreRouter = {
     redirect: '/apps/all',
     meta: {
         icon: 'p-appstore',
-        title: 'menu.apps',
+        title: 'gpupanel.catalogNav',
         permission: 'app_view',
     },
     children: [
@@ -30,7 +30,7 @@ const appStoreRouter = {
                     meta: {
                         activeMenu: '/apps',
                         parent: 'menu.app',
-                        title: 'app.all',
+                        title: 'gpupanel.catalogNav',
                         permission: 'app_view',
                     },
                 },

@@ -2,6 +2,16 @@ import { getFuLocaleMessage } from '@/lang/fu';
 
 const message = {
     gpupanel: {
+        catalogNav: 'Software & Environments',
+        catalogPreview: 'Preview · No approved installers yet',
+        catalogSearchPlaceholder: 'Search software, environments or targets',
+        catalogNotice: 'The original 1Panel remote app catalog is retired. GPUPanel currently displays planned templates only; installation requires verified artifacts, authorization and rollback.',
+        catalogLegacyInstallLink: 'Legacy App Store install links are retired and will not execute. Use Installed Apps or Docker Compose.',
+        catalogInstalled: 'Installed Apps',
+        catalogCompose: 'Docker Compose',
+        catalogPlanned: 'Planned',
+        catalogUnavailable: 'Installation not available',
+        catalogNoMatch: 'No matching catalog definitions',
         catalogLoadFailed: 'Unable to load the application catalog. Check network, permissions or sync status.',
         catalogRetry: 'Retry',
         catalogEmpty: 'No applications match the current filters. Clear filters or sync the catalog.',
@@ -12,8 +22,8 @@ const message = {
         hostStepDesc: 'Check CPU, disk and system monitoring',
         dockerStep: 'Verify containers',
         dockerStepDesc: 'Read Docker status from the current host',
-        appsStep: 'Deploy an application',
-        appsStepDesc: 'Use the existing App Store or Compose workflow',
+        appsStep: 'Browse software and environments',
+        appsStepDesc: 'Installed apps remain manageable; new Catalog templates are not installable yet',
         dockerChecking: 'Checking Docker…',
         dockerReady: 'Docker reachable; running containers: {count}',
         dockerNotInstalled: 'Docker was not detected on this node; install it through an approved method',
