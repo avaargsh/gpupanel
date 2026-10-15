@@ -17,6 +17,7 @@ import uuid
 
 IMAGE = re.compile(r"^[a-z0-9][a-z0-9./:_-]{0,250}@sha256:[0-9a-f]{64}$")
 LOCAL_IMAGE_ID = re.compile(r"^sha256:[0-9a-f]{64}$")
+CONTAINER_ID = re.compile(r"^[0-9a-f]{64}$")
 MARKER = "gpupanel-disposable-smoke-ok"
 TIMEOUT = 25
 
@@ -50,7 +51,7 @@ def smoke(image: str, approved: bool, executor=command, fixture_entrypoint: bool
     checks = ["docker info", "docker image inspect (local only)",
               "docker create --pull=never --network=none --read-only --cap-drop=ALL",
               "docker start", "docker logs", "docker inspect exit code",
-              "docker inspect ownership label", "docker rm"]
+              "docker inspect immutable ID and ownership label", "docker rm by ID"]
     if not approved:
         return {"status": "APPROVAL_REQUIRED", "image": image, "checks": checks,
                 "networkDisabled": True, "hostMounts": False, "executed": False}
@@ -67,6 +68,7 @@ def smoke(image: str, approved: bool, executor=command, fixture_entrypoint: bool
     nonce = uuid.uuid4().hex[:16]
     name = "gpupanel-accept-" + nonce
     create_attempted = False
+    created_id = None
     cleanup_error = False
     error = None
     try:
@@ -81,25 +83,36 @@ def smoke(image: str, approved: bool, executor=command, fixture_entrypoint: bool
         # Even if Docker create returns an error, the daemon might already have
         # committed the container. Always verify ownership before cleanup.
         create_attempted = True
-        executor(binary, *args)
-        executor(binary, "start", name)
-        logs = executor(binary, "logs", name)
-        exit_code = executor(binary, "inspect", "--format", "{{.State.ExitCode}}", name)
+        created_id = executor(binary, *args)
+        if not CONTAINER_ID.fullmatch(created_id):
+            created_id = None
+            raise SmokeError("Docker create did not return an immutable container ID")
+        # Never start/read a name that may be reassigned after create.
+        executor(binary, "start", created_id)
+        logs = executor(binary, "logs", created_id)
+        exit_code = executor(binary, "inspect", "--type", "container",
+                             "--format", "{{.State.ExitCode}}", created_id)
         if MARKER not in logs or exit_code.strip() != "0":
             raise SmokeError("container output or exit code did not match smoke contract")
     except SmokeError as exc:
         error = exc
     finally:
         if create_attempted:
-            # Never rm by a guessed name alone. Docker may have returned a
-            # name collision or lost the create acknowledgment.
+            # A lost create ACK forces discovery by name; inspect ID and nonce
+            # together, then delete ONLY the immutable ID. Never rm by name:
+            # a replacement container could otherwise be deleted (TOCTOU).
             try:
-                observed = executor(binary, "inspect", "--format",
-                                    '{{index .Config.Labels "io.gpupanel.smoke.nonce"}}', name)
-                if observed != nonce:
+                observed = executor(binary, "inspect", "--type", "container",
+                                    "--format",
+                                    '{{.Id}} {{index .Config.Labels "io.gpupanel.smoke.nonce"}}',
+                                    name)
+                identity, separator, label = observed.partition(" ")
+                if (not separator or not CONTAINER_ID.fullmatch(identity)
+                        or label != nonce
+                        or (created_id is not None and identity != created_id)):
                     cleanup_error = True
                 else:
-                    executor(binary, "rm", "-f", name)
+                    executor(binary, "rm", "-f", identity)
             except SmokeError:
                 # Includes an uninspectable daemon after ambiguous creation:
                 # cannot claim cleanup or leak-free completion.
