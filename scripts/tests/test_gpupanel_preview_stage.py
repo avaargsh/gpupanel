@@ -26,6 +26,33 @@ class PreviewStagingContract(unittest.TestCase):
         self.archive = self.root / "test.tar.gz"
         stage.release.package(staging, self.archive, "fixture-1", {"source_commit": "fixture"})
 
+    def test_preview_inventory_empty_and_verified_with_drift(self):
+        empty = stage.inventory(self.home)
+        self.assertEqual(empty["slots"], [])
+        self.assertFalse((self.home / "GPUPanel").exists())
+        with patch.object(stage.os, "geteuid", return_value=1000):
+            stage.stage(self.archive, self.home, True)
+            results = stage.inventory(self.home)
+            self.assertEqual((results["staged"], results["drifted"]), (1, 0))
+            self.assertEqual(results["slots"][0]["version"], "fixture-1")
+            self.assertTrue(results["slots"][0]["verified"])
+            self.assertFalse(results["mutationPerformed"])
+            target = stage.target_for("fixture-1", self.home)
+            (target / "bin/1panel-agent").write_text("altered bytes")
+            results = stage.inventory(self.home)
+            self.assertEqual((results["staged"], results["drifted"]), (0, 1))
+            self.assertEqual(results["slots"][0]["status"], "DRIFT")
+
+    def test_preview_inventory_does_not_traverse_foreign_or_symlinked_slots(self):
+        folder = self.home / "GPUPanel/previews"
+        folder.mkdir(parents=True)
+        (folder / "personal-project").mkdir()
+        (folder / "source-review").symlink_to(self.root, target_is_directory=True)
+        results = stage.inventory(self.home)
+        self.assertEqual(len(results["slots"]), 1)
+        self.assertEqual(results["slots"][0]["status"], "DRIFT")
+        self.assertEqual(results["slots"][0]["reason"], "unsafe symlink")
+
     def test_plan_is_read_only(self):
         plan = stage.preview_plan(self.archive, self.home)
         self.assertEqual(plan["status"], "APPROVAL_REQUIRED")

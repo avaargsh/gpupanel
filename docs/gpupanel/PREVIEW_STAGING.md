@@ -9,6 +9,7 @@ python3 scripts/gpupanel-preview-stage.py plan dist/gpupanel-preview.tar.gz
 # Review destination, version and archive digest:
 python3 scripts/gpupanel-preview-stage.py stage dist/gpupanel-preview.tar.gz --approve
 python3 scripts/gpupanel-preview-stage.py status dev
+python3 scripts/gpupanel-preview-stage.py list
 # Optional removal; refuses modified/unknown files:
 ```
 
@@ -31,3 +32,7 @@ python3 scripts/gpupanel-runtime-namespace.py --strict --human
 The namespace audit intentionally exits nonzero until an independently verified Core/Agent namespace migration exists.
 
 Status also detects permission drift: all staged files and the management receipt must stay mode 0600. Marking a Core/Agent binary executable causes `DRIFT` and blocks automatic removal until manually restored. This does **not** make the preview an installer.
+
+## Read-only inventory
+
+`python3 scripts/gpupanel-preview-stage.py list` shows only reserved `source-<version>` preview slots under the current user's `~/GPUPanel/previews/`, whether the staged files still match their private receipts, and counts of `STAGED` vs `DRIFT`. It ignores unrelated user directories and never runs or removes a staged binary. Symlinked slots are reported as drift and are never traversed. The inventory does not assert that the underlying Core/Agent services are installable.

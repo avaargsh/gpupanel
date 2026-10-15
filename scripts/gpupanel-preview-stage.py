@@ -200,6 +200,38 @@ def remove(version: str, home: Path, approved: bool) -> dict:
             "systemServiceInstalled": False, "removed": True}
 
 
+def inventory(home: Path) -> dict:
+    """Read-only inspection of known source-* slots; never enumerate other home files."""
+    sentinel = target_for("inventory-sentinel", home)
+    slots = sentinel.parent
+    if not slots.exists():
+        return {"status": "OK", "slots": [], "staged": 0, "drifted": 0,
+                "systemServiceInstalled": False, "mutationPerformed": False}
+    if slots.is_symlink() or not slots.is_dir():
+        raise PreviewError("preview slots parent is not a safe directory")
+    entries = sorted(slots.iterdir(), key=lambda p: p.name)
+    if len(entries) > 1000:
+        raise PreviewError("too many preview slots to inspect safely")
+    found = []
+    for entry in entries:
+        if not entry.name.startswith("source-"):
+            continue
+        version = entry.name[len("source-"):]
+        if not release.NAME_RE.fullmatch(version):
+            continue
+        if entry.is_symlink():
+            found.append({"version": version, "status": "DRIFT", "reason": "unsafe symlink"})
+            continue
+        inspected = inspect(version, home)
+        found.append({"version": version, "status": inspected["status"],
+                      "reason": inspected.get("reason"),
+                      "verified": inspected.get("verified", False)})
+    return {"status": "OK", "slots": found,
+            "staged": sum(item["status"] == "STAGED" for item in found),
+            "drifted": sum(item["status"] != "STAGED" for item in found),
+            "systemServiceInstalled": False, "mutationPerformed": False}
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="GPUPanel source preview staging (never installs services)")
     sub = parser.add_subparsers(dest="action", required=True)
@@ -209,6 +241,7 @@ def main(argv: list[str] | None = None) -> int:
         if name == "stage":
             cmd.add_argument("--approve", action="store_true")
     sub.add_parser("status").add_argument("version")
+    sub.add_parser("list", help="inspect known staged previews without executing them")
     cmd = sub.add_parser("remove")
     cmd.add_argument("version")
     cmd.add_argument("--approve", action="store_true")
@@ -225,10 +258,12 @@ def main(argv: list[str] | None = None) -> int:
             result = stage(args.archive, home, args.approve)
         elif args.action == "status":
             result = inspect(args.version, home)
+        elif args.action == "list":
+            result = inventory(home)
         else:
             result = remove(args.version, home, args.approve)
         print(json.dumps(result, ensure_ascii=False, indent=2))
-        return 0 if result["status"] in {"STAGED", "ABSENT"} else 2
+        return 0 if result["status"] in {"STAGED", "ABSENT", "OK"} else 2
     except (PreviewError, workspace.WorkspaceError, release.ReleaseError, OSError, ValueError,
             tarfile.TarError) as exc:
         print(json.dumps({"status": "FAILED", "error": str(exc)}, ensure_ascii=False), file=sys.stderr)
