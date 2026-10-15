@@ -4,6 +4,9 @@ on:
     paths:
       - 'scripts/gpupanel-release.py'
       - 'scripts/tests/test_gpupanel_release.py'
+      - 'scripts/gpupanel-artifact-license-audit.py'
+      - 'scripts/tests/test_gpupanel_artifact_license_audit.py'
+      - 'docs/gpupanel/ARTIFACT_LICENSE_ATTESTATION.md'
       - '.github/workflows/gpupanel-source-release.yml'
       - 'docs/gpupanel/SOURCE_RELEASE.md'
   workflow_dispatch:
@@ -19,6 +22,7 @@ jobs:
           python-version: '3.12'
       - run: python3 -m py_compile scripts/gpupanel-release.py scripts/tests/test_gpupanel_release.py
       - run: python3 -m unittest discover -s scripts/tests -p 'test_gpupanel_release.py' -v
+      - run: python3 -m unittest discover -s scripts/tests -p 'test_gpupanel_artifact_license_audit.py' -v
   full-source-build:
     # Product artifact gate: exercise the real Vite -> Go embed -> Core/Agent build.
     runs-on: ubuntu-24.04
@@ -26,6 +30,8 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # archive Git source_commit must resolve with frozen upstream ancestor
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
@@ -37,3 +43,4 @@ jobs:
           cache-dependency-path: core/go.sum
       - run: python3 scripts/gpupanel-release.py build --version ci-$(git rev-parse --short HEAD)
       - run: python3 scripts/gpupanel-release.py verify dist/gpupanel-preview.tar.gz
+      - run: python3 scripts/gpupanel-artifact-license-audit.py --archive dist/gpupanel-preview.tar.gz --output dist/gpupanel-preview-license-attestation.json
