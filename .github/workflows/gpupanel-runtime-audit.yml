@@ -1,0 +1,30 @@
+name: GPUPanel Runtime isolation source gate
+on:
+  pull_request:
+    paths:
+      - 'scripts/gpupanel-runtime-audit.py'
+      - 'scripts/tests/test_gpupanel_runtime_audit.py'
+      - '.github/workflows/gpupanel-runtime-audit.yml'
+      - 'core/cmd/server/cmd/root.go'
+      - 'core/init/viper/viper.go'
+      - 'core/init/db/db.go'
+      - 'agent/server/server.go'
+      - 'agent/init/dir/dir.go'
+      - 'agent/init/viper/viper.go'
+  workflow_dispatch:
+jobs:
+  runtime-audit:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python3 -m unittest discover -s scripts/tests -p 'test_gpupanel_runtime_audit.py' -v
+      - name: Assert standalone installation remains gated
+        run: |
+          python3 scripts/gpupanel-runtime-audit.py > "$RUNNER_TEMP/namespace-audit.json" && exit 1 || rc=$?
+          test "$rc" -eq 2
+          python3 -c 'import json,sys; r=json.load(open(sys.argv[1])); assert r["status"] == "BLOCKED"; assert not r["standaloneInstallAllowed"]; assert r["legacyAnchorsDetected"] > 0' "$RUNNER_TEMP/namespace-audit.json"
