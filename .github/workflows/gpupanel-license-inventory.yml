@@ -1,0 +1,41 @@
+name: GPUPanel license provenance (non-granting)
+on:
+  pull_request:
+    paths:
+      - 'LICENSE'
+      - 'NOTICE.md'
+      - 'scripts/gpupanel-license-audit.py'
+      - 'scripts/tests/test_gpupanel_license_audit.py'
+      - 'docs/gpupanel/LICENSE_INVENTORY.md'
+      - '.github/workflows/gpupanel-license-inventory.yml'
+  workflow_dispatch:
+jobs:
+  inventory:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # ensure the frozen 1Panel baseline is available
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python3 -m unittest discover -s scripts/tests -p 'test_gpupanel_license_audit.py' -v
+      - run: python3 scripts/gpupanel-license-audit.py --verify-gpl --output license-inventory.json
+      - name: Show non-legal-review counts
+        run: |
+          python3 - <<'PY'
+          import json
+          with open('license-inventory.json', encoding='utf-8') as fp:
+              report = json.load(fp)
+          print('Baseline:', report['baseline_commit'])
+          print('Revision:', report['revision_commit'])
+          print('File counts:', report['counts'])
+          print('All new paths are unverified until reviewed; no Apache grants made.')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: gpupanel-license-provenance
+          path: license-inventory.json
+          retention-days: 14
