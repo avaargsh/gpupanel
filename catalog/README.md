@@ -7,7 +7,7 @@ This directory is a separate, versioned **GPUPanel Catalog contract** for planne
 ## Three separate entities
 
 - `ApplicationDefinition`: stable identity, category (application/devtool/workspace/model/workflow), supported targets, descriptions and maturity.
-- `PackageRevision`: revision ID must equal the SHA-256 of canonical revision JSON (excluding the ID), with provider adapter and preapproved recipe ID, pinned HTTPS artifact and checksum; must refer to an existing definition. Changing source, version, recipe or digest invalidates the revision ID.
+- `PackageRevision`: revision ID must equal the SHA-256 of canonical revision JSON (excluding the ID), with provider adapter and preapproved recipe ID, pinned HTTPS artifact or the single code-approved local bundled manifest, each with a SHA-256 checksum; must refer to an existing definition. Changing source, version, recipe or digest invalidates the revision ID.
 - `Installation`: mutable execution/observed state owned by the actual Host or Docker provider, with authorization and independent verification. **Never store installation ownership or success in this static Catalog index.**
 
 CLI commands (Python stdlib, offline, no root):
@@ -19,19 +19,19 @@ python3 scripts/gpupanel-catalog.py show gpupanel.dev.python
 python3 scripts/gpupanel-catalog.py plan gpupanel.dev.python
 ```
 
-`plan` deliberately exits 2 (BLOCKED): no executable package revision/recipe has been approved. Neither `verify` nor a package SHA-256 provides artifact provenance or signature/trust-root verification. `indexSha256` is for reproducibility only, **not a trusted signature**.
+`plan gpupanel.dev.python` exits 2 (BLOCKED) because the Python runtime installation remains unimplemented. The experimental `plan gpupanel.dev.python-stdlib` returns `READY_FOR_USER_APPROVAL` and exit 0, for **project-file creation only**. Neither `verify` nor a package SHA-256 provides artifact provenance or signature/trust-root verification. `indexSha256` is for reproducibility only, **not a trusted signature**.
 
 ## Future delivery workflow
 
 Discover → Plan → Resolve trusted source → Approve RBAC → Download → Verify digest / signature → Execute through allowlisted Provider → Independent observation → Reconcile/rollback → Audit.
 
-A Catalog entry **cannot** supply shell commands, URLs with credentials, unverified HTTP downloads or new Provider implementations. Recipe IDs are allowlisted *in executable code* (`APPROVED_RECIPES`, initially empty), not granted by the downloaded index. ModelScope/ACR are optional source adapters after origin policy, digest and failover tests; they are not default package repositories. One code-reviewed bundled **project scaffold** is approved: `python-stdlib-scaffold-v1`, loaded only from the exact repository path, SHA-256 checked file manifest, and published to the user's home directory by a separate Python adapter. This is NOT an OS package, Python distribution, signed third-party binary or privileged installer. Other offline bundles still require an approved source adapter. OCI images require digest-based deployment through the existing Docker/Compose App Store; no digest-free `latest` assumption.
+A Catalog entry **cannot** supply shell commands, URLs with credentials, unverified HTTP downloads or new Provider implementations. Recipe IDs are allowlisted *in executable code* (`APPROVED_RECIPES`, currently limited to `python-stdlib-scaffold-v1`), not granted by the downloaded index. ModelScope/ACR are optional source adapters after origin policy, digest and failover tests; they are not default package repositories. One code-reviewed bundled **project scaffold** is approved: `python-stdlib-scaffold-v1`, loaded only from the exact repository path, SHA-256 checked file manifest, and published to the user's home directory by a separate Python adapter. This is NOT an OS package, Python distribution, signed third-party binary or privileged installer. Other offline bundles still require an approved source adapter. OCI images require digest-based deployment through the existing Docker/Compose App Store; no digest-free `latest` assumption.
 
 Target order: Host / Docker App Store product loop → pinned personal Ubuntu dev environment → optionally workspace / GPU compute via external platform.
 
 ## Next acceptance gate
 
-Add **one** real pinned application revision from a trusted source, approved Python/OS/Docker recipe with no dynamic shell injection, authentic artifact signature/digest, install + remove + reconcile and rollback on a disposable Ubuntu 24.04 VM. An installed process exit code of zero is not independent outcome proof.
+Add **one real version-pinned third-party software package**, authenticated source/signature checks, an approved OS/Docker adapter, authorized install, independent observed state, removal and rollback on a disposable Ubuntu 24.04 VM. The existing offline project scaffold is not a Python distribution or system package. An installed process exit code of zero is not independent outcome proof.
 
 ## Working Golden Path: first user-local Python starter
 
@@ -55,3 +55,5 @@ The web Catalog card intentionally remains **non-installable** until the authent
 ### Local installation inventory
 
 `python3 scripts/gpupanel-catalog-workspace.py list` enumerates **only direct children with a GPUPanel receipt** in the selected project's parent directory. It reports verified/drifted counts, no user file contents, and performs no modification. Missing parents return an empty inventory. Projects not created by GPUPanel are not traversed or treated as managed.
+
+GPUPanel source preview staging is a **separate inspection workflow**, not a Catalog package installer. See [preview staging](../docs/gpupanel/PREVIEW_STAGING.md).

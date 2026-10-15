@@ -22,7 +22,7 @@ GPUPanel
 │   └── Diagnostics / Backup / Recovery
 ├── Containers
 │   ├── Docker / Compose / Images
-│   └── GPUPanel Catalog (read-only templates) / Installed Apps / Compose
+│   └── GPUPanel Catalog (Web discovery; experimental project starter via CLI only) / Installed Apps / Compose
 ├── AI Workspace [future]
 │   ├── Templates / Workspaces / Storage
 │   ├── Jobs / Experiments / Models

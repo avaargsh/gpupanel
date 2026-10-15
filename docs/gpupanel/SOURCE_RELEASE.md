@@ -15,6 +15,10 @@ Build order: `npm ci` → `vite build` (writes Go embed assets in `core/cmd/serv
 
 Archive contents: `gpupanel/bin/1panel-core`, `gpupanel/bin/1panel-agent`, LICENSE, NOTICE.md, and manifest.json. Names intentionally remain inherited. The archive is **NOT AN INSTALLER**; it contains no systemd files, initialized database, 1pctl configuration, operator approval, rollback or data migration.
 
+## Verified source preview staging (not service installation)
+
+After the source build, `python3 scripts/gpupanel-preview-stage.py plan dist/gpupanel-preview.tar.gz` checks the archive and displays the user-home destination. The explicitly approved `stage` command copies **non-executable** Core/Agent inspection files to `~/GPUPanel/previews/source-<version>`; it does not start or register system services. A self-contained SHA-256 manifest is not authenticated publisher provenance. See [preview staging instructions](PREVIEW_STAGING.md).
+
 ## Blocking product contracts for an actual installer
 
 Current Go startup still assumes data/CLI paths including `/usr/local/bin/1pctl`, `/etc/1panel` and baseDir/1panel. Blindly installing fork binaries would risk collision and mutable state with existing 1Panel installations.
