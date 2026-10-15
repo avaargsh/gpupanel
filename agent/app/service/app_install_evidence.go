@@ -144,9 +144,18 @@ func inspectAppInstallEvidence(appDB, taskDB *gorm.DB, id uint, observe appDocke
 
 	// A Docker name claimed by two AppInstall rows cannot be attributed to
 	// either using that name alone, regardless of what Docker returns.
+	// Keep the diagnostic bounded even when a Host has a large number of
+	// installations. On saturation, return UNKNOWN rather than falsely claiming
+	// there are no later competing container-name owners.
+	const maxOwnershipClaims = 1024
 	var claims []model.AppInstall
-	if err := appDB.Select("id", "container_name").Find(&claims).Error; err != nil {
+	if err := appDB.Select("id", "container_name").Order("id ASC").
+		Limit(maxOwnershipClaims).Find(&claims).Error; err != nil {
 		out.Reasons = append(out.Reasons, "OWNERSHIP_LOOKUP_UNAVAILABLE")
+		return out, nil
+	}
+	if len(claims) == maxOwnershipClaims {
+		out.Reasons = append(out.Reasons, "OWNERSHIP_SCAN_LIMIT")
 		return out, nil
 	}
 	targetNames := make(map[string]bool, len(expected))
