@@ -139,8 +139,8 @@ const retryInit = () => {
     if (!loading.value) void initSelectedApp();
 };
 
-const openTaskLog = (taskID: string) => {
-    taskLogRef.value?.openWithTaskID(taskID, undefined, pendingNode.value || currentNode.value);
+const openTaskLog = (taskID: string, targetNode?: string) => {
+    taskLogRef.value?.openWithTaskID(taskID, undefined, targetNode || pendingNode.value || currentNode.value);
 };
 const inspectUncertainTask = () => {
     if (pendingNode.value !== currentNode.value) {
@@ -235,7 +235,7 @@ const handleSubmit = async () => {
         phase.value = 'idle';
         handleClose();
         // An accepted request is NOT a completed deployment. Show task evidence.
-        openTaskLog(taskID);
+        openTaskLog(taskID, receipt.node);
     } finally {
         if (phase.value === 'validating' || phase.value === 'confirming') phase.value = 'idle';
     }
