@@ -254,6 +254,8 @@ LANGUAGE="${LANGUAGE:-zh}"
 [ "$PORT" -ge 1 ] 2>/dev/null && [ "$PORT" -le 65535 ] 2>/dev/null \
     || die "invalid port: $PORT (expected 1-65535)"
 
+port_listening "$PORT" && die "port $PORT is already in use; no process was stopped"
+
 if [ "$REINSTALL" = "1" ]; then
     # Keep whatever the previous install recorded. Rotating it here would hand
     # out a password the panel does not accept, since the live credentials are
@@ -406,7 +408,7 @@ fi
 wait_ready() {
     local tries="$1"
     while [ "$tries" -gt 0 ]; do
-        port_listening "$PORT" && return 0
+        port_listening "$PORT" && python3 "$PREFLIGHT" --agent-health && return 0
         sleep 2
         tries=$((tries - 1))
     done
@@ -414,7 +416,7 @@ wait_ready() {
 }
 
 report_failure() {
-    warn "port $PORT is not listening"
+    warn "Core port $PORT or private Agent health check is not ready"
     if command -v systemctl >/dev/null 2>&1 && [ "$USE_SYSTEMD" = "1" ]; then
         systemctl --no-pager --lines 20 status gpupanel-core gpupanel-agent 2>&1 | tee -a "$LOG_FILE" || true
     fi
@@ -426,7 +428,7 @@ report_failure() {
     die "GPUPanel did not come up; see $LOG_FILE"
 }
 
-info "waiting for the panel to listen on port $PORT"
+info "waiting for Core port $PORT and private Agent health"
 if wait_ready 30; then
     :
 elif [ "$started" = "1" ]; then

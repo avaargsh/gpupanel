@@ -80,6 +80,35 @@ class InstallPreflightTests(unittest.TestCase):
         (self.root / "etc/os-release").write_text('ID=debian\nVERSION_ID="12"\n')
         self.assertIn("operating_system", mod.inspect_host(self.root, mod.MIN_FREE_BYTES, True)["blockers"])
 
+    def test_agent_health_requires_real_successful_unix_http_response(self):
+        import http.server
+        import socketserver
+        import threading
+        reply = [b'{"code":200}']
+        class Handler(http.server.BaseHTTPRequestHandler):
+            def do_GET(self):
+                self.send_response(200)
+                self.send_header('Content-Length', str(len(reply[0])))
+                self.end_headers()
+                self.wfile.write(reply[0])
+            def log_message(self, *args):
+                pass
+        socket_path = str(self.root / 'health.sock')
+        server = socketserver.UnixStreamServer(socket_path, Handler)
+        thread = threading.Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+        try:
+            self.assertTrue(mod.agent_healthy(socket_path))
+            reply[0] = b'{"code":500}'
+            self.assertFalse(mod.agent_healthy(socket_path))
+            reply[0] = b'not JSON'
+            self.assertFalse(mod.agent_healthy(socket_path))
+            self.assertFalse(mod.agent_healthy(str(self.root / 'missing.sock')))
+        finally:
+            server.shutdown()
+            server.server_close()
+            thread.join(1)
+
     def test_insufficient_space_blocks(self):
         result = mod.inspect_host(self.root, free_bytes=mod.MIN_FREE_BYTES - 1)
         self.assertIn("disk_space", result["blockers"])

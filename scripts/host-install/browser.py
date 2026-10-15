@@ -21,6 +21,14 @@ for name in ('core', 'agent'):
     target = subprocess.check_output(['sudo', '-n', 'readlink', '-f', '/proc/' + pid + '/exe'], text=True).strip()
     assert target == str(installed), 'Unexpected service executable'
 
+for _ in range(120):
+    ready = subprocess.run(['sudo', '-n', 'python3', str(ROOT / 'scripts/gpupanel-install-preflight.py'), '--agent-health'], capture_output=True)
+    if ready.returncode == 0:
+        break
+    time.sleep(0.25)
+else:
+    raise SystemExit('Installed Agent did not become healthy')
+
 DOCKER = ['sudo', '-n', 'docker', '--host', 'unix:///var/run/docker.sock']
 run = uuid.uuid4().hex[:12]
 canary = 'gpupanel-host-test-' + run
@@ -31,7 +39,7 @@ result = {'kind': 'LIVE bare-metal browser and authenticated Core→Agent APIs; 
 def inspect():
     process = subprocess.run(DOCKER + ['inspect', canary], capture_output=True, text=True, timeout=10)
     if process.returncode:
-        if 'No such object' in process.stderr or 'No such container' in process.stderr:
+        if 'no such object' in process.stderr.lower() or 'no such container' in process.stderr.lower():
             subprocess.run(DOCKER + ['info', '--format', '{{.ID}}'], check=True, capture_output=True, timeout=10)
             return None
         raise RuntimeError('Docker inspect unavailable; absence not proven')
@@ -98,9 +106,9 @@ try:
                 const r=await fetch('/api/v1'+path,{method:body===null?'GET':'POST',
                     headers:{'Content-Type':'application/json','X-CSRF-Token':decodeURIComponent(csrf),'CurrentNode':'local'},
                     credentials:'include',body:body===null?undefined:JSON.stringify(body)});
-                return {status:r.status,body:await r.json()};
+                const text=await r.text();let value;try{value=JSON.parse(text)}catch{value={code:r.status,message:text.slice(0,160)}};return {status:r.status,body:value};
             }''', {'path': path, 'body': body})
-            assert value['status'] == 200 and value['body'].get('code') == 200, 'Authenticated API failed: ' + path + ' code=' + str(value['body'].get('code'))
+            assert value['status'] == 200 and value['body'].get('code') == 200, 'Authenticated API failed: ' + path + ' code=' + str(value['body'].get('code')) + ' ' + str(value['body'].get('message', ''))[:160]
             return value['body'].get('data')
 
         host = api('/dashboard/base/all/all')
@@ -136,13 +144,26 @@ try:
         resumed = api('/hosts/terminal/sessions/search', {})
         assert len(resumed) == 1 and resumed[0]['id'] == session_id
         result['checks']['terminal_unexpected_disconnect_reattaches_same_session'] = True
+        terminal.focus()
+        page.keyboard.insert_text(f"printf '%s' '{run}' > /opt/gpupanel/test-evidence/{run}/reconnected.txt")
+        page.keyboard.press('Enter')
+        for _ in range(30):
+            check = subprocess.run(['sudo', '-n', 'cat', '/opt/gpupanel/test-evidence/' + run + '/reconnected.txt'], capture_output=True, text=True)
+            if check.returncode == 0 and check.stdout == run:
+                break
+            time.sleep(0.1)
+        else:
+            raise AssertionError('Reattached terminal did not execute the second command')
         result['marker_path'] = marker_path
         page.screenshot(path=str(STATE / 'terminal-live.png'), full_page=True)
         page.goto(URL + '/containers')
         page.wait_for_load_state('networkidle')
         assert not errors, errors
+        task_ids = []
+        create_task_id = str(uuid.uuid4())
+        task_ids.append(create_task_id)
         created = True  # A lost response can still mean acceptance; cleanup requires independent inspect.
-        api('/containers', {'taskID': str(uuid.uuid4()), 'name': canary, 'image': 'python:3.14-slim',
+        api('/containers', {'taskID': create_task_id, 'name': canary, 'image': 'python:3.14-slim',
             'forcePull': False, 'networks': [{'network': 'none'}], 'publishAllPorts': False,
             'exposedPorts': [], 'volumes': [], 'privileged': False, 'user': '65534:65534',
             'nanoCPUs': 0.25, 'memory': 64, 'restartPolicy': 'no', 'autoRemove': False,
@@ -150,20 +171,26 @@ try:
             'cmd': ['python', '-u', '-c', f"import time;print('GPUPANEL_CANARY_{run}',flush=True);time.sleep(300)"]})
         current = wait_state('running')
         assert current['Image'] == image['Id']
+        container_id = current['Id']
         result['checks']['container_create_and_running_observed'] = True
         page.reload()
         page.wait_for_load_state('networkidle')
+        page.get_by_role('tab', name='Containers', exact=True).click()
         expect(page.get_by_role('row').filter(has_text=canary)).to_be_visible(timeout=15000)
         logs = subprocess.check_output(DOCKER + ['logs', canary], text=True)
         assert 'GPUPANEL_CANARY_' + run in logs
         result['checks']['container_list_and_logs'] = True
-        page.screenshot(path=str(STATE / 'container-live.png'), full_page=True)
+        page.get_by_role('row').filter(has_text=canary).screenshot(path=str(STATE / 'container-live.png'))
         for operation, status in [('stop', 'exited'), ('start', 'running')]:
             assert inspect()
-            api('/containers/operate', {'taskID': str(uuid.uuid4()), 'names': [canary], 'operation': operation})
+            operation_task_id = str(uuid.uuid4())
+            task_ids.append(operation_task_id)
+            api('/containers/operate', {'taskID': operation_task_id, 'names': [container_id], 'operation': operation})
             wait_state(status)
         result['checks']['container_stop_start_observed'] = True
-        api('/containers/operate', {'taskID': str(uuid.uuid4()), 'names': [canary], 'operation': 'remove'})
+        remove_task_id = str(uuid.uuid4())
+        task_ids.append(remove_task_id)
+        api('/containers/operate', {'taskID': remove_task_id, 'names': [container_id], 'operation': 'remove'})
         wait_state('absent')
         created = False
         result['checks']['container_removed_observed'] = True
@@ -175,6 +202,16 @@ try:
         page.wait_for_load_state('networkidle')
         page.goto(URL + '/logs?tab=task')
         page.wait_for_load_state('networkidle')
+        for _ in range(30):
+            tasks = api('/logs/tasks/search', {'page':1,'pageSize':100,'type':'','status':''})
+            statuses = {item['id']:item['status'] for item in tasks['items'] or [] if item['id'] in task_ids}
+            if len(statuses) == 4 and all(status == 'Success' for status in statuses.values()):
+                break
+            time.sleep(0.1)
+        else:
+            raise AssertionError('Real task records did not reach Success')
+        result['checks']['container_task_records_persisted'] = True
+        result['task_ids'] = task_ids
         result['checks']['apps_gpu_and_tasks_routes'] = True
         assert not errors, errors
         result['page_errors'] = errors
