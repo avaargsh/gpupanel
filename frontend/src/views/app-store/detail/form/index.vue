@@ -1,5 +1,7 @@
 <template>
     <div>
+        <el-alert v-if="detailError" :title="$t('gpupanel.appInstallLoadFailed')"
+            type="error" :closable="false" class="common-prompt" />
         <el-alert
             :title="$t('app.hostModeHelper')"
             class="common-prompt"
@@ -207,6 +209,7 @@ const gpuSupport = ref(false);
 const installParams = ref<App.AppParams>();
 const oldMemory = ref<number>(0);
 const showParams = ref(false);
+const detailError = ref(false);
 const currentApp = ref<any>({});
 const appVersions = ref<string[]>([]);
 const operateNode = ref();
@@ -278,10 +281,15 @@ const changeUnit = () => {
 };
 
 const handleVersionChange = async (version: string) => {
-    await getVersionDetail(version);
+    try {
+        await getVersionDetail(version);
+    } catch {
+        // getVersionDetail sets a visible error state and blocks install.
+    }
 };
 
 const getVersionDetail = async (version: string) => {
+    detailError.value = false;
     formData.value.appDetailId = 0;
     formData.value.dockerCompose = '';
     formData.value.params = {};
@@ -308,7 +316,10 @@ const getVersionDetail = async (version: string) => {
         memoryRequired.value = res.data.memoryRequired;
         gpuSupport.value = res.data.gpuSupport;
         showParams.value = true;
-    } catch (error) {}
+    } catch (error) {
+        if (formData.value.version === version) detailError.value = true;
+        throw error;
+    }
 };
 
 const loadInstallDefaultConfig = async () => {
@@ -329,11 +340,10 @@ const initForm = async (appKey: string) => {
     const res = await getAppByKey(appKey);
     currentApp.value = res.data;
     appVersions.value = currentApp.value.versions;
-    if (appVersions.value.length > 0) {
-        const defaultVersion = appVersions.value[0];
-        formData.value.version = defaultVersion;
-        getVersionDetail(defaultVersion);
-    }
+    if (!appVersions.value.length) throw new Error('no installable app versions');
+    const defaultVersion = appVersions.value[0];
+    formData.value.version = defaultVersion;
+    await getVersionDetail(defaultVersion);
     if (isOffline.value) {
         formData.value.pullImage = false;
     }
@@ -389,7 +399,7 @@ const initClusterForm = async (props: ClusterProps) => {
         });
         const defaultVersion = appVersions.value[0];
         formData.value.version = defaultVersion;
-        getVersionDetail(defaultVersion);
+        await getVersionDetail(defaultVersion);
     }
     formData.value.name = props.key + '-' + props.role;
 };
@@ -404,6 +414,7 @@ const resetForm = () => {
     memoryRequired.value = 0;
     gpuSupport.value = false;
     showParams.value = false;
+    detailError.value = false;
 };
 
 const validate = async (): Promise<boolean> => {
