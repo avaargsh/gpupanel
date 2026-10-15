@@ -32,6 +32,8 @@
             </template>
         </el-alert>
 
+        <GPUPanelQuickstart class="card-interval" />
+
         <el-row :gutter="7" class="card-interval">
             <el-col :xs="24" :sm="24" :md="16" :lg="16" :xl="16">
                 <CardWithHeader :header="$t('menu.home')" height="166px">
@@ -447,6 +449,7 @@
 <script lang="ts" setup>
 import { onMounted, onBeforeUnmount, ref, reactive, computed, nextTick } from 'vue';
 import SystemStatus from '@/views/home/status/index.vue';
+import GPUPanelQuickstart from '@/views/home/gpupanel-quickstart.vue';
 import AppLauncher from '@/views/home/app/index.vue';
 import VCharts from '@/components/v-charts/index.vue';
 import QuickJump from '@/views/home/quick/index.vue';
