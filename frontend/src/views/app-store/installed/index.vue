@@ -556,8 +556,10 @@ const exitSortMode = () => {
 };
 
 const getConfig = async () => {
+    const node = currentNode.value;
     try {
         const res = await getAgentSettingInfo();
+        if (node !== currentNode.value) return;
         if (res.data?.systemIP) {
             defaultLink.value = res.data.systemIP;
             return;
@@ -584,6 +586,11 @@ onMounted(() => {
 
 watch(currentNode, () => {
     listRevision.invalidate();
+    // Do not run the initial on-mount sync on a different node after switching.
+    if (startupTimer !== null) {
+        clearTimeout(startupTimer);
+        startupTimer = null;
+    }
     if (sortableInstance) {
         sortableInstance.destroy();
         sortableInstance = null;
