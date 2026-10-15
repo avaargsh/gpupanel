@@ -48,8 +48,11 @@ export const savePendingAppInstall = (receipt: PendingAppInstall): boolean => {
     if (!valid(receipt)) return false;
     try {
         // A second drawer must never overwrite an unresolved request's identity.
+        const raw = window.sessionStorage.getItem(PENDING_APP_INSTALL_KEY);
         const existing = readPendingAppInstall();
-        if (existing && existing.taskID !== receipt.taskID) return false;
+        // A malformed older receipt is still an unresolved attempt: do not
+        // erase it merely because its contents can no longer be trusted.
+        if (raw !== null && (!existing || existing.taskID !== receipt.taskID)) return false;
         window.sessionStorage.setItem(PENDING_APP_INSTALL_KEY, JSON.stringify(receipt));
         // A failed/quota-blocked write must prevent the privileged submission.
         return readPendingAppInstall()?.taskID === receipt.taskID;
