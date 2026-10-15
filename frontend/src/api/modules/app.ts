@@ -71,6 +71,11 @@ export const getAppInstalled = (search: App.AppInstalledSearch) => {
     return http.post<ResPage<App.AppInstalled>>('apps/installed/search', search);
 };
 
+// Local master-only diagnostic. Never accept a caller-selected remote node.
+export const getLocalAppInstallEvidence = (installID: number) => {
+    return http.get<App.AppInstallEvidence>(`apps/installed/evidence/${installID}?operateNode=local`);
+};
+
 export const getAppInstalledByID = (installID: number, node?: string) => {
     const params = node ? `?operateNode=${node}` : '';
     return http.get<App.AppInstalledInfo>(`apps/installed/info/${installID}${params}`);
