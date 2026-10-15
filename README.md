@@ -1,103 +1,51 @@
-<p align="center"><a href="https://1panel.pro"><img src="https://resource.1panel.pro/img/1panel-logo.png" alt="1Panel" width="300" /></a></p>
-<p align="center">
-  Loved by a global community of <strong>2.5M+</strong> self-hosters.
-</p>
+<p align="center"><img src="frontend/src/assets/images/gpupanel-logo.svg" width="260" alt="GPUPanel logo" /></p>
 
-<p align="center">
-  <a href="https://trendshift.io/repositories/2462" target="_blank"><img src="https://trendshift.io/api/badge/repositories/2462" alt="1Panel-dev%2F1Panel | Trendshift" style="width: 240px; height: auto;" /></a>
-</p>
+# GPUPanel
 
-<p align="center">
-  <a href="https://www.gnu.org/licenses/gpl-3.0.html"><img src="https://shields.io/github/license/1Panel-dev/1Panel?color=%231890FF" alt="License: GPL v3"></a>
-  <a href="https://discord.gg/bUpUqWqdRr"><img src="https://img.shields.io/discord/1318846410149335080?logo=discord&labelColor=%20%235462eb&logoColor=%20%23f5f5f5&color=%20%235462eb" alt="Discord"></a>
-  <a href="https://github.com/1Panel-dev/1Panel/releases"><img src="https://img.shields.io/github/v/release/1Panel-dev/1Panel" alt="GitHub release"></a>
-  <a href="https://github.com/1Panel-dev/1Panel"><img src="https://img.shields.io/github/stars/1Panel-dev/1Panel?color=%231890FF&style=flat-square" alt="Stars"></a>
-</p>
+**Host first. AI ready.** An independent GPL-3.0 fork of [1Panel](https://github.com/1Panel-dev/1Panel) for Linux host operations today and GPU/AI platform integrations later.
 
-<p align="center">
-  <a href="/README.md"><img alt="English" src="https://img.shields.io/badge/English-d9d9d9"></a>
-  <a href="/docs/README.zh-Hans.md"><img alt="中文(简体)" src="https://img.shields.io/badge/中文(简体)-d9d9d9"></a>
-  <a href="/docs/README.ja.md"><img alt="日本語" src="https://img.shields.io/badge/日本語-d9d9d9"></a>
-  <a href="/docs/README.pt-br.md"><img alt="Português (Brasil)" src="https://img.shields.io/badge/Português (Brasil)-d9d9d9"></a>
-  <a href="/docs/README.ar.md"><img alt="العربية" src="https://img.shields.io/badge/العربية-d9d9d9"></a>
-  <a href="/docs/README.de.md"><img alt="Deutsch" src="https://img.shields.io/badge/Deutsch-d9d9d9"></a>
-  <a href="/docs/README.es-es.md"><img alt="Español" src="https://img.shields.io/badge/Español-d9d9d9"></a>
-  <a href="/docs/README.fr.md"><img alt="français" src="https://img.shields.io/badge/français-d9d9d9"></a>
-  <a href="/docs/README.ko.md"><img alt="한국어" src="https://img.shields.io/badge/한국어-d9d9d9"></a>
-  <a href="/docs/README.id.md"><img alt="Bahasa Indonesia" src="https://img.shields.io/badge/Bahasa Indonesia-d9d9d9"></a>
-  <a href="/docs/README.zh-Hant.md"><img alt="中文(繁體)" src="https://img.shields.io/badge/中文(繁體)-d9d9d9"></a>
-  <a href="/docs/README.tr.md"><img alt="Türkçe" src="https://img.shields.io/badge/Türkçe-d9d9d9"></a>
-  <a href="/docs/README.ru.md"><img alt="Русский" src="https://img.shields.io/badge/Русский-d9d9d9"></a>
-  <a href="/docs/README.ms.md"><img alt="Bahasa Melayu" src="https://img.shields.io/badge/Bahasa Melayu-d9d9d9"></a>
-  <a href="/docs/README.fa.md"><img alt="Persian" src="https://img.shields.io/badge/%D9%81%D8%A7%D8%B1%D8%B3%DB%8C-d9d9d9"></a>
-  <a href="/docs/README.lo.md"><img alt="ພາສາລາວ" src="https://img.shields.io/badge/%E0%BA%9E%E0%BA%B2%E0%BA%AA%E0%BA%B2%E0%BA%A5%E0%BA%B2%E0%BA%A7-d9d9d9"></a>
-</p>
+> Status: **Brand foundation / non-production preview**. This repository retains the upstream Core + Agent + Vue 3 structure. GPU scheduling, training workspaces, multi-node control and production Agent Ops are **roadmap items**, not delivered features.
 
----
+## What exists now
 
-## What is 1Panel?
+- **Host**: reuse upstream host, disk, files, network, security and terminal management.
+- **Containers**: reuse upstream Docker, Compose, images and application lifecycle.
+- **Portal**: GPUPanel brand entry points, with host management as the first usable product.
+- **Integrations (planned)**: optional Kubernetes provider; GPU Compute Platform for compute queues and workloads; Agent Control Plane for authorized operations.
 
-1Panel is a modern, open-source Linux server management panel and a lightweight AI management platform. Through an intuitive web interface, it provides users with comprehensive, one-stop server management capabilities:
-- **AI Management**: Offers a unified management platform from bare metal to agents (Metal-to-Agent). It integrates an AI gateway, and Skills Hub, while supporting centralized management of agents and models.
-- **Efficient Visual Operations**: Easily manage Linux servers through a web-based GUI, streamlining tasks such as host monitoring, file management, database management, and container management.
-- **Rapid Website Deployment**: Deeply integrates with popular website builders like WordPress and Halo. It enables one-click domain binding and SSL certificate configuration, significantly lowering the barrier to website creation.
-- **Curated App Store**: Features a built-in store of high-quality open-source applications, providing one-click installation and upgrade services to effortlessly extend server capabilities.
-- **Enterprise-Grade Security**: Deploys applications based on container technology to effectively minimize vulnerability exposure. It also provides security features such as WAF and log auditing to ensure comprehensive server protection.
-- **One-Click Data Backup**: Supports one-click backup and restoration, and integrates with various cloud storage solutions to ensure data security and prevent loss.
+## Architecture and boundaries
 
-## Why 1Panel?
+| Layer | Responsibility | Source |
+| --- | --- | --- |
+| Portal | Navigation, design system, workspace and project entry points | `frontend/` |
+| Control API | Identity, policy, cross-resource inventory, operations | `core/` |
+| Linux Host | System, disk, network, Docker, terminal, backup, recovery | `agent/` |
+| Kubernetes Provider (future) | Workloads, GPU pools, scheduling observation; Kueue remains the admission path | Separate adapter, **not** a replacement for Linux Host |
+| AI Applications (future) | Workspaces, model serving, MLflow links, RAG integrations | External products/adapters, not duplicated engines |
+| Audit (future) | Authorization, CAS, independent observation, operation evidence | Adapter to agent-control-plane |
 
-| | 1Panel | cPanel / Plesk | aaPanel | Webmin |
-|--|--------|----------------|---------|--------|
-| Free & open source | ✅ | ❌ | Partial | ✅ |
-| AI management | ✅ | ❌ | ❌ | ❌ |
-| One-click app marketplace | ✅ 165+ apps | ❌ | ✅ | ❌ |
-| Modern UI (post-2020) | ✅ | ❌ | Partial | ❌ |
-| Docker / container management | ✅ | ❌ | ❌ | ❌ |
-| Active development | ✅ | ✅ | ✅ | Slow |
+See [architecture](docs/gpupanel/ARCHITECTURE.md), [product organization](docs/gpupanel/PRODUCT.md) and [roadmap](docs/gpupanel/ROADMAP.md).
 
-## Quick Start
+## Development
 
-Prepare your Linux server and run the following script:
+The current upstream baseline is **1Panel dev-v2 @ d9dc5d7aa981c3b04ad284e93420aca9888f7e5a** (2026-10-15). The upstream runtime identifiers, Go module paths, settings keys, on-disk paths and API routes remain unchanged until a migration plan and compatibility tests exist.
 
 ```bash
-bash -c "$(curl -sSL https://resource.1panel.pro/v2/quick_start.sh)"
+git remote add upstream https://github.com/1Panel-dev/1Panel.git
+npm --prefix frontend install
+npm --prefix frontend run type-check
+npm --prefix frontend run build:pro
+node scripts/verify-brand.mjs
 ```
 
-After installation, open `http://<your-server-ip>:<port>/<security-path>` in your browser.  
-Run `1pctl user-info` via SSH if you need to retrieve your access credentials.
+The Go modules currently request Go **1.26.6**. Do not claim a full build succeeded without that toolchain and resolved dependencies. Development builds need the supported 1Panel system services; installing the frontend alone does not provision a host agent.
 
-## Screenshot
+**Do not use 1Panel's official one-click install script as a GPUPanel installer.** A dedicated GPUPanel build, upgrade, and rollback path must be verified before distribution.
 
-![1Panel UI](https://resource.1panel.pro/img/overview_en_v2.png)
+## Attribution and licensing
 
-## Pro Edition
+GPUPanel is an independent derivative, **not an official 1Panel release or endorsed by the original project**. The original 1Panel copyright notices and `LICENSE` (GPL-3.0) are retained. This fork's new brand assets are identified separately; the upstream 1Panel name must remain in attribution, license notices, and compatibility context rather than being indiscriminately erased. See [NOTICE.md](NOTICE.md).
 
-1Panel OSS is free forever. 1Panel Pro and Ent adds features built for teams and production workloads:
+## Scope of first round
 
-| Feature | OSS | Pro | Ent |
-|---------|:---:|:---:|:---:|
-| One-click app installs | ✅ | ✅ | ✅ |
-| AI agents (OpenClaw) | 5 agent | Unlimited | ✅ |
-| WAF & advanced security | Basic | ✅ | ✅ |
-| Website tamper protection | ❌ | ✅ | ✅ |
-| Website uptime monitoring | ❌ | ✅ | ✅ |
-| Multi-node management | ❌ | ✅ | ✅ |
-| Custom logo & theme | ❌ | ✅ | ✅ |
-| KVM Web UI | ❌ | ❌ | ✅ |
-| AI Gateway | ❌ | ❌ | ✅ |
-| Priority support | ❌ | ❌ | ✅ |
-
-## Community & Support
-
-- **Discord** — [Join the community](https://discord.gg/bUpUqWqdRr) for help, feature requests, and show-and-tell
-- **Docs** — [1panel.pro/docs](https://1panel.pro/docs)
-- **Issues** — [GitHub Issues](https://github.com/1Panel-dev/1Panel/issues) for bug reports
-
-## Security
-
-Found a vulnerability? Please read [SECURITY.md](/SECURITY.md) before disclosing.
-
-## License
-
-Licensed under the [GNU General Public License v3.0](https://www.gnu.org/licenses/gpl-3.0.html).
+Brand assets, portal fallbacks, architecture boundaries and verification script. No existing user data, production cluster, Git history, binary names, on-disk data directories or upstream-specific integration endpoints are migrated by this change.
