@@ -3,6 +3,7 @@ import importlib.util
 from pathlib import Path
 import tempfile
 import unittest
+from unittest.mock import Mock
 
 ROOT = Path(__file__).resolve().parents[2]
 spec = importlib.util.spec_from_file_location("gpupanel_first_run_overview", ROOT / "scripts/gpupanel-first-run-overview.py")
@@ -11,6 +12,35 @@ spec.loader.exec_module(overview)
 
 
 class FirstRunOverviewTest(unittest.TestCase):
+    def test_docker_probe_opt_in_and_classifications(self):
+        calls = []
+        def runner(*args, **kwargs):
+            calls.append((args, kwargs))
+            return Mock(returncode=0, stdout="27.4.1\n", stderr="")
+        no_probe = overview.docker_health(False, which=lambda _: "/usr/bin/docker",
+                                          runner=runner)
+        self.assertEqual(no_probe["status"], "NOT_CHECKED")
+        self.assertEqual(calls, [])
+        healthy = overview.docker_health(True, which=lambda _: "/usr/bin/docker", runner=runner)
+        self.assertTrue(healthy["daemonVerified"])
+        self.assertEqual(healthy["serverVersion"], "27.4.1")
+        self.assertEqual(calls[0][0][0], ["/usr/bin/docker", "info", "--format", "{{.ServerVersion}}"])
+        self.assertEqual(calls[0][1]["timeout"], 8)
+        self.assertFalse(calls[0][1]["check"])
+        self.assertEqual(overview.docker_health(True, which=lambda _: None)["status"], "MISSING_CLI")
+        denied = overview.docker_health(True, which=lambda _: "/usr/bin/docker",
+                 runner=lambda *a, **k: Mock(returncode=1, stdout="", stderr="permission denied"))
+        self.assertEqual(denied["status"], "ACCESS_DENIED")
+        offline = overview.docker_health(True, which=lambda _: "/usr/bin/docker",
+                 runner=lambda *a, **k: Mock(returncode=1, stdout="", stderr="daemon unavailable"))
+        self.assertEqual(offline["status"], "UNAVAILABLE")
+
+    def test_docker_info_never_reports_success_on_malformed_response(self):
+        result = overview.docker_health(True, which=lambda _: "/usr/bin/docker",
+                runner=lambda *a, **k: Mock(returncode=0, stdout="host\nsecret\n", stderr=""))
+        self.assertEqual(result["status"], "INVALID_RESPONSE")
+        self.assertFalse(result["daemonVerified"])
+
     def test_current_source_is_not_a_system_installer(self):
         report = overview.overview(Path("/"), ROOT, free_bytes=15 * 1024 ** 3)
         self.assertEqual(report["conclusion"], "SYSTEM_INSTALL_BLOCKED")
