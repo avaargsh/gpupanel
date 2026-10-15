@@ -135,10 +135,10 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="GPUPanel user-local Python/PyTorch doctor")
     parser.add_argument("--probe-torch", action="store_true",
                         help="opt in to bounded isolated PyTorch import and CUDA/HIP availability probe")
-    parser.add_argument("--human", action="store_true", help="human-readable result")
+    parser.add_argument("--json", action="store_true", help="machine-readable output")
     args = parser.parse_args(argv)
     report = inspect(args.probe_torch)
-    if args.human:
+    if not args.json:
         print("GPUPanel Python / PyTorch 体检（无安装操作）")
         print("Python:", report["python"]["version"], "(当前解释器)")
         print("PyTorch 包信息:", report["torch"]["status"], report["torch"]["version"])
