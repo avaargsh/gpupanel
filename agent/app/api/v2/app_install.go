@@ -336,6 +336,9 @@ func (b *BaseApi) UpdateAppConfig(c *gin.Context) {
 // @Security Timestamp
 // @Router /apps/installed/evidence/:appInstallId [get]
 func (b *BaseApi) GetAppInstallEvidence(c *gin.Context) {
+	// Even redacted diagnostics may expose host/application inventory.
+	// Do not allow intermediaries or browser caches to retain snapshots.
+	c.Header("Cache-Control", "no-store")
 	appInstallId, err := helper.GetIntParamByKey(c, "appInstallId")
 	if err != nil {
 		helper.BadRequest(c, err)
