@@ -22,6 +22,12 @@ jobs:
       - run: python3 scripts/gpupanel-catalog.py verify
       - run: python3 scripts/gpupanel-catalog.py list
       - run: python3 -m unittest discover -s scripts/tests -p 'test_gpupanel_catalog_workspace.py' -v
-      - run: |
-          python3 scripts/gpupanel-catalog-workspace.py plan --help
-          python3 scripts/gpupanel-catalog-workspace.py status --help
+      - name: Offline CLI install → observe → execute → uninstall
+        run: |
+          mkdir -p "$HOME/GPUPanel/projects"
+          python3 scripts/gpupanel-catalog-workspace.py install --approve
+          python3 scripts/gpupanel-catalog-workspace.py status
+          python3 "$HOME/GPUPanel/projects/python-stdlib-starter/main.py"
+          python3 scripts/gpupanel-catalog-workspace.py uninstall --approve
+          python3 scripts/gpupanel-catalog-workspace.py status
+          test ! -e "$HOME/GPUPanel/projects/python-stdlib-starter"
