@@ -18,7 +18,7 @@
                     <strong>{{ $t(step.title) }}</strong>
                 </div>
                 <p>{{ $t(step.description) }}</p>
-                <el-text v-if="step.path === '/containers'" size="small" :type="dockerState === 'ready' ? 'success' : dockerState !== 'ready' && dockerState !== 'checking' ? 'warning' : 'info'">
+                <el-text v-if="step.path === '/containers'" size="small" :type="dockerState === 'ready' ? 'success' : dockerState === 'checking' ? 'info' : 'warning'">
                     {{ dockerMessage }}
                 </el-text>
                 <div class="gpupanel-first-run__action">
