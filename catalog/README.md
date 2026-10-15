@@ -38,7 +38,6 @@ Add **one** real pinned application revision from a trusted source, approved Pyt
 On Linux/Ubuntu, with Python 3.12+ already installed and as a normal user:
 
 ```sh
-mkdir -p ~/GPUPanel/projects
 python3 scripts/gpupanel-catalog.py verify
 python3 scripts/gpupanel-catalog.py plan gpupanel.dev.python-stdlib
 python3 scripts/gpupanel-catalog-workspace.py plan
@@ -48,6 +47,6 @@ python3 ~/GPUPanel/projects/python-stdlib-starter/main.py
 python3 scripts/gpupanel-catalog-workspace.py uninstall --approve
 ```
 
-The installer refuses root, outside-home destinations, symlinks, existing projects and unverified files. It publishes through Linux atomic no-overwrite rename, records a receipt, and refuses removal if the user has modified/added content. **No shell commands or third-party installers are executed by GPUPanel.** The user explicitly runs the starter code separately.
+The installer refuses root, outside-home destinations, symlinks, existing projects and unverified files. Planning creates no directories; after explicit approval it creates missing user-home parent directories with private permissions (never deletes them on uninstall). It publishes through Linux atomic no-overwrite rename, records a receipt, and refuses removal if the user has modified/added content. **No shell commands or third-party installers are executed by GPUPanel.** The user explicitly runs the starter code separately.
 
 The web Catalog card intentionally remains **non-installable** until the authenticated Host execution/observation adapter is integrated and independently acceptance-tested.

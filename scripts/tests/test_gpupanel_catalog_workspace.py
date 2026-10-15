@@ -40,6 +40,28 @@ class WorkspaceGoldenPath(unittest.TestCase):
         self.assertEqual(workspace.uninstall(self.dst,self.home,True)["status"],"ABSENT")
         self.assertFalse(self.dst.exists())
 
+    def test_default_like_nested_install_creates_private_parents_only_after_approval(self):
+        dst = self.home / "GPUPanel" / "projects" / "python-stdlib-starter"
+        plan = workspace.install(dst, self.home, False)
+        self.assertEqual(plan["status"], "APPROVAL_REQUIRED")
+        self.assertFalse((self.home / "GPUPanel").exists())
+        self.assertEqual(workspace.status(dst, self.home)["status"], "ABSENT")
+        result = workspace.install(dst, self.home, True)
+        self.assertEqual(result["status"], "INSTALLED")
+        self.assertEqual((self.home / "GPUPanel").stat().st_mode & 0o777, 0o700)
+        self.assertEqual((self.home / "GPUPanel" / "projects").stat().st_mode & 0o777, 0o700)
+        self.assertEqual(workspace.uninstall(dst, self.home, True)["status"], "ABSENT")
+        # Parent folders are left intact: we cannot assume they have no user content.
+        self.assertTrue((self.home / "GPUPanel" / "projects").is_dir())
+
+    def test_missing_parent_symlink_rejected_without_effect(self):
+        external = self.home.parent / (self.home.name + "-external")
+        with tempfile.TemporaryDirectory(dir=self.home.parent) as td:
+            (self.home / "redirect").symlink_to(Path(td), target_is_directory=True)
+            with self.assertRaises(workspace.WorkspaceError):
+                workspace.install(self.home / "redirect" / "new" / "project", self.home, True)
+            self.assertFalse((Path(td) / "new").exists())
+
     def test_no_overwrite_existing_user_work(self):
         self.dst.mkdir()
         (self.dst/"important.txt").write_text("do not touch")
