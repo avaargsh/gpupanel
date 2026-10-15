@@ -31,7 +31,7 @@ const entries = [
     { path: '/hosts/monitor/monitor', title: 'menu.monitor', icon: 'p-system-monitor-menu' },
     { path: '/hosts/files', title: 'menu.files', icon: 'p-file-menu' },
     { path: '/hosts/disk', title: 'menu.disk', icon: 'p-disk-menu' },
-    { path: '/containers/container', title: 'menu.container', icon: 'p-docker1' },
+    { path: '/containers', title: 'menu.container', icon: 'p-docker1' },
     { path: '/terminal', title: 'menu.terminal', icon: 'p-terminal2' },
     { path: '/ai/gpu/current', title: 'aiTools.gpu.gpu', icon: 'p-gpu-menu' },
 ] as const;
