@@ -1,0 +1,21 @@
+name: GPUPanel install collision preflight
+on:
+  pull_request:
+    paths:
+      - 'scripts/gpupanel-install-preflight.py'
+      - 'scripts/tests/test_gpupanel_install_preflight.py'
+      - '.github/workflows/gpupanel-install-preflight.yml'
+      - 'docs/gpupanel/INSTALL_PREFLIGHT.md'
+  workflow_dispatch:
+jobs:
+  read-only-preflight:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python3 -m unittest discover -s scripts/tests -p 'test_gpupanel_install_preflight.py' -v
+      - run: python3 scripts/gpupanel-install-preflight.py --human
