@@ -30,6 +30,36 @@ var loadLocalTerminalCapabilities = func(ctx context.Context) (interface{}, erro
 	return proxy_local.NewLocalClientWithContext(ctx, terminalsession.CapabilityPath, http.MethodGet, nil, nil, 5*time.Second)
 }
 
+// isAppEvidencePath is deliberately narrow: the existing 1Panel APIs retain
+// their established access rules. This extra guard protects only GPUPanel's
+// planned read-only AppInstall/TaskDB/Docker evidence route.
+func isAppEvidencePath(requestPath string) bool {
+	clean := path.Clean(requestPath)
+	return strings.HasPrefix(clean, "/api/v2/apps/installed/evidence/")
+}
+
+// authorizeLocalAppEvidence enforces the personal-workstation scope at the
+// Core forwarding boundary. Agent's privileged Unix socket has no user RBAC;
+// browser headers such as X-Panel-User are therefore NOT an authority source.
+// This gate intentionally disallows API keys until separate scoped grants exist.
+func authorizeLocalAppEvidence(c *gin.Context, node string) bool {
+	if !isAppEvidencePath(c.Request.URL.Path) {
+		return true
+	}
+	c.Header("Cache-Control", "no-store")
+	if c.GetBool("API_AUTH") || (node != "" && node != "local") || global.SESSION == nil {
+		c.AbortWithStatus(http.StatusForbidden)
+		return false
+	}
+	user, err := global.SESSION.Get(c)
+	if err != nil || user.ID != psessionUtils.SuperAdminSessionUserID ||
+		user.Role != "ADMIN" || user.Name == "" {
+		c.AbortWithStatus(http.StatusForbidden)
+		return false
+	}
+	return true
+}
+
 func Proxy() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		terminalsession.ClearForwardedHeaders(c)
@@ -58,6 +88,12 @@ func Proxy() gin.HandlerFunc {
 			data, _ := res.ErrorMsg.ReadFile("html/401.html")
 			c.Data(401, "text/html; charset=utf-8", data)
 			c.Abort()
+			return
+		}
+
+		// Never forward installation/container evidence to a different Host,
+		// an API-key identity, or anyone without a valid admin cookie.
+		if !authorizeLocalAppEvidence(c, currentNode) {
 			return
 		}
 
