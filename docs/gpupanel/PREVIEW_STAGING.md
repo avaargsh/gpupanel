@@ -25,8 +25,8 @@ The tool validates the archive's *self-contained* manifest and SHA-256 hashes, c
 
 To understand why a safe system installer is still blocked:
 ```bash
-python3 scripts/gpupanel-install-preflight.py --human
-python3 scripts/gpupanel-runtime-namespace.py --strict --human
+python3 scripts/gpupanel-install-preflight.py
+python3 scripts/gpupanel-runtime-namespace.py --strict
 ```
 
 The namespace audit intentionally exits nonzero until an independently verified Core/Agent namespace migration exists.
