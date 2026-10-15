@@ -24,6 +24,7 @@ const message = {
         catalogCopyManual: '浏览器禁止自动复制，请手动选择并复制上方命令。',
         catalogUnavailable: '尚未开放安装',
         catalogNoMatch: '没有匹配的目录项目',
+        installedLoadFailed: '已安装应用列表加载失败。请检查当前节点、连接状态和访问权限，然后重试。',
         catalogLoadFailed: '应用目录加载失败：请检查网络、权限或仓库同步状态。',
         catalogRetry: '重试加载',
         catalogLocalSync: '同步本地应用',

@@ -24,6 +24,7 @@ const message = {
         catalogCopyManual: 'Clipboard unavailable. Select and copy the visible commands manually.',
         catalogUnavailable: 'Installation not available',
         catalogNoMatch: 'No matching catalog definitions',
+        installedLoadFailed: 'Unable to load installed apps. Check the selected node, connection and permissions, then retry.',
         catalogLoadFailed: 'Unable to load the application catalog. Check network, permissions or sync status.',
         catalogRetry: 'Retry',
         catalogLocalSync: 'Sync local apps',
