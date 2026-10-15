@@ -102,7 +102,7 @@ def overview(host_root: Path, repo_root: Path, free_bytes: int | None = None,
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="GPUPanel Host first-run review (read only)")
-    parser.add_argument("--human", action="store_true", help="print concise Chinese operator guidance")
+    parser.add_argument("--json", action="store_true", help="machine-readable output")
     parser.add_argument("--probe-torch", action="store_true",
                         help="opt in to importing PyTorch in an isolated timed subprocess (may initialize CUDA)")
     parser.add_argument("--probe-docker", action="store_true",
@@ -114,7 +114,7 @@ def main(argv: list[str] | None = None) -> int:
     except (OSError, ValueError, TypeError, catalog.CatalogError) as exc:
         print(json.dumps({"status": "FAILED", "error": str(exc)}, ensure_ascii=False), file=sys.stderr)
         return 2
-    if args.human:
+    if not args.json:
         print("GPUPanel 首次使用检查 | 只读、不安装")
         print(f"Host 阻塞项：{len(report['host']['blockers'])}；运行目录阻塞项："
               f"{report['systemRuntime']['namespaceRisks']}")
