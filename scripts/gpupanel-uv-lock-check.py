@@ -62,10 +62,13 @@ def load_regular(path: Path, maximum: int) -> bytes:
 def https_only(url: object) -> bool:
     if not isinstance(url, str) or len(url) > 4096:
         return False
-    parsed = urlsplit(url)
-    return (parsed.scheme == "https" and bool(parsed.hostname)
-            and parsed.username is None and parsed.password is None
-            and not parsed.fragment)
+    try:
+        parsed = urlsplit(url)
+        return (parsed.scheme == "https" and bool(parsed.hostname)
+                and parsed.username is None and parsed.password is None
+                and not parsed.fragment)
+    except ValueError:
+        return False
 
 
 def inspect(path: Path, home: Path) -> dict:
@@ -88,8 +91,9 @@ def inspect(path: Path, home: Path) -> dict:
             or not isinstance(locked.get("version"), int)):
         return {"status": "INVALID_LOCK", "executed": False}
     # Keep arbitrary PEP 517/uv workspace/directory sources out of the sandbox.
-    if ("build-system" in pyproject or "workspace" in pyproject
-            or "uv" in pyproject.get("tool", {})):
+    tool_settings = pyproject.get("tool", {})
+    if (not isinstance(tool_settings, dict) or "build-system" in pyproject
+            or "workspace" in pyproject or "uv" in tool_settings):
         return {"status": "UNREVIEWED_SOURCE", "executed": False}
     wheels = 0
     for package in packages:
