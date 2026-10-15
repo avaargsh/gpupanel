@@ -6,7 +6,7 @@
 
 First user outcome: *An authorized on-call operator can inspect a real Kubernetes/Host incident, review provenance-linked evidence, and—only with explicit authority—request a single scoped state transition whose outcome is independently verified.*
 
-\`\`\`text
+```text
 Browser (GPUPanel) -> GPUPanel Core authenticated facade
        |                      |
        |                      +-- existing Host Agent (Host, Docker, logs)
@@ -18,12 +18,12 @@ Browser (GPUPanel) -> GPUPanel Core authenticated facade
        |                                              independent proof verification
        +-- render observed state, sourced evidence and immutable proof refs
                    (no browser-to-provider credentials)
-\`\`\`
+```
 
 - **GPUPanel Core** is the authenticated *UI facade / composition* layer. It owns connector config and an index of display references, **not** durable operation authority.
 - **Host Agent** owns Linux/Docker provider access; unsafe write-capable Agent tools are not exposed to the diagnostic worker.
 - **Diagnostic worker** proposes findings and changes; it cannot authorize or directly mutate providers.
-- **agent-control-plane (ACP)** is the only authority for high-impact state transitions: exact \`TransitionPlan\`, authorization binding, fencing, execution journal, independent verification and proof.
+- **agent-control-plane (ACP)** is the only authority for high-impact state transitions: exact `TransitionPlan`, authorization binding, fencing, execution journal, independent verification and proof.
 - **gpu-compute-platform** owns its own ComputePool/Workload source of truth, reconciler and Kueue admission. This slice does not mutate cluster workloads by circumventing those APIs.
 - UI remembers *where* evidence lives, never substitutes cached status for fresh provider observation.
 
@@ -33,14 +33,14 @@ Every displayed or executed operation must carry these identifiers:
 
 | Key | Required use |
 | --- | --- |
-| \`project_id\` + authenticated \`principal\` | Server-side tenant scope and role checks |
-| \`resource_ref\` | Provider + cluster/host + namespace (where applicable) + kind + name + immutable UID |
-| \`observed_at\` + \`source\` | Evidence freshness; missing values display "unknown" |
-| \`generation\` / \`resource_version\` | Fresh preconditions, checked again before execution |
-| \`investigation_id\` | Diagnosis and evidence correlation, **not** authorization |
-| \`proposal_id\` + \`plan_digest\` | Exact intended change; digest changes invalidate approval |
-| \`operation_id\` + \`attempt_id\` | Durable attempt identity within ACP |
-| \`proof_ref\` + \`statement_hash\` | IndependentExecutionProof/v1 evidence lookup and integrity |
+| `project_id` + authenticated `principal` | Server-side tenant scope and role checks |
+| `resource_ref` | Provider + cluster/host + namespace (where applicable) + kind + name + immutable UID |
+| `observed_at` + `source` | Evidence freshness; missing values display "unknown" |
+| `generation` / `resource_version` | Fresh preconditions, checked again before execution |
+| `investigation_id` | Diagnosis and evidence correlation, **not** authorization |
+| `proposal_id` + `plan_digest` | Exact intended change; digest changes invalidate approval |
+| `operation_id` + `attempt_id` | Durable attempt identity within ACP |
+| `proof_ref` + `statement_hash` | IndependentExecutionProof/v1 evidence lookup and integrity |
 
 Never conflate Agent/session ID with operation ownership. Free-text LLM output and source logs are **untrusted inputs** even if they contain executable commands.
 
@@ -50,19 +50,19 @@ Namespace below is illustrative, **not implemented and not a promise of wire com
 
 | Proposed endpoint | Method | Semantics / side effects |
 | --- | --- | --- |
-| \`/api/v2/ops/capabilities\` | GET | Server-reported supported providers, action classes, diagnostics readiness; unavailable features hidden |
-| \`/api/v2/ops/agents\` | GET | Federated catalog read; source ID and provider retained, no shadow mutable Agent model |
-| \`/api/v2/ops/investigations\` | POST | Authenticated scoped **read-only** investigation; returns task ID; never executes a change |
-| \`/api/v2/ops/investigations/{id}\` | GET | Evidence links, source timestamps, hypotheses, status and error reason |
-| \`/api/v2/ops/proposals\` | POST | Create *non-authoritative* candidate only; server re-observes resource before ACP planning |
-| \`/api/v2/ops/operations/{id}\` | GET | ACP-reflected actual authorization/attempt/verification state |
-| \`/api/v2/ops/operations/{id}/proof\` | GET | Sanitized ACP proof reference and verification status; subject to audit permission |
+| `/api/v2/ops/capabilities` | GET | Server-reported supported providers, action classes, diagnostics readiness; unavailable features hidden |
+| `/api/v2/ops/agents` | GET | Federated catalog read; source ID and provider retained, no shadow mutable Agent model |
+| `/api/v2/ops/investigations` | POST | Authenticated scoped **read-only** investigation; returns task ID; never executes a change |
+| `/api/v2/ops/investigations/{id}` | GET | Evidence links, source timestamps, hypotheses, status and error reason |
+| `/api/v2/ops/proposals` | POST | Create *non-authoritative* candidate only; server re-observes resource before ACP planning |
+| `/api/v2/ops/operations/{id}` | GET | ACP-reflected actual authorization/attempt/verification state |
+| `/api/v2/ops/operations/{id}/proof` | GET | Sanitized ACP proof reference and verification status; subject to audit permission |
 
-**No generic \`/execute\` endpoint.** ACP workflow invocation is an internal server-side adapter requiring narrow plan/capability allowlisting. Approval/execute endpoint and wire shape are intentionally **TBD** until ACP's supported *public* integration surface is confirmed and integration tests are in place. GPUPanel must not bind directly to ACP private coordinator classes or SQLite tables.
+**No generic `/execute` endpoint.** ACP workflow invocation is an internal server-side adapter requiring narrow plan/capability allowlisting. Approval/execute endpoint and wire shape are intentionally **TBD** until ACP's supported *public* integration surface is confirmed and integration tests are in place. GPUPanel must not bind directly to ACP private coordinator classes or SQLite tables.
 
 ### Proposed investigation schema, illustrative only
 
-\`\`\`json
+```json
 {
   "project_id": "demo-project",
   "resource_ref": {
@@ -77,19 +77,19 @@ Namespace below is illustrative, **not implemented and not a promise of wire com
   "intent": "investigate_only",
   "source_ids": ["prometheus-readonly", "loki-readonly"]
 }
-\`\`\`
+```
 
-The authenticated principal and effective permissions come **only** from the server session, not from this body. \`project_id\` is verified against the session. \`uid\` and version/generation must be verified by fresh independent provider reads; never trust client-provided values.
+The authenticated principal and effective permissions come **only** from the server session, not from this body. `project_id` is verified against the session. `uid` and version/generation must be verified by fresh independent provider reads; never trust client-provided values.
 
 ## 3. Task state is not execution authority
 
 | User-visible domain | States | Allowed behavior |
 | --- | --- | --- |
-| Investigation | \`QUEUED\`, \`RUNNING\`, \`NEEDS_INPUT\`, \`COMPLETED\`, \`FAILED\`, \`CANCELLED\` | Read-only worker; evidence available on failure; cancelled tasks cannot launch mutating tools |
-| Candidate proposal | \`DRAFT\`, \`AWAITING_APPROVAL\`, \`REJECTED\`, \`EXPIRED\` | Preview only; only ACP's exact plan is authorizable |
-| Mutation/verification | ACP source states including \`PREPARED\`, \`COMMITTED\`, \`ABORTED\`, \`UNKNOWN\`, verified success | UI renders ACP receipts verbatim and separates provider commit, observed desired state, and **operation ownership proven** |
+| Investigation | `QUEUED`, `RUNNING`, `NEEDS_INPUT`, `COMPLETED`, `FAILED`, `CANCELLED` | Read-only worker; evidence available on failure; cancelled tasks cannot launch mutating tools |
+| Candidate proposal | `DRAFT`, `AWAITING_APPROVAL`, `REJECTED`, `EXPIRED` | Preview only; only ACP's exact plan is authorizable |
+| Mutation/verification | ACP source states including `PREPARED`, `COMMITTED`, `ABORTED`, `UNKNOWN`, verified success | UI renders ACP receipts verbatim and separates provider commit, observed desired state, and **operation ownership proven** |
 
-The UI is not permitted to report \`SUCCEEDED\` merely because a worker finished, the API returned HTTP 2xx, a resource matches desired state or a provider ACK arrived. \`UNKNOWN\` is **not** automatically retryable: reconcile side-effect ambiguity under ACP rules first. Explicit failed proof verification renders **unverified** and blocks the success badge.
+The UI is not permitted to report `SUCCEEDED` merely because a worker finished, the API returned HTTP 2xx, a resource matches desired state or a provider ACK arrived. `UNKNOWN` is **not** automatically retryable: reconcile side-effect ambiguity under ACP rules first. Explicit failed proof verification renders **unverified** and blocks the success badge.
 
 ## 4. Permission and security contract
 
@@ -120,7 +120,7 @@ The UI is not permitted to report \`SUCCEEDED\` merely because a worker finished
 | RO-04 | Agent worker timeout/unreachable | Error shown; no fake success, no leaked credential |
 | RO-05 | Cross-project resource URL | 403 and no resource metadata disclosure |
 | RO-06 | Malicious instructions embedded in log line | No tool/permission escalation; source treated as data |
-| RO-07 | Tool unavailable or unhealthy | Catalog readiness \`unknown/degraded\` and disabled actions |
+| RO-07 | Tool unavailable or unhealthy | Catalog readiness `unknown/degraded` and disabled actions |
 | RO-08 | Agent list item has no runtime link | Distinguish configured from healthy; no green "active" claim |
 | WR-01 | Valid exact Deployment 20 -> 30 plan in disposable kind | ACP attestation + IndependentExecutionProof/v1; fresh-process verifier passes |
 | WR-02 | Stale generation or resourceVersion | Reject before mutation; record refusal |
