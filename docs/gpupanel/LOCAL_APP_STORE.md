@@ -71,6 +71,15 @@ The proposed narrow recovery behavior is deliberately non-destructive:
   effects, so operators must investigate **even when no AppInstall row
   exists**.
 
+To prevent a normal management action from silently overriding UNKNOWN,
+the existing installed-app **start, stop, restart, rebuild, upgrade,
+delete, lifecycle update, and port-change** paths now fail closed until
+reconciliation. Reading the task, read-only sync and harmless favorite
+metadata remain allowed. Operators cannot bypass this safety gate using
+ForceDelete. There is not yet a supported "resolve Unknown" API; manual
+repair must be a separately reviewed and explicitly authorized procedure,
+not a hidden automatic reset.
+
 **Operator reconciliation evidence** (future supported UI/API; today use
 authorized admin diagnostics): match Task ID, app install name, persisted
 AppInstall and task records, Compose path, Docker Compose project/containers,
