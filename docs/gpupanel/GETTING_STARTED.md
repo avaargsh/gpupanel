@@ -30,6 +30,18 @@ python3 scripts/gpupanel-env.py status
 
 Readable output is the default. Add `--json` after a command for scripts, e.g. `python3 scripts/gpupanel-env.py status --json`. Existing directories are never overwritten. See [uv workstation](UV_WORKSTATION.md).
 
+### Start a runnable offline uv Python project
+
+```bash
+python3 scripts/gpupanel-uv-project.py plan
+python3 scripts/gpupanel-uv-project.py create --approve
+python3 scripts/gpupanel-uv-project.py status
+cd ~/GPUPanel/projects/uv-python-starter
+uv run --locked --offline python main.py
+```
+
+This uses uv's native `init` and `lock` with no third-party dependencies or downloads. Modified projects are never overwritten; PyTorch/Jupyter dependency profiles are not yet included.
+
 ## Two separate installation-like workflows
 
 **A. The available Python standard-library starter creates only project files, not Python:**
