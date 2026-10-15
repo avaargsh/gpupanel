@@ -91,11 +91,43 @@ def safe_target(target: Path, allowed_root: Path) -> Path:
             break
         if candidate.is_symlink():
             raise WorkspaceError("symlinks in destination path are forbidden")
-    if not dst.parent.is_dir():
-        raise WorkspaceError("destination parent missing; create it explicitly first")
-    if not dst.parent.resolve().is_relative_to(root.resolve()):
+    if not dst.parent.resolve(strict=False).is_relative_to(root.resolve()):
         raise WorkspaceError("destination escapes allowed user home")
+    # A non-existent parent is allowed during planning, which must be read-only.
+    # The approved installer is responsible for creating missing user-local dirs.
+    for ancestor in (dst.parent, *dst.parent.parents):
+        if ancestor == root:
+            break
+        if ancestor.exists() and not ancestor.is_dir():
+            raise WorkspaceError("destination contains a non-directory parent")
     return dst
+
+
+def prepare_user_parents(target: Path, allowed_root: Path) -> None:
+    """Create only missing directories beneath the approved home, never by plan."""
+    dst = safe_target(target, allowed_root)
+    home = allowed_root.absolute()
+    missing = []
+    parent = dst.parent
+    while parent != home:
+        if parent.is_symlink():
+            raise WorkspaceError("symlinked destination parent")
+        if parent.exists():
+            if not parent.is_dir():
+                raise WorkspaceError("destination parent is not a directory")
+            break
+        missing.append(parent)
+        parent = parent.parent
+    for path in reversed(missing):
+        try:
+            path.mkdir(mode=0o700)
+        except FileExistsError:
+            # Concurrent creation is not proof of a safe path; recheck below.
+            pass
+        if path.is_symlink() or not path.is_dir():
+            raise WorkspaceError("unsafe destination parent after creation")
+    # Recheck the entire tree after creating directories.
+    safe_target(dst, home)
 
 
 def status(target: Path, allowed_root: Path, root: Path = ROOT) -> dict:
@@ -147,6 +179,7 @@ def install(target: Path, allowed_root: Path, approved: bool, root: Path = ROOT)
                 "changes": list(FILES), "executed": False}
     if dst.exists() or dst.is_symlink():
         raise WorkspaceError("destination already exists; never overwrite existing projects")
+    prepare_user_parents(dst, allowed_root)
     with tempfile.TemporaryDirectory(prefix=".gpupanel-stage-", dir=dst.parent) as tmp:
         stage = Path(tmp)
         for name, content in contents.items():
