@@ -26,6 +26,18 @@
 
 See [architecture](docs/gpupanel/ARCHITECTURE.md), [product organization](docs/gpupanel/PRODUCT.md) and [roadmap](docs/gpupanel/ROADMAP.md).
 
+## Quick start (Ubuntu 24.04)
+
+A new contributor can check their environment **without root access or downloads**:
+
+```bash
+python3 scripts/gpupanel-bootstrap.py doctor --human
+python3 scripts/gpupanel-bootstrap.py plan --human
+python3 scripts/gpupanel-bootstrap.py self-test --human
+```
+
+This does not install GPUPanel. See [中文上手指南](docs/gpupanel/GETTING_STARTED.zh-CN.md) or [English quick start](docs/gpupanel/GETTING_STARTED.md) for the currently supported entry points and limits.
+
 ## Development
 
 The current upstream baseline is **1Panel dev-v2 @ d9dc5d7aa981c3b04ad284e93420aca9888f7e5a** (2026-10-15). The upstream runtime identifiers, Go module paths, settings keys, on-disk paths and API routes remain unchanged until a migration plan and compatibility tests exist.

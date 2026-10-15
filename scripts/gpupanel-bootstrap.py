@@ -186,14 +186,85 @@ def import_bundle(bundle: Path, cache: Path, expected_lock: dict) -> None:
                 tmp.unlink(missing_ok=True)
 
 
+def offline_self_test() -> dict:
+    """Validate verified-cache, offline bundle roundtrip and corruption detection."""
+    fixture = b"GPUPanel offline fixture: no real software is installed.\n"
+    item = {"name": "gpupanel-fixture.txt", "sha256": hashlib.sha256(fixture).hexdigest(),
+            "urls": ["https://example.invalid/not-requested"]}
+    lock = {"format_version": 1, "os": "ubuntu-24.04", "profile": "self-test",
+            "tools": [], "artifacts": [item]}
+    with tempfile.TemporaryDirectory(prefix="gpupanel-self-check-") as temp:
+        root = Path(temp)
+        source = root / "profile.lock.json"
+        source.write_text(json.dumps(lock), encoding="utf-8")
+        cache = root / "cache"
+        cache.mkdir()
+        (cache / item["name"]).write_bytes(fixture)
+        if not check_artifact(cache, item):
+            raise BootstrapError("self-test: local fixture checksum failed")
+        bundle = root / "offline.zip"
+        export_bundle(source, lock, cache, bundle)
+        restore = root / "restore"
+        import_bundle(bundle, restore, lock)
+        if not check_artifact(restore, item):
+            raise BootstrapError("self-test: restored fixture mismatch")
+        (restore / item["name"]).write_bytes(b"tampered")
+        if check_artifact(restore, item):
+            raise BootstrapError("self-test: corruption undetected")
+    return {"offline_roundtrip": "PASS", "tampering": "DETECTED",
+            "network_access": False, "installed": False}
+
+
+def print_result(command: str, result: dict, human: bool) -> None:
+    if not human:
+        print(json.dumps(result, ensure_ascii=False, indent=2))
+        return
+    if command == "doctor":
+        distro = result["detected_os"]
+        os_name = f"{distro.get('id') or 'unknown'} {distro.get('version') or 'unknown'}"
+        print("GPUPanel | Ubuntu environment doctor (read-only)")
+        print("  OS: " + os_name + (" [SUPPORTED]" if result["supported_os"] else " [NOT SUPPORTED]"))
+        for item in result["tools"]:
+            print(f"  [{'FOUND' if item['installed'] else 'MISSING'}] {item['name']} ({item['command']})")
+        print("  Presence is not a version/configuration/daemon-health check.")
+        if not result["supported_os"]:
+            print("  Only Ubuntu 24.04 is supported in this profile.")
+        print("  Next: python3 scripts/gpupanel-bootstrap.py plan --human")
+    elif command == "plan":
+        print("GPUPanel | Profile: " + str(result.get("profile", "unknown")))
+        for item in result["tools"]:
+            print(f"  [{'FOUND' if item['installed'] else 'MISSING'}] {item['name']}")
+        for item in result["downloads"]:
+            print(f"  [{'VERIFIED' if item['verified'] else 'NOT CACHED'}] artifact: {item['name']}")
+        if not result["downloads"]:
+            print("  No vetted artifacts in the lock yet; nothing can be downloaded or installed.")
+        print("  Next: docs/gpupanel/GETTING_STARTED.zh-CN.md")
+    elif command == "self-test":
+        print("GPUPanel | Offline self-test")
+        print("  [PASS] Verified cache -> bundle -> import")
+        print("  [PASS] Deliberate checksum tampering detected")
+        print("  This did not access the network or install software.")
+    else:
+        print("GPUPanel | " + command)
+        for name, value in result.items():
+            if isinstance(value, list):
+                if not value:
+                    print(f"  {name}: none (profile has no pinned artifacts)")
+                for item in value:
+                    print("  " + json.dumps(item, ensure_ascii=False))
+            else:
+                print(f"  {name}: {value}")
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="GPUPanel Ubuntu environment doctor and verified offline bundle tool")
     parser.add_argument("--lock", type=Path, default=Path(__file__).resolve().parents[1] / "profiles" / "ubuntu24-dev.lock.json")
     parser.add_argument("--cache", type=Path, default=DEFAULT_CACHE)
     sub = parser.add_subparsers(dest="command", required=True)
-    sub.add_parser("doctor")
-    sub.add_parser("plan")
-    sub.add_parser("verify")
+    doc = sub.add_parser("doctor")
+    plan = sub.add_parser("plan")
+    verify = sub.add_parser("verify")
+    selfcheck = sub.add_parser("self-test")
     fetch = sub.add_parser("fetch")
     fetch.add_argument("--offline", action="store_true")
     fetch.add_argument("--timeout", type=float, default=30.0)
@@ -201,11 +272,16 @@ def main(argv: list[str] | None = None) -> int:
     pack.add_argument("destination", type=Path)
     unpack = sub.add_parser("import-bundle")
     unpack.add_argument("source", type=Path)
+    for command_parser in (doc, plan, verify, fetch, pack, unpack, selfcheck):
+        command_parser.add_argument("--human", action="store_true",
+                                    help="human-readable output; JSON is the default")
     args = parser.parse_args(argv)
     try:
         lock = load_lock(args.lock)
         if args.command == "doctor":
             result = doctor(lock)
+        elif args.command == "self-test":
+            result = offline_self_test()
         elif args.command == "plan":
             result = {"profile": lock.get("profile"), "actions": ["inspect", "verify-artifacts"],
                       "tools": doctor(lock)["tools"],
@@ -226,7 +302,7 @@ def main(argv: list[str] | None = None) -> int:
         else:
             import_bundle(args.source, args.cache, lock)
             result = {"imported": str(args.source), "verified": True}
-        print(json.dumps(result, ensure_ascii=False, indent=2))
+        print_result(args.command, result, args.human)
         return 0
     except (BootstrapError, OSError, ValueError, zipfile.BadZipFile) as exc:
         print(json.dumps({"error": str(exc)}, ensure_ascii=False), file=sys.stderr)
