@@ -17,7 +17,9 @@ jobs:
         with:
           go-version-file: agent/go.mod
           cache-dependency-path: agent/go.sum
-      - run: test -z "$(gofmt -l utils/ai_tools/accelerator/provider_contract_test.go)"
+      - run: |
+          gofmt -d utils/ai_tools/accelerator/provider_contract_test.go | tee /tmp/gpupanel-gofmt.diff
+          test ! -s /tmp/gpupanel-gofmt.diff
         working-directory: agent
       - run: go test ./utils/ai_tools/accelerator -run 'Test(Injected|Partial|AllProviders|Cancelled|Adapter)' -count=1
         working-directory: agent
