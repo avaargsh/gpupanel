@@ -54,6 +54,21 @@ with sync_playwright() as p:
     expect(page.get_by_text('24.0%', exact=True)).to_be_visible()
     expect(page.locator('.workspace-sidebar')).to_have_css('width', '240px')
     expect(page.locator('.workspace-header')).to_have_css('height', '56px')
+    # Visual structure invariants: aligned chrome, real primary actions,
+    # resources above the empty project state and no fabricated project route.
+    brand_box = page.locator('.workspace-brand').bounding_box()
+    header_box = page.locator('.workspace-header').bounding_box()
+    assert brand_box and header_box and round(brand_box['height']) == round(header_box['height']) == 56
+    assert round(brand_box['y']) == round(header_box['y']) == 0
+    hero_box = page.locator('.workbench-start').bounding_box()
+    resource_box = page.locator('.workbench-resources').bounding_box()
+    project_box = page.locator('.workbench-columns').bounding_box()
+    assert hero_box and resource_box and project_box
+    assert hero_box['y'] + hero_box['height'] <= resource_box['y']
+    assert resource_box['y'] + resource_box['height'] <= project_box['y']
+    assert page.locator('.workbench-action').count() == 2
+    assert not page.locator('.workspace-sidebar .workspace-nav-link.unavailable').count()
+    assert page.evaluate('document.documentElement.scrollWidth <= innerWidth')
     assert page.locator('dialog[open]').count() == 0
     assert not any(path.startswith(('/projects', '/workspaces', '/sessions')) for path, _, _ in state['requests'])
     assert page.get_by_role('link', name='Advanced AI settings', exact=True).count() == 1
