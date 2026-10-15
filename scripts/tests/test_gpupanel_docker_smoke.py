@@ -60,6 +60,42 @@ class DockerSmokeContract(unittest.TestCase):
                 mod.smoke(IMAGE, True, executor=fake)
         self.assertEqual(commands[-1][0], "rm")
 
+    def test_local_image_id_contract(self):
+        local = "sha256:" + "b" * 64
+        called = []
+        def fake(_binary, *args):
+            called.append(args)
+            if args[0] == "image":
+                return local
+            if args[0] == "logs":
+                return mod.MARKER
+            if args[0] == "inspect":
+                return "0"
+            return "ok"
+        self.assertEqual(mod.smoke(local, False, fixture_entrypoint=True)["status"], "APPROVAL_REQUIRED")
+        with patch.object(mod.os, "geteuid", return_value=1000), \
+             patch.object(mod.shutil, "which", return_value="/usr/bin/docker"):
+            result = mod.smoke(local, True, executor=fake, fixture_entrypoint=True)
+        self.assertEqual(result["status"], "PASSED")
+        create = next(x for x in called if x[0] == "create")
+        self.assertIn("/gpupanel-smoke", create)
+        self.assertNotIn("/bin/sh", create)
+        self.assertNotIn("-v", create)
+        self.assertEqual(called[-1][:2], ("rm", "-f"))
+        with self.assertRaises(mod.SmokeError):
+            mod.smoke(IMAGE, False, fixture_entrypoint=True)
+
+    def test_local_image_id_mismatch_fails_before_create(self):
+        local = "sha256:" + "b" * 64
+        def bad(_binary, *args):
+            if args[0] == "image":
+                return "sha256:" + "a" * 64
+            return "ok"
+        with patch.object(mod.os, "geteuid", return_value=1000), \
+             patch.object(mod.shutil, "which", return_value="/usr/bin/docker"):
+            with self.assertRaisesRegex(mod.SmokeError, "did not match"):
+                mod.smoke(local, True, executor=bad, fixture_entrypoint=True)
+
     def test_refuse_root_before_docker_access(self):
         with patch.object(mod.os, "geteuid", return_value=0):
             with self.assertRaises(mod.SmokeError):
