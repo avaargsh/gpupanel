@@ -43,6 +43,71 @@ Non-goals and remaining gaps: this does not deduplicate **different task IDs** r
 Test evidence required: `cd agent && go test ./app/service -run '^TestAppInstallTaskAdmission' -count=1` (concurrent same-ID claims, open another SQLite connection, failure persistence, and started-task protection), plus API route-order static contract. Real host restart/crash, different-ID collisions and installed-state reconciliation remain **NOT RUN**.
 
 
+## G5: interrupted App installation is UNKNOWN (2026-10-15)
+
+**Scope:** a previously Executing TaskDB row with `type=App` and
+`operate=TaskInstall`, or an AppInstall row with `status=Installing`
+when the Agent restarts. The task may have progressed far enough to create
+files, a Docker network, containers, or an application installation record.
+
+Prior restart behavior marked **all** Executing tasks Failed and all
+Installing app rows InstallErr, which can incorrectly imply that the
+installation's side effects did not happen.
+
+The proposed narrow recovery behavior is deliberately non-destructive:
+
+- In one TaskDB transaction, restart-time Executing App/TaskInstall tasks
+  become `Unknown`, retaining original Task ID and resource_id. Other
+  Executing task types retain the original Failed/Interrupted behavior.
+- During startup, Installing app rows become `Unknown` with a bounded
+  reconciliation warning, using an `id/status/updated_at` compare-and-set.
+- Ordinary App Store list/status refresh must **not** classify Unknown
+  rows as Running, Error or InstallErr based on incidental Docker
+  visibility. The raw row and task remain available for inspection.
+- No automatic Compose Up/Down, Docker prune, data removal or retry
+  occurs in this recovery path.
+- This is not a transactional solution across TaskDB, App DB and Docker.
+  A TaskDB Unknown with resource_id=0 may have partial file/remote
+  effects, so operators must investigate **even when no AppInstall row
+  exists**.
+
+To prevent a normal management action from silently overriding UNKNOWN,
+the existing installed-app **start, stop, restart, rebuild, upgrade,
+delete, lifecycle update, and port-change** paths now fail closed until
+reconciliation. Reading the task, read-only sync and harmless favorite
+metadata remain allowed. Operators cannot bypass this safety gate using
+ForceDelete. There is not yet a supported "resolve Unknown" API; manual
+repair must be a separately reviewed and explicitly authorized procedure,
+not a hidden automatic reset.
+
+**Operator reconciliation evidence** (future supported UI/API; today use
+authorized admin diagnostics): match Task ID, app install name, persisted
+AppInstall and task records, Compose path, Docker Compose project/containers,
+image pulls, volumes, port mapping, and task log timestamps. Detect stale
+states and conflicting external resources. Only after establishing an
+independently observed outcome may a separately authorized operation
+clear the condition, repair an installation, or create a new attempt.
+Do not automatically mark `Unknown` as Success just because a container
+is running.
+
+**Limitations:** this safety marking currently does not implement the
+operator resolve/retry API, cross-process fencing, durable rollback or
+transactional recovery. A normal user interface may show the raw Unknown
+state pending design of an explicit recovery panel. No real Docker,
+powered-off-Agent, authenticated API or browser G5 verification was run
+as part of this change. Those tests remain **NOT RUN** and G3/G4/G5/G6
+release gates remain unchanged.
+
+**Checks to run in the repository:**
+
+```bash
+python3 -m unittest discover -s scripts/tests -p 'test_gpupanel_app_install_restart_unknown.py' -v
+cd agent
+go test ./app/repo -run '^TestInterruptedAppInstallTask' -count=1
+go test ./app/service -run '^TestInterruptedAppInstallationUnknown' -count=1
+```
+
+
 ## Synchronous same-name install preparation guard (2026-10-15)
 
 The existing AppInstall synchronous preparation path previously used a case-insensitive
