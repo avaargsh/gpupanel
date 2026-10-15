@@ -71,7 +71,7 @@ jobs:
       - name: Docker exact-name matching (no daemon mutation)
         working-directory: agent
         run: go test ./utils/docker -run TestFilterContainersByExactName -count=1 -v
-      - run: go build ./cmd/server
+      - run: go build -o /tmp/gpupanel-core ./cmd/server
         working-directory: core
       - run: go build -o /tmp/gpupanel-agent ./cmd/server
         working-directory: agent
