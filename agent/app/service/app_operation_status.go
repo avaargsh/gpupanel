@@ -74,3 +74,30 @@ func reconcileAppInstallTaskFailure(install *model.AppInstall, operation string,
 	}
 	return nil
 }
+
+
+// markInterruptedAppInstallationUnknown is a status-only, CAS-protected
+// reconciliation marker. It is NOT a Docker observation, successful install,
+// rollback or permission to repeat a side effect. The existing installation
+// row (and its data) must remain available for manual review.
+func markInterruptedAppInstallationUnknown(appDB *gorm.DB, install *model.AppInstall) error {
+	if appDB == nil {
+		return gorm.ErrInvalidDB
+	}
+	if install == nil || install.ID == 0 || install.Status != constant.StatusInstalling {
+		return nil
+	}
+	const message = "installation interrupted; reconcile TaskDB, AppInstall and Docker resources before retrying"
+	result := appDB.Model(&model.AppInstall{}).
+		Where("id = ? AND status = ? AND updated_at = ?",
+			install.ID, constant.StatusInstalling, install.UpdatedAt).
+		Updates(map[string]interface{}{"status": constant.StatusUnknown, "message": message})
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected > 0 {
+		install.Status = constant.StatusUnknown
+		install.Message = message
+	}
+	return nil
+}
