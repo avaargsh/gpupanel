@@ -36,7 +36,11 @@ class ReadOnlyInstallEvidenceContract(unittest.TestCase):
         self.assertNotIn('json:"params"', impl)
         self.assertNotIn('json:"labels"', impl)
         self.assertNotIn('json:"dockerCompose"', impl)
-        self.assertNotIn("ErrorMsg", impl)
+        response_dto = impl.split("type AppInstallEvidence struct {", 1)[1].split("type AppInstallContainerState", 1)[0]
+        self.assertNotIn("ErrorMsg", response_dto)
+        self.assertNotIn("Env", response_dto)
+        self.assertNotIn("Param", response_dto)
+        self.assertNotIn("Labels", response_dto)
         self.assertIn('Labels: con.Labels', impl)  # used only internally for ownership
         self.assertIn('json:"observedAt"', impl)
         self.assertIn('"DOCKER_OBSERVATION_UNAVAILABLE"', impl)
