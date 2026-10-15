@@ -52,7 +52,7 @@ python3 scripts/gpupanel-env.py status
 
 默认显示可读说明；脚本消费请使用 `--json`，例如 `python3 scripts/gpupanel-env.py status --json`。只新建个人目录，不覆盖已有项目；uv 在离线模式下使用当前 Python，不下载 Python。详见 [uv 环境工作流](UV_WORKSTATION.md)。
 
-## 3. 两种不同的“安装”操作
+## 4. 两种不同的“安装”操作
 
 **A. 当前可用的是 Python 项目文件创建（不是安装 Python）：** 需要 Python 3.12+，在普通 Ubuntu 用户的终端、仓库根目录执行：
 
@@ -94,7 +94,7 @@ python3 scripts/gpupanel-preview-stage.py remove dev --approve
 
 独立 GPUPanel 系统安装依然受旧 `1pctl`、`/etc/1panel`、Core/Agent 数据库和其他旧路径约束。使用 `python3 scripts/gpupanel-runtime-namespace.py --strict` 查看阻塞；非零退出是预期结果。详见 [运行隔离](RUNTIME_ISOLATION.md)。
 
-## 4. 前端开发预览
+## 5. 前端开发预览
 
 需要 Node/npm、依赖可正常访问。初次构建：
 
@@ -107,7 +107,7 @@ npm run type-check
 
 以上只验前端，不代表完整服务端启动；运行 Core/Agent 还需按 upstream 项目开发规范准备 Go 工具链、数据库等依赖。请勿把这套源码部署在存放重要数据的生产主机上做初次试验。
 
-## 5. 出问题怎么办
+## 6. 出问题怎么办
 
 - 国内 npm 或 Go 下载受阻：先解决可信镜像访问；不要执行来源不明的 `curl | bash`。后续会在 Lock 中固定制品 SHA-256，再用离线 Bundle 搬迁。
 - `doctor` 提示非 Ubuntu 24.04：只表示环境不在本阶段测试矩阵，不代表命令可以安全兼容其他系统。
@@ -116,6 +116,6 @@ npm run type-check
 
 问题反馈请提交 GitHub Issue，附版本、复现步骤与脱敏后的日志，**不要上传 Token、密码、真实 IP、序列号或客户数据**。
 
-## 6. 产品路线
+## 7. 产品路线
 
 **个人 Ubuntu Host → 企业 Host 纳管 → Kubernetes Provider → GPU 训练与推理门户。** 详细边界参见 [产品组织](PRODUCT.md) 和 [路线图](ROADMAP.md)。
