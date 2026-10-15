@@ -89,7 +89,7 @@ def build(root: Path, staging: Path, offline: bool) -> dict:
     (staging / "bin").mkdir(parents=True, exist_ok=True)
     for module, executable in (("core", "1panel-core"), ("agent", "1panel-agent")):
         args = ["go", "build", "-trimpath", "-o", str((staging / "bin" / executable).resolve()), "./cmd/server"]
-        go_env = {**env, "CGO_ENABLED": "0", "GOOS": "linux"}
+        go_env = {**env, "CGO_ENABLED": "0", "GOOS": "linux", "GOARCH": "amd64"}
         checked_run(args, root / module, env=go_env)
         output = staging / "bin" / executable
         if not output.is_file() or output.stat().st_size == 0:
