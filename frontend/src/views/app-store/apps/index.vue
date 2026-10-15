@@ -47,8 +47,13 @@
     </LayoutContent>
     <el-dialog v-model="showStarterGuide" :title="$t('gpupanel.catalogCliTitle')" width="90%" destroy-on-close>
         <p>{{ $t('gpupanel.catalogCliWarning') }}</p>
+        <p>{{ $t('gpupanel.catalogPreviewSteps') }}</p>
         <pre class="gpupanel-catalog__commands"><code>{{ pythonStarterCommands }}</code></pre>
         <el-button type="primary" plain @click="copyStarterCommands">{{ $t('gpupanel.catalogCopy') }}</el-button>
+        <p class="gpupanel-catalog__approval">{{ $t('gpupanel.catalogExplicitApproval') }}</p>
+        <pre class="gpupanel-catalog__commands"><code>{{ pythonInstallCommands }}</code></pre>
+        <p>{{ $t('gpupanel.catalogRemovalNotice') }}</p>
+        <pre class="gpupanel-catalog__commands"><code>{{ pythonUninstallCommand }}</code></pre>
         <p v-if="clipboardStatus === 'copied'" role="status">{{ $t('gpupanel.catalogCopied') }}</p>
         <p v-else-if="clipboardStatus === 'manual'" role="status">{{ $t('gpupanel.catalogCopyManual') }}</p>
     </el-dialog>
@@ -68,16 +73,20 @@ const keyword = ref('');
 const showStarterGuide = ref(false);
 const clipboardStatus = ref<'idle' | 'copied' | 'manual'>('idle');
 // Display instructions only: the web UI does not execute these privileged or local commands.
+// Copy only read-only checks. Never include an approval-bearing write action
+// in a pasteable batch where it might run without reviewing each step.
 const pythonStarterCommands = [
-    '# Run from a GPUPanel git checkout, as a normal Ubuntu user',
-    'mkdir -p ~/GPUPanel/projects',
+    '# From a GPUPanel git checkout, on your own Ubuntu computer',
     'python3 scripts/gpupanel-catalog.py verify',
+    'python3 scripts/gpupanel-catalog.py plan gpupanel.dev.python-stdlib',
+    'python3 scripts/gpupanel-catalog-workspace.py plan',
+].join('\n');
+const pythonInstallCommands = [
     'python3 scripts/gpupanel-catalog-workspace.py install --approve',
     'python3 scripts/gpupanel-catalog-workspace.py status',
     'python3 ~/GPUPanel/projects/python-stdlib-starter/main.py',
-    '# Optional removal (refuses modified files):',
-    'python3 scripts/gpupanel-catalog-workspace.py uninstall --approve',
 ].join('\n');
+const pythonUninstallCommand = 'python3 scripts/gpupanel-catalog-workspace.py uninstall --approve';
 const copyStarterCommands = async () => {
     try {
         await navigator.clipboard.writeText(pythonStarterCommands);
@@ -115,6 +124,8 @@ const navigate = async (path: string) => {
     &__grid p { font-size: 13px; color: var(--el-text-color-secondary); min-height: 48px; }
     &__metadata { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font-size: 12px; color: var(--el-text-color-secondary); }
     &__install { margin-top: 16px; width: 100%; }
+    &__commands { white-space: pre-wrap; overflow-wrap: anywhere; padding: 12px; background: var(--el-fill-color-light); border-radius: 8px; }
+    &__approval { margin-top: 16px; font-weight: 600; }
     &__commands {
         padding: 12px;
         white-space: pre-wrap;

@@ -17,6 +17,10 @@ class CatalogPortalTest(unittest.TestCase):
         self.assertIn("item.id === 'gpupanel.dev.python-stdlib'", src)
         self.assertIn("showStarterGuide = true", src)
         self.assertIn("navigator.clipboard.writeText(pythonStarterCommands)", src)
+        plan_block = src.split("const pythonStarterCommands = [", 1)[1].split("].join", 1)[0]
+        self.assertNotIn("--approve", plan_block)
+        self.assertIn("const pythonInstallCommands =", src)
+        self.assertIn("const pythonUninstallCommand =", src)
         self.assertNotIn("exec(", src)
         self.assertNotIn("syncApp(", src)
     def test_installed_management_link_stays(self):
