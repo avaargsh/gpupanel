@@ -20,6 +20,7 @@ export default function AppLayout() {
         const onKeyDown = (e: KeyboardEvent) => {
             if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
                 e.preventDefault();
+                if (document.querySelector('dialog[open]')) return;
                 dispatch(setCommandOpen(true));
             }
         };

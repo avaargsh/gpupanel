@@ -85,6 +85,8 @@ with sync_playwright() as p:
     page.get_by_role('button', name='AI assistant', exact=True).click()
     expect(page.get_by_role('dialog', name='GPUPanel Assistant')).to_be_visible()
     expect(page.get_by_text('Chat is not connected yet', exact=False)).to_be_visible()
+    page.keyboard.press('Control+k')
+    assert page.locator('.semi-modal:visible').count() == 0, 'global search must not open behind the assistant'
     page.get_by_label('Question draft').fill('fixture question')
     for _ in range(10):
         page.keyboard.press('Tab')

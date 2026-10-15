@@ -11,7 +11,7 @@ dist/assets/vendor-semi-B_lONrxj.css      660.20 kB │ gzip:  75.49 kB
 dist/assets/vendor-redux-lxbizdaU.js       47.04 kB │ gzip:  17.44 kB
 dist/assets/vendor-react-CHT5EwN-.js       92.45 kB │ gzip:  31.35 kB
 dist/assets/vendor-xterm-ChHEYabQ.js      290.57 kB │ gzip:  72.32 kB
-dist/assets/index-CJXd5z3Y.js             957.24 kB │ gzip: 272.41 kB
+dist/assets/index-DD-1y75v.js             957.29 kB │ gzip: 272.43 kB
 dist/assets/vendor-echarts-CkutTTYC.js  1,036.33 kB │ gzip: 343.42 kB
 dist/assets/vendor-semi-Cdc0x7GO.js     1,241.82 kB │ gzip: 344.58 kB
-✓ built in 7.50s
+✓ built in 6.90s
