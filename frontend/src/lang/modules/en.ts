@@ -30,6 +30,8 @@ const message = {
         catalogLocalSync: 'Sync local apps',
         appInstallLoadFailed: 'Unable to load install configuration. Check the active host, application definition, and permissions.',
         appInstallUncertain: 'The install request outcome is unknown. Inspect task logs and installed apps before retrying.',
+        appInstallSwitchNode: 'This attempt belongs to another node. Switch back before inspecting or acknowledging the task.',
+        appInstallStorageUnavailable: 'Cannot persist the install receipt. No request was sent to avoid duplicate installation after a reload. Check browser session storage.',
         appInstallTaskHint: 'Submitted task identifier (not proof of completed installation):',
         appInstallInspectTask: 'Inspect task log',
         appInstallReviewDone: 'I checked the outcome; allow another submission',
