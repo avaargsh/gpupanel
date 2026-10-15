@@ -97,7 +97,7 @@ func TestAppInstallAdmissionReceiptReadByLineAPIPath(t *testing.T) {
 	if err := taskDB.Create(&taskReceipt).Error; err != nil {
 		t.Fatal(err)
 	}
-	res, err := (&TaskLogService{}).ReadByLine(request.TaskLogReadReq{TaskID: taskReceipt.ID})
+	res, err := (&TaskLogService{}).ReadByLine(request.TaskLogReadReq{TaskReq: request.TaskReq{TaskID: taskReceipt.ID}})
 	if err != nil || res == nil {
 		t.Fatalf("task-log read rejected a durable admission: %v", err)
 	}
