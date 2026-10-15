@@ -43,6 +43,8 @@ class AppInstallSubmissionContract(unittest.TestCase):
         self.assertIn("phase === 'uncertain' || !formData.appDetailId", s)
         self.assertIn("openTaskLog(lastAttemptTaskID.value)", s)
         self.assertIn("appInstallRetryConfirm", s)
+        self.assertIn("if (phase.value === 'uncertain') {\n        open.value = true;", s)
+        self.assertIn("if (phase.value === 'uncertain') {\n        // Preserve the unresolved task", s)
         self.assertIn("openTaskLog(taskID)", s)
         self.assertNotIn("} catch (error) {\n    }", s)
         self.assertLess(s.index("await installApp(submitData)"),
