@@ -2,6 +2,20 @@ import { getFuLocaleMessage } from '@/lang/fu';
 
 const message = {
     gpupanel: {
+        firstRunTitle: 'Get started with this host',
+        firstRunDescription: 'Inspect the host, verify Docker, then deliver an application. Backend status is live; these steps do not imply installation is complete.',
+        hostStep: 'Inspect Host',
+        hostStepDesc: 'Check CPU, disk and system monitoring',
+        dockerStep: 'Verify containers',
+        dockerStepDesc: 'Read Docker status from the current host',
+        appsStep: 'Deploy an application',
+        appsStepDesc: 'Use the existing App Store or Compose workflow',
+        dockerChecking: 'Checking Docker…',
+        dockerReady: 'Docker reachable; running containers: {count}',
+        dockerUnavailable: 'Docker status is unavailable; check service, node and permissions',
+        dockerRestricted: 'Your account has no container-view permission',
+        checkAgain: 'Check again',
+        firstRunNotice: 'Only existing validated routes are shown. No Docker auto-install or privileged action is performed.',
         quickStart: 'Current Host · Quick Actions',
         quickStartDescription: 'Start with host, containers and terminal. Kubernetes and AI workspaces remain optional future integrations.',
         openModule: 'Open',
