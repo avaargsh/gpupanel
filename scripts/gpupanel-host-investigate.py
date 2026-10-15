@@ -40,13 +40,18 @@ def bounded_command(executable: str, *args: str) -> bytes:
     """Capture at most 2 MiB across both streams within a hard time budget."""
     process = None
     try:
+        # Docker logs may put container stderr on the CLI's stderr stream.
+        # Merge streams *only* for logs; failures are still sanitized by exit code.
+        merged_logs = bool(args) and args[0] == "logs"
         process = subprocess.Popen([executable, *args], stdout=subprocess.PIPE,
-                                   stderr=subprocess.PIPE, close_fds=True)
+                                   stderr=subprocess.STDOUT if merged_logs else subprocess.PIPE,
+                                   close_fds=True)
         start = time.monotonic()
         outputs = {"stdout": bytearray(), "stderr": bytearray()}
         with selectors.DefaultSelector() as selector:
             selector.register(process.stdout, selectors.EVENT_READ, "stdout")
-            selector.register(process.stderr, selectors.EVENT_READ, "stderr")
+            if process.stderr is not None:
+                selector.register(process.stderr, selectors.EVENT_READ, "stderr")
             total = 0
             while selector.get_map():
                 remaining = TIMEOUT_SECONDS - (time.monotonic() - start)
