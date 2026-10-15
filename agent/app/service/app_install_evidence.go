@@ -9,6 +9,7 @@ import (
 	"github.com/1Panel-dev/1Panel/agent/constant"
 	"github.com/1Panel-dev/1Panel/agent/global"
 	"github.com/1Panel-dev/1Panel/agent/utils/docker"
+	"github.com/docker/docker/api/types/container"
 	"gorm.io/gorm"
 )
 
@@ -64,20 +65,35 @@ func listAppContainersForEvidence(names []string) ([]appContainerObservation, er
 	if err != nil {
 		return nil, err
 	}
+	return appEvidenceObservationsByRequestedName(names, containers), nil
+}
+
+// Docker may place the exact requested name behind another alias in Names.
+// Match by the requested identity rather than blindly using Names[0].
+// One physical container may contribute at most one observation: multiple
+// aliases must never fabricate multiple independent Docker resources.
+func appEvidenceObservationsByRequestedName(names []string, containers []container.Summary) []appContainerObservation {
+	requested := make(map[string]bool, len(names))
+	for _, name := range names {
+		if name != "" {
+			requested["/"+name] = true
+		}
+	}
 	result := make([]appContainerObservation, 0, len(containers))
 	for _, con := range containers {
-		// The existing Docker adapter uses the first name. Never expose raw
-		// Docker labels: they may contain application/vendor data.
-		if len(con.Names) == 0 {
-			continue
+		for _, dockerName := range con.Names {
+			if !requested[dockerName] {
+				continue
+			}
+			result = append(result, appContainerObservation{
+				Name: strings.TrimPrefix(dockerName, "/"),
+				State: con.State,
+				Labels: con.Labels, // internal classification only, never JSON
+			})
+			break
 		}
-		result = append(result, appContainerObservation{
-			Name: strings.TrimPrefix(con.Names[0], "/"),
-			State: con.State,
-			Labels: con.Labels,
-		})
 	}
-	return result, nil
+	return result
 }
 
 func appExpectedContainerNames(csv string) []string {
