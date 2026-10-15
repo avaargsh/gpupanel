@@ -215,8 +215,8 @@ def offline_self_test() -> dict:
             "network_access": False, "installed": False}
 
 
-def print_result(command: str, result: dict, human: bool) -> None:
-    if not human:
+def print_result(command: str, result: dict, json_output: bool) -> None:
+    if json_output:
         print(json.dumps(result, ensure_ascii=False, indent=2))
         return
     if command == "doctor":
@@ -229,7 +229,7 @@ def print_result(command: str, result: dict, human: bool) -> None:
         print("  Presence is not a version/configuration/daemon-health check.")
         if not result["supported_os"]:
             print("  Only Ubuntu 24.04 is supported in this profile.")
-        print("  Next: python3 scripts/gpupanel-bootstrap.py plan --human")
+        print("  Next: python3 scripts/gpupanel-bootstrap.py plan")
     elif command == "plan":
         print("GPUPanel | Profile: " + str(result.get("profile", "unknown")))
         for item in result["tools"]:
@@ -273,8 +273,8 @@ def main(argv: list[str] | None = None) -> int:
     unpack = sub.add_parser("import-bundle")
     unpack.add_argument("source", type=Path)
     for command_parser in (doc, plan, verify, fetch, pack, unpack, selfcheck):
-        command_parser.add_argument("--human", action="store_true",
-                                    help="human-readable output; JSON is the default")
+        command_parser.add_argument("--json", action="store_true",
+                                    help="machine-readable JSON; readable output is the default")
     args = parser.parse_args(argv)
     try:
         lock = load_lock(args.lock)
@@ -302,7 +302,7 @@ def main(argv: list[str] | None = None) -> int:
         else:
             import_bundle(args.source, args.cache, lock)
             result = {"imported": str(args.source), "verified": True}
-        print_result(args.command, result, args.human)
+        print_result(args.command, result, args.json)
         return 0
     except (BootstrapError, OSError, ValueError, zipfile.BadZipFile) as exc:
         print(json.dumps({"error": str(exc)}, ensure_ascii=False), file=sys.stderr)
