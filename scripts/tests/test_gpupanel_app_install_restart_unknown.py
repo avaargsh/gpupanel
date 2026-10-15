@@ -44,6 +44,18 @@ class InterruptedAppInstallUnknownContract(unittest.TestCase):
         self.assertNotIn("compose.Up(", status)
         self.assertNotIn("docker.NewClient()", status)
 
+    def test_unknown_blocks_management_side_effects(self):
+        source = read("agent/app/service/app_install.go")
+        for marker in (
+            'requireReconciledAppInstallation(install.Status, string(req.Operate))',
+            'requireReconciledAppInstallation(installed.Status, "update")',
+            'requireReconciledAppInstallation(appInstall.Status, "change-port")',
+        ):
+            self.assertIn(marker, source)
+        status = read("agent/app/service/app_operation_status.go")
+        self.assertIn('case "sync", "favorite":', status)
+        self.assertIn("application installation outcome is unknown", status)
+
     def test_no_automatic_replay_of_install_request(self):
         source = read("agent/app/service/task.go")
         self.assertIn("return taskRepo.UpdateRunningTaskToFailed()", source)
