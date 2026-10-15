@@ -20,8 +20,7 @@ jobs:
       - run: python3 -m py_compile scripts/gpupanel-release.py scripts/tests/test_gpupanel_release.py
       - run: python3 -m unittest discover -s scripts/tests -p 'test_gpupanel_release.py' -v
   full-source-build:
-    # Explicit invocation only: dependency caches and Go 1.26 toolchain must be available.
-    if: github.event_name == 'workflow_dispatch'
+    # Product artifact gate: exercise the real Vite -> Go embed -> Core/Agent build.
     runs-on: ubuntu-24.04
     permissions:
       contents: read
