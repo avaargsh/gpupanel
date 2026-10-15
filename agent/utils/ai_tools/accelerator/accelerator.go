@@ -36,6 +36,13 @@ func New() (bool, Client) {
 	return len(client.providers) > 0, client
 }
 
+// NewWithProviders constructs a read-only collector from injected adapters.
+// It does not register additional hardware drivers or alter default discovery.
+// A defensive copy prevents caller-side slice reassignment after construction.
+func NewWithProviders(providers ...Provider) Client {
+	return Client{providers: append([]Provider(nil), providers...)}
+}
+
 func (c Client) LoadInfo() (*Info, error) {
 	snapshot, err := c.Collect(context.Background())
 	if err != nil {
