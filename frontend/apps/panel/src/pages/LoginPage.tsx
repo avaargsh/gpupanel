@@ -6,7 +6,7 @@ import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useLoginMutation, useMfaLoginMutation, useGetCaptchaQuery, useGetLoginSettingQuery } from '@/api/authApi';
 import { setCredentials } from '@/features/auth/authSlice';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
-import { brandGradient, getTokens } from '@/theme';
+import { brandColor, getTokens } from '@/theme';
 import { useResolvedMode } from '@/utils/useResolvedMode';
 
 interface LoginForm {
@@ -89,7 +89,7 @@ export default function LoginPage() {
                             display: 'grid',
                             placeItems: 'center',
                             color: '#fff',
-                            background: brandGradient,
+                            background: brandColor,
                         }}
                     >
                         <IconComponent size="large" />

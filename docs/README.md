@@ -5,6 +5,7 @@
 
 | 用途 | 文档 |
 | --- | --- |
+| vNext 工作台基线 | [设计、能力边界与开发顺序](gpupanel/VNEXT_WORKBENCH.md)、[领域术语](../GLOSSARY.md) |
 | 工程目录与边界 | [目录规范](engineering/project-structure.md) |
 | 开发、配置与构建 | [开发指南](engineering/development.md) |
 | 回归测试与证据分类 | [测试指南](engineering/testing.md) |

@@ -15,6 +15,7 @@ import {
 import { IconPlus, IconRefresh, IconTerminal, IconWrench } from '@douyinfe/semi-icons';
 import { useTranslation } from 'react-i18next';
 import Terminal from '@/components/Terminal';
+import { useAppSelector } from '@/store/hooks';
 import {
     useCreateHostMutation,
     useDeleteHostMutation,
@@ -50,6 +51,7 @@ const emptyOperate: HostOperate = {
  */
 export default function HostTerminal() {
     const { t } = useTranslation();
+    const currentNode = useAppSelector((state) => state.ui.currentNode) || 'local';
 
     const [searchInput, setSearchInput] = useState('');
     const [debouncedSearch, setDebouncedSearch] = useState('');
@@ -288,7 +290,7 @@ export default function HostTerminal() {
                         key={targetKey}
                         endpoint={endpoint}
                         queryParams={queryParams}
-                        operateNode="local"
+                        operateNode={currentNode}
                         height="46vh"
                     />
                 </div>

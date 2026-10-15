@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Tabs, TabPane } from '@douyinfe/semi-ui';
 import { useTranslation } from 'react-i18next';
 import AppStoreTab from './store';
@@ -7,7 +7,10 @@ import AppSettingsTab from './settings';
 
 export default function AppsPage() {
     const { t } = useTranslation();
-    const [tab, setTab] = useState('store');
+    const [query, setQuery] = useSearchParams();
+    const requested = query.get('tab') || 'store';
+    const tab = ['store', 'installed', 'upgrade', 'settings'].includes(requested) ? requested : 'store';
+    const setTab = (value: string) => setQuery({ tab: value });
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>

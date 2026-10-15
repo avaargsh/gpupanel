@@ -1,0 +1,51 @@
+# vNext Shell 与工作台首批结果
+
+日期：2026-10-16（Asia/Shanghai）。基线：远程 main
+`c237280d3a4f614f3360b8a4c35601bdf1d1d270`。本轮源码由 `source.sha256` 标识；
+提交后以 PR 的精确 HEAD 关联，不将旧 VM 或旧提交的通过结论挪用到当前产物。
+
+## 已实现
+
+- 固定侧栏 240/64px、顶栏 56px、蓝色中性双主题；导航按个人工作站、资源与运维、管理分组。
+- 开发者首页优先终端、应用模板、近期项目区域。项目服务未接入时显示不可用，创建按钮禁用，不生成示例项目或编造运行状态。
+- 真实 dashboard/GPU API 适配与刷新入口；缺失或非法百分比显示未知，刷新失败清除旧观测。GPU 独立 `/gpu` 路由复用原组件。
+- `/apps?tab=installed`、`/logs?tab=task` 可直达既有页面；旧 Host、容器、数据库、网站、OpenResty、AI 高级设置路由保持可达。
+- 顶栏显示主机作用域；页面按节点重新挂载，助手草稿随节点清除。
+- 修复 Host 终端将 `operateNode` 写死为 local 的问题；现在 HTTP 探测和 WebSocket 均使用当前节点。
+- 助手默认关闭，右侧原生模态面板可通过键盘访问与 Esc 关闭；显示页面和主机上下文，仅内存草稿和显式复制，不发送上下文或执行命令。
+- [vNext 开发基线](../../../gpupanel/VNEXT_WORKBENCH.md) 与 [领域术语](../../../../GLOSSARY.md) 已落档。
+
+## 本地执行
+
+| 检查 | 结果 | 文件 |
+| --- | --- | --- |
+| `pnpm install --frozen-lockfile` | 通过，锁文件未变 | 当前 workspace，未新增依赖 |
+| `pnpm typecheck` | 通过 | `typecheck.txt` |
+| `pnpm test` | 11 项通过 | `unit.txt` |
+| `pnpm build` | 通过 | `build.txt` |
+| Python 完整工具/契约 | 229 项通过 | `python.txt` |
+| `scripts/browser/run-react-tests.py` | 两套模拟 API 浏览器回归通过 | `browser.txt`、`browser.json` |
+| `git diff --check` | 通过 | 提交前执行 |
+
+新增模拟浏览器覆盖：中英文、浅深色、1440/1280/1024/640px、侧栏折叠记忆、
+主要内容跳转、键盘搜索、模态焦点约束与 Esc/焦点返回、项目禁用状态、失败刷新
+清除旧指标、恢复读取、作用域切换清除草稿/旧指标、终端 HTTP 与 WebSocket
+目标一致、已安装应用直达。旧验证码/MFA、回执恢复、重复安装拒绝、UNKNOWN
+拒绝与脱敏证据用例仍运行。无页面脚本异常。
+
+`home-light.png`、`home-dark.png`、`home-1024.png`、`home-zh.png`、`home-640.png`、
+`assistant.png` 为上述模拟 API 截图。**截图中的 24%、38%、设备数及主机名称是测试
+夹具数据，不是当前机器或实际 GPU 测量。** 应用实现仍只读取 API，不内置这些数字。
+
+## 未完成与证据边界
+
+本轮未改 Go/API/DB，未执行新 UI 的全新 Ubuntu 安装或真实终端命令/GPU 测试；
+模拟远程作用域仅证明请求参数、缓存与页面行为，不证明远程节点注册或远程执行。
+此前 VM 安装与 GeoIP 报告保持其原有版本含义。项目/环境持久化接口、四步创建、
+IDE、重启数据恢复、应用/模型全生命周期及 Wails 宿主尚未完成。
+
+新 GitHub CI 的结果以当前提交对应检查为准，此本地报告不预先标记 hosted CI 通过。
+M0 G3–G6 与产品 10 项整体验收不因这次 Shell 改动解除阻塞。
+
+本轮无业务数据迁移；如需回退，可回退此 UI 提交并重新构建前端嵌入产物。
+没有更改已安装服务、宿主机目录或运行中 VM，未声称执行过部署回退测试。

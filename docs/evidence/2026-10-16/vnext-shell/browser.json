@@ -1,0 +1,17 @@
+{
+  "kind": "SIMULATED API; not real device or deployment acceptance",
+  "page_errors": [],
+  "checks": [
+    "light/dark",
+    "1440/1280/1024/640 layout",
+    "Chinese/English",
+    "collapse persistence",
+    "keyboard skip/search/escape",
+    "unavailable project state",
+    "failed refresh clears metrics",
+    "scope resets draft",
+    "terminal HTTP and WebSocket select remote scope",
+    "installed deep link"
+  ],
+  "terminal_scope_requests": 2
+}

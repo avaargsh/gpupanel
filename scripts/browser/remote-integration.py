@@ -81,7 +81,7 @@ with sync_playwright() as playwright:
     assert '/login' in page.url, 'MFA challenge must not mount privileged layout'
     page.locator('input[autocomplete="one-time-code"]').fill('654321')
     page.locator('button[type="submit"]').click()
-    expect(page.get_by_text('工作站起步 / Workstation first run', exact=True)).to_be_visible()
+    expect(page.get_by_text('Readiness checks', exact=True)).to_be_visible()
     assert state['mfa'] == 1
     page.goto(URL + '/apps'); page.wait_for_load_state('networkidle')
     page.get_by_role('button', name=re.compile('^(安装|Install)$')).first.click()

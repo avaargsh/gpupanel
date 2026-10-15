@@ -14,7 +14,7 @@
 | 真实本地安装 | [操作手册](../operations/local-install-test.md) |
 
 浏览器脚本需要 Python Playwright 和 Chromium。`scripts/browser` 中的 API 拦截测试
-覆盖验证码/MFA、回执恢复、重复提交拒绝与只读证据界面，**不能证明真实后端可登录**。
+覆盖验证码/MFA、回执恢复、重复提交拒绝、只读证据界面，以及 vNext 布局、键盘和作用域负向检查，**不能证明真实后端可登录**。
 真实安装测试不使用这些 API 拦截。
 
 Go 测试中需要专用 Docker 或 Agent socket 的用例由环境变量门槛控制；缺失时会

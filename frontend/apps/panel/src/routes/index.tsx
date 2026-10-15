@@ -11,6 +11,7 @@ import WebsiteDetailPage from '@/pages/website/detail';
 import OpenrestyPage from '@/pages/openresty';
 import AppsPage from '@/pages/app';
 import AiPage from '@/pages/ai';
+import GpuPage from '@/pages/ai/gpu';
 import CronjobsPage from '@/pages/cronjob';
 import ToolboxPage from '@/pages/toolbox';
 import LogsPage from '@/pages/logs';
@@ -43,6 +44,7 @@ export const router = createBrowserRouter([
             { path: 'openresty', element: <OpenrestyPage /> },
             { path: 'apps', element: <AppsPage /> },
             { path: 'ai', element: <AiPage /> },
+            { path: 'gpu', element: <GpuPage /> },
             { path: 'cronjobs', element: <CronjobsPage /> },
             { path: 'toolbox', element: <ToolboxPage /> },
             { path: 'logs', element: <LogsPage /> },
