@@ -76,6 +76,13 @@ To test the pure observation contract:
 node --test frontend/tests/gpu-first-run.test.mjs
 ```
 
+
+## Local Python / PyTorch diagnostic slice
+
+The repository now offers a **CLI-only**, user-local, package-install-free Python doctor at `scripts/gpupanel-python-doctor.py`, incorporated into the read-only first-run overview as `developerEnvironment`. Metadata inspection requires no third-party imports. A separately opted-in `--probe-torch` runs installed PyTorch in a timeout-bound isolated Python subprocess. It distinguishes metadata presence, CPU-only/unavailable accelerators, CUDA/HIP build metadata, probe timeout and invalid output. This is **not** a driver, CUDA Toolkit or GPU kernel execution test.
+
+This capability is deliberately not advertised as a live web GPU/PyTorch health API: no authenticated Core adapter or browser E2E for it exists yet. G3–G6 remain blocked. The subsequent P1 slice should map an authenticated, user-selected interpreter or venv to a scoped Host API only once there is a safe lifecycle contract.
+
 ## Progressive enhancement after this UX PR
 
 **Next build slice:** independently prove fresh Ubuntu install / login / Docker lifecycle on a disposable host and map the existing GPU view to a supported accelerator; then add a simple template selection → setup preview → approved local install and recovery. Only after that, add a unified authenticated **read-only chat** Core adapter with explicit capability discovery and an operator-free user experience. Backend tool execution must remain disabled until controlled authority exists.
