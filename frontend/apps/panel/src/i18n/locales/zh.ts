@@ -132,7 +132,7 @@ const zh = {
         hostname: '主机名',
         quickAccess: '快捷入口',
         liveLoad: '实时负载',
-        noData: '后端未连接，展示为示例数据',
+        noData: '部分状态读取失败，请检查主机连接后重试',
         refresh: '刷新',
     },
     host: {

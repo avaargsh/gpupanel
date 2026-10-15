@@ -35,10 +35,26 @@ export default function HomePage() {
                 <div className="workbench-planned"><Button aria-label={t('workbench.newProject')} disabled icon={<IconFolder />}>{t('workbench.newProject')}</Button><p>{t('workbench.projectHint')}</p></div>
             </div>
         </section>
+        <section className="workbench-resources" aria-labelledby="resource-heading">
+            <div className="workbench-section-heading"><div><h2 id="resource-heading">{t('workbench.resources')}</h2><p>{t('workbench.resourcesHint')}</p></div><Link to="/gpu">{t('workbench.inspect')}</Link></div>
+            {failed && <Banner type="warning" description={t('home.noData')} closeIcon={null} />}
+            <div className="workbench-stats">
+                <StatCard compact title={t('workbench.gpu')} value={devices ? String(devices.length) : '--'} icon={<IconComponent />} />
+                <StatCard compact title={t('home.cpu')} value={observedPercent(baseInfo?.cpuUsedPercent)} icon={<IconHistogram />} />
+                <StatCard compact title={t('home.memory')} value={observedPercent(baseInfo?.memoryUsedPercent)} icon={<IconComponent />} />
+                <StatCard compact title={t('home.disk')} value={observedPercent(baseInfo?.diskUsedPercent)} icon={<IconServer />} />
+            </div>
+            <dl className="workbench-host-facts">
+                <div><dt>{t('home.hostname')}</dt><dd>{baseInfo?.hostname || '--'}</dd></div>
+                <div><dt>{t('home.system')}</dt><dd>{osInfo?.prettyDistro || osInfo?.os || '--'}</dd></div>
+                <div><dt>{t('home.arch')}</dt><dd>{osInfo?.arch || '--'}</dd></div>
+                <div><dt>{t('home.uptime')}</dt><dd>{baseInfo?.timeSinceUptime || '--'}</dd></div>
+            </dl>
+        </section>
         <div className="workbench-columns">
             <section className="workbench-panel" aria-labelledby="recent-projects-title">
-                <div className="workbench-panel-heading"><h2 id="recent-projects-title">{t('workbench.recent')}</h2><span className="workbench-neutral-tag">{t('workbench.notConnected')}</span></div>
-                <div className="workbench-empty"><IconFolder size="extra-large" /><h3>{t('workbench.noProjects')}</h3><p>{t('workbench.noProjectsHint')}</p><Link to="/apps?tab=installed">{t('workbench.installed')}</Link></div>
+                <div className="workbench-panel-heading"><h2 id="recent-projects-title">{t('workbench.recent')}</h2></div>
+                <div className="workbench-empty"><IconFolder size="large" /><h3>{t('workbench.noProjects')}</h3><p>{t('workbench.noProjectsHint')}</p><Link to="/apps?tab=installed">{t('workbench.installed')}</Link></div>
             </section>
             <section className="workbench-panel" aria-labelledby="workbench-tools-title">
                 <div className="workbench-panel-heading"><h2 id="workbench-tools-title">{t('workbench.tools')}</h2></div>
@@ -50,22 +66,6 @@ export default function HomePage() {
                 </div>
             </section>
         </div>
-        <section className="workbench-resources" aria-labelledby="resource-heading">
-            <div className="workbench-section-heading"><div><h2 id="resource-heading">{t('workbench.resources')}</h2><p>{t('workbench.resourcesHint')}</p></div><Link to="/gpu">{t('workbench.inspect')}</Link></div>
-            {failed && <Banner type="warning" description={t('home.noData')} closeIcon={null} />}
-            <div className="workbench-stats">
-                <StatCard title={t('workbench.gpu')} value={devices ? String(devices.length) : '--'} icon={<IconComponent />} />
-                <StatCard title={t('home.cpu')} value={observedPercent(baseInfo?.cpuUsedPercent)} icon={<IconHistogram />} />
-                <StatCard title={t('home.memory')} value={observedPercent(baseInfo?.memoryUsedPercent)} icon={<IconComponent />} />
-                <StatCard title={t('home.disk')} value={observedPercent(baseInfo?.diskUsedPercent)} icon={<IconServer />} />
-            </div>
-            <dl className="workbench-host-facts">
-                <div><dt>{t('home.hostname')}</dt><dd>{baseInfo?.hostname || '--'}</dd></div>
-                <div><dt>{t('home.system')}</dt><dd>{osInfo?.prettyDistro || osInfo?.os || '--'}</dd></div>
-                <div><dt>{t('home.arch')}</dt><dd>{osInfo?.arch || '--'}</dd></div>
-                <div><dt>{t('home.uptime')}</dt><dd>{baseInfo?.timeSinceUptime || '--'}</dd></div>
-            </dl>
-        </section>
         <FirstRun />
     </div>;
 }

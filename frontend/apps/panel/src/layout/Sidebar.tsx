@@ -15,16 +15,12 @@ export default function Sidebar() {
     return <aside className={`workspace-sidebar ${collapsed ? 'is-collapsed' : ''}`} aria-label={t('app.name')}>
         <Link className="workspace-brand" to="/" aria-label="GPUPanel">
             <span className="workspace-mark"><IconComponent size="large" /></span>
-            {!collapsed && <span><strong>GPUPanel</strong><small>Developer workspace</small></span>}
+            {!collapsed && <span><strong>GPUPanel</strong></span>}
         </Link>
         <nav className="workspace-nav" aria-label={t('workbench.personal')}>
             {navSections.map((section) => <section key={section.titleKey}>
                 <h2 className={collapsed ? 'visually-hidden' : 'workspace-nav-heading'}>{t(section.titleKey)}</h2>
-                {section.items.map((item) => item.unavailable ?
-                    <button key={item.path} className="workspace-nav-link unavailable" aria-disabled="true" aria-label={`${t(item.labelKey)} · ${t('workbench.notConnected')}`}
-                        title={`${t(item.labelKey)} · ${t('workbench.notConnected')}`}>
-                        {item.icon}{!collapsed && <><span>{t(item.labelKey)}</span><small>{t('workbench.notConnected')}</small></>}
-                    </button> :
+                {section.items.filter((item) => !item.unavailable).map((item) =>
                     <Link key={item.path} className="workspace-nav-link" to={item.path}
                         title={t(item.labelKey)} aria-label={t(item.labelKey)}
                         aria-current={active === item.path ? 'page' : undefined}>
@@ -33,7 +29,6 @@ export default function Sidebar() {
             </section>)}
         </nav>
         <div className="workspace-sidebar-footer">
-            {!collapsed && <span>vNext <small>Development</small></span>}
             <Button theme="borderless" type="tertiary" icon={collapsed ? <IconChevronRight /> : <IconChevronLeft />}
                 aria-label={collapsed ? t('common.expand') : t('common.collapse')} onClick={() => dispatch(toggleSidebar())} />
         </div>
