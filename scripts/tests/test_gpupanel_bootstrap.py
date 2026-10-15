@@ -66,6 +66,40 @@ class BootstrapTests(unittest.TestCase):
                 bootstrap.get_artifact(self.artifact, self.cache, 2, False)
         self.assertFalse((self.cache / self.artifact["name"]).exists())
 
+    def test_human_doctor_and_plan_keep_machine_json_compatible(self):
+        from contextlib import redirect_stdout
+        import io
+        human = io.StringIO()
+        with redirect_stdout(human):
+            self.assertEqual(bootstrap.main(["--lock", str(self.lock_path),
+                "--cache", str(self.cache), "doctor", "--human"]), 0)
+        self.assertIn("GPUPanel | Ubuntu environment doctor", human.getvalue())
+        self.assertIn("FOUND", human.getvalue())
+        machine = io.StringIO()
+        with redirect_stdout(machine):
+            self.assertEqual(bootstrap.main(["--lock", str(self.lock_path),
+                "--cache", str(self.cache), "doctor"]), 0)
+        self.assertIn("supported_os", json.loads(machine.getvalue()))
+        plan = io.StringIO()
+        with redirect_stdout(plan):
+            self.assertEqual(bootstrap.main(["--lock", str(self.lock_path),
+                "--cache", str(self.cache), "plan", "--human"]), 0)
+        self.assertIn("NOT CACHED", plan.getvalue())
+
+    def test_offline_self_test_without_network(self):
+        from contextlib import redirect_stdout
+        import io
+        with patch.object(bootstrap.urllib.request, "urlopen",
+                          side_effect=AssertionError("unexpected network")):
+            result = bootstrap.offline_self_test()
+        self.assertEqual(result["offline_roundtrip"], "PASS")
+        self.assertEqual(result["tampering"], "DETECTED")
+        human = io.StringIO()
+        with redirect_stdout(human):
+            self.assertEqual(bootstrap.main(["--lock", str(self.lock_path),
+                "self-test", "--human"]), 0)
+        self.assertIn("Offline self-test", human.getvalue())
+
     def test_bundle_round_trip_and_tampering(self):
         self.cache.mkdir()
         (self.cache / self.artifact["name"]).write_bytes(self.content)

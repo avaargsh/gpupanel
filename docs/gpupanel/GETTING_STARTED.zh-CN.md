@@ -1,0 +1,48 @@
+# GPUPanel：5 分钟认识项目（Ubuntu 24.04）
+
+> **当前是开发预览版，不是可执行的一键安装正式版本。** 请不要使用 1Panel 官网安装命令当作 GPUPanel 安装器。
+
+## 1. 我能获得什么？
+
+GPUPanel 由 1Panel GPL-3.0 开源版 Fork 而来。现阶段继承 Linux Host、Docker、终端、文件、GPU 监控等已有功能。项目已经加入独立品牌、Host 优先快捷入口、独立 Ubuntu 环境体检及校验后的离线 Bundle 工具。Kubernetes、Kueue、训练/推理平台和 MetaX 驱动支持还没有在本仓库验收，不能当成已交付功能。
+
+## 2. 在 Ubuntu 桌面快速检查（无需 root）
+
+```bash
+git clone https://github.com/avaargsh/gpupanel.git
+cd gpupanel
+python3 scripts/gpupanel-bootstrap.py doctor --human
+python3 scripts/gpupanel-bootstrap.py plan --human
+python3 scripts/gpupanel-bootstrap.py self-test --human
+```
+
+- `FOUND` 只表示系统 PATH 能找到该命令，不证明版本符合要求、Docker Daemon 可用或 GPU 驱动正确。
+- `MISSING` 不会触发自动安装；按需要选择软件，无需一次装齐。
+- `self-test` 只用合成数据测试 SHA-256 和离线包往返，不会访问网络或更改主机配置。
+- 初始 `profiles/ubuntu24-dev.lock.json` 没有可下载的真实软件制品，这是有意限制：没有审核过的版本、哈希与许可证前，不能宣称“一键安装”。
+
+## 3. 前端开发预览
+
+需要 Node/npm、依赖可正常访问。初次构建：
+
+```bash
+cd frontend
+npm ci
+npm run build:pro
+npm run type-check
+```
+
+以上只验前端，不代表完整服务端启动；运行 Core/Agent 还需按 upstream 项目开发规范准备 Go 工具链、数据库等依赖。请勿把这套源码部署在存放重要数据的生产主机上做初次试验。
+
+## 4. 出问题怎么办
+
+- 国内 npm 或 Go 下载受阻：先解决可信镜像访问；不要执行来源不明的 `curl | bash`。后续会在 Lock 中固定制品 SHA-256，再用离线 Bundle 搬迁。
+- `doctor` 提示非 Ubuntu 24.04：只表示环境不在本阶段测试矩阵，不代表命令可以安全兼容其他系统。
+- 无 GPU：Host/Docker 功能仍可使用；GPU 监控属于可选能力。
+- 页面不显示某功能：可能受当前身份权限约束，不要绕过 RBAC。
+
+问题反馈请提交 GitHub Issue，附版本、复现步骤与脱敏后的日志，**不要上传 Token、密码、真实 IP、序列号或客户数据**。
+
+## 5. 产品路线
+
+**个人 Ubuntu Host → 企业 Host 纳管 → Kubernetes Provider → GPU 训练与推理门户。** 详细边界参见 [产品组织](PRODUCT.md) 和 [路线图](ROADMAP.md)。
