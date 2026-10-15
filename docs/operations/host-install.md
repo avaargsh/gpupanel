@@ -31,7 +31,7 @@ experimental 选项。`--bind-address` 仅接受 127.0.0.1 或 0.0.0.0，首次�
 
 `--no-auto-provision` 需要 systemd，在 Agent unit 中保存
 `GPUPANEL_AUTO_PROVISION=disabled`，跳过启动时自动初始化防火墙、默认 Docker 网络、
-ACME 账户。手动管理 API 仍需原有认证/授权；此选项不将整个 Agent 变成只读服务。
+ACME 账户及自动系统时间同步。手动管理 API 仍需原有认证/授权；此选项不将整个 Agent 变成只读服务。
 默认不带选项保留历史启动行为。未知环境变量值也禁止自动配置。
 
 安装器只接受全新目标，不再使用 pkill 按名称或命令行清理其他进程。安装日志和

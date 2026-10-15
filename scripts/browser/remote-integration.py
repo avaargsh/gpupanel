@@ -56,8 +56,8 @@ def api(route):
         route.abort('failed'); return
     elif path == '/logs/tasks/read': data = {'scope': 'admission', 'taskStatus': 'Unknown', 'lines': ['Outcome UNKNOWN'], 'end': True}
     elif path == '/containers/docker/status': data = {'isExist': True, 'isActive': False}
-    elif path == '/dashboard/base/os': data = {'hostname': 'fixture', 'os': 'Ubuntu'}
-    elif path.startswith('/dashboard/base/'): data = {'cpuUsedPercent': 12, 'load1': 0, 'load5': 0, 'load15': 0}
+    elif path == '/dashboard/base/os': data = {'os': 'linux', 'prettyDistro': 'Ubuntu fixture', 'kernelArch': 'amd64'}
+    elif path.startswith('/dashboard/base/'): data = {'hostname': 'fixture', 'currentInfo': {'cpuUsedPercent': 12, 'load1': 0, 'load5': 0, 'load15': 0, 'diskData': []}}
     route.fulfill(status=200, content_type='application/json', body=json.dumps({'code': code, 'message': 'fixture error' if code != 200 else '', 'data': data}))
 
 with sync_playwright() as playwright:

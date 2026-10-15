@@ -20,9 +20,9 @@ def api(route):
     if path.endswith('/core/auth/current'):
         data = {'name': 'fixture', 'role': 'ADMIN'}
     elif path == '/dashboard/base/os':
-        data = {'hostname': 'observed-fixture-host' if node == 'local' else 'observed-fixture-remote', 'os': 'Ubuntu fixture', 'arch': 'amd64'}
+        data = {'os': 'linux', 'prettyDistro': 'Ubuntu fixture', 'kernelArch': 'amd64'}
     elif path.startswith('/dashboard/base/'):
-        data = {'cpuUsedPercent': 24 if node == 'local' else 61, 'memoryUsedPercent': 38, 'diskUsedPercent': None, 'timeSinceUptime': 'fixture uptime'}
+        data = {'hostname': 'observed-fixture-host' if node == 'local' else 'observed-fixture-remote', 'currentInfo': {'cpuUsedPercent': 24 if node == 'local' else 61, 'memoryUsedPercent': 38, 'diskData': [], 'timeSinceUptime': 'fixture uptime'}}
     elif path == '/ai/gpu/load':
         data = {'gpu': [], 'npu': [], 'xpu': []}
     elif path == '/containers/docker/status':

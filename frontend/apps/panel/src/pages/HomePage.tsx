@@ -60,8 +60,8 @@ export default function HomePage() {
                 <StatCard title={t('home.disk')} value={observedPercent(baseInfo?.diskUsedPercent)} icon={<IconServer />} />
             </div>
             <dl className="workbench-host-facts">
-                <div><dt>{t('home.hostname')}</dt><dd>{osInfo?.hostname || '--'}</dd></div>
-                <div><dt>{t('home.system')}</dt><dd>{osInfo?.os || '--'}</dd></div>
+                <div><dt>{t('home.hostname')}</dt><dd>{baseInfo?.hostname || '--'}</dd></div>
+                <div><dt>{t('home.system')}</dt><dd>{osInfo?.prettyDistro || osInfo?.os || '--'}</dd></div>
                 <div><dt>{t('home.arch')}</dt><dd>{osInfo?.arch || '--'}</dd></div>
                 <div><dt>{t('home.uptime')}</dt><dd>{baseInfo?.timeSinceUptime || '--'}</dd></div>
             </dl>
