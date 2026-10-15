@@ -8,9 +8,9 @@ import (
 )
 
 type fixtureProvider struct {
-	kind Kind
+	kind     Kind
 	snapshot *ProviderSnapshot
-	err error
+	err      error
 }
 func (p fixtureProvider) Kind() Kind { return p.kind }
 func (p fixtureProvider) Collect(context.Context) (*ProviderSnapshot, error) {
@@ -24,7 +24,9 @@ func TestInjectedProvidersReturnValidSnapshot(t *testing.T) {
 		},
 	}}
 	snapshot, err := NewWithProviders(ok).Collect(context.Background())
-	if err != nil { t.Fatalf("Collect failed: %v", err) }
+	if err != nil {
+		t.Fatalf("Collect failed: %v", err)
+	}
 	if len(snapshot.Devices) != 1 || snapshot.Devices[0].ID != "nvidia:fixture-001" {
 		t.Fatalf("unexpected devices: %+v", snapshot.Devices)
 	}
@@ -39,7 +41,9 @@ func TestPartialFailureIsWarningNotFalseSuccess(t *testing.T) {
 	}}
 	failed := fixtureProvider{kind: KindNPU, err: errors.New("provider offline")}
 	snapshot, err := NewWithProviders(working, failed).Collect(context.Background())
-	if err != nil { t.Fatalf("partial success should not fail: %v", err) }
+	if err != nil {
+		t.Fatalf("partial success should not fail: %v", err)
+	}
 	if len(snapshot.Devices) != 1 || snapshot.Warning() == nil {
 		t.Fatalf("missing partial device or warning: %+v", snapshot)
 	}
