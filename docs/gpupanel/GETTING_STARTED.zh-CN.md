@@ -21,6 +21,25 @@ python3 scripts/gpupanel-bootstrap.py self-test --human
 - `self-test` 只用合成数据测试 SHA-256 和离线包往返，不会访问网络或更改主机配置。
 - 初始 `profiles/ubuntu24-dev.lock.json` 没有可下载的真实软件制品，这是有意限制：没有审核过的版本、哈希与许可证前，不能宣称“一键安装”。
 
+
+## 可选：Python / PyTorch 运行环境诊断（不安装软件）
+
+直接查看当前 Python 解释器与 PyTorch 包元数据，**默认不会导入 PyTorch**：
+
+```bash
+python3 scripts/gpupanel-python-doctor.py --human
+python3 scripts/gpupanel-first-run-overview.py --human
+```
+
+若信任当前环境中的 PyTorch，可显式检查它能否看到 CUDA/HIP 加速设备：
+
+```bash
+python3 scripts/gpupanel-python-doctor.py --probe-torch --human
+```
+
+这一步会在限时独立进程中导入第三方 PyTorch，可能初始化 GPU 上下文或生成用户缓存。它不执行安装、下载或修复，也不会运行 `pip install`、`nvcc`、`nvidia-smi`。检查显示 `ACCELERATOR_AVAILABLE` 仅代表当前 PyTorch 运行时能看到加速设备，**不代表本机 CUDA Toolkit、PyTorch 算子、Jupyter、训练和推理环境已验证**。退出码 0 只代表诊断命令执行，不能用作环境安装成功的门禁。
+
+
 ## 3. 两种不同的“安装”操作
 
 **A. 当前可用的是 Python 项目文件创建（不是安装 Python）：** 需要 Python 3.12+，在普通 Ubuntu 用户的终端、仓库根目录执行：
