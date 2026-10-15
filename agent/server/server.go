@@ -1,6 +1,7 @@
 package server
 
 import (
+	"errors"
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
@@ -46,6 +47,15 @@ func prepareMasterSocketDir(dir string) error {
 	if err := os.MkdirAll(dir, masterSocketDirPerm); err != nil {
 		return fmt.Errorf("create master socket dir %s failed: %w", dir, err)
 	}
+	// Never chmod through an existing symlink. The socket directory is an
+	// authority boundary; a linked path could silently redirect permissions.
+	dirInfo, err := os.Lstat(dir)
+	if err != nil {
+		return fmt.Errorf("lstat master socket dir failed: %w", err)
+	}
+	if !dirInfo.IsDir() || dirInfo.Mode()&os.ModeSymlink != 0 {
+		return fmt.Errorf("master socket dir must be a real directory (not a symlink): %s", dir)
+	}
 	if err := os.Chmod(dir, masterSocketDirPerm); err != nil {
 		return fmt.Errorf("chmod master socket dir %s failed: %w", dir, err)
 	}
@@ -65,6 +75,21 @@ func prepareMasterSocketDir(dir string) error {
 		}
 	}
 	return nil
+}
+
+// ensureMasterSocketVacant never unlinks a socket or another process's file.
+// A restart with a stale socket must fail closed until the operator has
+// independently confirmed there is no live agent and removed that specific
+// socket. This is intentionally safer than probing + unlinking on startup.
+func ensureMasterSocketVacant(sockPath string) error {
+	_, err := os.Lstat(sockPath)
+	if err == nil {
+		return fmt.Errorf("master agent socket path already exists (%s); refuse to replace a live or stale socket; inspect the owning process first", sockPath)
+	}
+	if errors.Is(err, os.ErrNotExist) {
+		return nil
+	}
+	return fmt.Errorf("cannot inspect master agent socket path %s: %w", sockPath, err)
 }
 
 func secureMasterSocket(sockPath string) error {
@@ -141,7 +166,9 @@ func Start() {
 		if err := prepareMasterSocketDir(masterSocketDir); err != nil {
 			panic(err)
 		}
-		_ = os.Remove(masterSocketPath)
+		if err := ensureMasterSocketVacant(masterSocketPath); err != nil {
+			panic(err)
+		}
 		listener, err := net.Listen("unix", masterSocketPath)
 		if err != nil {
 			panic(err)
