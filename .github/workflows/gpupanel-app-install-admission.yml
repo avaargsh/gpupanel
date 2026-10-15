@@ -35,7 +35,7 @@ jobs:
           cache-dependency-path: agent/go.sum
       - name: Concurrent SQLite task admission and UNKNOWN App status tests
         working-directory: agent
-        run: go test ./app/service -run '^(TestAppInstallTaskAdmission|TestInterruptedAppInstallationUnknown)' -count=1
+        run: go test ./app/service -run '^(TestAppInstallTaskAdmission|TestInterruptedAppInstallationUnknown|TestUnknownAppInstallation)' -count=1
       - name: TaskDB UNKNOWN-on-restart tests
         working-directory: agent
         run: go test ./app/repo -run '^TestInterruptedAppInstallTask' -count=1
