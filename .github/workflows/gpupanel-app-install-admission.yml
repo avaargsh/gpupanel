@@ -3,8 +3,15 @@ on:
   pull_request:
     paths:
       - 'agent/app/api/v2/app.go'
+      - 'agent/app/repo/task.go'
+      - 'agent/app/repo/task_restart_recovery_test.go'
+      - 'agent/app/service/app_install.go'
+      - 'agent/app/service/app_operation_status.go'
+      - 'agent/app/service/app_operation_status_test.go'
+      - 'agent/app/service/app_utils.go'
       - 'agent/app/service/app_install_admission*.go'
       - 'scripts/tests/test_gpupanel_app_install_admission.py'
+      - 'scripts/tests/test_gpupanel_app_install_restart_unknown.py'
       - '.github/workflows/gpupanel-app-install-admission.yml'
   workflow_dispatch:
 jobs:
@@ -20,10 +27,15 @@ jobs:
           python-version: '3.12'
       - name: Check before-side-effect API contract
         run: python3 -m unittest discover -s scripts/tests -p 'test_gpupanel_app_install_admission.py' -v
+      - name: Interrupted-install UNKNOWN restart contract
+        run: python3 -m unittest discover -s scripts/tests -p 'test_gpupanel_app_install_restart_unknown.py' -v
       - uses: actions/setup-go@v6
         with:
           go-version-file: agent/go.mod
           cache-dependency-path: agent/go.sum
-      - name: Concurrent SQLite task admission tests
+      - name: Concurrent SQLite task admission and UNKNOWN App status tests
         working-directory: agent
-        run: go test ./app/service -run '^TestAppInstallTaskAdmission' -count=1
+        run: go test ./app/service -run '^(TestAppInstallTaskAdmission|TestInterruptedAppInstallationUnknown)' -count=1
+      - name: TaskDB UNKNOWN-on-restart tests
+        working-directory: agent
+        run: go test ./app/repo -run '^TestInterruptedAppInstallTask' -count=1
