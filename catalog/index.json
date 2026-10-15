@@ -40,7 +40,30 @@
         "kubernetes"
       ],
       "description": "Future optional integration; Kubernetes is not part of the single-host MVP."
+    },
+    {
+      "id": "gpupanel.dev.python-stdlib",
+      "name": "Python stdlib project starter",
+      "kind": "devtool",
+      "status": "experimental",
+      "targets": [
+        "linux-host"
+      ],
+      "description": "Offline, no-root Python 3.12+ project scaffold with install/status/uninstall CLI. Does not install Python."
     }
   ],
-  "revisions": []
+  "revisions": [
+    {
+      "definitionId": "gpupanel.dev.python-stdlib",
+      "version": "0.1.0",
+      "adapter": "verified-asset",
+      "recipeId": "python-stdlib-scaffold-v1",
+      "source": {
+        "provider": "bundled",
+        "uri": "catalog/templates/python-stdlib/manifest.json",
+        "sha256": "ea1e751ad3ccdd7f80efad02954961cea0ae9e45947c9c5cfe03814f34f9eee0"
+      },
+      "id": "a48a77dfae9640c4305a6be71adeef46be26a10ffec0efb950699054874b6871"
+    }
+  ]
 }

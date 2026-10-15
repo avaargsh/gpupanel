@@ -10,6 +10,7 @@ const message = {
         catalogInstalled: 'Installed Apps',
         catalogCompose: 'Docker Compose',
         catalogPlanned: 'Planned',
+        catalogExperimental: 'Experimental CLI template',
         catalogUnavailable: 'Installation not available',
         catalogNoMatch: 'No matching catalog definitions',
         catalogLoadFailed: 'Unable to load the application catalog. Check network, permissions or sync status.',
