@@ -3,7 +3,9 @@
 The owner requested consolidation of remote `dev-v2` into the main branch.
 No `main` or `master` existed at inventory. Preserve the complete history from
 `dev-v2` at `2a8df79935b9c765e8c0c16fc42fe7df736c3147`; create `main` from that
-commit with a small governance follow-up. No squash, history rewrite or runtime
+commit with a small governance follow-up. During verification, another operation
+merged PR #88 into `dev-v2` at `959cbd6cee3adb5a2f2081982cf19c39b7284f7d`;
+this advancement is merged into the promotion candidate too. No squash, history rewrite or runtime
 installation is part of this migration.
 
 ## Integration policy
@@ -35,8 +37,9 @@ lock → run → user-modification test is the regression gate. See the
 M0 remains **NO-GO**: G3 install/rollback, G4 real login/Host, G5 full Docker/App
 lifecycle, and G6 recovery are not accepted by this migration. Read
 [M0 release train](M0_RELEASE_TRAIN.md), [AGENTS](../../AGENTS.md), and the open
-acceptance issues before making any release claim. PR #88 remains an independent
-candidate and must not be merged on the strength of this baseline.
+acceptance issues before making any release claim. PR #88 was independently
+merged upstream during this migration; its read-only evidence acceptance does
+not satisfy the full G3–G6 installation and recovery gates.
 
 ## Recovery
 
