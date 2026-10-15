@@ -56,3 +56,14 @@
 .workbench-readiness-actions a { text-decoration: none; }
 .workbench-readiness-note { padding-left: 20px; color: var(--semi-color-text-2); font-size: 11px; line-height: 1.5; margin-top: 10px !important; }
 @media (max-width: 640px) { .workbench-readiness { padding: 16px; } .workbench-readiness-note { padding-left: 0; } }
+
+/* Link hierarchy: quiet tool list items; links brighten only on interaction. */
+.workbench .workbench-tool-links a { color: var(--semi-color-text-1); font-size: 13px; text-decoration: none; }
+.workbench-tool-links a .semi-icon { color: var(--semi-color-text-2); }
+.workbench .workbench-tool-links a:hover { color: var(--semi-color-primary); text-decoration: none; }
+.workbench-tool-links a:hover .semi-icon { color: var(--semi-color-primary); }
+.workbench-empty { padding: 8px 0 4px; }
+.workbench-empty > .semi-icon { margin-bottom: 8px; }
+.workbench-empty > a { margin-top: 12px; }
+.workbench .workbench-readiness-actions a { color: var(--semi-color-text-1); }
+.workbench .workbench-readiness-actions a:hover { color: var(--semi-color-primary); }
