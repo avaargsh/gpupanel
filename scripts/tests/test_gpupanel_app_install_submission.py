@@ -60,6 +60,17 @@ class AppInstallSubmissionContract(unittest.TestCase):
         self.assertIn("appInstallLoadFailed", s)
         self.assertLess(s.index("initializing.value = true"), s.index("await nextTick()"))
 
+    def test_version_detail_is_ready_before_initialization_finishes(self):
+        source = (ROOT / "frontend/src/views/app-store/detail/form/index.vue").read_text(encoding="utf-8")
+        self.assertIn("await getVersionDetail(defaultVersion)", source)
+        self.assertIn("if (!appVersions.value.length) throw", source)
+        self.assertIn("detailError.value = true", source)
+        self.assertIn("if (formData.value.version === version)", source)
+        self.assertIn("v-if=\"detailError\"", source)
+        self.assertIn("detailError.value = false;", source)
+        self.assertLess(source.index("formData.value.appDetailId = 0;", source.index("const getVersionDetail")),
+                        source.index("const res = await getAppDetail(", source.index("const getVersionDetail")))
+
     def test_backend_permission_and_lifecycle_wiring_remain_inherited(self):
         s = self.src
         self.assertIn("await installApp(submitData)", s)
