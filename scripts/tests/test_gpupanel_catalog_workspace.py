@@ -62,6 +62,35 @@ class WorkspaceGoldenPath(unittest.TestCase):
                 workspace.install(self.home / "redirect" / "new" / "project", self.home, True)
             self.assertFalse((Path(td) / "new").exists())
 
+    def test_list_only_own_receipts_and_drift(self):
+        (self.parent / "personal").mkdir()
+        (self.parent / "personal" / "notes.txt").write_text("private")
+        before = workspace.list_installs(self.parent, self.home)
+        self.assertEqual(before["installations"], [])
+        self.assertFalse(self.dst.exists())
+        workspace.install(self.dst, self.home, True)
+        report = workspace.list_installs(self.parent, self.home)
+        self.assertEqual(report["managed"], 1)
+        self.assertEqual(report["drifted"], 0)
+        self.assertEqual([x["directory"] for x in report["installations"]], ["hello-world"])
+        self.assertNotIn("personal", str(report))
+        (self.dst / "notes.md").write_text("keep")
+        drift = workspace.list_installs(self.parent, self.home)
+        self.assertEqual((drift["managed"], drift["drifted"]), (0, 1))
+        self.assertFalse(drift["executed"])
+
+    def test_list_missing_parent_no_side_effect(self):
+        missing = self.home / "GPUPanel" / "projects"
+        report = workspace.list_installs(missing, self.home)
+        self.assertEqual(report["status"], "OK")
+        self.assertFalse(missing.exists())
+
+    def test_list_symlink_parent_rejected(self):
+        linked = self.home / "linked"
+        linked.symlink_to(self.parent, target_is_directory=True)
+        with self.assertRaises(workspace.WorkspaceError):
+            workspace.list_installs(linked, self.home)
+
     def test_no_overwrite_existing_user_work(self):
         self.dst.mkdir()
         (self.dst/"important.txt").write_text("do not touch")
