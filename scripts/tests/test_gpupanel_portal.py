@@ -14,12 +14,21 @@ class PortalLinksTest(unittest.TestCase):
     def test_shortcuts_exist_in_real_router_modules(self):
         content = COMPONENT.read_text()
         routes = set(re.findall(r"path: '(/[^']+)'", content))
-        self.assertEqual(len(routes), 6)
+        expected = {
+            "/ai/gpu/current", "/hosts/monitor/monitor", "/containers",
+            "/hosts/files", "/terminal", "/ai/model/account", "/apps/all", "/hosts/disk",
+        }
+        self.assertEqual(routes, expected)
         module_texts = "\n".join(p.read_text() for p in
             (ROOT / "frontend/src/routers/modules").glob("*.ts"))
         for path in routes:
             with self.subTest(path=path):
-                self.assertIn(f"path: '{path}'", module_texts)
+                if path == "/apps/all":
+                    # The app catalog is a registered nested child of /apps.
+                    self.assertIn("path: '/apps'", module_texts)
+                    self.assertIn("path: 'all'", module_texts)
+                else:
+                    self.assertIn(f"path: '{path}'", module_texts)
 
     def test_permission_filter_used_for_visibility_and_click(self):
         content = COMPONENT.read_text()
