@@ -1,0 +1,43 @@
+name: GPUPanel third-party dependency inventory
+on:
+  pull_request:
+    paths:
+      - 'core/go.mod'
+      - 'agent/go.mod'
+      - 'frontend/package.json'
+      - 'frontend/package-lock.json'
+      - 'scripts/gpupanel-dependency-audit.py'
+      - 'scripts/tests/test_gpupanel_dependency_audit.py'
+      - 'docs/gpupanel/DEPENDENCY_LICENSE_INVENTORY.md'
+      - '.github/workflows/gpupanel-dependency-inventory.yml'
+  workflow_dispatch:
+jobs:
+  dependency-inventory:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python3 -m unittest discover -s scripts/tests -p 'test_gpupanel_dependency_audit.py' -v
+      - run: python3 scripts/gpupanel-dependency-audit.py --output dependency-license-inventory.json
+      - name: Print review counts (not compliance results)
+        run: |
+          python3 - <<'PY'
+          import json
+          with open('dependency-license-inventory.json', encoding='utf-8') as stream:
+              result = json.load(stream)
+          print('Third-party review evidence:', result['summary'])
+          for name, module in sorted(result['go'].items()):
+              print(f"{name}: {module['require_count']} requirements, {module['replace_count']} replacements")
+              for entry in module['replacements']:
+                  print('  replacement review:', entry['from'], '=>', entry['to'])
+          print('No dependency licenses have been cleared by this check.')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: gpupanel-dependency-review
+          path: dependency-license-inventory.json
+          retention-days: 14
