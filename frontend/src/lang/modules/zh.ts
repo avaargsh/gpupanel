@@ -10,6 +10,7 @@ const message = {
         catalogInstalled: '已安装应用',
         catalogCompose: 'Docker Compose',
         catalogPlanned: '规划中',
+        catalogExperimental: '实验性 CLI 模板',
         catalogUnavailable: '尚未开放安装',
         catalogNoMatch: '没有匹配的目录项目',
         catalogLoadFailed: '应用目录加载失败：请检查网络、权限或仓库同步状态。',

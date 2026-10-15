@@ -22,7 +22,9 @@
                 <el-card v-for="item in visibleDefinitions" :key="item.id" shadow="never">
                     <div class="gpupanel-catalog__header">
                         <strong>{{ item.name }}</strong>
-                        <el-tag type="info" size="small">{{ $t('gpupanel.catalogPlanned') }}</el-tag>
+                        <el-tag :type="item.status === 'experimental' ? 'warning' : 'info'" size="small">
+                            {{ item.status === 'experimental' ? $t('gpupanel.catalogExperimental') : $t('gpupanel.catalogPlanned') }}
+                        </el-tag>
                     </div>
                     <p>{{ item.description }}</p>
                     <div class="gpupanel-catalog__metadata">

@@ -18,8 +18,8 @@ class CatalogContract(unittest.TestCase):
         self.index = catalog.load(ROOT / "catalog/index.json")
 
     def test_repo_index_only_declares_planned_features(self):
-        self.assertEqual(self.index["revisions"], [])
-        self.assertTrue(all(x["status"] == "planned" for x in self.index["definitions"]))
+        self.assertEqual(len(self.index["revisions"]), 1)
+        self.assertTrue(all(x["status"] in {"planned", "experimental"} for x in self.index["definitions"]))
         self.assertEqual(catalog.plan(self.index, "gpupanel.dev.python")["status"], "BLOCKED")
 
     def test_duplicate_definition_and_unknown_fields_rejected(self):

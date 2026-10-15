@@ -18,11 +18,12 @@ SHA = re.compile(r"^[0-9a-f]{64}$")
 KINDS = {"application", "devtool", "workspace", "model", "workflow"}
 TARGETS = {"linux-host", "docker-compose", "kubernetes"}
 ADAPTERS = {"host-package", "docker-compose", "verified-asset"}
-SOURCES = {"official", "mirror", "modelscope", "acr"}
+SOURCES = {"official", "mirror", "modelscope", "acr", "bundled"}
 
 # Reviewed recipes must be added here with separate implementation/tests.
 # Catalog files can never self-authorize a new command or executor.
-APPROVED_RECIPES: frozenset[str] = frozenset()
+APPROVED_RECIPES: frozenset[str] = frozenset({"python-stdlib-scaffold-v1"})
+BUNDLED_RECIPES = {"python-stdlib-scaffold-v1": "catalog/templates/python-stdlib/manifest.json"}
 
 
 class CatalogError(Exception):
@@ -87,12 +88,16 @@ def validate_revision(revision: dict, definitions: set[str], approved_recipes: f
     if source["provider"] not in SOURCES:
         raise CatalogError("source: unknown provider")
     uri = check_string(source, "uri", "source")
-    parts = urlsplit(uri)
-    # The installer layer will have a distinct artifact source adapter. A catalog
-    # manifest cannot downgrade transport or embed download credentials.
-    if (parts.scheme != "https" or not parts.hostname or parts.username
-            or parts.password or parts.fragment or parts.port == 0):
-        raise CatalogError("source: pinned HTTPS artifact required")
+    if source["provider"] == "bundled":
+        # A local repository file is not a generic file:// or custom path source.
+        # Each bundled recipe's path is fixed in trusted executable code.
+        if uri != BUNDLED_RECIPES.get(recipe) or revision["adapter"] != "verified-asset":
+            raise CatalogError("source: unapproved bundled recipe path")
+    else:
+        parts = urlsplit(uri)
+        if (parts.scheme != "https" or not parts.hostname or parts.username
+                or parts.password or parts.fragment or parts.port == 0):
+            raise CatalogError("source: pinned HTTPS artifact required")
     checksum = check_string(source, "sha256", "source")
     if not SHA.fullmatch(checksum):
         raise CatalogError("source: invalid sha256")
@@ -143,7 +148,13 @@ def plan(obj: dict, definition_id: str) -> dict:
     if definition is None:
         raise CatalogError("unknown definition: " + definition_id)
     revisions = [r for r in obj["revisions"] if r["definitionId"] == definition_id]
-    # No execution authority is minted by this read-only discovery API.
+    if len(revisions) == 1 and revisions[0]["recipeId"] == "python-stdlib-scaffold-v1":
+        return {"definitionId": definition_id, "status": "READY_FOR_USER_APPROVAL",
+                "revisions": [revisions[0]["id"]],
+                "reason": "Offline, user-local project scaffold (not Python runtime installation)",
+                "steps": ["Verify", "Preview", "Approve", "Create", "Reconcile", "Uninstall"],
+                "command": "python3 scripts/gpupanel-catalog-workspace.py plan",
+                "executed": False}
     return {"definitionId": definition_id, "status": "BLOCKED",
             "revisions": [r["id"] for r in revisions],
             "reason": "No reviewed installer or independent runtime verification is connected",
@@ -177,7 +188,7 @@ def main(argv: list[str] | None = None) -> int:
         else:
             result = plan(index, args.definition_id)
         print(json.dumps(result, ensure_ascii=False, indent=2))
-        return 2 if args.command == "plan" else 0
+        return 2 if args.command == "plan" and result["status"] == "BLOCKED" else 0
     except (CatalogError, TypeError, ValueError) as exc:
         print(json.dumps({"error": str(exc)}, ensure_ascii=False), file=sys.stderr)
         return 2
