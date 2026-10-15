@@ -46,7 +46,7 @@ def resolve_commit(root: Path, revision: str) -> str:
 
 def inspect(root: Path, archive: Path, baseline: str = BASELINE) -> dict:
     root = root.resolve()
-    archive = archive.resolve()
+    archive = Path(archive)  # preserve symlink identity for release.verify
     try:
         verified = release.verify(archive)
     except (release.ReleaseError, OSError, ValueError, tarfile.TarError,
