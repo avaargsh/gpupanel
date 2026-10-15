@@ -1,11 +1,13 @@
 package v2
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/1Panel-dev/1Panel/agent/app/api/v2/helper"
 	"github.com/1Panel-dev/1Panel/agent/app/dto"
 	"github.com/1Panel-dev/1Panel/agent/app/dto/request"
+	"github.com/1Panel-dev/1Panel/agent/app/service"
 	"github.com/1Panel-dev/1Panel/agent/i18n"
 	"github.com/1Panel-dev/1Panel/agent/utils/appicon"
 	"github.com/gin-gonic/gin"
@@ -42,6 +44,10 @@ func (b *BaseApi) SearchApp(c *gin.Context) {
 func (b *BaseApi) SyncApp(c *gin.Context) {
 	var req dto.OperateWithTask
 	if err := helper.CheckBindAndValidate(&req, c); err != nil {
+		return
+	}
+	if !service.LegacyRemoteCatalogEnabled() {
+		helper.BadRequest(c, errors.New("the original 1Panel remote app catalog is retired in GPUPanel"))
 		return
 	}
 	res, err := appService.GetAppUpdate()

@@ -12,12 +12,15 @@ class UpstreamRetirement(unittest.TestCase):
     def test_discovery_never_shows_upstream_remote_records(self):
         src = (ROOT / "agent/app/service/app.go").read_text()
         self.assertIn("appRepo.WithNotRemote()", src)
-        self.assertIn("if !legacyRemoteCatalogEnabled()", src)
+        self.assertIn("if !LegacyRemoteCatalogEnabled()", src)
         query = (ROOT / "agent/app/repo/app.go").read_text()
         self.assertIn('g.Where("resource != ?", "remote")', query)
     def test_disable_without_mutating_installation_history(self):
         src = (ROOT / "agent/app/service/legacy_catalog.go").read_text()
         self.assertIn("return false", src)
+        handler = (ROOT / "agent/app/api/v2/app.go").read_text()
+        self.assertIn("if !service.LegacyRemoteCatalogEnabled()", handler)
+        self.assertIn("original 1Panel remote app catalog is retired", handler)
         self.assertNotIn("Delete", src)
         self.assertNotIn("os.Getenv", src)
         app = (ROOT / "agent/app/service/app.go").read_text()

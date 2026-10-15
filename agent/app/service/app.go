@@ -846,7 +846,7 @@ func (a AppService) SyncAppListFromLocal(TaskID string) {
 }
 
 func (a AppService) GetAppUpdate() (*response.AppUpdateRes, error) {
-	if !legacyRemoteCatalogEnabled() {
+	if !LegacyRemoteCatalogEnabled() {
 		// Do not phone home to the inherited 1Panel app repository.
 		return &response.AppUpdateRes{}, nil
 	}
