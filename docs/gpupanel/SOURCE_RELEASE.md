@@ -28,4 +28,4 @@ Current Go startup still assumes data/CLI paths including `/usr/local/bin/1pctl`
 - [ ] Restore a backup after interrupted upgrade; standalone Ubuntu 24.04 VM test
 - [ ] Login -> Host -> Docker create/start/logs/stop/delete end-to-end acceptance
 
-Release manifest uses `status=source-preview-not-installable` and verifies every included file. Do not publish it as a production distribution. The heavy full build is a manual workflow dispatch, while PRs execute fast hermetic contract tests.
+Release manifest uses `status=source-preview-not-installable` and verifies every included file. Do not publish it as a production distribution. The full source build runs in CI on PRs alongside hermetic contract tests; successful compilation is still not proof that installation or first-login succeeds.
