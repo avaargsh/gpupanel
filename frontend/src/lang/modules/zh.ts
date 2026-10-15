@@ -2,6 +2,16 @@ import { getFuLocaleMessage } from '@/lang/fu';
 
 const message = {
     gpupanel: {
+        catalogNav: '软件与环境目录',
+        catalogPreview: '预览 · 暂无已审核安装器',
+        catalogSearchPlaceholder: '搜索软件、环境或部署目标',
+        catalogNotice: '已移除原 1Panel 预置应用目录。GPUPanel Catalog 当前仅展示规划模板，安装功能须经过制品、权限和回滚验收。',
+        catalogLegacyInstallLink: '旧应用商店安装链接已停用，不会自动安装。请查看已安装应用或 Docker Compose。',
+        catalogInstalled: '已安装应用',
+        catalogCompose: 'Docker Compose',
+        catalogPlanned: '规划中',
+        catalogUnavailable: '尚未开放安装',
+        catalogNoMatch: '没有匹配的目录项目',
         catalogLoadFailed: '应用目录加载失败：请检查网络、权限或仓库同步状态。',
         catalogRetry: '重试加载',
         catalogEmpty: '当前筛选条件下没有应用；可尝试清除筛选或同步目录。',
@@ -12,8 +22,8 @@ const message = {
         hostStepDesc: '检查 CPU、磁盘与系统监控',
         dockerStep: '确认容器运行环境',
         dockerStepDesc: '读取当前主机的 Docker 状态',
-        appsStep: '部署第一个应用',
-        appsStepDesc: '通过现有应用商店或 Compose 交付',
+        appsStep: '浏览软件与环境目录',
+        appsStepDesc: '已安装应用继续可管理；新 Catalog 模板尚未开放安装',
         dockerChecking: '正在检查 Docker…',
         dockerReady: 'Docker 可访问，运行中的容器：{count}',
         dockerNotInstalled: '此节点未检测到 Docker 命令；请先完成受控安装',

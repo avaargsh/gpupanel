@@ -1,6 +1,6 @@
 # GPUPanel Catalog Contract — Phase 0 (no installer yet)
 
-The 1Panel App Store remains the **real** Docker/Compose applications user entry at `/apps/all`. It already implements catalog search, sync, version details and installation routes.
+The original 1Panel remote App Store is **retired** from GPUPanel discovery and background sync. The `/apps/all` entry now renders this GPUPanel Catalog index as a read-only preview. Installed applications remain under `/apps/installed`; the inherited app management backend is retained for safe uninstall and recovery. New Catalog definitions do not yet install software.
 
 This directory is a separate, versioned **GPUPanel Catalog contract** for planned developer-environment and application templates. It does NOT replace 1Panel App Store, the model provider catalog (`agent/app/provider/catalog.go`) or any Kubernetes controller.
 

@@ -1,27 +1,28 @@
-name: GPUPanel Catalog search
+name: GPUPanel native Catalog portal
 on:
   pull_request:
     paths:
       - 'frontend/**'
-      - 'scripts/tests/test_gpupanel_catalog_search.py'
-      - '.github/workflows/gpupanel-catalog-search.yml'
+      - 'catalog/**'
+      - 'scripts/tests/test_gpupanel_native_catalog.py'
+      - '.github/workflows/gpupanel-native-catalog.yml'
   workflow_dispatch:
 jobs:
-  catalog-search:
-    runs-on: ubuntu-latest
+  native-catalog:
+    runs-on: ubuntu-24.04
     permissions:
       contents: read
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
           cache: npm
           cache-dependency-path: frontend/package-lock.json
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-      - run: python3 -m unittest discover -s scripts/tests -p 'test_gpupanel_catalog_search.py' -v
+      - run: python3 -m unittest discover -s scripts/tests -p 'test_gpupanel_native_catalog.py' -v
       - run: npm ci
         working-directory: frontend
       - run: npm run build:pro
