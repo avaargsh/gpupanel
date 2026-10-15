@@ -101,3 +101,19 @@ func markInterruptedAppInstallationUnknown(appDB *gorm.DB, install *model.AppIns
 	}
 	return nil
 }
+
+
+// requireReconciledAppInstallation blocks side-effecting application operations
+// while an interrupted install's actual outcome has not been verified.
+// Inspecting/syncing a task and UI metadata do not resolve UNKNOWN.
+func requireReconciledAppInstallation(status, operation string) error {
+	if status != constant.StatusUnknown {
+		return nil
+	}
+	switch operation {
+	case "sync", "favorite":
+		return nil
+	default:
+		return errors.New("application installation outcome is unknown; inspect task, app record and Docker resources before modifying it")
+	}
+}
