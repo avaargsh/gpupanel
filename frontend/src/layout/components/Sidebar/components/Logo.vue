@@ -25,8 +25,8 @@
 
 <script setup lang="ts">
 import { useGlobalStore } from '@/composables/useGlobalStore';
-import PrimaryLogo from '@/assets/images/1panel-logo.svg?component';
-import MenuLogo from '@/assets/images/1panel-menu-logo.svg?component';
+import PrimaryLogo from '@/assets/images/gpupanel-logo.svg?component';
+import MenuLogo from '@/assets/images/gpupanel-menu-logo.svg?component';
 import { ref } from 'vue';
 import { routerToNameWithQuery } from '@/utils/router';
 

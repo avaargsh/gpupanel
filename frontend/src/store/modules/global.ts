@@ -20,7 +20,7 @@ const GlobalStore = defineStore('GlobalState', {
             theme: 'auto',
             footer: true,
             themeColor: '',
-            title: '',
+            title: 'GPUPanel',
             logo: '',
             logoWithText: '',
             favicon: '',

@@ -23,8 +23,8 @@ export const useLogo = async () => {
     }
 
     const link = (document.querySelector("link[rel*='icon']") || document.createElement('link')) as HTMLLinkElement;
-    link.type = 'image/x-icon';
+    link.type = themeConfig.value.favicon ? 'image/x-icon' : 'image/svg+xml';
     link.rel = 'shortcut icon';
-    link.href = themeConfig.value.favicon ? `/api/v2/images/favicon?t=${Date.now()}` : '/public/favicon.png';
+    link.href = themeConfig.value.favicon ? `/api/v2/images/favicon?t=${Date.now()}` : '/gpupanel-favicon.svg';
     document.getElementsByTagName('head')[0].appendChild(link);
 };

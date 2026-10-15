@@ -1,8 +1,8 @@
 {
-    "name": "1panel-frontend",
+    "name": "gpupanel-frontend",
     "private": true,
     "version": "2.0",
-    "description": "1Panel 前端",
+    "description": "GPUPanel 前端（基于 1Panel GPLv3 开源代码）",
     "scripts": {
         "dev": "node --max-old-space-size=8192 ./node_modules/.bin/vite --host",
         "serve": "vite",

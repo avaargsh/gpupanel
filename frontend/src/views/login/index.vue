@@ -19,7 +19,7 @@
                         v-show="imgLoaded"
                         :src="loadImage('loginImage')"
                         class="max-w-full max-h-full object-cover bg-cover bg-center"
-                        alt="1panel"
+                        alt="GPUPanel"
                         @load="onImgLoad"
                         @error="onImgError"
                     />
@@ -41,9 +41,9 @@ import { hasExternalLoginTicket } from '@/utils/external-login';
 defineOptions({ name: 'Login' });
 const { entrance, isEnterprise, themeConfig } = useGlobalStore();
 const backgroundOpacity = ref(1);
-const defaultLoginImage = new URL('@/assets/images/1panel-login.jpg', import.meta.url).href;
-const defaultEnterpriseLoginImage = new URL('@/assets/images/1panel-login-enterprise.png', import.meta.url).href;
-const defaultLoginBgImage = new URL('@/assets/images/1panel-login-bg.jpg', import.meta.url).href;
+const defaultLoginImage = new URL('@/assets/images/gpupanel-login.svg', import.meta.url).href;
+const defaultEnterpriseLoginImage = new URL('@/assets/images/gpupanel-login.svg', import.meta.url).href;
+const defaultLoginBgImage = new URL('@/assets/images/gpupanel-login-bg.svg', import.meta.url).href;
 const loadedLoginImage = ref<string | null>(null);
 const loadedBackgroundImage = ref<string | null>(null);
 const backgroundStyle = ref<{ backgroundImage?: string; backgroundColor?: string }>({});
