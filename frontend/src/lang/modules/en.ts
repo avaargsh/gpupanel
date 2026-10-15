@@ -1,6 +1,11 @@
 import { getFuLocaleMessage } from '@/lang/fu';
 
 const message = {
+    gpupanel: {
+        quickStart: 'Current Host · Quick Actions',
+        quickStartDescription: 'Start with host, containers and terminal. Kubernetes and AI workspaces remain optional future integrations.',
+        openModule: 'Open',
+    },
     apiKeyManagement: {
         title: 'API Key',
         manage: 'Manage API Keys',

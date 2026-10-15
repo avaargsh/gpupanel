@@ -1,6 +1,11 @@
 import { getFuLocaleMessage } from '@/lang/fu';
 
 const message = {
+    gpupanel: {
+        quickStart: '当前主机 · 常用操作',
+        quickStartDescription: '先管理 Ubuntu Host、容器和终端；Kubernetes 与 AI 工作区作为后续可选集成。',
+        openModule: '打开',
+    },
     apiKeyManagement: {
         title: 'API Key',
         manage: '管理 API Key',
