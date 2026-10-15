@@ -47,6 +47,9 @@ export const readPendingAppInstall = (): PendingAppInstall | null => {
 export const savePendingAppInstall = (receipt: PendingAppInstall): boolean => {
     if (!valid(receipt)) return false;
     try {
+        // A second drawer must never overwrite an unresolved request's identity.
+        const existing = readPendingAppInstall();
+        if (existing && existing.taskID !== receipt.taskID) return false;
         window.sessionStorage.setItem(PENDING_APP_INSTALL_KEY, JSON.stringify(receipt));
         // A failed/quota-blocked write must prevent the privileged submission.
         return readPendingAppInstall()?.taskID === receipt.taskID;
@@ -55,10 +58,14 @@ export const savePendingAppInstall = (receipt: PendingAppInstall): boolean => {
     }
 };
 
-export const clearPendingAppInstall = (): void => {
+export const clearPendingAppInstall = (expectedTaskID: string): boolean => {
     try {
+        // Do not erase a newer receipt belonging to another request.
+        if (readPendingAppInstall()?.taskID !== expectedTaskID) return false;
         window.sessionStorage.removeItem(PENDING_APP_INSTALL_KEY);
+        return true;
     } catch {
         // Authorization is server-side. Failing to clear must not grant rights.
+        return false;
     }
 };
