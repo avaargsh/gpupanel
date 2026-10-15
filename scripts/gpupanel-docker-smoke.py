@@ -16,6 +16,7 @@ import sys
 import uuid
 
 IMAGE = re.compile(r"^[a-z0-9][a-z0-9./:_-]{0,250}@sha256:[0-9a-f]{64}$")
+LOCAL_IMAGE_ID = re.compile(r"^sha256:[0-9a-f]{64}$")
 MARKER = "gpupanel-disposable-smoke-ok"
 TIMEOUT = 25
 
@@ -37,13 +38,15 @@ def command(executable: str, *args: str, runner=subprocess.run) -> str:
 
 
 def validate_image(value: str) -> str:
-    if not IMAGE.fullmatch(value):
-        raise SmokeError("provide a fully-qualified local image@sha256 digest, never a mutable tag")
+    if not IMAGE.fullmatch(value) and not LOCAL_IMAGE_ID.fullmatch(value):
+        raise SmokeError("provide a local sha256:image-id or image@sha256 digest, never a mutable tag")
     return value
 
 
-def smoke(image: str, approved: bool, executor=command) -> dict:
+def smoke(image: str, approved: bool, executor=command, fixture_entrypoint: bool = False) -> dict:
     image = validate_image(image)
+    if fixture_entrypoint and not LOCAL_IMAGE_ID.fullmatch(image):
+        raise SmokeError("fixture entrypoint requires a locally built immutable image ID")
     checks = ["docker info", "docker image inspect (local only)",
               "docker create --pull=never --network=none --read-only --cap-drop=ALL",
               "docker start", "docker logs", "docker inspect exit code", "docker rm"]
@@ -57,7 +60,9 @@ def smoke(image: str, approved: bool, executor=command) -> dict:
         raise SmokeError("Docker CLI not found")
     # Docker context is operator-configured. This never installs or starts a daemon.
     executor(binary, "info", "--format", "{{.ServerVersion}}")
-    executor(binary, "image", "inspect", "--format", "{{.Id}}", image)
+    resolved_id = executor(binary, "image", "inspect", "--format", "{{.Id}}", image)
+    if LOCAL_IMAGE_ID.fullmatch(image) and resolved_id.strip() != image:
+        raise SmokeError("local image ID changed or did not match requested digest")
     name = "gpupanel-accept-" + uuid.uuid4().hex[:16]
     created = False
     cleanup_error = False
@@ -65,8 +70,11 @@ def smoke(image: str, approved: bool, executor=command) -> dict:
     try:
         args = ("create", "--pull=never", "--name", name, "--network=none",
                 "--read-only", "--cap-drop=ALL", "--security-opt", "no-new-privileges",
-                "--pids-limit", "32", "--memory", "128m", "--cpus", "0.5",
-                "--entrypoint", "/bin/sh", image, "-c", "printf " + MARKER)
+                "--pids-limit", "32", "--memory", "128m", "--cpus", "0.5")
+        if fixture_entrypoint:
+            args += ("--entrypoint", "/gpupanel-smoke", image)
+        else:
+            args += ("--entrypoint", "/bin/sh", image, "-c", "printf " + MARKER)
         executor(binary, *args)
         created = True
         executor(binary, "start", name)
@@ -95,9 +103,11 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="GPUPanel Docker engine disposable lifecycle smoke")
     parser.add_argument("--image", required=True, help="locally available immutable image@sha256 digest")
     parser.add_argument("--approve", action="store_true", help="explicitly create and remove disposable container")
+    parser.add_argument("--fixture-entrypoint", action="store_true",
+                        help="CI only: run /gpupanel-smoke in locally built immutable image")
     args = parser.parse_args(argv)
     try:
-        result = smoke(args.image, args.approve)
+        result = smoke(args.image, args.approve, fixture_entrypoint=args.fixture_entrypoint)
         print(json.dumps(result, ensure_ascii=False, indent=2))
         return 0 if result["status"] == "PASSED" else 2
     except SmokeError as exc:

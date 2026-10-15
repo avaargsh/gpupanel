@@ -18,3 +18,22 @@ jobs:
           python-version: '3.12'
       - run: python3 -m py_compile scripts/gpupanel-docker-smoke.py
       - run: python3 -m unittest discover -s scripts/tests -p 'test_gpupanel_docker_smoke.py' -v
+      - name: Real Docker lifecycle using an offline locally built immutable image
+        run: |
+          set -eu
+          test "$(id -u)" != 0
+          docker info >/dev/null
+          tmp="$(mktemp -d)"
+          trap 'rm -rf "$tmp"; docker image rm gpupanel-smoke:ci >/dev/null 2>&1 || true' EXIT
+          cat > "$tmp/smoke.go" <<'EOF'
+          package main
+          import "fmt"
+          func main() { fmt.Println("gpupanel-disposable-smoke-ok") }
+          EOF
+          (cd "$tmp" && CGO_ENABLED=0 GO111MODULE=off go build -trimpath -o smoke ./smoke.go)
+          printf 'FROM scratch\nCOPY smoke /gpupanel-smoke\n' > "$tmp/Dockerfile"
+          docker build --network none --pull=false -t gpupanel-smoke:ci "$tmp"
+          image="$(docker image inspect --format '{{.Id}}' gpupanel-smoke:ci)"
+          python3 scripts/gpupanel-docker-smoke.py --image "$image" --fixture-entrypoint --approve
+          test -z "$(docker ps -a --format '{{.Names}}' --filter name=gpupanel-accept-)"
+
