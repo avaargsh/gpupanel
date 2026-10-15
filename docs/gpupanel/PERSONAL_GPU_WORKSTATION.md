@@ -53,6 +53,29 @@ Login to existing Host
 - Do not bring in Kubernetes, multi-host, GPU vendor adapters, broad Agentic Ops or a new orchestration framework to ship a personal workstation.
 - Do not declare chat delivered until a real backend is selected, tested and connected.
 
+## Read-only GPU first-run check (incremental implementation)
+
+The authenticated GPUPanel home page now requests the existing **read-only** `loadGPUInfo()` collector when the operator has GPU view permission. The first-run card displays a separate GPU step between Host and Docker. The explicit **Check again** button refreshes GPU and Docker health.
+
+| State | Meaning |
+| --- | --- |
+| Checking | Fresh backend observation is underway |
+| Detected | One or more accelerator devices reported without collector warnings |
+| Partial | Devices observed but some collectors failed or returned unrecognized devices |
+| None | Valid empty collector snapshot; no GPU/NPU/XPU detected |
+| Unknown | API error, malformed data, or warnings without an observed device |
+| Permission restricted | Existing route/permission gate does not allow GPU observation |
+
+Node changes and component unmount invalidate outstanding asynchronous responses so late results cannot overwrite the selected node's newer state. The UI **does not** contact GPU vendor binaries, install drivers, test PyTorch, or claim CUDA toolkit compatibility. NVIDIA CUDA version displayed here is **driver-reported capability**, not evidence of installed `nvcc`, CUDA toolkit, cuDNN, PyTorch, model training or inference readiness.
+
+The frontend's existing GPU page remains the detailed telemetry surface. Developer environment recipes remain a distinct later phase with provenance, approval, install, verification and rollback. **This improvement does not clear Ubuntu Host G3–G6.**
+
+To test the pure observation contract:
+
+```bash
+node --test frontend/tests/gpu-first-run.test.mjs
+```
+
 ## Progressive enhancement after this UX PR
 
 **Next build slice:** independently prove fresh Ubuntu install / login / Docker lifecycle on a disposable host and map the existing GPU view to a supported accelerator; then add a simple template selection → setup preview → approved local install and recovery. Only after that, add a unified authenticated **read-only chat** Core adapter with explicit capability discovery and an operator-free user experience. Backend tool execution must remain disabled until controlled authority exists.
