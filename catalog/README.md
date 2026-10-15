@@ -43,6 +43,7 @@ python3 scripts/gpupanel-catalog.py plan gpupanel.dev.python-stdlib
 python3 scripts/gpupanel-catalog-workspace.py plan
 python3 scripts/gpupanel-catalog-workspace.py install --approve
 python3 scripts/gpupanel-catalog-workspace.py status
+python3 scripts/gpupanel-catalog-workspace.py list
 python3 ~/GPUPanel/projects/python-stdlib-starter/main.py
 python3 scripts/gpupanel-catalog-workspace.py uninstall --approve
 ```
@@ -50,3 +51,7 @@ python3 scripts/gpupanel-catalog-workspace.py uninstall --approve
 The installer refuses root, outside-home destinations, symlinks, existing projects and unverified files. Planning creates no directories; after explicit approval it creates missing user-home parent directories with private permissions (never deletes them on uninstall). It publishes through Linux atomic no-overwrite rename, records a receipt, and refuses removal if the user has modified/added content. **No shell commands or third-party installers are executed by GPUPanel.** The user explicitly runs the starter code separately.
 
 The web Catalog card intentionally remains **non-installable** until the authenticated Host execution/observation adapter is integrated and independently acceptance-tested.
+
+### Local installation inventory
+
+`python3 scripts/gpupanel-catalog-workspace.py list` enumerates **only direct children with a GPUPanel receipt** in the selected project's parent directory. It reports verified/drifted counts, no user file contents, and performs no modification. Missing parents return an empty inventory. Projects not created by GPUPanel are not traversed or treated as managed.

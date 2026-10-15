@@ -218,12 +218,43 @@ def uninstall(target: Path, allowed_root: Path, approved: bool, root: Path = ROO
     return {"status": "ABSENT", "target": str(dst), "uninstalled": True}
 
 
+def list_installs(projects_dir: Path, allowed_root: Path, root: Path = ROOT) -> dict:
+    """List only our known project receipts, never arbitrary user workspace files."""
+    directory = safe_target(projects_dir / ".gpupanel-list-sentinel", allowed_root).parent
+    if not directory.exists():
+        return {"status": "OK", "installations": [], "managed": 0, "drifted": 0, "executed": False}
+    if not directory.is_dir() or directory.is_symlink():
+        raise WorkspaceError("projects directory is unsafe")
+    records = []
+    try:
+        children = sorted(directory.iterdir(), key=lambda path: path.name)
+    except OSError as exc:
+        raise WorkspaceError("cannot enumerate project directory") from exc
+    if len(children) > 1000:
+        raise WorkspaceError("too many entries for a bounded inventory")
+    for child in children:
+        # Do not inspect, disclose or traverse ordinary user projects.
+        if child.is_symlink() or not child.is_dir():
+            continue
+        if not (child / RECEIPT).exists() and not (child / RECEIPT).is_symlink():
+            continue
+        entry = status(child, allowed_root, root)
+        records.append({"directory": child.name, "state": entry["status"],
+                        "revisionId": entry.get("revisionId"),
+                        "reason": entry.get("reason")})
+    return {"status": "OK", "installations": records,
+            "managed": sum(x["state"] == "INSTALLED" for x in records),
+            "drifted": sum(x["state"] != "INSTALLED" for x in records),
+            "executed": False}
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Offline GPUPanel user-local Python stdlib scaffold")
     parser.add_argument("--target", type=Path, default=DEFAULT_TARGET)
     sub = parser.add_subparsers(dest="action", required=True)
     sub.add_parser("plan")
     sub.add_parser("status")
+    sub.add_parser("list", help="inspect GPUPanel receipt-bearing projects in the target parent")
     sub.add_parser("install").add_argument("--approve", action="store_true")
     sub.add_parser("uninstall").add_argument("--approve", action="store_true")
     args = parser.parse_args(argv)
@@ -238,10 +269,12 @@ def main(argv: list[str] | None = None) -> int:
             result = install(args.target, Path.home(), args.approve)
         elif args.action == "status":
             result = status(args.target, Path.home())
+        elif args.action == "list":
+            result = list_installs(args.target.parent, Path.home())
         else:
             result = uninstall(args.target, Path.home(), args.approve)
         print(json.dumps(result, ensure_ascii=False, indent=2))
-        return 0 if result["status"] in {"INSTALLED", "ABSENT"} else 2
+        return 0 if result["status"] in {"INSTALLED", "ABSENT", "OK"} else 2
     except (WorkspaceError, OSError, catalog.CatalogError) as exc:
         print(json.dumps({"error": str(exc)}, ensure_ascii=False), file=sys.stderr)
         return 2
