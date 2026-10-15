@@ -1,0 +1,21 @@
+name: GPUPanel Agent master socket safety
+on:
+  pull_request:
+    paths:
+      - 'agent/server/server.go'
+      - 'agent/server/master_socket_test.go'
+      - '.github/workflows/gpupanel-master-socket.yml'
+  workflow_dispatch:
+jobs:
+  agent-master-socket:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: agent/go.mod
+          cache-dependency-path: agent/go.sum
+      - run: go test ./server -run 'Test(EnsureMasterSocketVacant|PrepareMasterSocketDir)' -count=1 -v
+        working-directory: agent
