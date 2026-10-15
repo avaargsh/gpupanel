@@ -52,10 +52,13 @@ export const savePendingAppInstall = (receipt: PendingAppInstall): boolean => {
         const existing = readPendingAppInstall();
         // A malformed older receipt is still an unresolved attempt: do not
         // erase it merely because its contents can no longer be trusted.
-        if (raw !== null && (!existing || existing.taskID !== receipt.taskID)) return false;
+        if (raw !== null && (!existing || existing.taskID !== receipt.taskID ||
+            existing.node !== receipt.node || existing.appKey !== receipt.appKey)) return false;
         window.sessionStorage.setItem(PENDING_APP_INSTALL_KEY, JSON.stringify(receipt));
         // A failed/quota-blocked write must prevent the privileged submission.
-        return readPendingAppInstall()?.taskID === receipt.taskID;
+        const confirmed = readPendingAppInstall();
+        return confirmed?.taskID === receipt.taskID &&
+            confirmed.node === receipt.node && confirmed.appKey === receipt.appKey;
     } catch {
         return false;
     }
