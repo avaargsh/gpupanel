@@ -6,6 +6,7 @@ import (
 	"github.com/1Panel-dev/1Panel/agent/app/dto"
 	"github.com/1Panel-dev/1Panel/agent/app/dto/request"
 	"github.com/1Panel-dev/1Panel/agent/app/dto/response"
+	"github.com/1Panel-dev/1Panel/agent/global"
 	"github.com/1Panel-dev/1Panel/agent/app/repo"
 	"github.com/1Panel-dev/1Panel/agent/utils/files"
 )
@@ -65,6 +66,12 @@ func (u *TaskLogService) ReadByLine(req request.TaskLogReadReq) (*response.FileL
 	taskModel, err := taskRepo.GetFirst(opts...)
 	if err != nil {
 		return nil, err
+	}
+	// Task admission is persisted before a log file or AppInstall row exists.
+	// An interrupted admission must remain inspectable after reload/restart.
+	// This is a read-only UNKNOWN-state diagnostic, not a success assertion.
+	if diagnostic, ok := inspectUnlinkedInstallReceipt(taskModel, global.DB); ok {
+		return diagnostic, nil
 	}
 
 	file, err := os.Open(taskModel.LogFile)
