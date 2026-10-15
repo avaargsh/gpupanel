@@ -28,6 +28,12 @@ spec = importlib.util.spec_from_file_location(
 workspace = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(workspace)
 
+package_spec = importlib.util.spec_from_file_location(
+    "gpupanel_uv_packages", ROOT / "scripts/gpupanel-env-packages.py"
+)
+packages_module = importlib.util.module_from_spec(package_spec)
+package_spec.loader.exec_module(packages_module)
+
 
 class EnvironmentError(Exception):
     pass
@@ -188,6 +194,10 @@ def present(result: dict, *, json_output: bool) -> int:
             print("目录:", result["target"])
         if "planDigest" in result:
             print("计划摘要:", result["planDigest"][:16])
+        if result["status"] == "OK" and "packages" in result:
+            print("已安装依赖:", result["count"])
+            for pkg in result["packages"]:
+                print("  ·", pkg["name"], pkg["version"])
         for step in result.get("steps", []):
             print("  ·", step)
         if "hint" in result:
@@ -196,14 +206,14 @@ def present(result: dict, *, json_output: bool) -> int:
             print("下一步: python3 scripts/gpupanel-env.py create --approve")
         elif result["status"] == "VERIFIED":
             print("下一步: 使用该目录 bin/python；第三方依赖后续交给 uv 管理。")
-    return 0 if result["status"] in ("READY_FOR_APPROVAL", "VERIFIED", "ABSENT") else 2
+    return 0 if result["status"] in ("READY_FOR_APPROVAL", "VERIFIED", "ABSENT", "OK") else 2
 
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Offline uv environment for one Ubuntu user")
     parser.add_argument("--target", type=Path, default=DEFAULT_TARGET)
     sub = parser.add_subparsers(dest="command")
-    for name in ("plan", "create", "status"):
+    for name in ("plan", "create", "status", "packages"):
         item = sub.add_parser(name)
         item.add_argument("--json", action="store_true", help="machine-readable JSON")
         item.add_argument("--target", type=Path, default=argparse.SUPPRESS,
@@ -216,6 +226,14 @@ def main(argv: list[str] | None = None) -> int:
     try:
         if args.command == "status":
             result = status(args.target, Path.home())
+        elif args.command == "packages":
+            observed = status(args.target, Path.home())
+            if observed["status"] != "VERIFIED":
+                result = {"status": "ENV_NOT_VERIFIED", "environment": observed["status"], "packages": []}
+            else:
+                uv = shutil.which("uv")
+                result = (packages_module.installed_packages(Path(observed["target"]), uv, safe_environment())
+                          if uv else {"status": "MISSING_UV", "packages": []})
         elif args.command == "create":
             result = create(args.target, Path.home(), args.approve)
         else:
