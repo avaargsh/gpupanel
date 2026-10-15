@@ -51,7 +51,7 @@ class RuntimeIsolationGate(unittest.TestCase):
     def test_missing_or_symlinked_source_rejected(self):
         with tempfile.TemporaryDirectory() as d:
             root=Path(d)
-            self.assertEqual(len(audit.inspect(root)["unresolvedChecks"]),audit.inspect(ROOT)["requiredChecks"])
+            self.assertEqual(len(audit.inspect(root)["unresolvedChecks"]),len(audit.REQUIRED))
             link=root/"core/cmd/server/cmd/root.go"
             link.parent.mkdir(parents=True)
             link.symlink_to(ROOT/"core/cmd/server/cmd/root.go")
