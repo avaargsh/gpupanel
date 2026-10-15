@@ -500,7 +500,7 @@ const enterSortMode = async () => {
     if (!sortMode.value) return;
     const el = sortContainer.value?.$el;
     if (el) {
-        const favCount = data.value.filter((i: any) => i.favorite).length;
+        const favCount = (data.value ?? []).filter((i) => i.favorite).length;
         sortableInstance = Sortable.create(el, {
             animation: 150,
             ghostClass: 'sortable-ghost',
@@ -516,7 +516,7 @@ const enterSortMode = async () => {
                 el.removeChild(evt.item);
                 el.insertBefore(evt.item, el.children[evt.oldIndex] || null);
 
-                const list = [...data.value];
+                const list = [...(data.value ?? [])];
                 const [moved] = list.splice(evt.oldIndex, 1);
                 list.splice(evt.newIndex, 0, moved);
                 data.value = list;
