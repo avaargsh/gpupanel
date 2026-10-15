@@ -179,8 +179,29 @@ func (b *BaseApi) InstallApp(c *gin.Context) {
 		helper.BadRequest(c, errors.New("new installations from the original 1Panel app catalog are retired in GPUPanel"))
 		return
 	}
+	// The TaskDB primary key is the durable replay fence. Reserve it before
+	// Install can create Docker networks, local files or AppInstall records.
+	req.TaskID, err = service.NormalizeAppInstallTaskID(req.TaskID)
+	if err != nil {
+		helper.BadRequest(c, err)
+		return
+	}
+	if err = service.ReserveAppInstallTask(req.TaskID, req.Name); err != nil {
+		if errors.Is(err, service.ErrAppInstallTaskReplay) || errors.Is(err, service.ErrAppInstallTaskID) {
+			helper.BadRequest(c, err)
+		} else {
+			helper.InternalServer(c, errors.New("installation task admission is unavailable"))
+		}
+		return
+	}
 	install, err := appService.Install(req, true)
 	if err != nil {
+		// Do not release the ID: an error can follow partial installation
+		// mutations and a client retry must not silently repeat them.
+		if markErr := service.MarkAppInstallAdmissionFailed(req.TaskID); markErr != nil {
+			helper.InternalServer(c, errors.New("installation rejected; task status requires reconciliation"))
+			return
+		}
 		helper.InternalServer(c, err)
 		return
 	}
