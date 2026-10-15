@@ -29,11 +29,9 @@ jobs:
       - name: Real session-cookie and denial checks at Core forwarding boundary
         working-directory: core
         run: go test ./init/router -run '^(TestCoreAppEvidenceAuthorization|TestCoreAppEvidencePathNormalization)$' -count=1 -v
-      - name: Real Core proxy HTTP forwarding / nonforwarding negative tests
+      - name: Real Core proxy HTTP forwarding and denied-upstream tests
         working-directory: core
-        run: go test ./init/router -run '^TestCoreAppEvidenceProxyHTTPGate        working-directory: core
-        run: go test ./init/router -run '^__NONE__$' -count=1
- -count=1 -v
+        run: go test ./init/router -run TestCoreAppEvidenceProxyHTTPGate -count=1 -v
       - name: Compile Core forwarding paths
         working-directory: core
-        run: go test ./init/router -run '^__NONE__$' -count=1
+        run: go test ./init/router -run TestIntentionallyAbsentTestName -count=1
