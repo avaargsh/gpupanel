@@ -11,9 +11,9 @@ GPUPanel 由 1Panel GPL-3.0 开源版 Fork 而来。现阶段继承 Linux Host�
 ```bash
 git clone --branch dev-v2 https://github.com/avaargsh/gpupanel.git
 cd gpupanel
-python3 scripts/gpupanel-bootstrap.py doctor --human
-python3 scripts/gpupanel-bootstrap.py plan --human
-python3 scripts/gpupanel-bootstrap.py self-test --human
+python3 scripts/gpupanel-bootstrap.py doctor
+python3 scripts/gpupanel-bootstrap.py plan
+python3 scripts/gpupanel-bootstrap.py self-test
 ```
 
 - `FOUND` 只表示系统 PATH 能找到该命令，不证明版本符合要求、Docker Daemon 可用或 GPU 驱动正确。
@@ -27,18 +27,30 @@ python3 scripts/gpupanel-bootstrap.py self-test --human
 直接查看当前 Python 解释器与 PyTorch 包元数据，**默认不会导入 PyTorch**：
 
 ```bash
-python3 scripts/gpupanel-python-doctor.py --human
-python3 scripts/gpupanel-first-run-overview.py --human
+python3 scripts/gpupanel-python-doctor.py
+python3 scripts/gpupanel-first-run-overview.py
 ```
 
 若信任当前环境中的 PyTorch，可显式检查它能否看到 CUDA/HIP 加速设备：
 
 ```bash
-python3 scripts/gpupanel-python-doctor.py --probe-torch --human
+python3 scripts/gpupanel-python-doctor.py --probe-torch
 ```
 
 这一步会在限时独立进程中导入第三方 PyTorch，可能初始化 GPU 上下文或生成用户缓存。它不执行安装、下载或修复，也不会运行 `pip install`、`nvcc`、`nvidia-smi`。检查显示 `ACCELERATOR_AVAILABLE` 仅代表当前 PyTorch 运行时能看到加速设备，**不代表本机 CUDA Toolkit、PyTorch 算子、Jupyter、训练和推理环境已验证**。退出码 0 只代表诊断命令执行，不能用作环境安装成功的门禁。
 
+
+## 3. 使用 uv 管理个人 Python 开发环境
+
+先确认本机已有可信来源的 `uv`，使用普通用户运行，无需 root，也不会自动安装驱动、Python 或第三方软件包：
+
+```bash
+python3 scripts/gpupanel-env.py plan
+python3 scripts/gpupanel-env.py create --approve
+python3 scripts/gpupanel-env.py status
+```
+
+默认显示可读说明；脚本消费请使用 `--json`，例如 `python3 scripts/gpupanel-env.py status --json`。只新建个人目录，不覆盖已有项目；uv 在离线模式下使用当前 Python，不下载 Python。详见 [uv 环境工作流](UV_WORKSTATION.md)。
 
 ## 3. 两种不同的“安装”操作
 
@@ -80,7 +92,7 @@ python3 scripts/gpupanel-preview-stage.py remove dev --approve
 
 暂存目录为 `~/GPUPanel/previews/source-dev/`，Core/Agent 文件不可执行；**不启动服务、不安装 systemd、不设置管理员、不开放网络端口、不覆盖现有 1Panel**。自带的 SHA-256 校验并不等于验证发行者签名，详见 [预览暂存边界](PREVIEW_STAGING.md)。
 
-独立 GPUPanel 系统安装依然受旧 `1pctl`、`/etc/1panel`、Core/Agent 数据库和其他旧路径约束。使用 `python3 scripts/gpupanel-runtime-namespace.py --strict --human` 查看阻塞；非零退出是预期结果。详见 [运行隔离](RUNTIME_ISOLATION.md)。
+独立 GPUPanel 系统安装依然受旧 `1pctl`、`/etc/1panel`、Core/Agent 数据库和其他旧路径约束。使用 `python3 scripts/gpupanel-runtime-namespace.py --strict` 查看阻塞；非零退出是预期结果。详见 [运行隔离](RUNTIME_ISOLATION.md)。
 
 ## 4. 前端开发预览
 
