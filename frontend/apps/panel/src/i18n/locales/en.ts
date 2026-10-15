@@ -127,7 +127,7 @@ const en: LocaleResource = {
         memory: 'Memory usage',
         disk: 'Disk usage',
         load: 'Load average',
-        uptime: 'Uptime',
+        uptime: 'Boot time',
         system: 'OS',
         arch: 'Arch',
         kernel: 'Kernel',

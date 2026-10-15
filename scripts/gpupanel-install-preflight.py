@@ -58,7 +58,7 @@ def read_os_release(root: Path) -> tuple[str, str]:
         return "unknown", "unknown"
 
 
-def inspect_host(root: Path, free_bytes: int | None = None) -> dict:
+def inspect_host(root: Path, free_bytes: int | None = None, experimental_ubuntu_26: bool = False) -> dict:
     """Only reads metadata; injectable hostroot/space make CI hermetic."""
     os_id, version = read_os_release(root)
     checks = []
@@ -66,6 +66,9 @@ def inspect_host(root: Path, free_bytes: int | None = None) -> dict:
         checks.append({"code": code, "state": state, "detail": detail, "next_action": action})
     if (os_id, version) == ("ubuntu", "24.04"):
         add("operating_system", "PASS", "Ubuntu 24.04", "No action")
+    elif experimental_ubuntu_26 and (os_id, version) == ("ubuntu", "26.04"):
+        add("operating_system", "UNKNOWN", "Ubuntu 26.04 experimental install explicitly selected",
+            "Verify on this host; this option does not waive collisions, data ownership or rollback checks")
     else:
         add("operating_system", "BLOCKED", f"Detected {os_id} {version}",
             "Use a disposable Ubuntu 24.04 VM; other OS versions are not validated")
@@ -130,6 +133,28 @@ def inspect_host(root: Path, free_bytes: int | None = None) -> dict:
             "note": "Read-only checks do not establish first-login or Docker lifecycle readiness"}
 
 
+def agent_healthy(socket_path: str = "/etc/gpupanel/agent.sock") -> bool:
+    """Read-only bounded HTTP probe; a listening Core port alone is not readiness."""
+    import http.client
+    import socket
+    connection = http.client.HTTPConnection("unix", timeout=2)
+    stream = socket.socket(socket.AF_UNIX)
+    stream.settimeout(2)
+    try:
+        stream.connect(socket_path)
+        connection.sock = stream
+        connection.request("GET", "/api/v1/health/check")
+        response = connection.getresponse()
+        body = response.read(4096)
+        payload = json.loads(body)
+        return response.status == 200 and isinstance(payload, dict) and payload.get("code") == 200
+    except (OSError, ValueError, http.client.HTTPException):
+        return False
+    finally:
+        connection.close()
+        stream.close()
+
+
 def present(result: dict, json_output: bool) -> None:
     if json_output:
         print(json.dumps(result, ensure_ascii=False, indent=2))
@@ -146,8 +171,12 @@ def present(result: dict, json_output: bool) -> None:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="GPUPanel collision/OS/disk preflight (never installs)")
     parser.add_argument("--json", action="store_true", help="machine-readable output")
+    parser.add_argument("--experimental-ubuntu-26", action="store_true", help="Opt into experimental Ubuntu 26.04 testing only; never bypass collisions")
+    parser.add_argument("--agent-health", action="store_true", help="Only probe the installed private Agent health endpoint")
     args = parser.parse_args(argv)
-    result = inspect_host(Path("/"))
+    if args.agent_health:
+        return 0 if agent_healthy() else 1
+    result = inspect_host(Path("/"), experimental_ubuntu_26=args.experimental_ubuntu_26)
     present(result, args.json)
     return 2 if result["blockers"] else 0
 

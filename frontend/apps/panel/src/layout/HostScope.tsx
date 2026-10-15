@@ -1,13 +1,13 @@
 import { IconServer } from '@douyinfe/semi-icons';
 import { useTranslation } from 'react-i18next';
-import { useGetOsInfoQuery } from '@/api/dashboardApi';
+import { useGetBaseInfoQuery } from '@/api/dashboardApi';
 import { useAppSelector } from '@/store/hooks';
 
 /** A resource label and observed read state; never claims remote enrollment or readiness. */
 export default function HostScope() {
     const { t } = useTranslation();
     const node = useAppSelector((s) => s.ui.currentNode) || 'local';
-    const query = useGetOsInfoQuery();
+    const query = useGetBaseInfoQuery({ ioOption: 'all', netOption: 'all' });
     const data = !query.isError ? query.currentData : undefined;
     const status = query.isError ? 'unavailable' : data?.hostname ? 'observed' : 'checking';
     return <div className="host-scope" data-state={status} title={t(`workbench.${status}`)}>

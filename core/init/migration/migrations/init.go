@@ -160,7 +160,11 @@ var InitSetting = &gormigrate.Migration{
 		if err := tx.Create(&model.Setting{Key: "SystemStatus", Value: "Free"}).Error; err != nil {
 			return err
 		}
-		if err := tx.Create(&model.Setting{Key: "BindAddress", Value: "0.0.0.0"}).Error; err != nil {
+		bindAddress, err := initialBindAddress(ctl_conf.LoadWithoutPanic("ORIGINAL_BIND_ADDRESS"))
+		if err != nil {
+			return err
+		}
+		if err := tx.Create(&model.Setting{Key: "BindAddress", Value: bindAddress}).Error; err != nil {
 			return err
 		}
 		if err := tx.Create(&model.Setting{Key: "Ipv6", Value: constant.StatusDisable}).Error; err != nil {

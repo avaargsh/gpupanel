@@ -1,0 +1,2 @@
+ok  	github.com/avaargsh/GPUPanel/agent/app/api/v1	1.067s
+ok  	github.com/avaargsh/GPUPanel/agent/utils/terminal	(cached)

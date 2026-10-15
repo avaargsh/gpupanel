@@ -125,7 +125,7 @@ const zh = {
         memory: '内存使用率',
         disk: '磁盘使用率',
         load: '系统负载',
-        uptime: '运行时长',
+        uptime: '启动时间',
         system: '操作系统',
         arch: '架构',
         kernel: '内核',

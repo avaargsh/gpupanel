@@ -1,0 +1,56 @@
+==> building frontend
+Scope: all 2 workspace projects
+✓ Lockfile passes supply-chain policies (verified 3d ago)
+Lockfile is up to date, resolution step is skipped
+Done in 17ms using pnpm v12.8.1
+$ pnpm --filter @gpupanel/panel build
+$ tsc --noEmit && vite build
+vite v6.4.4 building for production...
+transforming...
+✓ 3866 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                             2.20 kB │ gzip:   0.78 kB
+dist/assets/index-Czgz-bX2.css             19.02 kB │ gzip:   5.19 kB
+dist/assets/vendor-semi-B_lONrxj.css      660.20 kB │ gzip:  75.49 kB
+dist/assets/vendor-redux-lxbizdaU.js       47.04 kB │ gzip:  17.44 kB
+dist/assets/vendor-react-CHT5EwN-.js       92.45 kB │ gzip:  31.35 kB
+dist/assets/vendor-xterm-ChHEYabQ.js      290.57 kB │ gzip:  72.32 kB
+dist/assets/index-TuwMknck.js             958.25 kB │ gzip: 272.72 kB
+dist/assets/vendor-echarts-CkutTTYC.js  1,036.33 kB │ gzip: 343.42 kB
+dist/assets/vendor-semi-Cdc0x7GO.js     1,241.82 kB │ gzip: 344.58 kB
+✓ built in 8.15s
+==> embedding frontend into core/cmd/server/web
+==> building backend (linux/amd64)
+==> assembling release payload gpupanel-v0.1.0-linux-amd64
+    note: GeoIP.mmdb not vendored at /home/avaarg/GPUPanel/deploy/assets/GeoIP.mmdb (panel downloads it on first boot)
+
+release payload : /home/avaarg/GPUPanel/build/release/gpupanel-v0.1.0-linux-amd64
+tarball         : /home/avaarg/GPUPanel/build/gpupanel-v0.1.0-linux-amd64.tar.gz
+payload layout  :
+    LICENSE
+    NOTICE.md
+    app.yaml
+    gpupanel-agent
+    gpupanel-core
+    gpupanel-install-preflight.py
+    initscript
+    initscript/gpupanel-agent.service
+    initscript/gpupanel-core.service
+    install.sh
+    lang
+    lang/en.yaml
+    lang/es-ES.yaml
+    lang/fa.yaml
+    lang/ja.yaml
+    lang/ko.yaml
+    lang/lo.yaml
+    lang/ms.yaml
+    lang/pt-BR.yaml
+    lang/ru.yaml
+    lang/tr.yaml
+    lang/zh-Hant.yaml
+    lang/zh.yaml
+    pctl
+    uninstall.sh
+-rw-rw-r-- 1 avaarg avaarg 44M Oct 16 02:17 /home/avaarg/GPUPanel/build/gpupanel-v0.1.0-linux-amd64.tar.gz

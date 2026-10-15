@@ -1,0 +1,32 @@
+{
+  "kind": "LIVE bare-metal browser and authenticated Core\u2192Agent APIs; no mocks",
+  "run": "404703c8cedd",
+  "checks": {
+    "anonymous_denied": true,
+    "login_and_httponly_entry": true,
+    "host_api_matches_machine": true,
+    "docker_daemon_active": true,
+    "invalid_csrf_denied": true,
+    "terminal_websocket_execution_and_file_observed": true,
+    "terminal_unexpected_disconnect_reattaches_same_session": true,
+    "container_create_and_running_observed": true,
+    "container_list_and_logs": true,
+    "container_stop_start_observed": true,
+    "container_removed_observed": true,
+    "container_task_records_persisted": true,
+    "apps_gpu_and_tasks_routes": true
+  },
+  "canary_image_id": "sha256:a2b82f3c48559aa0a8446d9af49826b6e2b2016f4cd2afabfe6013ec53729170",
+  "gpu_observation": {
+    "device_count": 0,
+    "warnings": null
+  },
+  "marker_path": "/opt/gpupanel/test-evidence/404703c8cedd/persistent.txt",
+  "task_ids": [
+    "31de889a-8cd0-441d-b19a-521b26b73e34",
+    "36d095ae-4093-44fb-8ca8-5335cb856075",
+    "c3a0f1f5-2517-45a5-8d85-237207966db0",
+    "d409bf64-8bbe-4aac-b504-419141a48299"
+  ],
+  "page_errors": []
+}

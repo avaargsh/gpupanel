@@ -15,7 +15,9 @@ func Init() {
 	go syncRuntime()
 	go syncSSL()
 	go syncTask()
-	go initAcmeAccount()
+	if global.AutoProvisionEnabled() {
+		go initAcmeAccount()
+	}
 	go checkDockerCompose()
 }
 
