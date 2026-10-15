@@ -24,3 +24,5 @@ python3 scripts/gpupanel-runtime-namespace.py --strict --human
 ```
 
 The namespace audit intentionally exits nonzero until an independently verified Core/Agent namespace migration exists.
+
+Status also detects permission drift: all staged files and the management receipt must stay mode 0600. Marking a Core/Agent binary executable causes `DRIFT` and blocks automatic removal until manually restored. This does **not** make the preview an installer.
