@@ -15,6 +15,7 @@ class ReadOnlyInstallEvidenceContract(unittest.TestCase):
         self.assertIn('service.InspectAppInstallEvidence(appInstallId)', api)
         self.assertIn('helper.GetIntParamByKey(c, "appInstallId")', api)
         self.assertNotIn('appRouter.POST("/installed/evidence', route)
+        self.assertIn('c.Header("Cache-Control", "no-store")', api)
 
     def test_pure_snapshot_never_resolves_unknown_or_mutates_resources(self):
         impl = source("agent/app/service/app_install_evidence.go")
