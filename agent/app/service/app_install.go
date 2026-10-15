@@ -251,6 +251,9 @@ func (a *AppInstallService) Operate(req request.AppInstalledOperate) error {
 	if err != nil {
 		return err
 	}
+	if err := requireReconciledAppInstallation(install.Status, string(req.Operate)); err != nil {
+		return err
+	}
 	if !req.ForceDelete && !files.NewFileOp().Stat(install.GetPath()) {
 		return buserr.New("ErrInstallDirNotFound")
 	}
@@ -412,6 +415,9 @@ func (a *AppInstallService) UpdateSort(req request.AppInstallSort) error {
 func (a *AppInstallService) Update(req request.AppInstalledUpdate) error {
 	installed, err := appInstallRepo.GetFirst(repo.WithByID(req.InstallId))
 	if err != nil {
+		return err
+	}
+	if err := requireReconciledAppInstallation(installed.Status, "update"); err != nil {
 		return err
 	}
 	oldInstalled := installed
@@ -760,6 +766,9 @@ func (a *AppInstallService) ChangeAppPort(req request.PortUpdate) error {
 	appInstall, err := appInstallRepo.LoadBaseInfo(req.Key, req.Name)
 	if err != nil {
 		return nil
+	}
+	if err := requireReconciledAppInstallation(appInstall.Status, "change-port"); err != nil {
+		return err
 	}
 
 	if err := updateInstallInfoInDB(req.Key, req.Name, "port", strconv.FormatInt(req.Port, 10)); err != nil {
