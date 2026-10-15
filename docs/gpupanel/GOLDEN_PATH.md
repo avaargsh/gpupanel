@@ -12,9 +12,9 @@ This defines what counts as **a usable first release**. It is not an assertion t
 ## 1 — Preflight
 
 ```bash
-python3 scripts/gpupanel-bootstrap.py doctor --human
-python3 scripts/gpupanel-bootstrap.py self-test --human
-python3 scripts/gpupanel-install-preflight.py --human
+python3 scripts/gpupanel-bootstrap.py doctor
+python3 scripts/gpupanel-bootstrap.py self-test
+python3 scripts/gpupanel-install-preflight.py
 ```
 
 Expected: deterministic and read-only. An existing `/etc/1panel`, `/usr/local/bin/1pctl` or other legacy state blocks a standalone install; never force overwrite.

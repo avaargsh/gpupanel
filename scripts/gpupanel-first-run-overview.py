@@ -87,9 +87,11 @@ def overview(host_root: Path, repo_root: Path, free_bytes: int | None = None,
                           "firstLoginVerified": False, "dockerApiLifecycleVerified": False},
         "recommendedNextActions": [
             {"id": "review-host", "title": "Review Ubuntu version, disk and inherited 1Panel paths",
-             "command": "python3 scripts/gpupanel-install-preflight.py --human"},
+             "command": "python3 scripts/gpupanel-install-preflight.py"},
             {"id": "review-isolation", "title": "Audit Core/Agent isolation blockers",
-             "command": "python3 scripts/gpupanel-runtime-namespace.py --strict --human"},
+             "command": "python3 scripts/gpupanel-runtime-namespace.py --strict"},
+            {"id": "plan-uv-environment", "title": "Preview offline uv Python environment",
+             "command": "python3 scripts/gpupanel-env.py plan"},
             {"id": "try-offline-template", "title": "Preview Python stdlib user-local scaffold",
              "command": "python3 scripts/gpupanel-catalog-workspace.py plan"},
         ],
@@ -102,7 +104,7 @@ def overview(host_root: Path, repo_root: Path, free_bytes: int | None = None,
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="GPUPanel Host first-run review (read only)")
-    parser.add_argument("--human", action="store_true", help="print concise Chinese operator guidance")
+    parser.add_argument("--json", action="store_true", help="machine-readable output")
     parser.add_argument("--probe-torch", action="store_true",
                         help="opt in to importing PyTorch in an isolated timed subprocess (may initialize CUDA)")
     parser.add_argument("--probe-docker", action="store_true",
@@ -114,7 +116,7 @@ def main(argv: list[str] | None = None) -> int:
     except (OSError, ValueError, TypeError, catalog.CatalogError) as exc:
         print(json.dumps({"status": "FAILED", "error": str(exc)}, ensure_ascii=False), file=sys.stderr)
         return 2
-    if args.human:
+    if not args.json:
         print("GPUPanel 首次使用检查 | 只读、不安装")
         print(f"Host 阻塞项：{len(report['host']['blockers'])}；运行目录阻塞项："
               f"{report['systemRuntime']['namespaceRisks']}")
@@ -125,6 +127,7 @@ def main(argv: list[str] | None = None) -> int:
         print(f"Python {env['python']['version']}，PyTorch 安装状态: {env['torch']['status']}，"
               f"GPU 运行时: {env['runtime']['status']}")
         print("PyTorch 可选 --probe-torch；不自动导入第三方包，不代表 CUDA Toolkit 可用。")
+        print("Python 开发环境推荐 uv：先运行 gpupanel-env.py plan，明确批准后才能创建。")
         print("当前可用：Python 标准库项目模板（仅本机 CLI，需要明确批准写入）")
         print("完整 GPUPanel Core/Agent 系统安装：未开放；首次登录和 Docker API 闭环未验收。")
         for step in report["recommendedNextActions"]:

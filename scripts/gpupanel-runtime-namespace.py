@@ -82,12 +82,12 @@ def audit(root: Path) -> dict:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="GPUPanel inherited runtime path inventory (read only)")
     parser.add_argument("--root", type=Path, default=ROOT)
-    parser.add_argument("--human", action="store_true")
+    parser.add_argument("--json", action="store_true", help="machine-readable output")
     parser.add_argument("--strict", action="store_true",
                         help="exit 2 until independently proven installation-safe")
     args = parser.parse_args(argv)
     report = audit(args.root)
-    if args.human:
+    if not args.json:
         print("GPUPanel runtime namespace | NOT YET INSTALLABLE")
         for issue in report["issues"]:
             print(f"[{issue['state']}] {issue['id']} ({issue['source']}) — {issue['reason']}")

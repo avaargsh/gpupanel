@@ -3,7 +3,7 @@
 Run from the GPUPanel checkout on Ubuntu 24.04:
 
 ```bash
-python3 scripts/gpupanel-first-run-overview.py --human
+python3 scripts/gpupanel-first-run-overview.py
 python3 scripts/gpupanel-first-run-overview.py
 ```
 
@@ -17,15 +17,15 @@ A zero process exit code means only that the **inspection** succeeded. Read `con
 The default first-run report now also reads **only the current Python interpreter** and PyTorch package *distribution metadata*. It does not import PyTorch, open CUDA, pull packages or install anything:
 
 ```bash
-python3 scripts/gpupanel-python-doctor.py --human
-python3 scripts/gpupanel-first-run-overview.py --human
+python3 scripts/gpupanel-python-doctor.py
+python3 scripts/gpupanel-first-run-overview.py
 ```
 
 To opt into an actual import of the installed PyTorch wheel and `torch.cuda.is_available()` with a 12-second subprocess timeout:
 
 ```bash
-python3 scripts/gpupanel-python-doctor.py --probe-torch --human
-python3 scripts/gpupanel-first-run-overview.py --probe-torch --human
+python3 scripts/gpupanel-python-doctor.py --probe-torch
+python3 scripts/gpupanel-first-run-overview.py --probe-torch
 ```
 
 **Important:** PyTorch is third-party code and this explicit probe may initialize a GPU driver/context or create user cache files. Run it only in your intended, trusted virtual environment. The subprocess uses the current interpreter, isolated Python path (`-I`), no bytecode write (`-B`), a timeout and no shell; it never invokes `pip`, `apt`, driver installers or `docker`. The untrusted stderr is not published by the tool.
@@ -40,4 +40,4 @@ GPUPanel Home's separately authenticated GPU card reports **provider telemetry**
 
 ## Optional real Docker daemon health
 
-Use `python3 scripts/gpupanel-first-run-overview.py --probe-docker --human` to opt into a bounded **read-only** `docker info --format '{{.ServerVersion}}'` call. It does not create or delete containers. States are `NOT_CHECKED`, `MISSING_CLI`, `ACCESS_DENIED`, `UNAVAILABLE`, `TIMEOUT`, `INVALID_RESPONSE`, or `READY`. The check targets the **active Docker CLI context**, which may be a remote daemon; inspect your context before opting in. Even `READY` proves only Docker daemon communication, not the GPUPanel Agent API or container permissions.
+Use `python3 scripts/gpupanel-first-run-overview.py --probe-docker` to opt into a bounded **read-only** `docker info --format '{{.ServerVersion}}'` call. It does not create or delete containers. States are `NOT_CHECKED`, `MISSING_CLI`, `ACCESS_DENIED`, `UNAVAILABLE`, `TIMEOUT`, `INVALID_RESPONSE`, or `READY`. The check targets the **active Docker CLI context**, which may be a remote daemon; inspect your context before opting in. Even `READY` proves only Docker daemon communication, not the GPUPanel Agent API or container permissions.

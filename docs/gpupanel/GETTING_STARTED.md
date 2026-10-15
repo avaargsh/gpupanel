@@ -11,12 +11,24 @@ This independent GPL-3.0 fork currently reuses Linux Host, Docker, terminal, fil
 ```bash
 git clone --branch dev-v2 https://github.com/avaargsh/gpupanel.git
 cd gpupanel
-python3 scripts/gpupanel-bootstrap.py doctor --human
-python3 scripts/gpupanel-bootstrap.py plan --human
-python3 scripts/gpupanel-bootstrap.py self-test --human
+python3 scripts/gpupanel-bootstrap.py doctor
+python3 scripts/gpupanel-bootstrap.py plan
+python3 scripts/gpupanel-bootstrap.py self-test
 ```
 
 FOUND is **executable presence only**, not a version or driver health check. The lock contains no approved downloadable software initially. No packages or executables are installed by these commands. Self-test is an isolated offline bundle roundtrip with synthetic bytes.
+
+## Create a Python environment with uv
+
+Use an existing trusted `uv` and a regular Ubuntu user to create a **new offline environment**. No driver, Python or PyTorch packages are downloaded:
+
+```bash
+python3 scripts/gpupanel-env.py plan
+python3 scripts/gpupanel-env.py create --approve
+python3 scripts/gpupanel-env.py status
+```
+
+Readable output is the default. Add `--json` after a command for scripts, e.g. `python3 scripts/gpupanel-env.py status --json`. Existing directories are never overwritten. See [uv workstation](UV_WORKSTATION.md).
 
 ## Two separate installation-like workflows
 
@@ -55,7 +67,7 @@ python3 scripts/gpupanel-preview-stage.py status dev
 python3 scripts/gpupanel-preview-stage.py remove dev --approve
 ```
 
-The staged binaries are **non-executable**, and no Core/Agent process, systemd service, initial administrator or listener is configured. Embedded SHA-256 proves internal integrity **not** publisher authenticity. See [preview staging](PREVIEW_STAGING.md). The strict namespace audit `python3 scripts/gpupanel-runtime-namespace.py --strict --human` intentionally blocks system installation until migration is accepted.
+The staged binaries are **non-executable**, and no Core/Agent process, systemd service, initial administrator or listener is configured. Embedded SHA-256 proves internal integrity **not** publisher authenticity. See [preview staging](PREVIEW_STAGING.md). The strict namespace audit `python3 scripts/gpupanel-runtime-namespace.py --strict` intentionally blocks system installation until migration is accepted.
 
 ## Frontend preview
 

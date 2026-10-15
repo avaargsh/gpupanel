@@ -72,18 +72,18 @@ class BootstrapTests(unittest.TestCase):
         human = io.StringIO()
         with redirect_stdout(human):
             self.assertEqual(bootstrap.main(["--lock", str(self.lock_path),
-                "--cache", str(self.cache), "doctor", "--human"]), 0)
+                "--cache", str(self.cache), "doctor"]), 0)
         self.assertIn("GPUPanel | Ubuntu environment doctor", human.getvalue())
         self.assertIn("FOUND", human.getvalue())
         machine = io.StringIO()
         with redirect_stdout(machine):
             self.assertEqual(bootstrap.main(["--lock", str(self.lock_path),
-                "--cache", str(self.cache), "doctor"]), 0)
+                "--cache", str(self.cache), "doctor", "--json"]), 0)
         self.assertIn("supported_os", json.loads(machine.getvalue()))
         plan = io.StringIO()
         with redirect_stdout(plan):
             self.assertEqual(bootstrap.main(["--lock", str(self.lock_path),
-                "--cache", str(self.cache), "plan", "--human"]), 0)
+                "--cache", str(self.cache), "plan"]), 0)
         self.assertIn("NOT CACHED", plan.getvalue())
 
     def test_offline_self_test_without_network(self):
@@ -97,7 +97,7 @@ class BootstrapTests(unittest.TestCase):
         human = io.StringIO()
         with redirect_stdout(human):
             self.assertEqual(bootstrap.main(["--lock", str(self.lock_path),
-                "self-test", "--human"]), 0)
+                "self-test"]), 0)
         self.assertIn("Offline self-test", human.getvalue())
 
     def test_bundle_round_trip_and_tampering(self):
