@@ -16,7 +16,7 @@
             </el-checkbox>
             <el-button
                 class="ml-2.5"
-                v-if="showDownload"
+                v-if="showDownload && !!logPath"
                 @click="onDownload"
                 icon="Download"
                 :disabled="logs.length === 0"
