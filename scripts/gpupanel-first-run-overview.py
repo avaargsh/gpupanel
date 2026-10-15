@@ -87,9 +87,11 @@ def overview(host_root: Path, repo_root: Path, free_bytes: int | None = None,
                           "firstLoginVerified": False, "dockerApiLifecycleVerified": False},
         "recommendedNextActions": [
             {"id": "review-host", "title": "Review Ubuntu version, disk and inherited 1Panel paths",
-             "command": "python3 scripts/gpupanel-install-preflight.py --human"},
+             "command": "python3 scripts/gpupanel-install-preflight.py"},
             {"id": "review-isolation", "title": "Audit Core/Agent isolation blockers",
-             "command": "python3 scripts/gpupanel-runtime-namespace.py --strict --human"},
+             "command": "python3 scripts/gpupanel-runtime-namespace.py --strict"},
+            {"id": "plan-uv-environment", "title": "Preview offline uv Python environment",
+             "command": "python3 scripts/gpupanel-env.py plan"},
             {"id": "try-offline-template", "title": "Preview Python stdlib user-local scaffold",
              "command": "python3 scripts/gpupanel-catalog-workspace.py plan"},
         ],
@@ -125,6 +127,7 @@ def main(argv: list[str] | None = None) -> int:
         print(f"Python {env['python']['version']}，PyTorch 安装状态: {env['torch']['status']}，"
               f"GPU 运行时: {env['runtime']['status']}")
         print("PyTorch 可选 --probe-torch；不自动导入第三方包，不代表 CUDA Toolkit 可用。")
+        print("Python 开发环境推荐 uv：先运行 gpupanel-env.py plan，明确批准后才能创建。")
         print("当前可用：Python 标准库项目模板（仅本机 CLI，需要明确批准写入）")
         print("完整 GPUPanel Core/Agent 系统安装：未开放；首次登录和 Docker API 闭环未验收。")
         for step in report["recommendedNextActions"]:
