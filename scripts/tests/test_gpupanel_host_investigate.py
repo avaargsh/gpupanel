@@ -2,6 +2,7 @@
 import importlib.util
 import json
 import sys
+import tempfile
 from pathlib import Path
 import unittest
 from unittest.mock import patch
@@ -95,6 +96,17 @@ class HostInvestigateTest(unittest.TestCase):
             mod.bounded_command(sys.executable, "-c",
                                 "import sys; sys.stderr.write('token=ultra-secret'); sys.exit(4)")
         self.assertNotIn("ultra-secret", str(ctx.exception))
+
+    def test_real_log_command_merges_stderr_but_never_exposes_failed_stderr(self):
+        with tempfile.TemporaryDirectory() as folder:
+            cli = Path(folder) / "fake_docker"
+            cli.write_text("#!/usr/bin/env python3\nimport sys\n"
+                           "sys.stderr.write('connection refused\\n')\n"
+                           "sys.stdout.write('stdout line\\n')\n")
+            cli.chmod(0o700)
+            output = mod.bounded_command(str(cli), "logs", "--tail", "40", "demo")
+            self.assertIn(b"connection refused", output)
+            self.assertIn(b"stdout line", output)
 
     def test_actual_process_times_out_and_is_terminated(self):
         with patch.object(mod, "TIMEOUT_SECONDS", 0.1):
