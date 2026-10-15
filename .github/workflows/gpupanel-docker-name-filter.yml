@@ -1,0 +1,23 @@
+name: GPUPanel exact Docker container name filtering
+on:
+  pull_request:
+    paths:
+      - 'agent/utils/docker/docker.go'
+      - 'agent/utils/docker/docker_name_filter_test.go'
+      - '.github/workflows/gpupanel-docker-name-filter.yml'
+  workflow_dispatch:
+jobs:
+  docker-name-filter:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: agent/go.mod
+          cache-dependency-path: agent/go.sum
+      - name: Nameless/alias/exact-match controls
+        working-directory: agent
+        run: go test ./utils/docker -run TestFilterContainersByExactName -count=1 -v

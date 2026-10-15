@@ -72,7 +72,6 @@ func (c Client) ListContainersByName(names []string) ([]container.Summary, error
 	var (
 		options  container.ListOptions
 		namesMap = make(map[string]bool)
-		res      []container.Summary
 	)
 	options.All = true
 	if len(names) > 0 {
@@ -87,13 +86,26 @@ func (c Client) ListContainersByName(names []string) ([]container.Summary, error
 	if err != nil {
 		return nil, err
 	}
+	return filterContainersByExactName(containers, namesMap), nil
+}
+
+// filterContainersByExactName never indexes a Docker Names slice without
+// checking its length and never matches Docker's substring name filter alone.
+// A container may have multiple names, e.g. due to network aliases; accept
+// only an exact slash-prefixed name requested by the caller.
+func filterContainersByExactName(containers []container.Summary, names map[string]bool) []container.Summary {
+	var selected []container.Summary
 	for _, con := range containers {
-		if _, ok := namesMap[con.Names[0]]; ok {
-			res = append(res, con)
+		for _, name := range con.Names {
+			if names[name] {
+				selected = append(selected, con)
+				break
+			}
 		}
 	}
-	return res, nil
+	return selected
 }
+
 func (c Client) ListAllContainers() ([]container.Summary, error) {
 	var (
 		options container.ListOptions
