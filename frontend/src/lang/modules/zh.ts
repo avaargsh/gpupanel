@@ -2,6 +2,20 @@ import { getFuLocaleMessage } from '@/lang/fu';
 
 const message = {
     gpupanel: {
+        firstRunTitle: '从当前主机开始',
+        firstRunDescription: '按真实工作流检查主机、确认 Docker、再部署应用。状态来自现有接口，不代表安装完成。',
+        hostStep: '查看主机状态',
+        hostStepDesc: '检查 CPU、磁盘与系统监控',
+        dockerStep: '确认容器运行环境',
+        dockerStepDesc: '读取当前主机的 Docker 状态',
+        appsStep: '部署第一个应用',
+        appsStepDesc: '通过现有应用商店或 Compose 交付',
+        dockerChecking: '正在检查 Docker…',
+        dockerReady: 'Docker 可访问，运行中的容器：{count}',
+        dockerUnavailable: '无法读取 Docker 状态，请检查服务、节点与权限',
+        dockerRestricted: '当前账户没有容器查看权限',
+        checkAgain: '重新检查',
+        firstRunNotice: '引导卡只展示已验证的入口；不会自动安装 Docker 或执行高风险操作。',
         quickStart: '当前主机 · 常用操作',
         quickStartDescription: '先管理 Ubuntu Host、容器和终端；Kubernetes 与 AI 工作区作为后续可选集成。',
         openModule: '打开',
