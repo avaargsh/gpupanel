@@ -5,8 +5,10 @@ const message = {
         catalogNav: '软件与环境目录',
         catalogPreview: '预览 · Web 安装器尚未开放',
         catalogSearchPlaceholder: '搜索软件、环境或部署目标',
-        catalogNotice: '已移除旧 1Panel 预置目录。普通模板尚未开放安装；Python 标准库项目模板可通过已验证的本机 CLI 手动创建。网页不会远程执行命令。',
-        catalogLegacyInstallLink: '旧应用商店安装链接已停用，不会自动安装。请查看已安装应用或 Docker Compose。',
+
+        catalogNotice: '仅展示当前节点的本地应用定义。可同步本地应用源、查看详情并经确认安装；原 1Panel 远程应用源仍已停用。',
+
+        catalogLegacyInstallLink: '旧应用商店深链不会自动发起安装。请在本地目录中选择应用并确认操作。',
         catalogInstalled: '已安装应用',
         catalogCompose: 'Docker Compose',
         catalogPlanned: '规划中',
@@ -24,6 +26,8 @@ const message = {
         catalogNoMatch: '没有匹配的目录项目',
         catalogLoadFailed: '应用目录加载失败：请检查网络、权限或仓库同步状态。',
         catalogRetry: '重试加载',
+        catalogLocalSync: '同步本地应用',
+        catalogSyncPending: '本地同步已受理。请查看任务日志并刷新列表确认结果；请求成功不代表同步完成。',
         catalogEmpty: '当前筛选条件下没有应用；可尝试清除筛选或同步目录。',
         catalogClearFilters: '清除筛选',
         firstRunTitle: '从当前主机开始',
@@ -42,7 +46,8 @@ const message = {
         dockerStep: '确认容器运行环境',
         dockerStepDesc: '读取当前主机的 Docker 状态',
         appsStep: '浏览软件与环境目录',
-        appsStepDesc: '已安装应用可管理；实验性 Python 项目模板仅支持本机 CLI 创建',
+
+        appsStepDesc: '本地应用可通过现有安装流程交付；原远程目录继续停用',
         dockerChecking: '正在检查 Docker…',
         dockerReady: 'Docker 可访问，运行中的容器：{count}',
         dockerNotInstalled: '此节点未检测到 Docker 命令；请先完成受控安装',
