@@ -10,6 +10,8 @@ GPUPanel is a GPL-3.0 fork of 1Panel. The target user needs a usable Ubuntu Host
 
 The owner has now explicitly chosen to **directly modify or replace upstream 1Panel source within the fork**, defer extensive deletion/restructuring, and prioritize functional use. This decision does not constitute permission to destroy a user's installed 1Panel data.
 
+An existing live installation must never be overwritten without explicit inventory, verified backup, authorized migration, and a tested recovery plan.
+
 ## Decision
 
 1. Keep the existing Core + Agent + Vue and ordinary Host, Docker/Compose, Files, Terminal, App Store and GPU views as the short-term product substrate.
