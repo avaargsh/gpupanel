@@ -1,29 +1,46 @@
-name: 'Feature Request'
-description: 'Suggest an idea'
-title: '[Feature] '
-assignees: wanghe-fit2cloud
+name: "GPUPanel Feature Request"
+description: "Propose a user outcome, not just an extra menu or dependency"
+title: "[Feature] "
 body:
   - type: markdown
     attributes:
-      value: "## Environment Information"
-  - type: input
+      value: |
+        GPUPanel prioritizes personal Ubuntu Host → enterprise Host → optional GPU/Kubernetes/AI integrations.
+        Prefer adopting mature upstream tools before inventing new runtimes.
+  - type: dropdown
+    id: audience
+    attributes:
+      label: "Primary user"
+      options:
+        - "Individual Ubuntu developer"
+        - "Host administrator / SRE"
+        - "AI developer"
+        - "Platform administrator"
     validations:
       required: true
-    attributes:
-      label: "1Panel Version"
-      description: "Log in to the 1Panel Web console and check the current version at the bottom right of the page."
-  - type: markdown
-    attributes:
-      value: "## Detailed information"
   - type: textarea
+    id: workflow
     attributes:
-      label: "Please describe your needs or suggestions for improvements"
+      label: "Real workflow and pain point"
+      description: "What were you trying to do? Where did your existing workflow fail?"
     validations:
       required: true
   - type: textarea
+    id: alternatives
     attributes:
-      label: "Please describe the solution you suggest"
+      label: "Existing alternatives"
+      description: "Examples: upstream 1Panel, MLflow, OpenShift AI, ZenML, Kueue, CLI, existing scripts."
+    validations:
+      required: true
   - type: textarea
+    id: minimal
     attributes:
-      label: "Additional Information"
-      description: "If you have any additional information to provide, you can include it here (screenshots, videos, etc., are welcome)."
+      label: "Smallest valuable outcome / acceptance test"
+      description: "How can another user independently demonstrate the benefit?"
+    validations:
+      required: true
+  - type: textarea
+    id: constraints
+    attributes:
+      label: "Constraints and risks"
+      description: "Offline network, compatibility, permissions, hardware, migrations, licenses."

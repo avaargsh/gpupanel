@@ -1,50 +1,73 @@
-name: 'Bug Report'
-description: 'Report an Bug'
-title: '[Bug] '
-assignees: wanghe-fit2cloud
+name: "GPUPanel Bug Report"
+description: "Report a reproducible GPUPanel defect (no secrets or exploit details)"
+title: "[Bug] "
 body:
   - type: markdown
     attributes:
-      value: "## Contact Information"
+      value: |
+        Please search for duplicates first. This is the GPUPanel fork, not the official 1Panel support channel.
+        **Never paste passwords, access tokens, public/private IPs, customer data or exploitable security details here.**
+        For vulnerabilities, read SECURITY.md instead.
   - type: input
+    id: version
+    attributes:
+      label: "GPUPanel version / commit SHA"
+      description: "Use the git commit hash if running from source. Do not guess a release number."
+      placeholder: "e.g. git rev-parse --short HEAD"
     validations:
-      required: false
+      required: true
+  - type: dropdown
+    id: area
     attributes:
-      label: "Contact Information"
-      description: "The ways to quickly contact you: WeChat group number and nickname, email, etc."
-  - type: markdown
-    attributes:
-      value: "## Environment Information"
+      label: "Affected area"
+      options:
+        - "Ubuntu Bootstrap / offline bundle"
+        - "Host / files / terminal / network"
+        - "Docker / Apps"
+        - "GPU monitoring / provider"
+        - "Portal / authorization / UI"
+        - "Kubernetes / AI integration (development)"
+        - "Build / installation / documentation"
+        - "Other"
+    validations:
+      required: true
   - type: input
-    validations:
-      required: true
+    id: environment
     attributes:
-      label: "1Panel Version"
-      description: "Log in to the 1Panel Web console and check the current version at the bottom right of the page."
-  - type: markdown
-    attributes:
-      value: "## Detailed information"
-  - type: textarea
-    attributes:
-      label: "Problem Description"
-      description: "Briefly describe the issue you’ve encountered."
+      label: "Sanitized environment"
+      description: "OS/version, browser, architecture, container/host; omit identifying data."
+      placeholder: "Ubuntu 24.04, x86_64, Firefox"
     validations:
       required: true
   - type: textarea
+    id: repro
     attributes:
-      label: "Steps to Reproduce"
-      description: "How can this issue be reproduced."
+      label: "Steps to reproduce"
+      description: "A minimal and safe reproduction, with dummy/test data."
     validations:
       required: true
   - type: textarea
+    id: expected
     attributes:
-      label: "The expected correct result"
+      label: "Expected behavior"
+    validations:
+      required: true
   - type: textarea
+    id: actual
     attributes:
-      label: "Related log output"
-      description: "Please paste any relevant log output here. It will automatically be formatted as code, so no backticks are necessary."
+      label: "Actual behavior"
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: "Sanitized error output / screenshots"
+      description: "Prefer short snippets. Remove tokens, credentials, IPs, serial numbers, customer data."
       render: shell
-  - type: textarea
+  - type: checkboxes
+    id: redaction
     attributes:
-      label: "Additional Information"
-      description: "If you have any additional information to provide, you can include it here (screenshots, videos, etc., are welcome)."
+      label: "Safety check"
+      options:
+        - label: "I have removed secrets and identifying information, and this report does not disclose an unpatched vulnerability."
+          required: true
