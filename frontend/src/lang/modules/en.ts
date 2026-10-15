@@ -5,8 +5,10 @@ const message = {
         catalogNav: 'Software & Environments',
         catalogPreview: 'Preview · Web installer not available',
         catalogSearchPlaceholder: 'Search software, environments or targets',
-        catalogNotice: 'The original 1Panel remote catalog is retired. Most templates are not installable; the verified Python stdlib starter can be created manually using the user-local CLI. The web app never executes commands.',
-        catalogLegacyInstallLink: 'Legacy App Store install links are retired and will not execute. Use Installed Apps or Docker Compose.',
+
+        catalogNotice: 'Shows only local application definitions on this node. Sync local sources, inspect details, and explicitly confirm installation. The inherited 1Panel remote feed remains retired.',
+
+        catalogLegacyInstallLink: 'Legacy install links do not automatically open or execute installation. Choose and confirm an application from the local directory.',
         catalogInstalled: 'Installed Apps',
         catalogCompose: 'Docker Compose',
         catalogPlanned: 'Planned',
@@ -24,6 +26,10 @@ const message = {
         catalogNoMatch: 'No matching catalog definitions',
         catalogLoadFailed: 'Unable to load the application catalog. Check network, permissions or sync status.',
         catalogRetry: 'Retry',
+        catalogLocalSync: 'Sync local apps',
+        catalogSyncConfirm: 'Sync rescans local app definitions and may retire uninstalled entries that are no longer on disk. Existing installations remain preserved under current rules. Continue?',
+        catalogSyncFailed: 'Could not start local sync. Check permissions and the task service before retrying.',
+        catalogSyncPending: 'Local sync was accepted. Check task logs and refresh the list to verify the result; request acceptance is not completion.',
         catalogEmpty: 'No applications match the current filters. Clear filters or sync the catalog.',
         catalogClearFilters: 'Clear filters',
         firstRunTitle: 'Get started with this host',
@@ -42,7 +48,8 @@ const message = {
         dockerStep: 'Verify containers',
         dockerStepDesc: 'Read Docker status from the current host',
         appsStep: 'Browse software and environments',
-        appsStepDesc: 'Installed apps remain manageable; the experimental Python project starter is CLI-only',
+
+        appsStepDesc: 'Local application definitions use the existing install flow; the retired remote feed stays disabled',
         dockerChecking: 'Checking Docker…',
         dockerReady: 'Docker reachable; running containers: {count}',
         dockerNotInstalled: 'Docker was not detected on this node; install it through an approved method',

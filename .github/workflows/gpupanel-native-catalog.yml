@@ -29,3 +29,5 @@ jobs:
         working-directory: frontend
       - run: npm run type-check
         working-directory: frontend
+      - run: node --test tests/local-app-page.test.mjs
+        working-directory: frontend

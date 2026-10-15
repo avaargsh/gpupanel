@@ -1,141 +1,232 @@
 <template>
-    <LayoutContent :title="$t('gpupanel.catalogNav')" class="gpupanel-catalog">
-        <template #search>
-            <el-tag type="info" effect="plain">{{ $t('gpupanel.catalogPreview') }}</el-tag>
-        </template>
-        <template #rightToolBar>
-            <el-input v-model="keyword" clearable :placeholder="$t('gpupanel.catalogSearchPlaceholder')"
-                :aria-label="$t('gpupanel.catalogSearchPlaceholder')" style="max-width: 280px" />
-        </template>
-        <template #main>
-            <el-alert v-if="legacyInstallRequested" type="warning" :closable="false"
-                :title="$t('gpupanel.catalogLegacyInstallLink')" show-icon class="gpupanel-catalog__notice" />
-            <el-alert type="info" :closable="false" :title="$t('gpupanel.catalogNotice')"
-                show-icon class="gpupanel-catalog__notice" />
-            <div class="gpupanel-catalog__actions">
-                <el-button type="primary" plain :disabled="!canOpen('/apps/installed')"
-                    @click="navigate('/apps/installed')">{{ $t('gpupanel.catalogInstalled') }}</el-button>
-                <el-button plain :disabled="!canOpen('/containers/compose')"
-                    @click="navigate('/containers/compose')">{{ $t('gpupanel.catalogCompose') }}</el-button>
-            </div>
-            <div v-if="visibleDefinitions.length" class="gpupanel-catalog__grid">
-                <el-card v-for="item in visibleDefinitions" :key="item.id" shadow="never">
-                    <div class="gpupanel-catalog__header">
-                        <strong>{{ item.name }}</strong>
-                        <el-tag :type="item.status === 'experimental' ? 'warning' : 'info'" size="small">
-                            {{ item.status === 'experimental' ? $t('gpupanel.catalogExperimental') : $t('gpupanel.catalogPlanned') }}
-                        </el-tag>
-                    </div>
-                    <p>{{ item.description }}</p>
-                    <div class="gpupanel-catalog__metadata">
-                        <span>{{ item.kind }}</span>
-                        <el-tag v-for="target in item.targets" :key="target" size="small" effect="plain">
-                            {{ target }}
-                        </el-tag>
-                    </div>
-                    <el-button v-if="item.id === 'gpupanel.dev.python-stdlib'"
-                        type="primary" plain class="gpupanel-catalog__install" @click="showStarterGuide = true">
-                        {{ $t('gpupanel.catalogCliGuide') }}
-                    </el-button>
-                    <el-button v-else disabled class="gpupanel-catalog__install">
-                        {{ $t('gpupanel.catalogUnavailable') }}
-                    </el-button>
-                </el-card>
-            </div>
-            <el-empty v-else :description="$t('gpupanel.catalogNoMatch')" />
-        </template>
-    </LayoutContent>
-    <el-dialog v-model="showStarterGuide" :title="$t('gpupanel.catalogCliTitle')" width="90%" destroy-on-close>
-        <p>{{ $t('gpupanel.catalogCliWarning') }}</p>
-        <p>{{ $t('gpupanel.catalogPreviewSteps') }}</p>
-        <pre class="gpupanel-catalog__commands"><code>{{ pythonStarterCommands }}</code></pre>
-        <el-button type="primary" plain @click="copyStarterCommands">{{ $t('gpupanel.catalogCopy') }}</el-button>
-        <p class="gpupanel-catalog__approval">{{ $t('gpupanel.catalogExplicitApproval') }}</p>
-        <pre class="gpupanel-catalog__commands"><code>{{ pythonInstallCommands }}</code></pre>
-        <p>{{ $t('gpupanel.catalogRemovalNotice') }}</p>
-        <pre class="gpupanel-catalog__commands"><code>{{ pythonUninstallCommand }}</code></pre>
-        <p v-if="clipboardStatus === 'copied'" role="status">{{ $t('gpupanel.catalogCopied') }}</p>
-        <p v-else-if="clipboardStatus === 'manual'" role="status">{{ $t('gpupanel.catalogCopyManual') }}</p>
-    </el-dialog>
+    <div class="gpupanel-local-apps">
+        <DockerStatus :key="currentNode" v-model:isActive="isActive" v-model:isExist="isExist" />
+        <LayoutContent v-if="isExist" v-loading="loading" :class="{ mask: !isActive }" :title="$t('gpupanel.catalogNav')">
+            <template #search>
+                <Tags @change="changeTag" />
+            </template>
+            <template #leftToolBar>
+                <el-button v-permission type="primary" plain :disabled="syncing || !isActive" @click="syncLocal">
+                    {{ $t('gpupanel.catalogLocalSync') }}
+                </el-button>
+                <el-button plain @click="refresh">{{ $t('commons.button.refresh') }}</el-button>
+            </template>
+            <template #rightToolBar>
+                <TableSearch v-model:searchName="req.name" @search="searchByName" />
+            </template>
+            <template #main>
+                <el-alert type="info" :closable="false" :title="$t('gpupanel.catalogNotice')" class="mb-3" />
+                <el-alert v-if="syncError" type="error" :closable="true" @close="syncError = false"
+                    :title="$t('gpupanel.catalogSyncFailed')" class="mb-3" />
+                <el-alert v-if="syncAccepted" type="info" :closable="true" @close="syncAccepted = false"
+                    :title="$t('gpupanel.catalogSyncPending')" class="mb-3" />
+                <el-alert v-if="legacyInstallRequested" type="warning" :closable="false"
+                    :title="$t('gpupanel.catalogLegacyInstallLink')" class="mb-3" />
+                <el-alert v-if="loadError" type="error" :closable="false" :title="$t('gpupanel.catalogLoadFailed')" class="mb-3">
+                    <template #default>
+                        <el-button type="primary" plain @click="refresh">{{ $t('gpupanel.catalogRetry') }}</el-button>
+                    </template>
+                </el-alert>
+                <div v-if="!loadError && apps.length" class="gpupanel-local-apps__grid">
+                    <AppCard v-for="app in apps" :key="app.id" :app="app"
+                        @open-install="openInstall" @open-detail="openDetail" />
+                </div>
+                <el-empty v-else-if="!loading && !loadError" :description="$t('gpupanel.catalogEmpty')">
+                    <el-button v-if="hasFilters" @click="clearFilters">{{ $t('gpupanel.catalogClearFilters') }}</el-button>
+                </el-empty>
+                <div v-if="!loadError && paginationConfig.total > 0" class="gpupanel-local-apps__pagination">
+                    <fu-table-pagination v-model:current-page="paginationConfig.currentPage"
+                        v-model:page-size="paginationConfig.pageSize" v-bind="paginationConfig"
+                        :page-sizes="[30, 60, 90]" :layout="isMobile ? 'total, prev, next' : 'total, sizes, prev, pager, next, jumper'"
+                        @change="refresh" />
+                </div>
+            </template>
+        </LayoutContent>
+    </div>
+    <Install ref="installRef" />
+    <Detail ref="detailRef" />
+    <TaskLog ref="taskLogRef" @close="finishLocalSync" />
 </template>
 
 <script lang="ts" setup>
-import { computed, ref } from 'vue';
-import { useRouter, useRoute } from 'vue-router';
-import { hasRouteAccess } from '@/utils/rbac';
-// The repository-root index is the single source of truth; no copied/mutable
-// frontend list that can drift from validated catalog/index.json.
-import catalogIndex from '../../../../../catalog/index.json';
+import { computed, onActivated, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue';
+import { useRoute } from 'vue-router';
+import { ElMessageBox } from 'element-plus';
+import i18n from '@/lang';
+import type { App } from '@/api/interface/app';
+import { getAppByKey, searchApp, syncLocalApp } from '@/api/modules/app';
+import { useGlobalStore } from '@/composables/useGlobalStore';
+import { newUUID } from '@/utils/id';
+import { jumpToInstall } from '@/utils/app';
+import AppCard from './app/index.vue';
+import Tags from '../components/tag.vue';
+import DockerStatus from '@/views/container/docker-status/index.vue';
+import Install from '../detail/install/index.vue';
+import Detail from '../detail/index.vue';
+import TaskLog from '@/components/log/task/index.vue';
+import { parseLocalAppPage } from './local-app-page';
 
-const router = useRouter();
 const route = useRoute();
-const keyword = ref('');
-const showStarterGuide = ref(false);
-const clipboardStatus = ref<'idle' | 'copied' | 'manual'>('idle');
-// Display instructions only: the web UI does not execute these privileged or local commands.
-// Copy only read-only checks. Never include an approval-bearing write action
-// in a pasteable batch where it might run without reviewing each step.
-const pythonStarterCommands = [
-    '# From a GPUPanel git checkout, on your own Ubuntu computer',
-    'python3 scripts/gpupanel-catalog.py verify',
-    'python3 scripts/gpupanel-catalog.py plan gpupanel.dev.python-stdlib',
-    'python3 scripts/gpupanel-catalog-workspace.py plan',
-].join('\n');
-const pythonInstallCommands = [
-    'python3 scripts/gpupanel-catalog-workspace.py install --approve',
-    'python3 scripts/gpupanel-catalog-workspace.py status',
-    'python3 ~/GPUPanel/projects/python-stdlib-starter/main.py',
-].join('\n');
-const pythonUninstallCommand = 'python3 scripts/gpupanel-catalog-workspace.py uninstall --approve';
-const copyStarterCommands = async () => {
+const { currentNode, isMobile } = useGlobalStore();
+const apps = ref<App.AppItem[]>([]);
+const loading = ref(false);
+const loadError = ref(false);
+const syncing = ref(false);
+const syncAccepted = ref(false);
+const syncError = ref(false);
+const isActive = ref(false);
+const isExist = ref(false);
+const installRef = ref<InstanceType<typeof Install>>();
+const detailRef = ref<InstanceType<typeof Detail>>();
+const taskLogRef = ref<InstanceType<typeof TaskLog>>();
+const paginationConfig = reactive({
+    cacheSizeKey: 'local-app-page-size',
+    currentPage: 1,
+    pageSize: 30,
+    total: 0,
+});
+const req = reactive({ name: '', tags: [] as string[] });
+const hasFilters = computed(() => !!req.name.trim() || req.tags.length > 0);
+// Legacy ?install= links must not open or execute an unreviewed application.
+// Installation is only available from a verified local search result and user click.
+const legacyInstallRequested = computed(() => typeof route.query.install === 'string');
+let searchRevision = 0;
+let syncRevision = 0;
+let firstActivation = true;
+
+const refresh = async () => {
+    const revision = ++searchRevision;
+    const node = currentNode.value;
+    loading.value = true;
+    loadError.value = false;
     try {
-        await navigator.clipboard.writeText(pythonStarterCommands);
-        clipboardStatus.value = 'copied';
+        // The original remote 1Panel catalog is retired. Do not send 'all'
+        // or 'remote' to this backend; locally owned app definitions only.
+        const response = await searchApp({
+            page: paginationConfig.currentPage,
+            pageSize: paginationConfig.pageSize,
+            name: req.name.trim(),
+            tags: [...req.tags],
+            resource: 'local',
+            showCurrentArch: false,
+        });
+        if (revision !== searchRevision || node !== currentNode.value) return;
+        const page = parseLocalAppPage(response.data);
+        apps.value = page.items;
+        paginationConfig.total = page.total;
     } catch {
-        // Insecure browser contexts can deny clipboard access. The visible text
-        // is still selectable, so provide explicit manual-copy guidance.
-        clipboardStatus.value = 'manual';
+        if (revision !== searchRevision || node !== currentNode.value) return;
+        apps.value = [];
+        paginationConfig.total = 0;
+        loadError.value = true;
+    } finally {
+        if (revision === searchRevision && node === currentNode.value) loading.value = false;
     }
 };
-const legacyInstallRequested = computed(() => typeof route.query.install === 'string');
-const visibleDefinitions = computed(() => {
-    const needle = keyword.value.trim().toLocaleLowerCase();
-    return catalogIndex.definitions.filter((item) =>
-        !needle || [item.name, item.description, item.kind, item.id, ...item.targets]
-            .some((field) => field.toLocaleLowerCase().includes(needle)),
-    );
+const searchByName = () => {
+    paginationConfig.currentPage = 1;
+    void refresh();
+};
+const changeTag = (key: string) => {
+    req.tags = key === 'all' ? [] : [key];
+    paginationConfig.currentPage = 1;
+    void refresh();
+};
+const clearFilters = () => {
+    req.name = '';
+    req.tags = [];
+    paginationConfig.currentPage = 1;
+    void refresh();
+};
+const openInstall = async (item: App.AppItem) => {
+    if (!isExist.value || !isActive.value || syncing.value) return;
+    if (!apps.value.some((app) => app.id === item.id && app.key === item.key)) return;
+    const node = currentNode.value;
+    try {
+        const response = await getAppByKey(item.key, node || undefined);
+        if (node !== currentNode.value || !isActive.value) return;
+        // Upstream special runtime routes are reused only for the selected
+        // authenticated backend app. The ordinary dialog still requires confirm.
+        if (jumpToInstall(response.data.type, response.data.key)) return;
+        installRef.value?.acceptParams({ app: response.data });
+    } catch {
+        loadError.value = true;
+    }
+};
+const openDetail = (key: string) => {
+    if (apps.value.some((item) => item.key === key) && isActive.value) {
+        detailRef.value?.acceptParams(key, 'install');
+    }
+};
+const syncLocal = async () => {
+    if (!isExist.value || !isActive.value || syncing.value) return;
+    syncing.value = true;
+    syncError.value = false;
+    const token = ++syncRevision;
+    const node = currentNode.value;
+    try {
+        // Local re-indexing can retire definitions absent from the host's
+        // local repository. Explicitly authorize the mutation first.
+        await ElMessageBox.confirm(i18n.global.t('gpupanel.catalogSyncConfirm'),
+            i18n.global.t('gpupanel.catalogLocalSync'), {
+                confirmButtonText: i18n.global.t('commons.button.confirm'),
+                cancelButtonText: i18n.global.t('commons.button.cancel'),
+                type: 'warning',
+            });
+    } catch {
+        if (token === syncRevision) syncing.value = false;
+        return;
+    }
+    if (token !== syncRevision || node !== currentNode.value) return;
+    const taskID = newUUID();
+    try {
+        // API response means accepted, not completed or reconciled.
+        await syncLocalApp({ taskID });
+        if (token !== syncRevision || node !== currentNode.value) return;
+        syncAccepted.value = true;
+        taskLogRef.value?.openWithTaskID(taskID);
+    } catch {
+        if (token === syncRevision) {
+            syncing.value = false;
+            syncError.value = true;
+        }
+    }
+};
+const finishLocalSync = () => {
+    syncing.value = false;
+    void refresh();
+};
+onMounted(() => { void refresh(); });
+onActivated(() => {
+    // KeepAlive calls this on first mount as well; avoid duplicate reads.
+    if (firstActivation) {
+        firstActivation = false;
+    } else {
+        void refresh();
+    }
 });
-const canOpen = (path: string) => {
-    const target = router.resolve(path);
-    return target.matched.length > 0 && hasRouteAccess(target);
-};
-const navigate = async (path: string) => {
-    if (canOpen(path)) await router.push(path);
-};
+watch(currentNode, () => {
+    ++searchRevision;
+    ++syncRevision;
+    syncing.value = false;
+    syncAccepted.value = false;
+    syncError.value = false;
+    apps.value = [];
+    paginationConfig.total = 0;
+    paginationConfig.currentPage = 1;
+    void refresh();
+});
+onBeforeUnmount(() => {
+    ++searchRevision;
+    ++syncRevision;
+});
 </script>
 
 <style lang="scss" scoped>
-.gpupanel-catalog {
-    &__notice { margin: 0 0 14px; }
-    &__actions { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 18px; }
+.gpupanel-local-apps {
     &__grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
-    &__header { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
-    &__header strong { font-size: 15px; }
-    &__grid p { font-size: 13px; color: var(--el-text-color-secondary); min-height: 48px; }
-    &__metadata { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font-size: 12px; color: var(--el-text-color-secondary); }
-    &__install { margin-top: 16px; width: 100%; }
-    &__commands { white-space: pre-wrap; overflow-wrap: anywhere; padding: 12px; background: var(--el-fill-color-light); border-radius: 8px; }
-    &__approval { margin-top: 16px; font-weight: 600; }
-    &__commands {
-        padding: 12px;
-        white-space: pre-wrap;
-        overflow-wrap: anywhere;
-        overflow-x: auto;
-        background: var(--el-fill-color-light);
-        border-radius: 8px;
-        font-size: 12px;
-    }
-    @media (max-width: 1024px) { &__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+    &__pagination { display: flex; justify-content: flex-end; margin: 14px 0; }
+    @media (max-width: 1200px) { &__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
     @media (max-width: 680px) { &__grid { grid-template-columns: 1fr; } }
 }
 </style>

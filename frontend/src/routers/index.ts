@@ -96,9 +96,6 @@ router.beforeEach(async (to, from) => {
         return true;
     }
 
-    if (to.path === '/apps/all' && to.query.install != undefined) {
-        return true;
-    }
     if (to.name === 'Expired') {
         return true;
     }
