@@ -57,6 +57,15 @@ class BootstrapTests(unittest.TestCase):
         self.assertEqual(len(requests), 2)
         self.assertEqual((self.cache / self.artifact["name"]).read_bytes(), self.content)
 
+    def test_https_redirect_downgrade_is_rejected(self):
+        class Downgraded(io.BytesIO):
+            def geturl(self):
+                return "http://untrusted.example/pkg"
+        with patch.object(bootstrap.urllib.request, "urlopen", return_value=Downgraded(self.content)):
+            with self.assertRaises(bootstrap.BootstrapError):
+                bootstrap.get_artifact(self.artifact, self.cache, 2, False)
+        self.assertFalse((self.cache / self.artifact["name"]).exists())
+
     def test_bundle_round_trip_and_tampering(self):
         self.cache.mkdir()
         (self.cache / self.artifact["name"]).write_bytes(self.content)
