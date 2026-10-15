@@ -29,6 +29,36 @@ class InstallPreflightTests(unittest.TestCase):
         result = mod.inspect_host(self.root, free_bytes=mod.MIN_FREE_BYTES)
         self.assertIn("runtime_collision", result["blockers"])
 
+    def test_existing_gpupanel_state_blocks_before_overwrite(self):
+        (self.root / "etc/gpupanel").mkdir()
+        result = mod.inspect_host(self.root, free_bytes=mod.MIN_FREE_BYTES)
+        self.assertIn("runtime_collision", result["blockers"])
+        self.assertIn("/etc/gpupanel", next(
+            x["detail"] for x in result["checks"] if x["code"] == "runtime_collision"))
+        self.assertFalse(result["safe_to_install"])
+
+    def test_existing_gpupanel_service_blocks(self):
+        (self.root / "etc/systemd/system").mkdir(parents=True)
+        (self.root / "etc/systemd/system/gpupanel-agent.service").write_text("service")
+        result = mod.inspect_host(self.root, free_bytes=mod.MIN_FREE_BYTES)
+        self.assertIn("runtime_collision", result["blockers"])
+
+    def test_runtime_parent_symlink_blocks_even_without_target_file(self):
+        (self.root / "usr").symlink_to("/does-not-exist")
+        result = mod.inspect_host(self.root, free_bytes=mod.MIN_FREE_BYTES)
+        self.assertIn("runtime_path_symlink", result["blockers"])
+        self.assertIn("/usr", next(
+            x["detail"] for x in result["checks"] if x["code"] == "runtime_path_symlink"))
+        self.assertFalse(result["installable"])
+
+    def test_nested_runtime_parent_symlink_blocks(self):
+        (self.root / "etc/systemd").mkdir(parents=True)
+        (self.root / "etc/systemd/system").symlink_to("/missing-outside-fixture")
+        result = mod.inspect_host(self.root, free_bytes=mod.MIN_FREE_BYTES)
+        self.assertIn("runtime_path_symlink", result["blockers"])
+        self.assertIn("/etc/systemd/system", next(
+            x["detail"] for x in result["checks"] if x["code"] == "runtime_path_symlink"))
+
     def test_symlink_dangling_collision_blocks(self):
         (self.root / "etc/1panel").symlink_to("/missing-link-on-purpose")
         result = mod.inspect_host(self.root, free_bytes=mod.MIN_FREE_BYTES)
