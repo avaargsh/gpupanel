@@ -2,6 +2,10 @@ import { getFuLocaleMessage } from '@/lang/fu';
 
 const message = {
     gpupanel: {
+        catalogLoadFailed: '应用目录加载失败：请检查网络、权限或仓库同步状态。',
+        catalogRetry: '重试加载',
+        catalogEmpty: '当前筛选条件下没有应用；可尝试清除筛选或同步目录。',
+        catalogClearFilters: '清除筛选',
         firstRunTitle: '从当前主机开始',
         firstRunDescription: '按真实工作流检查主机、确认 Docker、再部署应用。状态来自现有接口，不代表安装完成。',
         hostStep: '查看主机状态',
