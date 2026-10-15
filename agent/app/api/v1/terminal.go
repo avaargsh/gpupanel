@@ -35,7 +35,7 @@ import (
 // @Security Timestamp
 // @Router /hosts/terminal/local [get]
 func (b *BaseApi) WsLocalTerminal(c *gin.Context) {
-	b.runSSHSession(c, "local", loadLocalConn, c.DefaultQuery("command", ""))
+	b.runLocalPTY(c)
 }
 
 // @Tags Terminal

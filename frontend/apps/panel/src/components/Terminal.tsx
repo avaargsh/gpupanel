@@ -77,7 +77,7 @@ export default function Terminal({
         if (withSession && sessionIdRef.current) {
             parts.push(`session=${encodeURIComponent(sessionIdRef.current)}`);
         }
-        if (persistent) parts.push('terminalPersistent=1');
+        if (persistent) parts.push('terminalPersistent=true');
         if (initCommand) parts.push(`command=${encodeURIComponent(initCommand)}`);
         return `${base}?${parts.join('&')}`;
     };

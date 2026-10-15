@@ -31,7 +31,10 @@ result = {'kind': 'LIVE bare-metal browser and authenticated Core→Agent APIs; 
 def inspect():
     process = subprocess.run(DOCKER + ['inspect', canary], capture_output=True, text=True, timeout=10)
     if process.returncode:
-        return None
+        if 'No such object' in process.stderr or 'No such container' in process.stderr:
+            subprocess.run(DOCKER + ['info', '--format', '{{.ID}}'], check=True, capture_output=True, timeout=10)
+            return None
+        raise RuntimeError('Docker inspect unavailable; absence not proven')
     value = json.loads(process.stdout)[0]
     assert value['Config']['Labels'].get('gpupanel.acceptance.run') == run, 'Foreign container: refuse action'
     assert value['HostConfig']['NetworkMode'] == 'none'
@@ -66,11 +69,16 @@ try:
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)
         anonymous = browser.new_context()
-        for endpoint in ['/api/v1/core/auth/current', '/api/v1/dashboard/base/os', '/api/v1/apps/installed/evidence/1']:
+        for endpoint in ['/api/v1/core/auth/current', '/api/v1/dashboard/base/os', '/api/v1/apps/installed/evidence/1', '/api/v1/hosts/terminal/local']:
             assert denied(anonymous.request.get(URL + endpoint)), 'Anonymous request accepted'
         anonymous.close()
         result['checks']['anonymous_denied'] = True
         context = browser.new_context(viewport={'width': 1440, 'height': 1100}, locale='en-US')
+        context.add_init_script("""const NativeSocket = window.WebSocket;
+            window.__hostAcceptanceSockets = [];
+            window.WebSocket = class extends NativeSocket {
+                constructor(...args) { super(...args); window.__hostAcceptanceSockets.push(this); }
+            };""")
         page = context.new_page()
         errors = []
         page.on('pageerror', lambda error: errors.append(str(error)))
@@ -118,6 +126,16 @@ try:
         data = subprocess.check_output(['sudo', '-n', 'cat', marker_path], text=True)
         assert data == run
         result['checks']['terminal_websocket_execution_and_file_observed'] = True
+        sessions = api('/hosts/terminal/sessions/search', {})
+        owned = [item for item in sessions if item['kind'] == 'local']
+        assert len(owned) == 1
+        session_id = owned[0]['id']
+        page.evaluate("""() => window.__hostAcceptanceSockets.find(socket => socket.url.includes('/hosts/terminal/local') && socket.readyState === WebSocket.OPEN).close(4000, 'acceptance disconnect')""")
+        page.get_by_role('button', name='Reconnect', exact=False).click()
+        expect(page.get_by_text('Connected', exact=True)).to_be_visible(timeout=15000)
+        resumed = api('/hosts/terminal/sessions/search', {})
+        assert len(resumed) == 1 and resumed[0]['id'] == session_id
+        result['checks']['terminal_unexpected_disconnect_reattaches_same_session'] = True
         result['marker_path'] = marker_path
         page.screenshot(path=str(STATE / 'terminal-live.png'), full_page=True)
         page.goto(URL + '/containers')
