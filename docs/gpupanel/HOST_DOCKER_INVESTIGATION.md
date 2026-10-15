@@ -18,6 +18,8 @@ python3 scripts/gpupanel-host-investigate.py --container my-container
 python3 scripts/gpupanel-host-investigate.py --container my-container --probe
 ```
 
+The default no-probe command intentionally exits with code **2** (`NOT_CHECKED`) to prevent CI or automation from mistaking an unobserved container for a successfully investigated one. Capture and inspect its JSON even with a nonzero exit.
+
 The second command uses `docker context inspect`, `docker inspect --type container`, then `docker logs --timestamps --tail 40` **by the resolved immutable container ID**, so a name takeover between steps cannot redirect the log read. It aborts for remote/unknown contexts, invalid container metadata and privilege/permission errors. A Docker inspect failure yields exit 2. A log failure yields `PARTIAL` and exit 2, preserving sanitized state metadata but never declaring full observation. Each subprocess is bounded to eight seconds and a combined 2 MiB stdout/stderr capture limit.
 
 Example fields: `source.containerId`, `source.observedAt`, `state.status`, `state.exitCode`, `state.oomKilled`, `state.health`, `logs.sha256`, `logs.signals`, and `mutations: false`. `signals` are **unverified pattern matches**, not diagnoses. `OBSERVED` only means metadata and bounded logs were read; it does **not** prove service health or the GPUPanel Host/API golden path.
