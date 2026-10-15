@@ -44,8 +44,8 @@ The screenshot's top-level IA: Dashboard / AI Chat / Agents / Assets / Tasks / O
 
 ### Reuse already present in frontend
 
-- \`frontend/src/routers/modules/ai.ts\`: AI Agents / AI Models / MCP Servers / GPU navigation with permission metadata.
-- \`frontend/src/api/modules/ai.ts\`: Agent CRUD/search, MCP CRUD/test/status, model accounts, Skills, channel and security config.
+- `frontend/src/routers/modules/ai.ts`: AI Agents / AI Models / MCP Servers / GPU navigation with permission metadata.
+- `frontend/src/api/modules/ai.ts`: Agent CRUD/search, MCP CRUD/test/status, model accounts, Skills, channel and security config.
 - Existing routes are neither a stable general-purpose AgentOps API nor proof of an authorized infrastructure change. **Do not** relabel them as such.
 
 ### Agent card content contract
