@@ -1,0 +1,27 @@
+name: GPUPanel brand checks
+on:
+  pull_request:
+    paths:
+      - 'frontend/**'
+      - 'scripts/verify-brand.mjs'
+      - '.github/workflows/gpupanel-brand-checks.yml'
+  workflow_dispatch:
+jobs:
+  verify-brand:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: node scripts/verify-brand.mjs
+      - run: npm ci
+        working-directory: frontend
+      - run: npm run type-check
+        working-directory: frontend
+      - run: npm run build:pro
+        working-directory: frontend
