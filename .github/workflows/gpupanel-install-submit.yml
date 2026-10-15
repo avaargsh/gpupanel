@@ -1,0 +1,22 @@
+name: GPUPanel App Store install submission
+on:
+  pull_request:
+    paths:
+      - 'frontend/src/views/app-store/detail/install/**'
+      - 'frontend/src/lang/modules/zh.ts'
+      - 'frontend/src/lang/modules/en.ts'
+      - 'scripts/tests/test_gpupanel_app_install_submission.py'
+      - '.github/workflows/gpupanel-install-submit.yml'
+  workflow_dispatch:
+jobs:
+  install-submission-contract:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install flow concurrency and failure contract
+        run: python3 -m unittest discover -s scripts/tests -p 'test_gpupanel_app_install_submission.py' -v

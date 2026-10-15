@@ -15,6 +15,13 @@ Current scope: one authenticated Ubuntu Host operator opens `/apps/all`, lists l
 - Inherited `?install` deep links are **not** auto-executed. The previous router bypass of `hasRouteAccess` for those links is removed. Existing backend authorization remains the real security boundary.
 - View rejects malformed search payloads (error, not empty success), keeps separate loading/empty/error states and fences stale results across node changes. A node switch cannot promote an old request result as new-node data.
 
+## Installation request recovery (front-end slice)
+
+- Installation form loads the selected app and exact version detail before enabling confirmation. Invalid or unavailable version data leaves an explicit error and retry entry, rather than an inert button.
+- A synchronous single-flight state fence covers validation, the port-exposure confirmation, and the API submission. Canceling a confirmation performs no install mutation. The drawer resists dismissal while submitting.
+- On a rejected/timed-out install POST the browser **cannot prove** whether the Agent created the task. It keeps the generated task UUID and exposes its existing task-log viewer; the submission button stays blocked until the operator reviews the task and independently checks Installed Apps, then explicitly acknowledges the risk of retrying. Closing and reopening this drawer preserves the unresolved task in the current UI component instance.
+- These guards are **not** backend exactly-once, durable idempotency, or cross-session resume. A page reload can lose the in-memory attempt state. Production G5 still requires task-ID replay fencing and actual backend operation reconciliation on a disposable host. The browser does not log raw exception payloads or secrets.
+
 ## Known constraints and falsifiable acceptance
 
 1. **Source/build gates**: Python portal contract, Node decoder boundary tests, `npm run build:pro`, `npm run type-check` must pass at the exact PR head.
