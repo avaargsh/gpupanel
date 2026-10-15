@@ -3,6 +3,7 @@ package service
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"strings"
 	"testing"
 
@@ -130,4 +131,33 @@ func TestAppInstallEvidenceUnknownWhenTaskOrDockerUnavailable(t *testing.T) {
 	result, err = inspectAppInstallEvidence(nil, taskDB, install.ID, appRunningObserver(install.Name))
 	if err != nil { t.Fatal(err) }
 	if result.Classification != appEvidenceUnknown { t.Fatalf("AppDB absence misclassified: %+v", result) }
+}
+
+func TestAppInstallEvidenceBoundedOwnershipScan(t *testing.T) {
+	appDB, taskDB, install := appEvidenceFixture(t, constant.StatusRunning, constant.StatusSuccess)
+	// One existing owner plus 1023 extra records hits the bounded scan ceiling.
+	// The observer must not run once we cannot rule out later competing claims.
+	others := make([]model.AppInstall, 0, 1023)
+	for i := 0; i < 1023; i++ {
+		others = append(others, model.AppInstall{
+			Name: fmt.Sprintf("independent-app-%04d", i),
+			AppId: 2, AppDetailId: 2, Version: "1",
+			Status: constant.StatusStopped,
+			ContainerName: fmt.Sprintf("unrelated-container-%04d", i),
+			ServiceName: "unrelated",
+		})
+	}
+	if err := appDB.Omit(clause.Associations).CreateInBatches(&others, 64).Error; err != nil {
+		t.Fatal(err)
+	}
+	observerCalled := false
+	result, err := inspectAppInstallEvidence(appDB, taskDB, install.ID, func([]string) ([]appContainerObservation, error) {
+		observerCalled = true
+		return nil, nil
+	})
+	if err != nil { t.Fatal(err) }
+	if observerCalled || result.Classification != appEvidenceUnknown || result.Verified ||
+		len(result.Reasons) != 1 || result.Reasons[0] != "OWNERSHIP_SCAN_LIMIT" {
+		t.Fatalf("saturated owner lookup did not fail closed: %+v (called=%v)", result, observerCalled)
+	}
 }
