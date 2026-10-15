@@ -49,7 +49,8 @@ def smoke(image: str, approved: bool, executor=command, fixture_entrypoint: bool
         raise SmokeError("fixture entrypoint requires a locally built immutable image ID")
     checks = ["docker info", "docker image inspect (local only)",
               "docker create --pull=never --network=none --read-only --cap-drop=ALL",
-              "docker start", "docker logs", "docker inspect exit code", "docker rm"]
+              "docker start", "docker logs", "docker inspect exit code",
+              "docker inspect ownership label", "docker rm"]
     if not approved:
         return {"status": "APPROVAL_REQUIRED", "image": image, "checks": checks,
                 "networkDisabled": True, "hostMounts": False, "executed": False}
@@ -63,20 +64,24 @@ def smoke(image: str, approved: bool, executor=command, fixture_entrypoint: bool
     resolved_id = executor(binary, "image", "inspect", "--format", "{{.Id}}", image)
     if LOCAL_IMAGE_ID.fullmatch(image) and resolved_id.strip() != image:
         raise SmokeError("local image ID changed or did not match requested digest")
-    name = "gpupanel-accept-" + uuid.uuid4().hex[:16]
-    created = False
+    nonce = uuid.uuid4().hex[:16]
+    name = "gpupanel-accept-" + nonce
+    create_attempted = False
     cleanup_error = False
     error = None
     try:
-        args = ("create", "--pull=never", "--name", name, "--network=none",
+        args = ("create", "--pull=never", "--name", name,
+                "--label", "io.gpupanel.smoke.nonce=" + nonce, "--network=none",
                 "--read-only", "--cap-drop=ALL", "--security-opt", "no-new-privileges",
                 "--pids-limit", "32", "--memory", "128m", "--cpus", "0.5")
         if fixture_entrypoint:
             args += ("--entrypoint", "/gpupanel-smoke", image)
         else:
             args += ("--entrypoint", "/bin/sh", image, "-c", "printf " + MARKER)
+        # Even if Docker create returns an error, the daemon might already have
+        # committed the container. Always verify ownership before cleanup.
+        create_attempted = True
         executor(binary, *args)
-        created = True
         executor(binary, "start", name)
         logs = executor(binary, "logs", name)
         exit_code = executor(binary, "inspect", "--format", "{{.State.ExitCode}}", name)
@@ -85,13 +90,22 @@ def smoke(image: str, approved: bool, executor=command, fixture_entrypoint: bool
     except SmokeError as exc:
         error = exc
     finally:
-        if created:
+        if create_attempted:
+            # Never rm by a guessed name alone. Docker may have returned a
+            # name collision or lost the create acknowledgment.
             try:
-                executor(binary, "rm", "-f", name)
+                observed = executor(binary, "inspect", "--format",
+                                    '{{index .Config.Labels "io.gpupanel.smoke.nonce"}}', name)
+                if observed != nonce:
+                    cleanup_error = True
+                else:
+                    executor(binary, "rm", "-f", name)
             except SmokeError:
+                # Includes an uninspectable daemon after ambiguous creation:
+                # cannot claim cleanup or leak-free completion.
                 cleanup_error = True
     if cleanup_error:
-        raise SmokeError("disposable container cleanup failed; inspect Docker resources")
+        raise SmokeError("disposable container cleanup or ownership unverified; inspect Docker resources")
     if error is not None:
         raise error
     return {"status": "PASSED", "checks": checks, "containerRemoved": True,
