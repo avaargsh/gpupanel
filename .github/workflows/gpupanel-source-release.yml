@@ -1,0 +1,39 @@
+name: GPUPanel source release
+on:
+  pull_request:
+    paths:
+      - 'scripts/gpupanel-release.py'
+      - 'scripts/tests/test_gpupanel_release.py'
+      - '.github/workflows/gpupanel-source-release.yml'
+      - 'docs/gpupanel/SOURCE_RELEASE.md'
+  workflow_dispatch:
+jobs:
+  source-release-contract:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python3 -m py_compile scripts/gpupanel-release.py scripts/tests/test_gpupanel_release.py
+      - run: python3 -m unittest discover -s scripts/tests -p 'test_gpupanel_release.py' -v
+  full-source-build:
+    # Product artifact gate: exercise the real Vite -> Go embed -> Core/Agent build.
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: core/go.mod
+          cache-dependency-path: core/go.sum
+      - run: python3 scripts/gpupanel-release.py build --version ci-$(git rev-parse --short HEAD)
+      - run: python3 scripts/gpupanel-release.py verify dist/gpupanel-preview.tar.gz
