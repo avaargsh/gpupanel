@@ -16,6 +16,8 @@
             </template>
             <template #main>
                 <el-alert type="info" :closable="false" :title="$t('gpupanel.catalogNotice')" class="mb-3" />
+                <el-alert v-if="syncError" type="error" :closable="true" @close="syncError = false"
+                    :title="$t('gpupanel.catalogSyncFailed')" class="mb-3" />
                 <el-alert v-if="syncAccepted" type="info" :closable="true" @close="syncAccepted = false"
                     :title="$t('gpupanel.catalogSyncPending')" class="mb-3" />
                 <el-alert v-if="legacyInstallRequested" type="warning" :closable="false"
@@ -49,6 +51,8 @@
 <script lang="ts" setup>
 import { computed, onActivated, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
+import { ElMessageBox } from 'element-plus';
+import i18n from '@/lang';
 import type { App } from '@/api/interface/app';
 import { getAppByKey, searchApp, syncLocalApp } from '@/api/modules/app';
 import { useGlobalStore } from '@/composables/useGlobalStore';
@@ -69,6 +73,7 @@ const loading = ref(false);
 const loadError = ref(false);
 const syncing = ref(false);
 const syncAccepted = ref(false);
+const syncError = ref(false);
 const isActive = ref(false);
 const isExist = ref(false);
 const installRef = ref<InstanceType<typeof Install>>();
@@ -86,6 +91,7 @@ const hasFilters = computed(() => !!req.name.trim() || req.tags.length > 0);
 // Installation is only available from a verified local search result and user click.
 const legacyInstallRequested = computed(() => typeof route.query.install === 'string');
 let searchRevision = 0;
+let syncRevision = 0;
 let firstActivation = true;
 
 const refresh = async () => {
@@ -155,16 +161,35 @@ const openDetail = (key: string) => {
 const syncLocal = async () => {
     if (!isExist.value || !isActive.value || syncing.value) return;
     syncing.value = true;
+    syncError.value = false;
+    const token = ++syncRevision;
+    const node = currentNode.value;
+    try {
+        // Local re-indexing can retire definitions absent from the host's
+        // local repository. Explicitly authorize the mutation first.
+        await ElMessageBox.confirm(i18n.global.t('gpupanel.catalogSyncConfirm'),
+            i18n.global.t('gpupanel.catalogLocalSync'), {
+                confirmButtonText: i18n.global.t('commons.button.confirm'),
+                cancelButtonText: i18n.global.t('commons.button.cancel'),
+                type: 'warning',
+            });
+    } catch {
+        if (token === syncRevision) syncing.value = false;
+        return;
+    }
+    if (token !== syncRevision || node !== currentNode.value) return;
     const taskID = newUUID();
     try {
-        // HTTP acceptance is not completion: keep the operation marked busy
-        // until the user closes the actual task log and the list is re-read.
+        // API response means accepted, not completed or reconciled.
         await syncLocalApp({ taskID });
+        if (token !== syncRevision || node !== currentNode.value) return;
         syncAccepted.value = true;
         taskLogRef.value?.openWithTaskID(taskID);
     } catch {
-        syncing.value = false;
-        loadError.value = true;
+        if (token === syncRevision) {
+            syncing.value = false;
+            syncError.value = true;
+        }
     }
 };
 const finishLocalSync = () => {
@@ -182,7 +207,10 @@ onActivated(() => {
 });
 watch(currentNode, () => {
     ++searchRevision;
+    ++syncRevision;
     syncing.value = false;
+    syncAccepted.value = false;
+    syncError.value = false;
     apps.value = [];
     paginationConfig.total = 0;
     paginationConfig.currentPage = 1;
@@ -190,6 +218,7 @@ watch(currentNode, () => {
 });
 onBeforeUnmount(() => {
     ++searchRevision;
+    ++syncRevision;
 });
 </script>
 
