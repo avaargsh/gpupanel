@@ -1,0 +1,89 @@
+name: GPUPanel owner-authorized merged branch prune
+
+on:
+  issue_comment:
+    types: [created]
+  pull_request:
+    paths:
+      - '.github/workflows/gpupanel-prune-owner-command.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check pruning negative controls
+        run: python3 -m unittest discover -s scripts/tests -p 'test_gpupanel_prune_merged_branches.py' -v
+
+  prune:
+    permissions:
+      contents: write
+      issues: read
+      pull-requests: read
+    if: >-
+      github.event_name == 'issue_comment' &&
+      github.repository == 'avaargsh/gpupanel' &&
+      github.event.issue.number == 73 &&
+      !github.event.issue.pull_request &&
+      github.event.comment.user.login == 'avaargsh' &&
+      github.event.comment.author_association == 'OWNER' &&
+      github.event.comment.body == '/gpupanel-prune-merged apply'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    concurrency:
+      group: gpupanel-merged-branch-prune
+      cancel-in-progress: false
+    steps:
+      - name: Checkout the protected execution code from default branch
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+          fetch-depth: 1
+      - name: Verify repository and revision source
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REPOSITORY" = 'avaargsh/gpupanel'
+          test "$GITHUB_REF" = 'refs/heads/dev-v2'
+          git remote -v
+          git rev-parse HEAD
+      - name: Run negative deletion-safety tests
+        run: python3 -m unittest discover -s scripts/tests -p 'test_gpupanel_prune_merged_branches.py' -v
+      - name: Live inventory dry-run
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          python3 scripts/gpupanel-prune-merged-branches.py > "$RUNNER_TEMP/branch-prune-preview.json"
+          python3 - "$RUNNER_TEMP/branch-prune-preview.json" <<'PY'
+          import json, sys
+          preview = json.load(open(sys.argv[1], encoding="utf-8"))
+          assert preview["mode"] == "dry-run"
+          assert preview["repo"] == "avaargsh/gpupanel"
+          print("Provisional candidates:", len(preview["eligible"]))
+          PY
+      - name: Apply exact-SHA verified ref pruning
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          python3 scripts/gpupanel-prune-merged-branches.py --apply \
+            --confirm-repo avaargsh/gpupanel > "$RUNNER_TEMP/branch-prune-execution.log"
+      - name: Retain evidence, including failed or partial results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gpupanel-branch-prune-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/branch-prune-preview.json
+            ${{ runner.temp }}/branch-prune-execution.log
+          if-no-files-found: warn
+          retention-days: 30
