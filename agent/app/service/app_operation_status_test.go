@@ -193,3 +193,20 @@ func TestInterruptedAppInstallationUnknownCannotWriteWithoutDB(t *testing.T) {
         t.Fatal("missing app DB accepted status mutation")
     }
 }
+
+
+func TestUnknownAppInstallationRejectsSideEffectingManagement(t *testing.T) {
+    for _, operation := range []string{"start", "stop", "restart", "delete", "upgrade", "rebuild", "reload", "update", "change-port"} {
+        if err := requireReconciledAppInstallation(constant.StatusUnknown, operation); err == nil {
+            t.Errorf("UNKNOWN install accepted %q side effect", operation)
+        }
+    }
+    for _, operation := range []string{"sync", "favorite"} {
+        if err := requireReconciledAppInstallation(constant.StatusUnknown, operation); err != nil {
+            t.Errorf("read/metadata operation %s rejected: %v", operation, err)
+        }
+    }
+    if err := requireReconciledAppInstallation(constant.StatusRunning, "start"); err != nil {
+        t.Fatalf("regular installed app unexpectedly denied: %v", err)
+    }
+}
