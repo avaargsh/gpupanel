@@ -69,6 +69,17 @@ class InstallPreflightTests(unittest.TestCase):
         result = mod.inspect_host(self.root, free_bytes=mod.MIN_FREE_BYTES)
         self.assertIn("operating_system", result["blockers"])
 
+    def test_experimental_26_never_bypasses_collisions_or_other_os(self):
+        (self.root / "etc/os-release").write_text('ID=ubuntu\nVERSION_ID="26.04"\n')
+        self.assertIn("operating_system", mod.inspect_host(self.root, mod.MIN_FREE_BYTES)["blockers"])
+        result = mod.inspect_host(self.root, mod.MIN_FREE_BYTES, experimental_ubuntu_26=True)
+        self.assertEqual(result["blockers"], [])
+        self.assertEqual(next(x for x in result["checks"] if x["code"] == "operating_system")["state"], "UNKNOWN")
+        (self.root / "etc/gpupanel").mkdir()
+        self.assertIn("runtime_collision", mod.inspect_host(self.root, mod.MIN_FREE_BYTES, True)["blockers"])
+        (self.root / "etc/os-release").write_text('ID=debian\nVERSION_ID="12"\n')
+        self.assertIn("operating_system", mod.inspect_host(self.root, mod.MIN_FREE_BYTES, True)["blockers"])
+
     def test_insufficient_space_blocks(self):
         result = mod.inspect_host(self.root, free_bytes=mod.MIN_FREE_BYTES - 1)
         self.assertIn("disk_space", result["blockers"])

@@ -58,7 +58,7 @@ def read_os_release(root: Path) -> tuple[str, str]:
         return "unknown", "unknown"
 
 
-def inspect_host(root: Path, free_bytes: int | None = None) -> dict:
+def inspect_host(root: Path, free_bytes: int | None = None, experimental_ubuntu_26: bool = False) -> dict:
     """Only reads metadata; injectable hostroot/space make CI hermetic."""
     os_id, version = read_os_release(root)
     checks = []
@@ -66,6 +66,9 @@ def inspect_host(root: Path, free_bytes: int | None = None) -> dict:
         checks.append({"code": code, "state": state, "detail": detail, "next_action": action})
     if (os_id, version) == ("ubuntu", "24.04"):
         add("operating_system", "PASS", "Ubuntu 24.04", "No action")
+    elif experimental_ubuntu_26 and (os_id, version) == ("ubuntu", "26.04"):
+        add("operating_system", "UNKNOWN", "Ubuntu 26.04 experimental install explicitly selected",
+            "Verify on this host; this option does not waive collisions, data ownership or rollback checks")
     else:
         add("operating_system", "BLOCKED", f"Detected {os_id} {version}",
             "Use a disposable Ubuntu 24.04 VM; other OS versions are not validated")
@@ -146,8 +149,9 @@ def present(result: dict, json_output: bool) -> None:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="GPUPanel collision/OS/disk preflight (never installs)")
     parser.add_argument("--json", action="store_true", help="machine-readable output")
+    parser.add_argument("--experimental-ubuntu-26", action="store_true", help="Opt into experimental Ubuntu 26.04 testing only; never bypass collisions")
     args = parser.parse_args(argv)
-    result = inspect_host(Path("/"))
+    result = inspect_host(Path("/"), experimental_ubuntu_26=args.experimental_ubuntu_26)
     present(result, args.json)
     return 2 if result["blockers"] else 0
 

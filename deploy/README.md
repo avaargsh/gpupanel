@@ -59,3 +59,5 @@ sudo ./gpupanel-<version>-linux-<arch>/install.sh
 
 本轮 VM 可用 `make install-test-stop` 停止并保留磁盘；它不删除宿主机任何服务。
 真实升级、备份和回滚仍需单独验证，不能通过手工替换二进制后宣称安装器升级已通过。
+
+真机试验的 OS、残留状态备份、回环绑定和自动配置选项见 [操作说明](../docs/operations/host-install.md)。
