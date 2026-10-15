@@ -10,6 +10,11 @@ python3 scripts/gpupanel-preview-stage.py plan dist/gpupanel-preview.tar.gz
 python3 scripts/gpupanel-preview-stage.py stage dist/gpupanel-preview.tar.gz --approve
 python3 scripts/gpupanel-preview-stage.py status dev
 # Optional removal; refuses modified/unknown files:
+```
+
+**Optional cleanup: run separately; never paste with the creation commands.**
+
+```bash
 python3 scripts/gpupanel-preview-stage.py remove dev --approve
 ```
 

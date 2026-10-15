@@ -17,7 +17,7 @@ Decision date: 2026-10-15. **Freeze new GPU vendor integrations**, including Met
 | --- | --- | --- | --- |
 | G0 Brand & frontend baseline | GPUPanel name, branding and compilable web | real Vue build/type-check CI | PASS (source) |
 | G1 Read-only environment review | check local tools, collision risk and trusted cache | fixture tests + Ubuntu CI, no side-effects | PASS (diagnostics only) |
-| G2 Source build + artifact | Vite assets embedded in Go Core, agent built, verified tarball | full Ubuntu Node/Go build, archive checksum and attribution | IN PROGRESS; not installable |
+| G2 Source build + artifact | Vite assets embedded in Go Core, agent built, verified tarball | full Ubuntu Node/Go build, archive checksum and attribution | PASS (CI source preview only, not an installer) |
 | G3 Safe installer/upgrade/rollback | fresh Ubuntu install, explicit data namespace, no legacy collisions | disposable VM, systemd/service setup and rollback | BLOCKED |
 | G4 Login and Host | authenticate then observe host, file, disk, terminal | browser + API, negative auth & RBAC tests | NOT RUN |
 | G5 Docker + app | container create/start/log/stop/delete and application install/uninstall | live Docker engine and authenticated API | NOT RUN |

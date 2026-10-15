@@ -9,7 +9,7 @@ GPUPanel 由 1Panel GPL-3.0 开源版 Fork 而来。现阶段继承 Linux Host�
 ## 2. 在 Ubuntu 桌面快速检查（无需 root）
 
 ```bash
-git clone https://github.com/avaargsh/gpupanel.git
+git clone --branch dev-v2 https://github.com/avaargsh/gpupanel.git
 cd gpupanel
 python3 scripts/gpupanel-bootstrap.py doctor --human
 python3 scripts/gpupanel-bootstrap.py plan --human
@@ -21,7 +21,49 @@ python3 scripts/gpupanel-bootstrap.py self-test --human
 - `self-test` 只用合成数据测试 SHA-256 和离线包往返，不会访问网络或更改主机配置。
 - 初始 `profiles/ubuntu24-dev.lock.json` 没有可下载的真实软件制品，这是有意限制：没有审核过的版本、哈希与许可证前，不能宣称“一键安装”。
 
-## 3. 前端开发预览
+## 3. 两种不同的“安装”操作
+
+**A. 当前可用的是 Python 项目文件创建（不是安装 Python）：** 需要 Python 3.12+，在普通 Ubuntu 用户的终端、仓库根目录执行：
+
+```bash
+python3 scripts/gpupanel-catalog.py plan gpupanel.dev.python-stdlib
+python3 scripts/gpupanel-catalog-workspace.py plan
+# 检查路径和文件清单后，再主动批准写入：
+python3 scripts/gpupanel-catalog-workspace.py install --approve
+python3 scripts/gpupanel-catalog-workspace.py status
+python3 scripts/gpupanel-catalog-workspace.py list
+python3 ~/GPUPanel/projects/python-stdlib-starter/main.py
+# 可选：修改过的项目会拒绝删除：
+```
+
+**可选清理：以下命令需单独执行，避免整段复制时创建后立即删除。**
+
+```bash
+python3 scripts/gpupanel-catalog-workspace.py uninstall --approve
+```
+
+**B. 源码包暂存只用于检查文件（不是安装 GPUPanel）：** 需要相应 Node/npm、Go 依赖才能完成构建。
+
+```bash
+python3 scripts/gpupanel-release.py build --version dev
+python3 scripts/gpupanel-release.py verify dist/gpupanel-preview.tar.gz
+python3 scripts/gpupanel-preview-stage.py plan dist/gpupanel-preview.tar.gz
+# 检查来源、摘要、目录后才手动批准暂存：
+python3 scripts/gpupanel-preview-stage.py stage dist/gpupanel-preview.tar.gz --approve
+python3 scripts/gpupanel-preview-stage.py status dev
+```
+
+**可选清理：以下命令需单独执行，避免整段复制时创建后立即删除。**
+
+```bash
+python3 scripts/gpupanel-preview-stage.py remove dev --approve
+```
+
+暂存目录为 `~/GPUPanel/previews/source-dev/`，Core/Agent 文件不可执行；**不启动服务、不安装 systemd、不设置管理员、不开放网络端口、不覆盖现有 1Panel**。自带的 SHA-256 校验并不等于验证发行者签名，详见 [预览暂存边界](PREVIEW_STAGING.md)。
+
+独立 GPUPanel 系统安装依然受旧 `1pctl`、`/etc/1panel`、Core/Agent 数据库和其他旧路径约束。使用 `python3 scripts/gpupanel-runtime-namespace.py --strict --human` 查看阻塞；非零退出是预期结果。详见 [运行隔离](RUNTIME_ISOLATION.md)。
+
+## 4. 前端开发预览
 
 需要 Node/npm、依赖可正常访问。初次构建：
 
@@ -34,7 +76,7 @@ npm run type-check
 
 以上只验前端，不代表完整服务端启动；运行 Core/Agent 还需按 upstream 项目开发规范准备 Go 工具链、数据库等依赖。请勿把这套源码部署在存放重要数据的生产主机上做初次试验。
 
-## 4. 出问题怎么办
+## 5. 出问题怎么办
 
 - 国内 npm 或 Go 下载受阻：先解决可信镜像访问；不要执行来源不明的 `curl | bash`。后续会在 Lock 中固定制品 SHA-256，再用离线 Bundle 搬迁。
 - `doctor` 提示非 Ubuntu 24.04：只表示环境不在本阶段测试矩阵，不代表命令可以安全兼容其他系统。
@@ -43,6 +85,6 @@ npm run type-check
 
 问题反馈请提交 GitHub Issue，附版本、复现步骤与脱敏后的日志，**不要上传 Token、密码、真实 IP、序列号或客户数据**。
 
-## 5. 产品路线
+## 6. 产品路线
 
 **个人 Ubuntu Host → 企业 Host 纳管 → Kubernetes Provider → GPU 训练与推理门户。** 详细边界参见 [产品组织](PRODUCT.md) 和 [路线图](ROADMAP.md)。
