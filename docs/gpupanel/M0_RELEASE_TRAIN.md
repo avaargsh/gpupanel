@@ -49,7 +49,7 @@ Do not convert `NOT RUN` into PASS because unit tests, static checks, source bui
 ## Repository governance / escalation
 
 - Default `dev-v2` was reported unprotected on 2026-10-15. Configure PR-only merge, required Go + frontend + acceptance status checks, no force push, no deletion and no bypass. This requires **GitHub repository administration**; this document does not claim the ruleset was changed.
-- Issues are disabled in this repository (GitHub REST returned 410 on 2026-10-15). Use this Draft PR and the existing PR threads as the temporary release ledger; re-enable Issues later if wanted.
+- GitHub Issues were re-enabled on 2026-10-15. [#69](https://github.com/avaargsh/gpupanel/issues/69) is the M0 release parent, with [G3 #70](https://github.com/avaargsh/gpupanel/issues/70), [G5 #71](https://github.com/avaargsh/gpupanel/issues/71) and [G4/G6 #72](https://github.com/avaargsh/gpupanel/issues/72) as the acceptance owners. This Draft PR remains an architecture/integration ledger, not a substitute for Issue status.
 - Once the full single-host proof is independently accepted, open a separate M1 work item for read-only second-host inventory, followed by one scoped authorized mutation. Do not fold M1 features into M0.
 
 ## Decision at this snapshot
