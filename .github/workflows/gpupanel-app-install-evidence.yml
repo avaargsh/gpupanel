@@ -3,7 +3,7 @@ on:
   pull_request:
     paths:
       - 'agent/app/service/app_install_evidence*.go'
-      - 'agent/app/api/v2/app_install.go'
+      - 'agent/app/api/v1/app_install.go'
       - 'agent/router/ro_app.go'
       - 'agent/router/ro_app_evidence_test.go'
       - 'agent/router/ro_app_evidence_http_test.go'
@@ -34,7 +34,7 @@ jobs:
         run: go test ./app/service -run '^TestAppInstallEvidence' -count=1
       - name: Compile API and route bindings
         working-directory: agent
-        run: go test ./app/api/v2 ./router -run '^__GPUPANEL_NONE__' -count=1
+        run: go test ./app/api/v1 ./router -run '^__GPUPANEL_NONE__' -count=1
       - name: Reject remote Agent node evidence even with spoofed metadata
         working-directory: agent
         run: go test ./router -run TestAppEvidenceLocalMasterOnly -count=1 -v

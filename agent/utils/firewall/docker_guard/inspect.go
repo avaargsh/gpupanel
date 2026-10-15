@@ -9,9 +9,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/1Panel-dev/1Panel/agent/constant"
-	"github.com/1Panel-dev/1Panel/agent/utils/cmd"
-	"github.com/1Panel-dev/1Panel/agent/utils/firewall/lifecycle"
+	"github.com/avaargsh/GPUPanel/agent/constant"
+	"github.com/avaargsh/GPUPanel/agent/utils/cmd"
+	"github.com/avaargsh/GPUPanel/agent/utils/firewall/lifecycle"
 )
 
 func ReadDNATRules(ctx context.Context, backend, family string) DNATRules {

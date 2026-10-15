@@ -10,13 +10,13 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/1Panel-dev/1Panel/agent/app/dto"
-	"github.com/1Panel-dev/1Panel/agent/app/task"
-	"github.com/1Panel-dev/1Panel/agent/constant"
-	"github.com/1Panel-dev/1Panel/agent/utils/firewall"
-	"github.com/1Panel-dev/1Panel/agent/utils/firewall/filter"
-	"github.com/1Panel-dev/1Panel/agent/utils/firewall/forwarding"
-	"github.com/1Panel-dev/1Panel/agent/utils/firewall/lifecycle"
+	"github.com/avaargsh/GPUPanel/agent/app/dto"
+	"github.com/avaargsh/GPUPanel/agent/app/task"
+	"github.com/avaargsh/GPUPanel/agent/constant"
+	"github.com/avaargsh/GPUPanel/agent/utils/firewall"
+	"github.com/avaargsh/GPUPanel/agent/utils/firewall/filter"
+	"github.com/avaargsh/GPUPanel/agent/utils/firewall/forwarding"
+	"github.com/avaargsh/GPUPanel/agent/utils/firewall/lifecycle"
 )
 
 type IForwardingService interface {

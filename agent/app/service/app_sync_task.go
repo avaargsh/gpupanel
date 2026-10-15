@@ -11,16 +11,16 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/1Panel-dev/1Panel/agent/app/dto"
-	"github.com/1Panel-dev/1Panel/agent/app/model"
-	"github.com/1Panel-dev/1Panel/agent/app/task"
-	"github.com/1Panel-dev/1Panel/agent/constant"
-	"github.com/1Panel-dev/1Panel/agent/global"
-	"github.com/1Panel-dev/1Panel/agent/i18n"
-	"github.com/1Panel-dev/1Panel/agent/utils/appicon"
-	"github.com/1Panel-dev/1Panel/agent/utils/common"
-	"github.com/1Panel-dev/1Panel/agent/utils/req_helper"
-	"github.com/1Panel-dev/1Panel/agent/utils/xpack"
+	"github.com/avaargsh/GPUPanel/agent/app/dto"
+	"github.com/avaargsh/GPUPanel/agent/app/model"
+	"github.com/avaargsh/GPUPanel/agent/app/task"
+	"github.com/avaargsh/GPUPanel/agent/constant"
+	"github.com/avaargsh/GPUPanel/agent/global"
+	"github.com/avaargsh/GPUPanel/agent/i18n"
+	"github.com/avaargsh/GPUPanel/agent/utils/appicon"
+	"github.com/avaargsh/GPUPanel/agent/utils/common"
+	"github.com/avaargsh/GPUPanel/agent/utils/req_helper"
+	"github.com/avaargsh/GPUPanel/agent/utils/xpack"
 )
 
 type appSyncContext struct {
@@ -83,7 +83,7 @@ func (a AppService) createSyncAppStoreTask(sharedCtx **appSyncContext) func(t *t
 		ctx := &appSyncContext{
 			task:           t,
 			httpClient:     http.Client{Timeout: time.Duration(constant.TimeOut20s) * time.Second, Transport: xpack.MultiNodeProvider.LoadRequestTransport()},
-			baseRemoteUrl:  fmt.Sprintf("%s/%s/1panel", global.AppRepoURL(), global.CONF.Base.Mode),
+			baseRemoteUrl:  fmt.Sprintf("%s/%s/gpupanel", global.AppRepoURL(), global.CONF.Base.Mode),
 			systemVersion:  setting.SystemVersion,
 			settingService: settingService,
 			list:           list,

@@ -9,7 +9,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/1Panel-dev/1Panel/agent/buserr"
+	"github.com/avaargsh/GPUPanel/agent/buserr"
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
 )

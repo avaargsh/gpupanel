@@ -20,30 +20,30 @@ import (
 	"strings"
 	"time"
 
-	"github.com/1Panel-dev/1Panel/agent/utils/controller"
-	"github.com/1Panel-dev/1Panel/agent/utils/copier"
-	csvexport "github.com/1Panel-dev/1Panel/agent/utils/csv_export"
-	"github.com/1Panel-dev/1Panel/agent/utils/encrypt"
-	"github.com/1Panel-dev/1Panel/agent/utils/firewall"
-	"github.com/1Panel-dev/1Panel/agent/utils/geo"
+	"github.com/avaargsh/GPUPanel/agent/utils/controller"
+	"github.com/avaargsh/GPUPanel/agent/utils/copier"
+	csvexport "github.com/avaargsh/GPUPanel/agent/utils/csv_export"
+	"github.com/avaargsh/GPUPanel/agent/utils/encrypt"
+	"github.com/avaargsh/GPUPanel/agent/utils/firewall"
+	"github.com/avaargsh/GPUPanel/agent/utils/geo"
 	"github.com/gin-gonic/gin"
 
-	"github.com/1Panel-dev/1Panel/agent/app/dto"
-	"github.com/1Panel-dev/1Panel/agent/app/model"
-	"github.com/1Panel-dev/1Panel/agent/app/repo"
-	"github.com/1Panel-dev/1Panel/agent/buserr"
-	"github.com/1Panel-dev/1Panel/agent/constant"
-	"github.com/1Panel-dev/1Panel/agent/global"
-	"github.com/1Panel-dev/1Panel/agent/utils/cmd"
-	"github.com/1Panel-dev/1Panel/agent/utils/common"
-	"github.com/1Panel-dev/1Panel/agent/utils/re"
+	"github.com/avaargsh/GPUPanel/agent/app/dto"
+	"github.com/avaargsh/GPUPanel/agent/app/model"
+	"github.com/avaargsh/GPUPanel/agent/app/repo"
+	"github.com/avaargsh/GPUPanel/agent/buserr"
+	"github.com/avaargsh/GPUPanel/agent/constant"
+	"github.com/avaargsh/GPUPanel/agent/global"
+	"github.com/avaargsh/GPUPanel/agent/utils/cmd"
+	"github.com/avaargsh/GPUPanel/agent/utils/common"
+	"github.com/avaargsh/GPUPanel/agent/utils/re"
 	"github.com/pkg/errors"
 	"golang.org/x/crypto/ssh"
 )
 
 const sshPath = "/etc/ssh/sshd_config"
 const defaultSSHPort = "22"
-const sshManagedMarker = "# config by 1panel"
+const sshManagedMarker = "# config by gpupanel"
 const defaultSSHLogDir = "/var/log"
 
 type SSHService struct{}
@@ -821,7 +821,7 @@ func (u *SSHService) ExportLog(ctx *gin.Context, req dto.SearchSSHLog) (string, 
 	if len(logs) == 0 {
 		return "", buserr.New("ErrRecordNotFound")
 	}
-	tmpFileName := path.Join(global.Dir.TmpDir, "export/ssh-log", fmt.Sprintf("1panel-ssh-log-%s.csv", time.Now().Format(constant.DateTimeSlimLayout)))
+	tmpFileName := path.Join(global.Dir.TmpDir, "export/ssh-log", fmt.Sprintf("gpupanel-ssh-log-%s.csv", time.Now().Format(constant.DateTimeSlimLayout)))
 	if _, err := os.Stat(path.Dir(tmpFileName)); err != nil {
 		_ = os.MkdirAll(path.Dir(tmpFileName), constant.DirPerm)
 	}
@@ -1323,9 +1323,9 @@ func loadSSHData(
 		successCount int
 		failedCount  int
 	)
-	getLoc, err := geo.NewGeo()
-	if err != nil {
-		return datas, 0, 0
+	getLoc, _ := geo.NewGeo()
+	if getLoc != nil {
+		defer getLoc.Close()
 	}
 	histories, err := loadSSHHistoriesFromFile(filePath, status, filter, startTime, endTime, currentYear, nyc)
 	if err != nil {
@@ -1333,7 +1333,9 @@ func loadSSHData(
 	}
 	for _, itemData := range histories {
 		if successCount+failedCount >= showCountFrom && (showCountTo == -1 || successCount+failedCount < showCountTo) {
-			itemData.Area, _ = geo.GetIPLocation(getLoc, itemData.Address, common.GetLang(ctx))
+			if getLoc != nil {
+				itemData.Area, _ = geo.GetIPLocation(getLoc, itemData.Address, common.GetLang(ctx))
+			}
 			datas = append(datas, itemData)
 		}
 		if itemData.Status == constant.StatusSuccess {

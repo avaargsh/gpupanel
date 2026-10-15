@@ -4,7 +4,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/1Panel-dev/1Panel/agent/utils/common"
+	"github.com/avaargsh/GPUPanel/agent/utils/common"
 )
 
 const aiGatewayAppKey = "ai-gateway"

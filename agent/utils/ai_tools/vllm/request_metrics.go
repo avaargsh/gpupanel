@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"strconv"
 
-	"github.com/1Panel-dev/1Panel/agent/app/model"
-	"github.com/1Panel-dev/1Panel/agent/utils/re"
+	"github.com/avaargsh/GPUPanel/agent/app/model"
+	"github.com/avaargsh/GPUPanel/agent/utils/re"
 )
 
 type requestMetrics struct {

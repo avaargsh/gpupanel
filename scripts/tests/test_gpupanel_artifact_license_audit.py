@@ -47,8 +47,8 @@ class ArtifactLicenseTests(unittest.TestCase):
         stage = self.root / "stage"
         stage.mkdir(exist_ok=True)
         (stage / "bin").mkdir(exist_ok=True)
-        (stage / "bin/1panel-core").write_bytes(b"fake core binary")
-        (stage / "bin/1panel-agent").write_bytes(b"fake agent binary")
+        (stage / "bin/gpupanel-core").write_bytes(b"fake core binary")
+        (stage / "bin/gpupanel-agent").write_bytes(b"fake agent binary")
         (stage / "LICENSE").write_text(
             self.repo.joinpath("LICENSE").read_text() if license_text is None else license_text)
         (stage / "NOTICE.md").write_text(

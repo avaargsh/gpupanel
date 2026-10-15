@@ -3,7 +3,7 @@ package manager
 import (
 	"strings"
 
-	"github.com/1Panel-dev/1Panel/core/utils/ssh"
+	"github.com/avaargsh/GPUPanel/core/utils/ssh"
 )
 
 type Systemd struct {

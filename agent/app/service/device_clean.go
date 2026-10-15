@@ -11,16 +11,16 @@ import (
 	"strings"
 	"time"
 
-	"github.com/1Panel-dev/1Panel/agent/app/dto"
-	"github.com/1Panel-dev/1Panel/agent/app/model"
-	"github.com/1Panel-dev/1Panel/agent/app/repo"
-	"github.com/1Panel-dev/1Panel/agent/app/task"
-	"github.com/1Panel-dev/1Panel/agent/constant"
-	"github.com/1Panel-dev/1Panel/agent/global"
-	"github.com/1Panel-dev/1Panel/agent/i18n"
-	"github.com/1Panel-dev/1Panel/agent/utils/common"
-	"github.com/1Panel-dev/1Panel/agent/utils/docker"
-	fileUtils "github.com/1Panel-dev/1Panel/agent/utils/files"
+	"github.com/avaargsh/GPUPanel/agent/app/dto"
+	"github.com/avaargsh/GPUPanel/agent/app/model"
+	"github.com/avaargsh/GPUPanel/agent/app/repo"
+	"github.com/avaargsh/GPUPanel/agent/app/task"
+	"github.com/avaargsh/GPUPanel/agent/constant"
+	"github.com/avaargsh/GPUPanel/agent/global"
+	"github.com/avaargsh/GPUPanel/agent/i18n"
+	"github.com/avaargsh/GPUPanel/agent/utils/common"
+	"github.com/avaargsh/GPUPanel/agent/utils/docker"
+	fileUtils "github.com/avaargsh/GPUPanel/agent/utils/files"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/build"
 	"github.com/docker/docker/api/types/filters"
@@ -28,11 +28,11 @@ import (
 )
 
 const (
-	rollbackPath         = "1panel/tmp"
-	communityRestorePath = "1panel/tmp/community-restore"
-	upgradePath          = "1panel/tmp/upgrade"
-	uploadPath           = "1panel/uploads"
-	downloadPath         = "1panel/download"
+	rollbackPath         = "gpupanel/tmp"
+	communityRestorePath = "gpupanel/tmp/community-restore"
+	upgradePath          = "gpupanel/tmp/upgrade"
+	uploadPath           = "gpupanel/uploads"
+	downloadPath         = "gpupanel/download"
 )
 
 func (u *DeviceService) Scan() dto.CleanData {
@@ -42,17 +42,17 @@ func (u *DeviceService) Scan() dto.CleanData {
 	)
 	fileOp := fileUtils.NewFileOp()
 
-	originalPath := path.Join(global.Dir.BaseDir, "1panel_original")
+	originalPath := path.Join(global.Dir.BaseDir, "gpupanel_original")
 	originalSize, _ := fileOp.GetDirSize(originalPath)
 	treeData = append(treeData, dto.CleanTree{
 		ID:          uuid.NewString(),
-		Label:       "1panel_original",
+		Label:       "gpupanel_original",
 		Size:        uint64(originalSize),
 		IsCheck:     originalSize > 0,
 		IsRecommend: true,
 		CanDelete:   false,
-		Type:        "1panel_original",
-		Children:    loadTreeWithDir(true, "1panel_original", originalPath, fileOp),
+		Type:        "gpupanel_original",
+		Children:    loadTreeWithDir(true, "gpupanel_original", originalPath, fileOp),
 	})
 	treeData = append(treeData, loadUpgradeTree(fileOp))
 	treeData = append(treeData, loadAgentPackage(fileOp))
@@ -96,14 +96,14 @@ func (u *DeviceService) Clean(req []dto.Clean) {
 	for _, item := range req {
 		size += item.Size
 		switch item.TreeType {
-		case "1panel_original":
-			dropFileOrDir(path.Join(global.Dir.BaseDir, "1panel_original", item.Name))
+		case "gpupanel_original":
+			dropFileOrDir(path.Join(global.Dir.BaseDir, "gpupanel_original", item.Name))
 
 		case "upgrade":
 			dropFileOrDir(path.Join(global.Dir.BaseDir, upgradePath, item.Name))
 
 		case "agent":
-			dropFileOrDir(path.Join(global.Dir.BaseDir, "1panel/agent/package", item.Name))
+			dropFileOrDir(path.Join(global.Dir.BaseDir, "gpupanel/agent/package", item.Name))
 
 		case "tmp_backup":
 			dropFileOrDir(path.Join(global.Dir.LocalBackupDir, "tmp"))
@@ -198,7 +198,7 @@ func doSystemClean(taskItem *task.Task) func(t *task.Task) error {
 	return func(t *task.Task) error {
 		size := int64(0)
 		fileCount := 0
-		dropWithTask(path.Join(global.Dir.BaseDir, "1panel_original"), taskItem, &size, &fileCount)
+		dropWithTask(path.Join(global.Dir.BaseDir, "gpupanel_original"), taskItem, &size, &fileCount)
 
 		upgradePath := path.Join(global.Dir.BaseDir, upgradePath)
 		upgradeFiles, _ := os.ReadDir(upgradePath)
@@ -300,7 +300,7 @@ func loadUpgradeTree(fileOp fileUtils.FileOp) dto.CleanTree {
 }
 
 func loadAgentPackage(fileOp fileUtils.FileOp) dto.CleanTree {
-	pathItem := path.Join(global.Dir.BaseDir, "1panel/agent/package")
+	pathItem := path.Join(global.Dir.BaseDir, "gpupanel/agent/package")
 	itemTree := dto.CleanTree{
 		ID:          uuid.NewString(),
 		Label:       "agent_packages",
@@ -327,7 +327,7 @@ func loadAgentPackage(fileOp fileUtils.FileOp) dto.CleanTree {
 		} else {
 			itemSize, _ := file.Info()
 			itemName := file.Name()
-			isCurrentVersion := strings.HasPrefix(itemName, fmt.Sprintf("1panel-agent_%s_", global.CONF.Base.Version))
+			isCurrentVersion := strings.HasPrefix(itemName, fmt.Sprintf("gpupanel-agent_%s_", global.CONF.Base.Version))
 			if isCurrentVersion {
 				continue
 			}
@@ -1085,13 +1085,13 @@ func dropTaskLog(logDir string) {
 	case "Clam":
 		_ = global.DB.Model(&model.ClamRecord{}).Where("task_id != ?", "").Select("task_id").Find(&usedTasks).Error
 	case "Tamper":
-		xpackDB, err := common.LoadDBConnByPathWithErr(path.Join(global.CONF.Base.InstallDir, "1panel/db/xpack.db"), "xpack.db")
+		xpackDB, err := common.LoadDBConnByPathWithErr(path.Join(global.CONF.Base.InstallDir, "gpupanel/db/xpack.db"), "xpack.db")
 		if err == nil {
 			_ = xpackDB.Table("tampers").Where("task_id != ?", "").Select("task_id").Find(&usedTasks).Error
 		}
 		defer common.CloseDB(xpackDB)
 	case "System":
-		xpackDB, err := common.LoadDBConnByPathWithErr(path.Join(global.CONF.Base.InstallDir, "1panel/db/xpack.db"), "xpack.db")
+		xpackDB, err := common.LoadDBConnByPathWithErr(path.Join(global.CONF.Base.InstallDir, "gpupanel/db/xpack.db"), "xpack.db")
 		if err == nil {
 			_ = xpackDB.Model("nodes").Where("task_id != ?", "").Select("task_id").Find(&usedTasks).Error
 		}

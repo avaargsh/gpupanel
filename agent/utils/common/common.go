@@ -16,10 +16,10 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"github.com/1Panel-dev/1Panel/agent/buserr"
-	"github.com/1Panel-dev/1Panel/agent/utils/cmd"
-	"github.com/1Panel-dev/1Panel/agent/utils/ctl_conf"
-	"github.com/1Panel-dev/1Panel/agent/utils/re"
+	"github.com/avaargsh/GPUPanel/agent/buserr"
+	"github.com/avaargsh/GPUPanel/agent/utils/cmd"
+	"github.com/avaargsh/GPUPanel/agent/utils/ctl_conf"
+	"github.com/avaargsh/GPUPanel/agent/utils/re"
 	"golang.org/x/net/idna"
 )
 

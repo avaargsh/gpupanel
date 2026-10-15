@@ -6,8 +6,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/1Panel-dev/1Panel/agent/constant"
-	"github.com/1Panel-dev/1Panel/agent/utils/common"
+	"github.com/avaargsh/GPUPanel/agent/constant"
+	"github.com/avaargsh/GPUPanel/agent/utils/common"
 )
 
 // Release names at https://github.com/NousResearch/hermes-agent/releases pair

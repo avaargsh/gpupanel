@@ -14,9 +14,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/1Panel-dev/1Panel/agent/cmd/server/docs"
-	"github.com/1Panel-dev/1Panel/agent/global"
-	"github.com/1Panel-dev/1Panel/agent/utils/re"
+	"github.com/avaargsh/GPUPanel/agent/cmd/server/docs"
+	"github.com/avaargsh/GPUPanel/agent/global"
+	"github.com/avaargsh/GPUPanel/agent/utils/re"
 	"github.com/gin-gonic/gin"
 	"github.com/glebarez/sqlite"
 	"gorm.io/gorm"
@@ -59,7 +59,7 @@ func OperationResolveMeta() gin.HandlerFunc {
 			c.Next()
 			return
 		}
-		reqPath := strings.TrimPrefix(c.Request.URL.Path, "/api/v2")
+		reqPath := strings.TrimPrefix(c.Request.URL.Path, "/api/v1")
 		meta, ok := metaMap[reqPath]
 		if !ok || len(meta.BeforeFunctions) == 0 {
 			c.Next()
@@ -171,11 +171,11 @@ func newResolveDB(pathItem string) (*gorm.DB, error) {
 	dbFile := ""
 	switch {
 	case strings.HasPrefix(pathItem, "/core"):
-		dbFile = path.Join(global.CONF.Base.InstallDir, "1panel/db/core.db")
+		dbFile = path.Join(global.CONF.Base.InstallDir, "gpupanel/db/core.db")
 	case strings.HasPrefix(pathItem, "/xpack"):
-		dbFile = path.Join(global.CONF.Base.InstallDir, "1panel/db/xpack.db")
+		dbFile = path.Join(global.CONF.Base.InstallDir, "gpupanel/db/xpack.db")
 	default:
-		dbFile = path.Join(global.CONF.Base.InstallDir, "1panel/db/agent.db")
+		dbFile = path.Join(global.CONF.Base.InstallDir, "gpupanel/db/agent.db")
 	}
 
 	db, err := gorm.Open(sqlite.Open(dbFile), &gorm.Config{

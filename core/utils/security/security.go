@@ -7,13 +7,13 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/1Panel-dev/1Panel/core/app/repo"
-	"github.com/1Panel-dev/1Panel/core/app/service"
-	"github.com/1Panel-dev/1Panel/core/cmd/server/res"
-	"github.com/1Panel-dev/1Panel/core/cmd/server/web"
-	"github.com/1Panel-dev/1Panel/core/constant"
-	"github.com/1Panel-dev/1Panel/core/global"
-	"github.com/1Panel-dev/1Panel/core/utils/common"
+	"github.com/avaargsh/GPUPanel/core/app/repo"
+	"github.com/avaargsh/GPUPanel/core/app/service"
+	"github.com/avaargsh/GPUPanel/core/cmd/server/res"
+	"github.com/avaargsh/GPUPanel/core/cmd/server/web"
+	"github.com/avaargsh/GPUPanel/core/constant"
+	"github.com/avaargsh/GPUPanel/core/global"
+	"github.com/avaargsh/GPUPanel/core/utils/common"
 	"github.com/gin-gonic/gin"
 )
 

@@ -17,22 +17,22 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"github.com/1Panel-dev/1Panel/agent/app/dto"
-	"github.com/1Panel-dev/1Panel/agent/app/dto/request"
-	"github.com/1Panel-dev/1Panel/agent/app/dto/response"
-	"github.com/1Panel-dev/1Panel/agent/app/model"
-	"github.com/1Panel-dev/1Panel/agent/app/repo"
-	"github.com/1Panel-dev/1Panel/agent/app/task"
-	"github.com/1Panel-dev/1Panel/agent/buserr"
-	"github.com/1Panel-dev/1Panel/agent/constant"
-	"github.com/1Panel-dev/1Panel/agent/global"
-	"github.com/1Panel-dev/1Panel/agent/i18n"
-	"github.com/1Panel-dev/1Panel/agent/utils/appicon"
-	"github.com/1Panel-dev/1Panel/agent/utils/common"
-	"github.com/1Panel-dev/1Panel/agent/utils/docker"
-	"github.com/1Panel-dev/1Panel/agent/utils/files"
-	"github.com/1Panel-dev/1Panel/agent/utils/req_helper"
-	"github.com/1Panel-dev/1Panel/agent/utils/xpack"
+	"github.com/avaargsh/GPUPanel/agent/app/dto"
+	"github.com/avaargsh/GPUPanel/agent/app/dto/request"
+	"github.com/avaargsh/GPUPanel/agent/app/dto/response"
+	"github.com/avaargsh/GPUPanel/agent/app/model"
+	"github.com/avaargsh/GPUPanel/agent/app/repo"
+	"github.com/avaargsh/GPUPanel/agent/app/task"
+	"github.com/avaargsh/GPUPanel/agent/buserr"
+	"github.com/avaargsh/GPUPanel/agent/constant"
+	"github.com/avaargsh/GPUPanel/agent/global"
+	"github.com/avaargsh/GPUPanel/agent/i18n"
+	"github.com/avaargsh/GPUPanel/agent/utils/appicon"
+	"github.com/avaargsh/GPUPanel/agent/utils/common"
+	"github.com/avaargsh/GPUPanel/agent/utils/docker"
+	"github.com/avaargsh/GPUPanel/agent/utils/files"
+	"github.com/avaargsh/GPUPanel/agent/utils/req_helper"
+	"github.com/avaargsh/GPUPanel/agent/utils/xpack"
 	"gopkg.in/yaml.v3"
 )
 
@@ -445,7 +445,7 @@ func (a AppService) installWithHooks(req request.AppInstallCreate, executeScript
 		}
 	} else {
 		if appDetail.DockerCompose == "" {
-			dockerComposeUrl := fmt.Sprintf("%s/%s/1panel/%s/%s/docker-compose.yml", global.AppRepoURL(), global.CONF.Base.Mode, app.Key, appDetail.Version)
+			dockerComposeUrl := fmt.Sprintf("%s/%s/gpupanel/%s/%s/docker-compose.yml", global.AppRepoURL(), global.CONF.Base.Mode, app.Key, appDetail.Version)
 			var statusCode int
 			statusCode, composeRes, err = req_helper.HandleRequest(dockerComposeUrl, http.MethodGet, constant.TimeOut20s)
 			if statusCode == http.StatusNotFound {
@@ -871,7 +871,7 @@ func (a AppService) GetAppUpdate() (*response.AppUpdateRes, error) {
 		return res, nil
 	}
 
-	versionUrl := fmt.Sprintf("%s/%s/1panel.json.version.txt", global.AppRepoURL(), global.CONF.Base.Mode)
+	versionUrl := fmt.Sprintf("%s/%s/gpupanel.json.version.txt", global.AppRepoURL(), global.CONF.Base.Mode)
 	_, versionRes, err := req_helper.HandleRequest(versionUrl, http.MethodGet, constant.TimeOut20s)
 	if err != nil {
 		return nil, err
@@ -943,10 +943,10 @@ func getAppFromRepo(downloadPath string) error {
 
 func getAppList() (*dto.AppList, error) {
 	list := &dto.AppList{}
-	if err := getAppFromRepo(fmt.Sprintf("%s/%s/1panel.json.zip", global.AppRepoURL(), global.CONF.Base.Mode)); err != nil {
+	if err := getAppFromRepo(fmt.Sprintf("%s/%s/gpupanel.json.zip", global.AppRepoURL(), global.CONF.Base.Mode)); err != nil {
 		return nil, err
 	}
-	listFile := filepath.Join(global.Dir.ResourceDir, "1panel.json")
+	listFile := filepath.Join(global.Dir.ResourceDir, "gpupanel.json")
 	file, err := os.Open(listFile)
 	if err != nil {
 		return nil, err

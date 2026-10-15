@@ -3,7 +3,7 @@ package repo
 import (
 	"context"
 
-	"github.com/1Panel-dev/1Panel/agent/app/model"
+	"github.com/avaargsh/GPUPanel/agent/app/model"
 )
 
 type AgentRepo struct{}

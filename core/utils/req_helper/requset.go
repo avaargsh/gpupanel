@@ -10,9 +10,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/1Panel-dev/1Panel/core/buserr"
-	"github.com/1Panel-dev/1Panel/core/global"
-	"github.com/1Panel-dev/1Panel/core/utils/xpack"
+	"github.com/avaargsh/GPUPanel/core/buserr"
+	"github.com/avaargsh/GPUPanel/core/global"
+	"github.com/avaargsh/GPUPanel/core/utils/xpack"
 )
 
 func HandleRequest(url, method string, timeout int) (int, []byte, error) {

@@ -16,19 +16,19 @@ import (
 	"strings"
 	"time"
 
-	"github.com/1Panel-dev/1Panel/agent/app/dto"
-	"github.com/1Panel-dev/1Panel/agent/app/task"
-	"github.com/1Panel-dev/1Panel/agent/constant"
-	"github.com/1Panel-dev/1Panel/agent/global"
-	"github.com/1Panel-dev/1Panel/agent/utils/cmd"
-	"github.com/1Panel-dev/1Panel/agent/utils/common"
+	"github.com/avaargsh/GPUPanel/agent/app/dto"
+	"github.com/avaargsh/GPUPanel/agent/app/task"
+	"github.com/avaargsh/GPUPanel/agent/constant"
+	"github.com/avaargsh/GPUPanel/agent/global"
+	"github.com/avaargsh/GPUPanel/agent/utils/cmd"
+	"github.com/avaargsh/GPUPanel/agent/utils/common"
 )
 
 const clawhubGlobalRegistry = "https://clawhub.com"
 const clawhubChinaRegistry = "https://mirror-cn.clawhub.com"
 const localSkillHubSource = "local-hub"
 const localSkillHubPublishedStatus = "published"
-const clawHubSkillTmpSubDir = "1panel/tmp/clawhub-skills"
+const clawHubSkillTmpSubDir = "gpupanel/tmp/clawhub-skills"
 const hermesManagedSkillsDir = "/opt/data/skills"
 
 type openclawSkillsList struct {
@@ -213,7 +213,7 @@ func installLocalSkillPackage(mgr *cmd.CommandHelper, containerName, agentType, 
 	if err != nil {
 		return err
 	}
-	tempDir, err := os.MkdirTemp("", "1panel-agent-skill-*")
+	tempDir, err := os.MkdirTemp("", "gpupanel-agent-skill-*")
 	if err != nil {
 		return err
 	}
@@ -258,7 +258,7 @@ func resolveLocalSkillPackage(agentType, skillID string) (string, string, error)
 	if err != nil || id == 0 {
 		return "", "", fmt.Errorf("invalid local skill id")
 	}
-	dbPath := filepath.Join(global.CONF.Base.InstallDir, "1panel", "db", "enterprise.db")
+	dbPath := filepath.Join(global.CONF.Base.InstallDir, "gpupanel", "db", "enterprise.db")
 	if _, err := os.Stat(dbPath); err != nil {
 		return "", "", fmt.Errorf("local skills hub is unavailable")
 	}
@@ -353,7 +353,7 @@ func validateLocalSkillPackagePath(packagePath string) (string, error) {
 
 func isLocalSkillPackageAllowedPath(resolvedPath string) bool {
 	roots := []string{
-		filepath.Join(global.CONF.Base.InstallDir, "1panel", "uploads", "skills-hub"),
+		filepath.Join(global.CONF.Base.InstallDir, "gpupanel", "uploads", "skills-hub"),
 		filepath.Join(global.CONF.Base.InstallDir, filepath.FromSlash(clawHubSkillTmpSubDir)),
 	}
 	for _, root := range roots {
@@ -561,7 +561,7 @@ func un7zLocalSkillPackage(packagePath, targetDir string) error {
 	if err != nil {
 		return err
 	}
-	tempDir, err := os.MkdirTemp("", "1panel-agent-skill-7z-*")
+	tempDir, err := os.MkdirTemp("", "gpupanel-agent-skill-7z-*")
 	if err != nil {
 		return err
 	}

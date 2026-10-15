@@ -8,7 +8,7 @@ import (
 	"time"
 	"unsafe"
 
-	"github.com/1Panel-dev/1Panel/agent/global"
+	"github.com/avaargsh/GPUPanel/agent/global"
 	"github.com/creack/pty"
 	"github.com/pkg/errors"
 )

@@ -2,7 +2,7 @@
 
 package xpack
 
-import "github.com/1Panel-dev/1Panel/core/utils/xpack/helper"
+import "github.com/avaargsh/GPUPanel/core/utils/xpack/helper"
 
 var AuthProvider = helper.NewIAuthProvider()
 

@@ -3,12 +3,12 @@ package middleware
 import (
 	"strconv"
 
-	"github.com/1Panel-dev/1Panel/core/app/api/v2/helper"
-	baseRepo "github.com/1Panel-dev/1Panel/core/app/repo"
-	"github.com/1Panel-dev/1Panel/core/buserr"
-	"github.com/1Panel-dev/1Panel/core/constant"
-	"github.com/1Panel-dev/1Panel/core/global"
-	psessionUtils "github.com/1Panel-dev/1Panel/core/init/session/psession"
+	"github.com/avaargsh/GPUPanel/core/app/api/v1/helper"
+	baseRepo "github.com/avaargsh/GPUPanel/core/app/repo"
+	"github.com/avaargsh/GPUPanel/core/buserr"
+	"github.com/avaargsh/GPUPanel/core/constant"
+	"github.com/avaargsh/GPUPanel/core/global"
+	psessionUtils "github.com/avaargsh/GPUPanel/core/init/session/psession"
 	"github.com/gin-gonic/gin"
 )
 
@@ -60,14 +60,14 @@ func SessionAuth() gin.HandlerFunc {
 
 func isAnonymousAuthPath(path string) bool {
 	switch path {
-	case "/api/v2/core/auth/captcha",
-		"/api/v2/core/auth/passkey/begin",
-		"/api/v2/core/auth/passkey/finish",
-		"/api/v2/core/auth/mfalogin",
-		"/api/v2/core/auth/login",
-		"/api/v2/core/auth/logout",
-		"/api/v2/core/auth/setting",
-		"/api/v2/core/auth/welcome":
+	case "/api/v1/core/auth/captcha",
+		"/api/v1/core/auth/passkey/begin",
+		"/api/v1/core/auth/passkey/finish",
+		"/api/v1/core/auth/mfalogin",
+		"/api/v1/core/auth/login",
+		"/api/v1/core/auth/logout",
+		"/api/v1/core/auth/setting",
+		"/api/v1/core/auth/welcome":
 		return true
 	default:
 		return false

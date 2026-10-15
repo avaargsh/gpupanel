@@ -1,0 +1,1 @@
+PASS simulated browser: captcha retry, MFA challenge/completion, local-only catalog, cancelled install, lost ACK, receipt reload, duplicate denial, UNKNOWN mutation denial, redacted evidence; no page errors

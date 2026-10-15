@@ -5,10 +5,10 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/1Panel-dev/1Panel/agent/app/repo"
-	"github.com/1Panel-dev/1Panel/agent/utils/docker"
-	"github.com/1Panel-dev/1Panel/agent/utils/firewall/filter"
-	"github.com/1Panel-dev/1Panel/agent/utils/firewall/lifecycle"
+	"github.com/avaargsh/GPUPanel/agent/app/repo"
+	"github.com/avaargsh/GPUPanel/agent/utils/docker"
+	"github.com/avaargsh/GPUPanel/agent/utils/firewall/filter"
+	"github.com/avaargsh/GPUPanel/agent/utils/firewall/lifecycle"
 	"github.com/docker/docker/api/types/container"
 )
 

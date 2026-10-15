@@ -9,16 +9,16 @@ import (
 	"strings"
 	"time"
 
-	"github.com/1Panel-dev/1Panel/agent/global"
-	"github.com/1Panel-dev/1Panel/agent/utils/cmd"
-	firewallutil "github.com/1Panel-dev/1Panel/agent/utils/firewall"
-	"github.com/1Panel-dev/1Panel/agent/utils/firewall/lifecycle"
+	"github.com/avaargsh/GPUPanel/agent/global"
+	"github.com/avaargsh/GPUPanel/agent/utils/cmd"
+	firewallutil "github.com/avaargsh/GPUPanel/agent/utils/firewall"
+	"github.com/avaargsh/GPUPanel/agent/utils/firewall/lifecycle"
 )
 
 const (
-	BasicBeforeFileName = "1panel_basic_before.rules"
-	BasicFileName       = "1panel_basic.rules"
-	BasicAfterFileName  = "1panel_basic_after.rules"
+	BasicBeforeFileName = "gpupanel_basic_before.rules"
+	BasicFileName       = "gpupanel_basic.rules"
+	BasicAfterFileName  = "gpupanel_basic_after.rules"
 )
 
 func SaveRulesToFile(tab, chain, fileName string) error {

@@ -21,7 +21,7 @@ class PreviewStagingContract(unittest.TestCase):
         self.home.mkdir()
         staging = self.root / "input"
         (staging / "bin").mkdir(parents=True)
-        for name in ("bin/1panel-core", "bin/1panel-agent", "LICENSE", "NOTICE.md"):
+        for name in ("bin/gpupanel-core", "bin/gpupanel-agent", "LICENSE", "NOTICE.md"):
             (staging / name).write_bytes(("fixture:" + name).encode())
         self.archive = self.root / "test.tar.gz"
         stage.release.package(staging, self.archive, "fixture-1", {"source_commit": "fixture"})
@@ -38,7 +38,7 @@ class PreviewStagingContract(unittest.TestCase):
             self.assertTrue(results["slots"][0]["verified"])
             self.assertFalse(results["mutationPerformed"])
             target = stage.target_for("fixture-1", self.home)
-            (target / "bin/1panel-agent").write_text("altered bytes")
+            (target / "bin/gpupanel-agent").write_text("altered bytes")
             results = stage.inventory(self.home)
             self.assertEqual((results["staged"], results["drifted"]), (0, 1))
             self.assertEqual(results["slots"][0]["status"], "DRIFT")
@@ -68,7 +68,7 @@ class PreviewStagingContract(unittest.TestCase):
             self.assertEqual(result["status"], "STAGED")
             self.assertFalse(result["systemServiceInstalled"])
             target = stage.target_for("fixture-1", self.home)
-            self.assertEqual((target / "bin/1panel-core").stat().st_mode & 0o111, 0)
+            self.assertEqual((target / "bin/gpupanel-core").stat().st_mode & 0o111, 0)
             self.assertEqual((self.home / "GPUPanel").stat().st_mode & 0o777, 0o700)
             self.assertEqual(stage.inspect("fixture-1", self.home)["status"], "STAGED")
             with self.assertRaises(stage.PreviewError):
@@ -89,7 +89,7 @@ class PreviewStagingContract(unittest.TestCase):
         with patch.object(stage.os, "geteuid", return_value=1000):
             stage.stage(self.archive, self.home, True)
             target = stage.target_for("fixture-1", self.home)
-            executable = target / "bin/1panel-agent"
+            executable = target / "bin/gpupanel-agent"
             executable.chmod(0o700)
             self.assertEqual(stage.inspect("fixture-1", self.home)["status"], "DRIFT")
             with self.assertRaises(stage.PreviewError):
@@ -137,7 +137,7 @@ class PreviewStagingContract(unittest.TestCase):
             import tarfile
             staging = Path(temp)
             (staging / "bin").mkdir()
-            for name in ("bin/1panel-core", "bin/1panel-agent", "LICENSE", "NOTICE.md"):
+            for name in ("bin/gpupanel-core", "bin/gpupanel-agent", "LICENSE", "NOTICE.md"):
                 (staging / name).write_text(name)
             stage.release.package(staging, self.archive, "fixture-2", {})
             with tarfile.open(self.archive, "r:gz") as t:
@@ -146,7 +146,7 @@ class PreviewStagingContract(unittest.TestCase):
             import io
             with tarfile.open(self.archive, "w:gz") as t:
                 for name, blob in members.items():
-                    if name == "gpupanel/bin/1panel-core":
+                    if name == "gpupanel/bin/gpupanel-core":
                         blob = b"corruption"
                     entry = tarfile.TarInfo(name)
                     entry.size = len(blob)

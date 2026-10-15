@@ -1,0 +1,1 @@
+artifact license attestation BLOCKED: archive source_commit must be a full Git SHA

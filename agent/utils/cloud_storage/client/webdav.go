@@ -10,8 +10,8 @@ import (
 	"path"
 	"strings"
 
-	"github.com/1Panel-dev/1Panel/agent/constant"
-	"github.com/1Panel-dev/1Panel/agent/utils/cloud_storage/client/helper/webdav"
+	"github.com/avaargsh/GPUPanel/agent/constant"
+	"github.com/avaargsh/GPUPanel/agent/utils/cloud_storage/client/helper/webdav"
 )
 
 type webDAVClient struct {

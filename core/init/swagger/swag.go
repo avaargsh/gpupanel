@@ -5,7 +5,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/1Panel-dev/1Panel/core/cmd/server/docs"
+	"github.com/avaargsh/GPUPanel/core/cmd/server/docs"
 	"github.com/gin-gonic/gin"
 	swaggerfiles "github.com/swaggo/files/v2"
 )
@@ -36,11 +36,11 @@ const CustomSwaggerInitializerJS = `window.onload = function() {
 `
 
 func SwaggerHandler() gin.HandlerFunc {
-	fileServer := http.StripPrefix("/1panel/swagger/", http.FileServer(http.FS(swaggerfiles.FS)))
+	fileServer := http.StripPrefix("/gpupanel/swagger/", http.FileServer(http.FS(swaggerfiles.FS)))
 
 	return func(c *gin.Context) {
 		path := c.Request.URL.Path
-		path = strings.TrimPrefix(path, "/1panel/swagger")
+		path = strings.TrimPrefix(path, "/gpupanel/swagger")
 		if !matcher.MatchString(path) && path != "/" {
 			// 404
 			c.AbortWithStatus(http.StatusNotFound)

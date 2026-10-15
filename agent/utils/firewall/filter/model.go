@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/1Panel-dev/1Panel/agent/constant"
+	"github.com/avaargsh/GPUPanel/agent/constant"
 )
 
 var ErrProviderUnavailable = errors.New("firewall provider is unavailable")

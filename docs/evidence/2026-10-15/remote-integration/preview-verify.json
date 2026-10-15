@@ -1,0 +1,8 @@
+{
+  "verified": true,
+  "artifact": "/home/avaarg/GPUPanel/dist/gpupanel-preview.tar.gz",
+  "sha256": "e9d401062ef2a52569eb03c05a4c7035840e6c8620dcae246d9c169998a636f9",
+  "version": "local-integration-20261015",
+  "installable": false,
+  "source_commit": "unknown"
+}

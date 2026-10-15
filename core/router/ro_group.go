@@ -1,8 +1,8 @@
 package router
 
 import (
-	v2 "github.com/1Panel-dev/1Panel/core/app/api/v2"
-	"github.com/1Panel-dev/1Panel/core/middleware"
+	v1 "github.com/avaargsh/GPUPanel/core/app/api/v1"
+	"github.com/avaargsh/GPUPanel/core/middleware"
 	"github.com/gin-gonic/gin"
 )
 
@@ -14,7 +14,7 @@ func (a *GroupRouter) InitRouter(Router *gin.RouterGroup) {
 		Use(middleware.SessionAuth()).
 		Use(middleware.PasswordExpired())
 
-	baseApi := v2.ApiGroupApp.BaseApi
+	baseApi := v1.ApiGroupApp.BaseApi
 	{
 		groupRouter.POST("", baseApi.CreateGroup)
 		groupRouter.POST("/del", baseApi.DeleteGroup)

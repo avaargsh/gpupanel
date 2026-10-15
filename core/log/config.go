@@ -6,7 +6,7 @@ import (
 	"os"
 	"path"
 
-	"github.com/1Panel-dev/1Panel/core/constant"
+	"github.com/avaargsh/GPUPanel/core/constant"
 )
 
 var (

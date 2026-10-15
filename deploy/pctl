@@ -1,0 +1,176 @@
+#!/bin/bash
+#
+# GPUPanel control script (pctl).
+#
+# The leading KEY=VALUE lines are read by the Go binaries via ctl_conf
+# (/usr/local/bin/pctl). Keep them first and in this exact form. deploy/install.sh
+# rewrites these values in place at install time, so do not indent them or move
+# them below the shebang comments.
+# shellcheck disable=SC2034,SC2125,SC2209
+BASE_DIR=/opt
+ORIGINAL_PORT=9999
+ORIGINAL_VERSION=v0.1.0
+ORIGINAL_USERNAME=admin
+ORIGINAL_PASSWORD=**********
+ORIGINAL_ENTRANCE=
+LANGUAGE=zh
+PANEL_EDITION=cn
+
+PANEL_DIR="${BASE_DIR}/gpupanel"
+CORE_BIN="${PANEL_DIR}/gpupanel-core"
+AGENT_BIN="${PANEL_DIR}/gpupanel-agent"
+LOG_DIR="${PANEL_DIR}/log"
+CORE_LOG="${LOG_DIR}/gpupanel-core.out"
+AGENT_LOG="${LOG_DIR}/gpupanel-agent.out"
+
+mkdir -p "$LOG_DIR" 2>/dev/null
+
+require_root() {
+    if [ "$(id -u)" != "0" ]; then
+        echo "pctl: this operation requires root. Try: sudo pctl $*" >&2
+        exit 1
+    fi
+}
+
+bin_of() {
+    case "$1" in
+        core)  echo "$CORE_BIN" ;;
+        agent) echo "$AGENT_BIN" ;;
+    esac
+}
+
+unit_of() {
+    case "$1" in
+        core)  echo "gpupanel-core.service" ;;
+        agent) echo "gpupanel-agent.service" ;;
+    esac
+}
+
+log_of() {
+    case "$1" in
+        core)  echo "$CORE_LOG" ;;
+        agent) echo "$AGENT_LOG" ;;
+    esac
+}
+
+is_running() {
+    pgrep -f "$1" >/dev/null 2>&1
+}
+
+systemd_usable() {
+    command -v systemctl >/dev/null 2>&1 \
+        && [ -d /run/systemd/system ] \
+        && systemctl cat "$1" >/dev/null 2>&1
+}
+
+start_one() {
+    svc="$1"
+    unit="$(unit_of "$svc")"
+    bin="$(bin_of "$svc")"
+    log="$(log_of "$svc")"
+    # A unit can be installed while the service manager itself is unusable
+    # (broken/permission-denied dbus, container without systemd), so a failed
+    # `systemctl start` must fall through to nohup instead of giving up.
+    if systemd_usable "$unit" && systemctl start "$unit" 2>/dev/null; then
+        echo "$svc started (systemd)"
+        return 0
+    fi
+    if systemd_usable "$unit"; then
+        echo "$svc: systemd start failed, falling back to nohup" >&2
+    fi
+    if is_running "$bin"; then echo "$svc is already running"; return 0; fi
+    require_root start
+    [ -x "$bin" ] || { echo "pctl: $bin not found or not executable (is GPUPanel installed?)" >&2; return 1; }
+    nohup "$bin" >>"$log" 2>&1 &
+    echo "$svc started"
+}
+
+stop_one() {
+    svc="$1"
+    unit="$(unit_of "$svc")"
+    bin="$(bin_of "$svc")"
+    if systemd_usable "$unit" && systemctl stop "$unit" 2>/dev/null; then
+        echo "$svc stopped (systemd)"
+        return 0
+    fi
+    if is_running "$bin"; then
+        require_root stop
+        pkill -f "$bin" && echo "$svc stopped"
+    else
+        echo "$svc is not running"
+    fi
+}
+
+status_one() {
+    svc="$1"
+    unit="$(unit_of "$svc")"
+    bin="$(bin_of "$svc")"
+    if systemd_usable "$unit"; then
+        if systemctl is-active --quiet "$unit"; then
+            echo "$svc: running (systemd)"
+        else
+            echo "$svc: stopped (systemd)"
+        fi
+        return
+    fi
+    if is_running "$bin"; then echo "$svc: running"; else echo "$svc: stopped"; fi
+}
+
+run_cmd() {
+    cmd="$1"
+    svc="$2"
+    case "$cmd" in
+        start)
+            case "$svc" in
+                core)  start_one core ;;
+                agent) start_one agent ;;
+                "")    start_one core; start_one agent ;;
+                *)     echo "pctl start: unknown service '$svc'" >&2; exit 1 ;;
+            esac
+            ;;
+        stop)
+            case "$svc" in
+                core)  stop_one core ;;
+                agent) stop_one agent ;;
+                "")    stop_one agent; stop_one core ;;
+                *)     echo "pctl stop: unknown service '$svc'" >&2; exit 1 ;;
+            esac
+            ;;
+        restart)
+            case "$svc" in
+                core)  stop_one core; sleep 1; start_one core ;;
+                agent) stop_one agent; sleep 1; start_one agent ;;
+                "")    stop_one agent; stop_one core; sleep 1; start_one core; start_one agent ;;
+                *)     echo "pctl restart: unknown service '$svc'" >&2; exit 1 ;;
+            esac
+            ;;
+        status)
+            status_one core
+            status_one agent
+            ;;
+        ""|help|-h|--help)
+            cat <<'EOF'
+Usage: pctl <command> [core|agent]
+
+  start   [core|agent]   start the panel service(s)
+  stop    [core|agent]   stop the panel service(s)
+  restart [core|agent]   restart the service(s)
+  status                 show core/agent status
+
+Other management subcommands are delegated to the gpupanel-core binary, e.g.:
+  pctl update username | pctl update password | pctl update port
+  pctl reset https|mfa|entrance|ips|domain | pctl restore
+  pctl listen-ip [ipv4|ipv6] | pctl user-info | pctl version
+EOF
+            ;;
+        *)
+            if [ -x "$CORE_BIN" ]; then
+                exec "$CORE_BIN" "$@"
+            fi
+            echo "pctl: unknown command '$cmd' (gpupanel-core not found at $CORE_BIN)" >&2
+            exit 1
+            ;;
+    esac
+}
+
+run_cmd "$1" "$2"

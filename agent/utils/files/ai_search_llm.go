@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	terminalai "github.com/1Panel-dev/1Panel/agent/utils/terminal/ai"
+	terminalai "github.com/avaargsh/GPUPanel/agent/utils/terminal/ai"
 )
 
 const fileAISearchMaxPathRunes = 240

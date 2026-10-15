@@ -1,8 +1,8 @@
 package global
 
 import (
-	"github.com/1Panel-dev/1Panel/core/init/auth"
-	"github.com/1Panel-dev/1Panel/core/init/session/psession"
+	"github.com/avaargsh/GPUPanel/core/init/auth"
+	"github.com/avaargsh/GPUPanel/core/init/session/psession"
 	"github.com/go-playground/validator/v10"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 	"github.com/robfig/cron/v3"

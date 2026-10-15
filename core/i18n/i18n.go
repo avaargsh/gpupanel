@@ -6,9 +6,9 @@ import (
 	"strings"
 	"sync/atomic"
 
-	"github.com/1Panel-dev/1Panel/core/app/repo"
-	"github.com/1Panel-dev/1Panel/core/global"
-	"github.com/1Panel-dev/1Panel/core/utils/ctl_conf"
+	"github.com/avaargsh/GPUPanel/core/app/repo"
+	"github.com/avaargsh/GPUPanel/core/global"
+	"github.com/avaargsh/GPUPanel/core/utils/ctl_conf"
 	"github.com/gin-gonic/gin"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 	"golang.org/x/text/language"
@@ -157,11 +157,11 @@ func UseI18nForCmd(lang string) {
 		initBundle()
 	}
 	if lang == "" {
-		langFrom1pctl := getLanguageFrom1pctl()
-		if langFrom1pctl == "" {
+		langFrompctl := getLanguageFrompctl()
+		if langFrompctl == "" {
 			lang = defaultLang
 		} else {
-			lang = langFrom1pctl
+			lang = langFrompctl
 		}
 	}
 	global.I18nForCmd = i18n.NewLocalizer(bundle, lang)
@@ -210,13 +210,13 @@ func getLanguageFromDBInternal() string {
 	}
 	return lang
 }
-func getLanguageFrom1pctl() string {
-	info, err := ctl_conf.LoadFromFile("/usr/local/bin/1pctl", "LANGUAGE")
+func getLanguageFrompctl() string {
+	info, err := ctl_conf.LoadFromFile("/usr/local/bin/pctl", "LANGUAGE")
 	if err != nil {
 		panic(err)
 	}
 	if len(info) == 0 || info == `""` {
-		panic("error `LANGUAGE` find in /usr/local/bin/1pctl")
+		panic("error `LANGUAGE` find in /usr/local/bin/pctl")
 	}
 	return info
 }

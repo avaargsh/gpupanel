@@ -4,20 +4,20 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/1Panel-dev/1Panel/agent/app/dto/request"
-	"github.com/1Panel-dev/1Panel/agent/app/model"
-	"github.com/1Panel-dev/1Panel/agent/app/task"
-	"github.com/1Panel-dev/1Panel/agent/constant"
-	"github.com/1Panel-dev/1Panel/agent/global"
+	"github.com/avaargsh/GPUPanel/agent/app/dto/request"
+	"github.com/avaargsh/GPUPanel/agent/app/model"
+	"github.com/avaargsh/GPUPanel/agent/app/task"
+	"github.com/avaargsh/GPUPanel/agent/constant"
+	"github.com/avaargsh/GPUPanel/agent/global"
 )
 
 func unlinkedInstallTask(name, status string) model.Task {
 	return model.Task{
-		ID: "a1111111-1111-4111-8111-111111111111",
-		Name: name,
-		Type: task.TaskScopeApp,
+		ID:      "a1111111-1111-4111-8111-111111111111",
+		Name:    name,
+		Type:    task.TaskScopeApp,
 		Operate: task.TaskInstall,
-		Status: status,
+		Status:  status,
 	}
 }
 

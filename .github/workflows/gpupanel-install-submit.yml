@@ -2,11 +2,11 @@ name: GPUPanel App Store install submission
 on:
   pull_request:
     paths:
-      - 'frontend/src/views/app-store/detail/install/**'
-      - 'frontend/src/utils/app-install-pending.ts'
-      - 'frontend/src/utils/app-install-pending.test.mjs'
-      - 'frontend/src/lang/modules/zh.ts'
-      - 'frontend/src/lang/modules/en.ts'
+      - 'frontend/apps/panel/src/**'
+      - 'frontend/apps/panel/src/**'
+      - 'frontend/apps/panel/src/**'
+      - 'frontend/apps/panel/src/**'
+      - 'frontend/apps/panel/src/**'
       - 'scripts/tests/test_gpupanel_app_install_submission.py'
       - 'scripts/tests/test_gpupanel_app_install_reload.py'
       - '.github/workflows/gpupanel-install-submit.yml'
@@ -29,4 +29,4 @@ jobs:
         with:
           node-version: '24'
       - name: Execute browser receipt storage negative tests in Node
-        run: node --experimental-strip-types --test frontend/src/utils/app-install-pending.test.mjs
+        run: node --experimental-strip-types --test frontend/apps/panel/src/utils/*.test.mjs

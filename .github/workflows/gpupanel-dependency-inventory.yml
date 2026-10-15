@@ -5,7 +5,7 @@ on:
       - 'core/go.mod'
       - 'agent/go.mod'
       - 'frontend/package.json'
-      - 'frontend/package-lock.json'
+      - 'frontend/pnpm-lock.yaml'
       - 'scripts/gpupanel-dependency-audit.py'
       - 'scripts/tests/test_gpupanel_dependency_audit.py'
       - 'docs/gpupanel/DEPENDENCY_LICENSE_INVENTORY.md'

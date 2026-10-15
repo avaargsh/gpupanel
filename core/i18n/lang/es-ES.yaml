@@ -111,7 +111,7 @@ ErrLicenseBindCount: "El número de nodos gratuitos de la nueva licencia es meno
 ErrNoSuchNode: "Información del nodo no encontrada, verifique e intente de nuevo"
 ErrNodeUnbind: "Este nodo no está dentro del rango de vinculación de la licencia, verifique e intente de nuevo"
 ErrNodeBind: "Este nodo ya está vinculado a una licencia, verifique e intente de nuevo"
-ErrNodeLocalRollback: "El nodo principal no admite la reversión directa. Ejecuta manualmente '1pctl restore' para revertir."
+ErrNodeLocalRollback: "El nodo principal no admite la reversión directa. Ejecuta manualmente 'pctl restore' para revertir."
 ErrIntlLicense: "La versión actual aún no admite importar licencias de la edición internacional. Próximamente"
 InvalidRequestBodyType: "Formato del cuerpo de la solicitud no válido, por favor revisa y asegúrate de que el contenido cumpla con el formato requerido antes de reintentar."
 InvalidLicenseCodeType: "Formato de código de licencia no válido, por favor revisa e inténtalo de nuevo."

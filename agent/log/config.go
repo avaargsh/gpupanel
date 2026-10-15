@@ -2,7 +2,7 @@ package log
 
 import (
 	"errors"
-	"github.com/1Panel-dev/1Panel/agent/constant"
+	"github.com/avaargsh/GPUPanel/agent/constant"
 	"io"
 	"os"
 	"path"

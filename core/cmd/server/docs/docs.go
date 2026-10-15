@@ -12,11 +12,11 @@ const docTemplate = `{
 			"url": "https://www.gnu.org/licenses/gpl-3.0.html"
 		},
 		"termsOfService": "http://swagger.io/terms/",
-		"title": "1Panel",
+		"title": "GPUPanel",
 		"version": "2.0"
 	},
 	"host": "",
-	"basePath": "/api/v2",
+	"basePath": "/api/v1",
 	"paths": {
 		"/ai/accounts": {
 			"post": {
@@ -3906,11 +3906,13 @@ const docTemplate = `{
 					"Alert"
 				],
 				"x-panel-log": {
-					"bodyKeys": [],
-					"paramKeys": [],
-					"formatZH": "删除告警配置 [name]",
-					"formatEN": "delete alert config [name]",
-					"BeforeFunctions": []
+					"BeforeFunctions": [],
+					"bodyKeys": [
+						"id"
+					],
+					"formatEN": "delete alert config [id]",
+					"formatZH": "删除告警配置 [id]",
+					"paramKeys": []
 				}
 			}
 		},
@@ -4039,13 +4041,14 @@ const docTemplate = `{
 					"Alert"
 				],
 				"x-panel-log": {
+					"BeforeFunctions": [],
 					"bodyKeys": [
+						"id",
 						"displayName"
 					],
-					"paramKeys": [],
-					"formatZH": "更新告警配置 [displayName]",
-					"formatEN": "update alert config [displayName]",
-					"BeforeFunctions": []
+					"formatEN": "update alert config [id][displayName]",
+					"formatZH": "更新告警配置 [id][displayName]",
+					"paramKeys": []
 				}
 			}
 		},
@@ -18815,9 +18818,11 @@ const docTemplate = `{
 				],
 				"x-panel-log": {
 					"BeforeFunctions": [],
-					"bodyKeys": [],
-					"formatEN": "delete Docker port guard policies",
-					"formatZH": "删除 Docker 端口防护策略",
+					"bodyKeys": [
+						"uuids"
+					],
+					"formatEN": "delete Docker port guard policies [uuids]",
+					"formatZH": "删除 Docker 端口防护策略 [uuids]",
 					"paramKeys": []
 				}
 			}
@@ -19377,9 +19382,11 @@ const docTemplate = `{
 				],
 				"x-panel-log": {
 					"BeforeFunctions": [],
-					"bodyKeys": [],
-					"formatEN": "reorder firewall rule",
-					"formatZH": "调整防火墙规则顺序",
+					"bodyKeys": [
+						"instanceKey"
+					],
+					"formatEN": "reorder firewall rule [instanceKey]",
+					"formatZH": "调整防火墙规则顺序 [instanceKey]",
 					"paramKeys": []
 				}
 			}
@@ -19520,9 +19527,11 @@ const docTemplate = `{
 				],
 				"x-panel-log": {
 					"BeforeFunctions": [],
-					"bodyKeys": [],
-					"formatEN": "update firewall rule",
-					"formatZH": "更新防火墙规则",
+					"bodyKeys": [
+						"instanceKey"
+					],
+					"formatEN": "update firewall rule [instanceKey]",
+					"formatZH": "更新防火墙规则 [instanceKey]",
 					"paramKeys": []
 				}
 			}
@@ -49701,9 +49710,9 @@ const docTemplate = `{
 var SwaggerInfo = &swag.Spec{
 	Version:          "2.0",
 	Host:             "localhost",
-	BasePath:         "/api/v2",
+	BasePath:         "/api/v1",
 	Schemes:          []string{},
-	Title:            "1Panel",
+	Title:            "GPUPanel",
 	Description:      "Top-Rated Web-based Linux Server Management Tool",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,

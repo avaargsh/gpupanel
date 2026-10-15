@@ -111,7 +111,7 @@ ErrLicenseBindCount: "新しいライセンスの無料ノード数が、現在�
 ErrNoSuchNode: "そのノード情報が見つかりませんでした、確認して再試行してください"
 ErrNodeUnbind: "そのノードはライセンスのバインド範囲内ではありません、確認して再試行してください"
 ErrNodeBind: "そのノードはライセンスにバインドされています、確認して再試行してください"
-ErrNodeLocalRollback: "マスターノードでは直接ロールバックできません。'1pctl restore' を手動で実行してロールバックしてください"
+ErrNodeLocalRollback: "マスターノードでは直接ロールバックできません。'pctl restore' を手動で実行してロールバックしてください"
 ErrIntlLicense: "現在のバージョンでは国際版ライセンスのインポートはまだサポートされていません。しばらくお待ちください！"
 InvalidRequestBodyType: "リクエストボディの形式が無効です。内容が要求された形式に準拠しているか確認してから再試行してください！"
 InvalidLicenseCodeType: "提供されたライセンスコードの形式が無効です。確認してから再試行してください！"

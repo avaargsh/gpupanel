@@ -20,7 +20,7 @@ import tempfile
 ROOT = Path(__file__).resolve().parents[1]
 SLOT = "GPUPanel/previews"
 RECEIPT = ".gpupanel-preview.json"
-MEMBERS = ("bin/1panel-core", "bin/1panel-agent", "LICENSE", "NOTICE.md", "manifest.json")
+MEMBERS = ("bin/gpupanel-core", "bin/gpupanel-agent", "LICENSE", "NOTICE.md", "manifest.json")
 
 def load_module(name: str, path: Path):
     spec = importlib.util.spec_from_file_location(name, path)

@@ -7,16 +7,16 @@ import (
 	"time"
 
 	"errors"
-	"github.com/1Panel-dev/1Panel/agent/app/dto"
-	"github.com/1Panel-dev/1Panel/agent/app/repo"
-	"github.com/1Panel-dev/1Panel/agent/app/service"
-	"github.com/1Panel-dev/1Panel/agent/constant"
-	"github.com/1Panel-dev/1Panel/agent/global"
-	"github.com/1Panel-dev/1Panel/agent/init/migration/migrations"
-	"github.com/1Panel-dev/1Panel/agent/utils/firewall"
-	"github.com/1Panel-dev/1Panel/agent/utils/firewall/filter"
-	"github.com/1Panel-dev/1Panel/agent/utils/firewall/iptables_helper"
-	"github.com/1Panel-dev/1Panel/agent/utils/firewall/nftables_helper"
+	"github.com/avaargsh/GPUPanel/agent/app/dto"
+	"github.com/avaargsh/GPUPanel/agent/app/repo"
+	"github.com/avaargsh/GPUPanel/agent/app/service"
+	"github.com/avaargsh/GPUPanel/agent/constant"
+	"github.com/avaargsh/GPUPanel/agent/global"
+	"github.com/avaargsh/GPUPanel/agent/init/migration/migrations"
+	"github.com/avaargsh/GPUPanel/agent/utils/firewall"
+	"github.com/avaargsh/GPUPanel/agent/utils/firewall/filter"
+	"github.com/avaargsh/GPUPanel/agent/utils/firewall/iptables_helper"
+	"github.com/avaargsh/GPUPanel/agent/utils/firewall/nftables_helper"
 	"gorm.io/gorm"
 )
 
@@ -144,7 +144,7 @@ func initDockerPortGuard(ctx context.Context) {
 }
 
 func needInit() bool {
-	file, err := os.OpenFile("/run/1panel_boot_mark", os.O_RDWR|os.O_CREATE|os.O_EXCL, 0644)
+	file, err := os.OpenFile("/run/gpupanel_boot_mark", os.O_RDWR|os.O_CREATE|os.O_EXCL, 0644)
 	if err != nil {
 		if os.IsExist(err) {
 			return false
@@ -153,7 +153,7 @@ func needInit() bool {
 		return true
 	}
 	defer file.Close()
-	fmt.Fprintf(file, "Boot Mark for 1panel\n")
+	fmt.Fprintf(file, "Boot Mark for gpupanel\n")
 	return true
 }
 

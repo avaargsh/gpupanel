@@ -10,17 +10,17 @@ import (
 	"strings"
 	"time"
 
-	"github.com/1Panel-dev/1Panel/core/app/api/v2/helper"
-	baseRepo "github.com/1Panel-dev/1Panel/core/app/repo"
-	"github.com/1Panel-dev/1Panel/core/cmd/server/res"
-	"github.com/1Panel-dev/1Panel/core/constant"
-	"github.com/1Panel-dev/1Panel/core/global"
-	"github.com/1Panel-dev/1Panel/core/init/proxy"
-	psessionUtils "github.com/1Panel-dev/1Panel/core/init/session/psession"
-	"github.com/1Panel-dev/1Panel/core/middleware"
-	"github.com/1Panel-dev/1Panel/core/utils/req_helper/proxy_local"
-	terminalsession "github.com/1Panel-dev/1Panel/core/utils/terminal_session"
-	"github.com/1Panel-dev/1Panel/core/utils/xpack"
+	"github.com/avaargsh/GPUPanel/core/app/api/v1/helper"
+	baseRepo "github.com/avaargsh/GPUPanel/core/app/repo"
+	"github.com/avaargsh/GPUPanel/core/cmd/server/res"
+	"github.com/avaargsh/GPUPanel/core/constant"
+	"github.com/avaargsh/GPUPanel/core/global"
+	"github.com/avaargsh/GPUPanel/core/init/proxy"
+	psessionUtils "github.com/avaargsh/GPUPanel/core/init/session/psession"
+	"github.com/avaargsh/GPUPanel/core/middleware"
+	"github.com/avaargsh/GPUPanel/core/utils/req_helper/proxy_local"
+	terminalsession "github.com/avaargsh/GPUPanel/core/utils/terminal_session"
+	"github.com/avaargsh/GPUPanel/core/utils/xpack"
 	"github.com/gin-gonic/gin"
 )
 
@@ -35,7 +35,7 @@ var loadLocalTerminalCapabilities = func(ctx context.Context) (interface{}, erro
 // planned read-only AppInstall/TaskDB/Docker evidence route.
 func isAppEvidencePath(requestPath string) bool {
 	clean := path.Clean(requestPath)
-	return strings.HasPrefix(clean, "/api/v2/apps/installed/evidence/")
+	return strings.HasPrefix(clean, "/api/v1/apps/installed/evidence/")
 }
 
 // authorizeLocalAppEvidence enforces the personal-workstation scope at the
@@ -109,12 +109,12 @@ func Proxy() gin.HandlerFunc {
 			return
 		}
 
-		if reqPath == "/api/v2/hosts/terminal/local" && (currentNode == "local" || len(currentNode) == 0) {
+		if reqPath == "/api/v1/hosts/terminal/local" && (currentNode == "local" || len(currentNode) == 0) {
 			proxyLocalAgent(c)
 			return
 		}
 
-		if !strings.HasPrefix(reqPath, "/api/v2/core") && (currentNode == "local" || len(currentNode) == 0) {
+		if !strings.HasPrefix(reqPath, "/api/v1/core") && (currentNode == "local" || len(currentNode) == 0) {
 			proxyLocalAgent(c)
 			return
 		}
@@ -125,7 +125,7 @@ func Proxy() gin.HandlerFunc {
 
 func isTerminalRevalidationEndpoint(reqPath string) bool {
 	switch reqPath {
-	case "/api/v2/hosts/terminal/local", "/api/v2/hosts/terminal/ssh", "/api/v2/hosts/terminal/container":
+	case "/api/v1/hosts/terminal/local", "/api/v1/hosts/terminal/ssh", "/api/v1/hosts/terminal/container":
 		return true
 	default:
 		return false
@@ -134,10 +134,10 @@ func isTerminalRevalidationEndpoint(reqPath string) bool {
 
 func isInternalOnlyAgentEndpoint(reqPath string) bool {
 	normalizedPath := path.Clean(reqPath)
-	return normalizedPath == "/api/v2/xpack/alert/offline/email" ||
-		normalizedPath == "/api/v2/xpack/alert/offline/webhook" ||
-		normalizedPath == "/api/v2/hosts/firewall/port" ||
-		normalizedPath == "/api/v2/internal/terminal/sessions/revoke" ||
+	return normalizedPath == "/api/v1/xpack/alert/offline/email" ||
+		normalizedPath == "/api/v1/xpack/alert/offline/webhook" ||
+		normalizedPath == "/api/v1/hosts/firewall/port" ||
+		normalizedPath == "/api/v1/internal/terminal/sessions/revoke" ||
 		normalizedPath == terminalsession.CapabilityPath
 }
 
@@ -180,5 +180,5 @@ func checkSession(c *gin.Context, refresh bool) bool {
 }
 
 func isLocalAPI(urlPath string) bool {
-	return urlPath == "/api/v2/core/xpack/sync/ssl" || urlPath == "/api/v2/core/xpack/settings/search"
+	return urlPath == "/api/v1/core/xpack/sync/ssl" || urlPath == "/api/v1/core/xpack/settings/search"
 }

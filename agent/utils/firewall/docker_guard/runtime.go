@@ -1,13 +1,13 @@
 package docker_guard
 
 import (
-	"github.com/1Panel-dev/1Panel/agent/buserr"
+	"github.com/avaargsh/GPUPanel/agent/buserr"
 
 	"fmt"
 	"os"
 	"strings"
 
-	"github.com/1Panel-dev/1Panel/agent/constant"
+	"github.com/avaargsh/GPUPanel/agent/constant"
 )
 
 const (

@@ -5,8 +5,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/1Panel-dev/1Panel/core/global"
-	"github.com/1Panel-dev/1Panel/core/init/session/psession"
+	"github.com/avaargsh/GPUPanel/core/global"
+	"github.com/avaargsh/GPUPanel/core/init/session/psession"
 	"github.com/gin-gonic/gin"
 )
 
@@ -16,7 +16,7 @@ func evidenceTestSession(t *testing.T, user psession.SessionUser, ttlSeconds int
 	t.Helper()
 	w := httptest.NewRecorder()
 	ctx, _ := gin.CreateTestContext(w)
-	ctx.Request = httptest.NewRequest(http.MethodGet, "/api/v2/apps/installed/evidence/1", nil)
+	ctx.Request = httptest.NewRequest(http.MethodGet, "/api/v1/apps/installed/evidence/1", nil)
 	if err := global.SESSION.SetFresh(ctx, user, false, ttlSeconds); err != nil {
 		t.Fatal(err)
 	}
@@ -65,13 +65,13 @@ func TestCoreAppEvidenceAuthorization(t *testing.T) {
 		{name: "non-admin user id", cookie: nonAdmin, node: "local", want: http.StatusForbidden},
 		{name: "incorrect role", cookie: wrongRole, node: "local", want: http.StatusForbidden},
 		{name: "expired session", cookie: expired, node: "local", want: http.StatusForbidden},
-		{name: "unrelated app endpoint untouched", path: "/api/v2/apps/installed/list", node: "remote", want: http.StatusNoContent},
+		{name: "unrelated app endpoint untouched", path: "/api/v1/apps/installed/list", node: "remote", want: http.StatusNoContent},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			path := tt.path
 			if path == "" {
-				path = "/api/v2/apps/installed/evidence/1"
+				path = "/api/v1/apps/installed/evidence/1"
 			}
 			r := gin.New()
 			r.GET(path, func(c *gin.Context) {
@@ -104,19 +104,19 @@ func TestCoreAppEvidenceAuthorization(t *testing.T) {
 
 func TestCoreAppEvidencePathNormalization(t *testing.T) {
 	for _, path := range []string{
-		"/api/v2/apps/installed/evidence/1",
-		"/api/v2/apps/installed/evidence/123",
-		"/api/v2/apps/installed/evidence/1/",
+		"/api/v1/apps/installed/evidence/1",
+		"/api/v1/apps/installed/evidence/123",
+		"/api/v1/apps/installed/evidence/1/",
 	} {
 		if !isAppEvidencePath(path) {
 			t.Fatalf("evidence route missing guard: %s", path)
 		}
 	}
 	for _, path := range []string{
-		"/api/v2/apps/installed/list",
-		"/api/v2/apps/installed/info/1",
-		"/api/v2/apps/installed/evidence-mock/1",
-		"/api/v2/core/apps/installed/evidence/1",
+		"/api/v1/apps/installed/list",
+		"/api/v1/apps/installed/info/1",
+		"/api/v1/apps/installed/evidence-mock/1",
+		"/api/v1/core/apps/installed/evidence/1",
 	} {
 		if isAppEvidencePath(path) {
 			t.Fatalf("unexpected app route blocked: %s", path)

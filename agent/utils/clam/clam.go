@@ -7,14 +7,14 @@ import (
 	"strings"
 	"time"
 
-	"github.com/1Panel-dev/1Panel/agent/app/model"
-	"github.com/1Panel-dev/1Panel/agent/app/repo"
-	"github.com/1Panel-dev/1Panel/agent/app/task"
-	"github.com/1Panel-dev/1Panel/agent/constant"
-	"github.com/1Panel-dev/1Panel/agent/global"
-	"github.com/1Panel-dev/1Panel/agent/i18n"
-	"github.com/1Panel-dev/1Panel/agent/utils/cmd"
-	"github.com/1Panel-dev/1Panel/agent/utils/controller"
+	"github.com/avaargsh/GPUPanel/agent/app/model"
+	"github.com/avaargsh/GPUPanel/agent/app/repo"
+	"github.com/avaargsh/GPUPanel/agent/app/task"
+	"github.com/avaargsh/GPUPanel/agent/constant"
+	"github.com/avaargsh/GPUPanel/agent/global"
+	"github.com/avaargsh/GPUPanel/agent/i18n"
+	"github.com/avaargsh/GPUPanel/agent/utils/cmd"
+	"github.com/avaargsh/GPUPanel/agent/utils/controller"
 	"github.com/robfig/cron/v3"
 )
 
@@ -25,7 +25,7 @@ func AddScanTask(taskItem *task.Task, clam model.Clam, timeNow string) {
 		case "remove":
 			strategy = "--remove"
 		case "move", "copy":
-			dir := path.Join(clam.InfectedDir, "1panel-infected", clam.Name, timeNow)
+			dir := path.Join(clam.InfectedDir, "gpupanel-infected", clam.Name, timeNow)
 			taskItem.Log("infected dir: " + dir)
 			if _, err := os.Stat(dir); err != nil {
 				_ = os.MkdirAll(dir, os.ModePerm)

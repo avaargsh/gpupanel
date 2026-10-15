@@ -11,10 +11,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/1Panel-dev/1Panel/agent/app/model"
-	"github.com/1Panel-dev/1Panel/agent/app/service"
-	"github.com/1Panel-dev/1Panel/agent/constant"
-	"github.com/1Panel-dev/1Panel/agent/global"
+	"github.com/avaargsh/GPUPanel/agent/app/model"
+	"github.com/avaargsh/GPUPanel/agent/app/service"
+	"github.com/avaargsh/GPUPanel/agent/constant"
+	"github.com/avaargsh/GPUPanel/agent/global"
 	"github.com/gin-gonic/gin"
 	"github.com/glebarez/sqlite"
 	"gorm.io/gorm"
@@ -56,7 +56,9 @@ func TestAppEvidenceRealHTTPAndDocker(t *testing.T) {
 		}
 		t.Cleanup(func() {
 			sqlDB, err := db.DB()
-			if err == nil { _ = sqlDB.Close() }
+			if err == nil {
+				_ = sqlDB.Close()
+			}
 		})
 		return db
 	}
@@ -79,25 +81,33 @@ func TestAppEvidenceRealHTTPAndDocker(t *testing.T) {
 	}
 	global.IsMaster = true
 	engine := gin.New()
-	(&AppRouter{}).InitRouter(engine.Group("/api/v2"))
+	(&AppRouter{}).InitRouter(engine.Group("/api/v1"))
 	listener := httptest.NewServer(engine)
 	defer listener.Close()
-	url := listener.URL + "/api/v2/apps/installed/evidence/" + strconv.FormatUint(uint64(install.ID), 10)
+	url := listener.URL + "/api/v1/apps/installed/evidence/" + strconv.FormatUint(uint64(install.ID), 10)
 
 	request := func() (int, service.AppInstallEvidence, string) {
 		t.Helper()
 		resp, err := http.Get(url)
-		if err != nil { t.Fatal(err) }
+		if err != nil {
+			t.Fatal(err)
+		}
 		defer resp.Body.Close()
 		var envelope struct {
-			Code int `json:"code"`
+			Code int                        `json:"code"`
 			Data service.AppInstallEvidence `json:"data"`
 		}
 		raw := new(strings.Builder)
-		if err := json.NewDecoder(resp.Body).Decode(&envelope); err != nil { t.Fatal(err) }
-		if raw.Len() > 0 { t.Fatal("unexpected raw buffer") }
+		if err := json.NewDecoder(resp.Body).Decode(&envelope); err != nil {
+			t.Fatal(err)
+		}
+		if raw.Len() > 0 {
+			t.Fatal("unexpected raw buffer")
+		}
 		b, err := json.Marshal(envelope)
-		if err != nil { t.Fatal(err) }
+		if err != nil {
+			t.Fatal(err)
+		}
 		return resp.StatusCode, envelope.Data, string(b)
 	}
 	code, observed, body := request()
@@ -106,7 +116,9 @@ func TestAppEvidenceRealHTTPAndDocker(t *testing.T) {
 		t.Fatalf("invalid Agent HTTP / Docker read: code=%d evidence=%+v", code, observed)
 	}
 	expected := "CONSISTENT"
-	if phase == "exited" { expected = "PARTIAL" }
+	if phase == "exited" {
+		expected = "PARTIAL"
+	}
 	if observed.Classification != expected || strings.Contains(body, "private-ci-credential") ||
 		strings.Contains(body, "dockerCompose") || strings.Contains(body, "labels") {
 		t.Fatalf("wrong classification or secret leak: phase=%s %s", phase, body)
@@ -124,13 +136,19 @@ func TestAppEvidenceRealHTTPAndDocker(t *testing.T) {
 		t.Fatalf("read-only HTTP request silently reconciled UNKNOWN: %+v", unknown)
 	}
 	var stored model.AppInstall
-	if err := global.DB.First(&stored, install.ID).Error; err != nil { t.Fatal(err) }
+	if err := global.DB.First(&stored, install.ID).Error; err != nil {
+		t.Fatal(err)
+	}
 	if stored.Status != constant.StatusUnknown || stored.Env != install.Env {
 		t.Fatal("GET modified AppInstall metadata")
 	}
 	var taskCount int64
-	if err := global.TaskDB.Model(&model.Task{}).Count(&taskCount).Error; err != nil { t.Fatal(err) }
-	if taskCount != 1 { t.Fatal("GET caused a TaskDB side effect") }
+	if err := global.TaskDB.Model(&model.Task{}).Count(&taskCount).Error; err != nil {
+		t.Fatal(err)
+	}
+	if taskCount != 1 {
+		t.Fatal("GET caused a TaskDB side effect")
+	}
 
 	// Non-master HTTP Agent requests are forbidden even if they supply
 	// fabricated identity headers; use actual route, not helper-only tests.
@@ -138,7 +156,9 @@ func TestAppEvidenceRealHTTPAndDocker(t *testing.T) {
 	req, _ := http.NewRequest(http.MethodGet, url, nil)
 	req.Header.Set("X-Panel-User", "admin")
 	resp, err := http.DefaultClient.Do(req)
-	if err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
 	_ = resp.Body.Close()
 	if resp.StatusCode != http.StatusForbidden {
 		t.Fatalf("remote/nonmaster Agent returned %d; wanted 403", resp.StatusCode)

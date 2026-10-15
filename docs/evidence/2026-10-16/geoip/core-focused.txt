@@ -1,0 +1,17 @@
+=== RUN   TestDatabaseURL
+--- PASS: TestDatabaseURL (0.00s)
+=== RUN   TestFailedDownloadPreservesTarget
+=== RUN   TestFailedDownloadPreservesTarget/OK
+=== RUN   TestFailedDownloadPreservesTarget/Not_Found
+=== RUN   TestFailedDownloadPreservesTarget/Internal_Server_Error
+--- PASS: TestFailedDownloadPreservesTarget (0.01s)
+    --- PASS: TestFailedDownloadPreservesTarget/OK (0.00s)
+    --- PASS: TestFailedDownloadPreservesTarget/Not_Found (0.00s)
+    --- PASS: TestFailedDownloadPreservesTarget/Internal_Server_Error (0.00s)
+=== RUN   TestRealDatabase
+    database_test.go:86: 8.8.8.8 (en): United States 
+    database_test.go:86: 8.8.8.8 (zh): 美国 
+--- PASS: TestRealDatabase (29.88s)
+PASS
+ok  	github.com/avaargsh/GPUPanel/core/utils/geo	30.921s
+?   	github.com/avaargsh/GPUPanel/core/init/geo	[no test files]

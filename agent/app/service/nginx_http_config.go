@@ -9,8 +9,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/1Panel-dev/1Panel/agent/app/model"
-	"github.com/1Panel-dev/1Panel/agent/constant"
+	"github.com/avaargsh/GPUPanel/agent/app/model"
+	"github.com/avaargsh/GPUPanel/agent/constant"
 )
 
 const (
@@ -21,7 +21,7 @@ const (
 	// that per-site configuration keeps overriding these defaults.
 	nginxHTTPConfDir = "http.d"
 
-	nginxHTTPConfigPrefix = "1panel-http-"
+	nginxHTTPConfigPrefix = "gpupanel-http-"
 	nginxHTTPConfigHeader = "# Managed by 1Panel. Manual changes will be overwritten.\n"
 
 	// nginxHTTPIncludeDirective is the include line that loads the managed

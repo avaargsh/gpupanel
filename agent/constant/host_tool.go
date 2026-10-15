@@ -9,5 +9,5 @@ const (
 	WebsiteUID = 1000
 	WebsiteGID = 1000
 
-	FTPUser = "1panel-ftp"
+	FTPUser = "gpupanel-ftp"
 )

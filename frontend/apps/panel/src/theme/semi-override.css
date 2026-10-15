@@ -1,0 +1,171 @@
+/*
+ * GPUPanel 品牌主题 —— 覆盖 Semi Design 的设计变量。
+ * 视觉语言：柔和中性灰背景 + 纯白/深灰卡片 + 低饱和青绿强调色。
+ * Semi 的色盘挂在 body 上（亮/暗两套），这里用更高优先级的选择器覆盖。
+ * 完整变量列表见：https://semi.design/zh-CN/basic/tokens
+ */
+
+/* ---------- 基础布局与滚动条 ---------- */
+html,
+body,
+#root {
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    color: var(--semi-color-text-0);
+    background-color: var(--semi-color-bg-0);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    font-family:
+        'Inter',
+        -apple-system,
+        BlinkMacSystemFont,
+        'Segoe UI',
+        Roboto,
+        'Helvetica Neue',
+        'PingFang SC',
+        'Microsoft YaHei',
+        sans-serif;
+
+    /* 更柔和、更圆润的组件圆角 */
+    --semi-border-radius-small: 6px;
+    --semi-border-radius-medium: 8px;
+    --semi-border-radius-large: 12px;
+}
+
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--semi-color-border);
+    border-radius: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+/* ---------- 浅色：暖白灰底 + 青绿强调 ---------- */
+body:not([theme-mode='dark']) {
+    /* 主色：低饱和青绿 */
+    --semi-color-primary: #357d73;
+    --semi-color-primary-hover: #20695f;
+    --semi-color-primary-active: #1a564e;
+    --semi-color-primary-disabled: rgba(53, 125, 115, 0.4);
+    --semi-color-primary-light-default: #e6f2ef;
+    --semi-color-primary-light-hover: #d8ebe6;
+    --semi-color-primary-light-active: #c6e2da;
+
+    /* 语义色 */
+    --semi-color-success: #2f9e77;
+    --semi-color-success-hover: #278862;
+    --semi-color-success-active: #217252;
+    --semi-color-success-light-default: #e7f4ee;
+    --semi-color-info: #4c6ca4;
+    --semi-color-info-hover: #3f5c8f;
+    --semi-color-info-active: #36507d;
+    --semi-color-info-light-default: #edf2fc;
+    --semi-color-warning: #a46c27;
+    --semi-color-warning-hover: #8f5d1f;
+    --semi-color-warning-active: #7a4f1a;
+    --semi-color-warning-light-default: #fcf4e8;
+    --semi-color-danger: #b84f56;
+    --semi-color-danger-hover: #a34349;
+    --semi-color-danger-active: #8d3a40;
+    --semi-color-danger-light-default: #fcecef;
+
+    /* 链接 */
+    --semi-color-link: #357d73;
+    --semi-color-link-hover: #20695f;
+    --semi-color-link-active: #1a564e;
+
+    /* 背景分层：页面灰底 / 卡片白底 / 侧栏浅灰 */
+    --semi-color-bg-0: #ffffff;
+    --semi-color-bg-1: #ffffff;
+    --semi-color-bg-2: #f8f9fa;
+    --semi-color-bg-3: #f0f1f3;
+    --semi-color-bg-4: #e8eaee;
+
+    /* 文字层次 */
+    --semi-color-text-0: #20242a;
+    --semi-color-text-1: rgba(32, 36, 42, 0.8);
+    --semi-color-text-2: #66707a;
+    --semi-color-text-3: #9099a3;
+
+    /* 边框与填充 */
+    --semi-color-border: #e8eaee;
+    --semi-color-fill-0: rgba(32, 36, 42, 0.03);
+    --semi-color-fill-1: rgba(32, 36, 42, 0.06);
+    --semi-color-fill-2: rgba(32, 36, 42, 0.09);
+
+    /* 页面底色比卡片更深一档，形成卡片层级 */
+    background-color: #f5f6f8;
+}
+
+/* ---------- 深色：冷调近黑底 + 亮青绿强调 ---------- */
+body[theme-mode='dark'] {
+    --semi-color-primary: #7ac6b6;
+    --semi-color-primary-hover: #8ddccb;
+    --semi-color-primary-active: #9ee6d6;
+    --semi-color-primary-disabled: rgba(122, 198, 182, 0.4);
+    --semi-color-primary-light-default: rgba(122, 198, 182, 0.16);
+    --semi-color-primary-light-hover: rgba(122, 198, 182, 0.24);
+    --semi-color-primary-light-active: rgba(122, 198, 182, 0.32);
+
+    --semi-color-success: #6fceac;
+    --semi-color-success-light-default: rgba(111, 206, 172, 0.16);
+    --semi-color-success-light-hover: rgba(111, 206, 172, 0.24);
+    --semi-color-info: #a1baf2;
+    --semi-color-info-light-default: rgba(161, 186, 242, 0.16);
+    --semi-color-info-light-hover: rgba(161, 186, 242, 0.24);
+    --semi-color-warning: #e1ba7c;
+    --semi-color-warning-light-default: rgba(225, 186, 124, 0.16);
+    --semi-color-warning-light-hover: rgba(225, 186, 124, 0.24);
+    --semi-color-danger: #f0969b;
+    --semi-color-danger-light-default: rgba(240, 150, 155, 0.16);
+    --semi-color-danger-light-hover: rgba(240, 150, 155, 0.24);
+
+    --semi-color-link: #7ac6b6;
+    --semi-color-link-hover: #8ddccb;
+    --semi-color-link-active: #9ee6d6;
+
+    /* 页面底色最暗，卡片亮一档，侧栏介于两者之间 */
+    --semi-color-bg-0: #242a2f;
+    --semi-color-bg-1: #242a2f;
+    --semi-color-bg-2: #1d2226;
+    --semi-color-bg-3: #2d3539;
+    --semi-color-bg-4: #343c40;
+
+    --semi-color-text-0: #e9eeed;
+    --semi-color-text-1: rgba(233, 238, 237, 0.8);
+    --semi-color-text-2: #b5c1bf;
+    --semi-color-text-3: #83918e;
+
+    --semi-color-border: #343c40;
+    --semi-color-fill-0: rgba(255, 255, 255, 0.05);
+    --semi-color-fill-1: rgba(255, 255, 255, 0.08);
+    --semi-color-fill-2: rgba(255, 255, 255, 0.12);
+
+    background-color: #181c20;
+}
+
+/* ---------- 侧栏导航：去掉每个 Nav 自带的右边框/背景，避免叠出粗边框 ---------- */
+.semi-layout-sider .semi-navigation {
+    border-right: none;
+    background: transparent;
+}
+
+.semi-layout-sider .semi-navigation-item {
+    margin: 2px 0;
+}
+
+.semi-layout-sider .semi-navigation-header,
+.semi-layout-sider .semi-navigation-footer {
+    border: none;
+}

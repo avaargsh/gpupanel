@@ -4,10 +4,10 @@ import (
 	"context"
 	"time"
 
-	"github.com/1Panel-dev/1Panel/agent/constant"
-	"github.com/1Panel-dev/1Panel/agent/global"
+	"github.com/avaargsh/GPUPanel/agent/constant"
+	"github.com/avaargsh/GPUPanel/agent/global"
 
-	"github.com/1Panel-dev/1Panel/agent/app/model"
+	"github.com/avaargsh/GPUPanel/agent/app/model"
 	"gorm.io/gorm"
 )
 
@@ -128,9 +128,9 @@ func reconcileRunningTasksOnRestart(db *gorm.DB) error {
 			Where("status = ? AND type = ? AND operate = ?",
 				constant.StatusExecuting, "App", "TaskInstall").
 			Updates(map[string]interface{}{
-				"status": constant.StatusUnknown,
+				"status":    constant.StatusUnknown,
 				"error_msg": "installation interrupted; inspect task, app record and Docker resources before retrying",
-				"end_at": time.Now(),
+				"end_at":    time.Now(),
 			}).Error; err != nil {
 			return err
 		}

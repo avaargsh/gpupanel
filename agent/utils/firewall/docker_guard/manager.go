@@ -4,18 +4,18 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/1Panel-dev/1Panel/agent/buserr"
+	"github.com/avaargsh/GPUPanel/agent/buserr"
 	"slices"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
 
-	"github.com/1Panel-dev/1Panel/agent/utils/cmd"
-	firewallutil "github.com/1Panel-dev/1Panel/agent/utils/firewall"
-	"github.com/1Panel-dev/1Panel/agent/utils/firewall/filter"
-	"github.com/1Panel-dev/1Panel/agent/utils/firewall/lifecycle"
-	"github.com/1Panel-dev/1Panel/agent/utils/firewall/nftables_helper"
+	"github.com/avaargsh/GPUPanel/agent/utils/cmd"
+	firewallutil "github.com/avaargsh/GPUPanel/agent/utils/firewall"
+	"github.com/avaargsh/GPUPanel/agent/utils/firewall/filter"
+	"github.com/avaargsh/GPUPanel/agent/utils/firewall/lifecycle"
+	"github.com/avaargsh/GPUPanel/agent/utils/firewall/nftables_helper"
 )
 
 type Runner interface {
@@ -434,7 +434,7 @@ func compilePolicy(policy Policy) [][]string {
 		base = append(base, "--ctorigdst", policy.HostIP)
 	}
 	base = append(base, "--ctorigdstport", strconv.Itoa(int(policy.HostPort)))
-	comment := "1panel-docker:" + policy.UUID
+	comment := "gpupanel-docker:" + policy.UUID
 	if policy.Mode == ModeAll || policy.Mode == ModeAcceptAll {
 		target := "DROP"
 		if policy.Mode == ModeAcceptAll {

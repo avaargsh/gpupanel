@@ -1,41 +1,43 @@
 package server
 
 import (
-	"errors"
+	"context"
 	"crypto/tls"
 	"crypto/x509"
+	"errors"
 	"fmt"
 	"net"
 	"net/http"
 	"os"
+	"os/signal"
 	"syscall"
 
 	"github.com/gin-gonic/gin"
 
-	"github.com/1Panel-dev/1Panel/agent/app/repo"
-	"github.com/1Panel-dev/1Panel/agent/cron"
-	"github.com/1Panel-dev/1Panel/agent/global"
-	"github.com/1Panel-dev/1Panel/agent/i18n"
-	"github.com/1Panel-dev/1Panel/agent/init/app"
-	"github.com/1Panel-dev/1Panel/agent/init/business"
-	"github.com/1Panel-dev/1Panel/agent/init/cache"
-	"github.com/1Panel-dev/1Panel/agent/init/db"
-	"github.com/1Panel-dev/1Panel/agent/init/dir"
-	"github.com/1Panel-dev/1Panel/agent/init/firewall"
-	"github.com/1Panel-dev/1Panel/agent/init/hook"
-	"github.com/1Panel-dev/1Panel/agent/init/lang"
-	"github.com/1Panel-dev/1Panel/agent/init/log"
-	"github.com/1Panel-dev/1Panel/agent/init/migration"
-	"github.com/1Panel-dev/1Panel/agent/init/router"
-	"github.com/1Panel-dev/1Panel/agent/init/validator"
-	"github.com/1Panel-dev/1Panel/agent/init/viper"
-	"github.com/1Panel-dev/1Panel/agent/utils/encrypt"
-	"github.com/1Panel-dev/1Panel/agent/utils/files"
-	"github.com/1Panel-dev/1Panel/agent/utils/re"
+	"github.com/avaargsh/GPUPanel/agent/app/repo"
+	"github.com/avaargsh/GPUPanel/agent/cron"
+	"github.com/avaargsh/GPUPanel/agent/global"
+	"github.com/avaargsh/GPUPanel/agent/i18n"
+	"github.com/avaargsh/GPUPanel/agent/init/app"
+	"github.com/avaargsh/GPUPanel/agent/init/business"
+	"github.com/avaargsh/GPUPanel/agent/init/cache"
+	"github.com/avaargsh/GPUPanel/agent/init/db"
+	"github.com/avaargsh/GPUPanel/agent/init/dir"
+	"github.com/avaargsh/GPUPanel/agent/init/firewall"
+	"github.com/avaargsh/GPUPanel/agent/init/hook"
+	"github.com/avaargsh/GPUPanel/agent/init/lang"
+	"github.com/avaargsh/GPUPanel/agent/init/log"
+	"github.com/avaargsh/GPUPanel/agent/init/migration"
+	"github.com/avaargsh/GPUPanel/agent/init/router"
+	"github.com/avaargsh/GPUPanel/agent/init/validator"
+	"github.com/avaargsh/GPUPanel/agent/init/viper"
+	"github.com/avaargsh/GPUPanel/agent/utils/encrypt"
+	"github.com/avaargsh/GPUPanel/agent/utils/files"
+	"github.com/avaargsh/GPUPanel/agent/utils/re"
 )
 
 const (
-	masterSocketDir          = "/etc/1panel"
+	masterSocketDir          = "/etc/gpupanel"
 	masterSocketPath         = masterSocketDir + "/agent.sock"
 	masterSocketDirPerm      = 0o700
 	masterSocketFilePerm     = 0o600
@@ -180,7 +182,11 @@ func Start() {
 		global.LOG.Infof("agent startup: listening on unix socket %s", masterSocketPath)
 		business.Init()
 		global.LOG.Info("agent startup: business initialized")
-		_ = server.Serve(listener)
+		ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+		defer stop()
+		if err := serveOwnedMasterSocket(ctx, server, listener); err != nil {
+			global.LOG.Errorf("master agent shutdown failed: %v", err)
+		}
 		return
 	} else {
 		server.Addr = fmt.Sprintf("0.0.0.0:%s", global.CONF.Base.Port)

@@ -19,10 +19,9 @@ class InterruptedAppInstallUnknownContract(unittest.TestCase):
         block = source.split("func reconcileRunningTasksOnRestart(", 1)[1].split("\nfunc ", 1)[0]
         self.assertIn("db.Transaction(", block)
         self.assertIn('constant.StatusExecuting, "App", "TaskInstall"', block)
-        self.assertIn('"status": constant.StatusUnknown', block)
+        self.assertRegex(block, r'"status":\s+constant.StatusUnknown')
         self.assertIn('"status": constant.StatusFailed', block)
-        self.assertLess(block.index('"status": constant.StatusUnknown'),
-                        block.index('"status": constant.StatusFailed'))
+        self.assertLess(block.index("constant.StatusUnknown"), block.index("constant.StatusFailed"))
         self.assertIn("return reconcileRunningTasksOnRestart(global.TaskDB)", source)
 
     def test_startup_preserves_install_row_as_unknown(self):

@@ -8,8 +8,8 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"github.com/1Panel-dev/1Panel/agent/app/model"
-	"github.com/1Panel-dev/1Panel/agent/global"
+	"github.com/avaargsh/GPUPanel/agent/app/model"
+	"github.com/avaargsh/GPUPanel/agent/global"
 	"io"
 	"net/http"
 	"os"
@@ -32,7 +32,7 @@ func PostLocalCore(url string) error {
 		prefix = "https"
 	}
 
-	reloadURL := fmt.Sprintf("%s://127.0.0.1:%s/api/v2%s", prefix, serverPortSetting.Value, url)
+	reloadURL := fmt.Sprintf("%s://127.0.0.1:%s/api/v1%s", prefix, serverPortSetting.Value, url)
 	req, err := http.NewRequest("POST", reloadURL, bytes.NewBuffer([]byte{}))
 	if err != nil {
 		return err

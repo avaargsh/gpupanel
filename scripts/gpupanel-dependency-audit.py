@@ -8,6 +8,7 @@ from __future__ import annotations
 import argparse
 from collections import Counter
 import hashlib
+import importlib.util
 import json
 from pathlib import Path
 import sys
@@ -147,21 +148,32 @@ def go_inventory(path: Path) -> dict:
 
 def inventory(root: Path) -> dict:
     root = root.resolve()
-    npm = npm_inventory(root)
+    manager = 'npm'
+    if (root / 'frontend/pnpm-lock.yaml').is_file():
+        manager = 'pnpm'
+        spec = importlib.util.spec_from_file_location('gpupanel_pnpm_inventory', Path(__file__).with_name('gpupanel-pnpm-inventory.py'))
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        try:
+            npm = module.inventory(root)
+        except (OSError, ValueError, KeyError, TypeError) as exc:
+            raise AuditError(str(exc)) from exc
+    else:
+        npm = npm_inventory(root)
     go = {name: go_inventory(root / name / "go.mod") for name in ("core", "agent")}
     return {
         "schema_version": 1,
         "purpose": "manifest_inventory_not_license_grant_or_sbom",
-        "source_scope": "npm v3 lock metadata + Go require/replace; excludes downloadable code, assets and release binaries",
+        "source_scope": manager + " lock metadata + Go require/replace; excludes downloadable code, assets and release binaries",
         "overall_review": "THIRD_PARTY_REVIEW",
         "summary": {
-            "npm_entries": npm["count"],
-            "npm_missing_license_hints": npm["missing_license_hints"],
+            manager + "_entries": npm["count"],
+            manager + "_missing_license_hints": npm["missing_license_hints"],
             "go_require_entries": sum(x["require_count"] for x in go.values()),
             "go_replace_entries": sum(x["replace_count"] for x in go.values()),
             "go_direct_entries": sum(sum(r["scope"] == "direct" for r in x["requirements"]) for x in go.values()),
         },
-        "npm": npm, "go": go,
+        manager: npm, "go": go,
     }
 
 

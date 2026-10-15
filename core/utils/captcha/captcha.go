@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/1Panel-dev/1Panel/core/app/dto"
+	"github.com/avaargsh/GPUPanel/core/app/dto"
 )
 
 const (

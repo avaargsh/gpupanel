@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/1Panel-dev/1Panel/agent/app/dto/response"
-	"github.com/1Panel-dev/1Panel/agent/app/model"
-	"github.com/1Panel-dev/1Panel/agent/app/task"
+	"github.com/avaargsh/GPUPanel/agent/app/dto/response"
+	"github.com/avaargsh/GPUPanel/agent/app/model"
+	"github.com/avaargsh/GPUPanel/agent/app/task"
 	"gorm.io/gorm"
 )
 

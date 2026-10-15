@@ -12,13 +12,13 @@ import (
 	"time"
 	"unicode/utf8"
 
-	providercatalog "github.com/1Panel-dev/1Panel/agent/app/provider"
-	"github.com/1Panel-dev/1Panel/agent/global"
+	providercatalog "github.com/avaargsh/GPUPanel/agent/app/provider"
+	"github.com/avaargsh/GPUPanel/agent/global"
 )
 
 const (
 	defaultTimeout        = 30 * time.Second
-	defaultUserAgent      = "1panel-terminal-ai/1.0"
+	defaultUserAgent      = "gpupanel-terminal-ai/1.0"
 	defaultAnthropicToken = 1024
 	defaultTerminalTokens = 8192
 )

@@ -10,10 +10,10 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/1Panel-dev/1Panel/agent/app/dto/request"
-	"github.com/1Panel-dev/1Panel/agent/utils/common"
-	agentPsutil "github.com/1Panel-dev/1Panel/agent/utils/psutil"
-	"github.com/1Panel-dev/1Panel/agent/utils/websocket"
+	"github.com/avaargsh/GPUPanel/agent/app/dto/request"
+	"github.com/avaargsh/GPUPanel/agent/utils/common"
+	agentPsutil "github.com/avaargsh/GPUPanel/agent/utils/psutil"
+	"github.com/avaargsh/GPUPanel/agent/utils/websocket"
 	"github.com/shirou/gopsutil/v4/net"
 	"github.com/shirou/gopsutil/v4/process"
 )

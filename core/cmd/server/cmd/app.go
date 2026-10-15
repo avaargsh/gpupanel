@@ -3,8 +3,8 @@ package cmd
 import (
 	"bytes"
 	"fmt"
-	"github.com/1Panel-dev/1Panel/core/cmd/server/app"
-	"github.com/1Panel-dev/1Panel/core/i18n"
+	"github.com/avaargsh/GPUPanel/core/cmd/server/app"
+	"github.com/avaargsh/GPUPanel/core/i18n"
 	"io"
 	"os"
 
@@ -41,7 +41,7 @@ var initCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		i18n.UseI18nForCmd(language)
 		if !isRoot() {
-			fmt.Println(i18n.GetMsgWithMapForCmd("SudoHelper", map[string]interface{}{"cmd": "sudo 1pctl app init"}))
+			fmt.Println(i18n.GetMsgWithMapForCmd("SudoHelper", map[string]interface{}{"cmd": "sudo pctl app init"}))
 			return nil
 		}
 		if len(args) > 0 {
@@ -142,17 +142,17 @@ func writeFile(filePath string, in io.Reader) error {
 
 func loadAppHelper() {
 	fmt.Println(i18n.GetMsgByKeyForCmd("AppCommands"))
-	fmt.Println("\nUsage:\n  1panel app [command]\n\nAvailable Commands:")
+	fmt.Println("\nUsage:\n  gpupanel app [command]\n\nAvailable Commands:")
 	fmt.Println("\n  init        " + i18n.GetMsgByKeyForCmd("AppInit"))
 	fmt.Println("\nFlags:\n  -h, --help             help for app")
 	fmt.Println("  -k, --key string       " + i18n.GetMsgByKeyForCmd("AppKeyVal"))
 	fmt.Println("  -v, --version string   " + i18n.GetMsgByKeyForCmd("AppVersion"))
-	fmt.Println("\nUse \"1panel app [command] --help\" for more information about a command.")
+	fmt.Println("\nUse \"gpupanel app [command] --help\" for more information about a command.")
 }
 
 func loadAppInitHelper() {
 	fmt.Println(i18n.GetMsgByKeyForCmd("AppInit"))
-	fmt.Println("\nUsage:\n  1panel app init [flags]")
+	fmt.Println("\nUsage:\n  gpupanel app init [flags]")
 	fmt.Println("\nFlags:\n  -h, --help             help for app")
 	fmt.Println("  -k, --key string       " + i18n.GetMsgByKeyForCmd("AppKeyVal"))
 	fmt.Println("  -v, --version string   " + i18n.GetMsgByKeyForCmd("AppVersion"))

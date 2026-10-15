@@ -15,7 +15,7 @@ services:
       "--messagePath", "${SSE_PATH}/messages"
     ]
     networks:
-      - 1panel-network
+      - gpupanel-network
 networks:
-  1panel-network:
+  gpupanel-network:
     external: true

@@ -13,17 +13,17 @@ import (
 	"strings"
 	"time"
 
-	"github.com/1Panel-dev/1Panel/agent/app/dto"
-	"github.com/1Panel-dev/1Panel/agent/app/model"
-	"github.com/1Panel-dev/1Panel/agent/app/repo"
-	"github.com/1Panel-dev/1Panel/agent/app/task"
-	"github.com/1Panel-dev/1Panel/agent/buserr"
-	"github.com/1Panel-dev/1Panel/agent/constant"
-	"github.com/1Panel-dev/1Panel/agent/global"
-	"github.com/1Panel-dev/1Panel/agent/i18n"
-	"github.com/1Panel-dev/1Panel/agent/utils/cmd"
-	"github.com/1Panel-dev/1Panel/agent/utils/common"
-	"github.com/1Panel-dev/1Panel/agent/utils/files"
+	"github.com/avaargsh/GPUPanel/agent/app/dto"
+	"github.com/avaargsh/GPUPanel/agent/app/model"
+	"github.com/avaargsh/GPUPanel/agent/app/repo"
+	"github.com/avaargsh/GPUPanel/agent/app/task"
+	"github.com/avaargsh/GPUPanel/agent/buserr"
+	"github.com/avaargsh/GPUPanel/agent/constant"
+	"github.com/avaargsh/GPUPanel/agent/global"
+	"github.com/avaargsh/GPUPanel/agent/i18n"
+	"github.com/avaargsh/GPUPanel/agent/utils/cmd"
+	"github.com/avaargsh/GPUPanel/agent/utils/common"
+	"github.com/avaargsh/GPUPanel/agent/utils/files"
 	dockerImage "github.com/docker/docker/api/types/image"
 	dockerClient "github.com/docker/docker/client"
 )
@@ -252,7 +252,7 @@ func doMongodbRestore(database, dbType, dbName, sourceFile string, taskItem *tas
 		return fmt.Errorf("mongodb container not found for database %s", database)
 	}
 
-	containerFile := path.Join("/tmp", fmt.Sprintf("1panel-mongodb-restore-%s.gz", common.RandStrAndNum(8)))
+	containerFile := path.Join("/tmp", fmt.Sprintf("gpupanel-mongodb-restore-%s.gz", common.RandStrAndNum(8)))
 	defer func() {
 		_ = cmd.NewCommandMgr().Run("docker", "exec", appInfo.ContainerName, "rm", "-f", containerFile)
 	}()
@@ -540,7 +540,7 @@ func loadMongodbBackupDBName(sourceFile, defaultDB string) string {
 	// Strip the temp prefix before deriving the original database name.
 	baseName = strings.TrimPrefix(baseName, "tmp_")
 	patterns := []*regexp.Regexp{
-		regexp.MustCompile(`^1panel_mongodb_(.+)_\d{14}[A-Za-z0-9]*$`),
+		regexp.MustCompile(`^gpupanel_mongodb_(.+)_\d{14}[A-Za-z0-9]*$`),
 		regexp.MustCompile(`^db_(.+)_\d{14}[A-Za-z0-9]*$`),
 		regexp.MustCompile(`^(.+)_\d{14}[A-Za-z0-9]*$`),
 	}

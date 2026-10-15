@@ -1,6 +1,6 @@
 package menutree
 
-import "github.com/1Panel-dev/1Panel/core/app/dto"
+import "github.com/avaargsh/GPUPanel/core/app/dto"
 
 const (
 	xpackMenuID    = "11"

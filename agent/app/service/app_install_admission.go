@@ -7,10 +7,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/1Panel-dev/1Panel/agent/app/model"
-	"github.com/1Panel-dev/1Panel/agent/app/task"
-	"github.com/1Panel-dev/1Panel/agent/constant"
-	"github.com/1Panel-dev/1Panel/agent/global"
+	"github.com/avaargsh/GPUPanel/agent/app/model"
+	"github.com/avaargsh/GPUPanel/agent/app/task"
+	"github.com/avaargsh/GPUPanel/agent/constant"
+	"github.com/avaargsh/GPUPanel/agent/global"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
@@ -86,9 +86,9 @@ func markAppInstallAdmissionFailed(db *gorm.DB, id string) error {
 		Where("id = ? AND type = ? AND operate = ? AND status = ? AND resource_id = 0",
 			id, task.TaskScopeApp, task.TaskInstall, constant.StatusExecuting).
 		Updates(map[string]interface{}{
-			"status": constant.StatusFailed,
+			"status":    constant.StatusFailed,
 			"error_msg": "installation was not admitted; inspect installed applications for partial effects",
-			"end_at": time.Now().UTC(),
+			"end_at":    time.Now().UTC(),
 		})
 	return result.Error
 }

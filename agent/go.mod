@@ -1,4 +1,4 @@
-module github.com/1Panel-dev/1Panel/agent
+module github.com/avaargsh/GPUPanel/agent
 
 go 1.26.6
 

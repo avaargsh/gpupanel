@@ -16,28 +16,28 @@ import (
 	"strings"
 	"time"
 
-	"github.com/1Panel-dev/1Panel/agent/app/api/v2/helper"
-	"github.com/1Panel-dev/1Panel/agent/app/dto"
-	"github.com/1Panel-dev/1Panel/agent/app/dto/request"
-	"github.com/1Panel-dev/1Panel/agent/app/dto/response"
-	"github.com/1Panel-dev/1Panel/agent/app/model"
-	"github.com/1Panel-dev/1Panel/agent/app/repo"
-	"github.com/1Panel-dev/1Panel/agent/app/task"
-	"github.com/1Panel-dev/1Panel/agent/buserr"
-	"github.com/1Panel-dev/1Panel/agent/constant"
-	"github.com/1Panel-dev/1Panel/agent/global"
-	"github.com/1Panel-dev/1Panel/agent/i18n"
-	"github.com/1Panel-dev/1Panel/agent/utils/cmd"
-	"github.com/1Panel-dev/1Panel/agent/utils/common"
-	"github.com/1Panel-dev/1Panel/agent/utils/compose"
-	"github.com/1Panel-dev/1Panel/agent/utils/docker"
-	"github.com/1Panel-dev/1Panel/agent/utils/env"
-	"github.com/1Panel-dev/1Panel/agent/utils/files"
-	"github.com/1Panel-dev/1Panel/agent/utils/nginx"
-	"github.com/1Panel-dev/1Panel/agent/utils/nginx/parser"
-	"github.com/1Panel-dev/1Panel/agent/utils/re"
-	"github.com/1Panel-dev/1Panel/agent/utils/req_helper"
-	"github.com/1Panel-dev/1Panel/agent/utils/xpack"
+	"github.com/avaargsh/GPUPanel/agent/app/api/v1/helper"
+	"github.com/avaargsh/GPUPanel/agent/app/dto"
+	"github.com/avaargsh/GPUPanel/agent/app/dto/request"
+	"github.com/avaargsh/GPUPanel/agent/app/dto/response"
+	"github.com/avaargsh/GPUPanel/agent/app/model"
+	"github.com/avaargsh/GPUPanel/agent/app/repo"
+	"github.com/avaargsh/GPUPanel/agent/app/task"
+	"github.com/avaargsh/GPUPanel/agent/buserr"
+	"github.com/avaargsh/GPUPanel/agent/constant"
+	"github.com/avaargsh/GPUPanel/agent/global"
+	"github.com/avaargsh/GPUPanel/agent/i18n"
+	"github.com/avaargsh/GPUPanel/agent/utils/cmd"
+	"github.com/avaargsh/GPUPanel/agent/utils/common"
+	"github.com/avaargsh/GPUPanel/agent/utils/compose"
+	"github.com/avaargsh/GPUPanel/agent/utils/docker"
+	"github.com/avaargsh/GPUPanel/agent/utils/env"
+	"github.com/avaargsh/GPUPanel/agent/utils/files"
+	"github.com/avaargsh/GPUPanel/agent/utils/nginx"
+	"github.com/avaargsh/GPUPanel/agent/utils/nginx/parser"
+	"github.com/avaargsh/GPUPanel/agent/utils/re"
+	"github.com/avaargsh/GPUPanel/agent/utils/req_helper"
+	"github.com/avaargsh/GPUPanel/agent/utils/xpack"
 	"github.com/compose-spec/compose-go/v2/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/pkg/errors"
@@ -450,7 +450,7 @@ func deleteAppInstall(deleteReq request.AppInstallDelete) error {
 		}
 
 		_ = backupRepo.DeleteRecord(ctx, repo.WithByType("app"), repo.WithByName(install.App.Key), repo.WithByDetailName(install.Name))
-		uploadDir := path.Join(global.Dir.BaseDir, fmt.Sprintf("1panel/uploads/app/%s/%s", install.App.Key, install.Name))
+		uploadDir := path.Join(global.Dir.BaseDir, fmt.Sprintf("gpupanel/uploads/app/%s/%s", install.App.Key, install.Name))
 		if _, err := os.Stat(uploadDir); err == nil {
 			_ = os.RemoveAll(uploadDir)
 		}
@@ -713,7 +713,7 @@ func mergeOpenrestyModuleVolumes(serviceValue, oldServiceValue map[string]interf
 		if !ok {
 			continue
 		}
-		if !strings.Contains(containerPath, nginxModuleEnabledConfDir) && !strings.Contains(containerPath, "nginx/modules/1panel") {
+		if !strings.Contains(containerPath, nginxModuleEnabledConfDir) && !strings.Contains(containerPath, "nginx/modules/gpupanel") {
 			continue
 		}
 		if _, ok = existing[containerPath]; ok {

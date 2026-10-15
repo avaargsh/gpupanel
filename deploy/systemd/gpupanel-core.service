@@ -1,0 +1,18 @@
+[Unit]
+Description=GPUPanel Core Service
+Documentation=https://github.com/avaargsh/GPUPanel
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/gpupanel
+ExecStart=/opt/gpupanel/gpupanel-core
+Restart=on-failure
+RestartSec=5
+LimitNOFILE=1048576
+LimitNPROC=1048576
+TasksMax=infinity
+
+[Install]
+WantedBy=multi-user.target

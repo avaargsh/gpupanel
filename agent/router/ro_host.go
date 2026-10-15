@@ -1,7 +1,7 @@
 package router
 
 import (
-	v2 "github.com/1Panel-dev/1Panel/agent/app/api/v2"
+	v1 "github.com/avaargsh/GPUPanel/agent/app/api/v1"
 	"github.com/gin-gonic/gin"
 )
 
@@ -9,7 +9,7 @@ type HostRouter struct{}
 
 func (s *HostRouter) InitRouter(Router *gin.RouterGroup) {
 	hostRouter := Router.Group("hosts")
-	baseApi := v2.ApiGroupApp.BaseApi
+	baseApi := v1.ApiGroupApp.BaseApi
 	Router.POST("/internal/terminal/sessions/revoke", baseApi.RevokeTerminalSessions)
 	Router.GET("/internal/terminal/capabilities", baseApi.TerminalCapabilities)
 	{

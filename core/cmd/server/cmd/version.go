@@ -3,9 +3,9 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/1Panel-dev/1Panel/core/cmd/server/conf"
-	"github.com/1Panel-dev/1Panel/core/global"
-	"github.com/1Panel-dev/1Panel/core/i18n"
+	"github.com/avaargsh/GPUPanel/core/cmd/server/conf"
+	"github.com/avaargsh/GPUPanel/core/global"
+	"github.com/avaargsh/GPUPanel/core/i18n"
 	"gopkg.in/yaml.v3"
 
 	"github.com/spf13/cobra"
@@ -20,7 +20,7 @@ var versionCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		i18n.UseI18nForCmd(language)
 		if !isRoot() {
-			fmt.Println(i18n.GetMsgWithMapForCmd("SudoHelper", map[string]interface{}{"cmd": "sudo 1pctl version"}))
+			fmt.Println(i18n.GetMsgWithMapForCmd("SudoHelper", map[string]interface{}{"cmd": "sudo pctl version"}))
 			return nil
 		}
 		db, err := loadDBConn("core.db")

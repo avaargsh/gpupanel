@@ -1,11 +1,11 @@
 package router
 
 import (
-	v2 "github.com/1Panel-dev/1Panel/agent/app/api/v2"
-	"github.com/1Panel-dev/1Panel/agent/global"
-	"github.com/1Panel-dev/1Panel/agent/i18n"
-	"github.com/1Panel-dev/1Panel/agent/middleware"
-	rou "github.com/1Panel-dev/1Panel/agent/router"
+	v1 "github.com/avaargsh/GPUPanel/agent/app/api/v1"
+	"github.com/avaargsh/GPUPanel/agent/global"
+	"github.com/avaargsh/GPUPanel/agent/i18n"
+	"github.com/avaargsh/GPUPanel/agent/middleware"
+	rou "github.com/avaargsh/GPUPanel/agent/router"
 	"github.com/gin-gonic/gin"
 )
 
@@ -17,7 +17,7 @@ func Routers() *gin.Engine {
 	Router = gin.Default()
 	Router.Use(i18n.UseI18n())
 
-	PrivateGroup := Router.Group("/api/v2")
+	PrivateGroup := Router.Group("/api/v1")
 	if !global.IsMaster {
 		PrivateGroup.Use(middleware.Certificate())
 	}
@@ -25,7 +25,7 @@ func Routers() *gin.Engine {
 	for _, router := range rou.RouterGroupApp {
 		router.InitRouter(PrivateGroup)
 	}
-	PrivateGroup.GET("/health/check", v2.ApiGroupApp.BaseApi.CheckHealth)
+	PrivateGroup.GET("/health/check", v1.ApiGroupApp.BaseApi.CheckHealth)
 
 	return Router
 }

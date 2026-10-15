@@ -1,10 +1,10 @@
 package dto
 
 import (
-	"github.com/1Panel-dev/1Panel/agent/utils/firewall"
-	dockerfirewall "github.com/1Panel-dev/1Panel/agent/utils/firewall/docker_guard"
-	"github.com/1Panel-dev/1Panel/agent/utils/firewall/filter"
-	"github.com/1Panel-dev/1Panel/agent/utils/firewall/forwarding"
+	"github.com/avaargsh/GPUPanel/agent/utils/firewall"
+	dockerfirewall "github.com/avaargsh/GPUPanel/agent/utils/firewall/docker_guard"
+	"github.com/avaargsh/GPUPanel/agent/utils/firewall/filter"
+	"github.com/avaargsh/GPUPanel/agent/utils/firewall/forwarding"
 )
 
 type FirewallSubsystemStatus struct {

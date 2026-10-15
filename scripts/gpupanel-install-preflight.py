@@ -21,7 +21,8 @@ OLD_PATHS = ("usr/local/bin/1pctl", "etc/1panel", "opt/1panel",
 # A repeated GPUPanel install can be just as destructive as a 1Panel collision.
 # These are candidate ownership paths, not a declaration that installation
 # into any path is implemented or authorized.
-GPUPANEL_PATHS = ("usr/local/bin/gpupanel", "usr/local/bin/gpupanel-agent",
+GPUPANEL_PATHS = ("usr/local/bin/pctl", "usr/local/bin/gpupanel-core",
+                  "etc/systemd/system/gpupanel-core.service", "usr/local/bin/gpupanel", "usr/local/bin/gpupanel-agent",
                   "etc/gpupanel", "opt/gpupanel", "var/lib/gpupanel",
                   "etc/systemd/system/gpupanel.service",
                   "etc/systemd/system/gpupanel-agent.service")

@@ -1,0 +1,35 @@
+{
+  "boot_status_code": "enabled-by-generator",
+  "datasource": "nocloudnet",
+  "detail": "DataSourceNoCloudNet [seed=dmi,http://10.0.2.2:18089/]",
+  "errors": [],
+  "extended_status": "done",
+  "init": {
+    "errors": [],
+    "finished": 6.79,
+    "recoverable_errors": {},
+    "start": 4.81
+  },
+  "init-local": {
+    "errors": [],
+    "finished": 2.7,
+    "recoverable_errors": {},
+    "start": 2.07
+  },
+  "last_update": "Thu, 01 Jan 1970 00:00:10 +0000",
+  "modules-config": {
+    "errors": [],
+    "finished": 7.47,
+    "recoverable_errors": {},
+    "start": 7.05
+  },
+  "modules-final": {
+    "errors": [],
+    "finished": 10.94,
+    "recoverable_errors": {},
+    "start": 10.86
+  },
+  "recoverable_errors": {},
+  "stage": null,
+  "status": "done"
+}

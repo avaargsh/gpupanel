@@ -10,10 +10,10 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/1Panel-dev/1Panel/agent/app/model"
-	providercatalog "github.com/1Panel-dev/1Panel/agent/app/provider"
-	"github.com/1Panel-dev/1Panel/agent/app/repo"
-	"github.com/1Panel-dev/1Panel/agent/global"
+	"github.com/avaargsh/GPUPanel/agent/app/model"
+	providercatalog "github.com/avaargsh/GPUPanel/agent/app/provider"
+	"github.com/avaargsh/GPUPanel/agent/app/repo"
+	"github.com/avaargsh/GPUPanel/agent/global"
 	"gorm.io/gorm"
 )
 

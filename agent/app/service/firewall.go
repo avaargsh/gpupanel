@@ -12,19 +12,19 @@ import (
 	"sync"
 	"time"
 
-	"github.com/1Panel-dev/1Panel/agent/app/dto"
-	"github.com/1Panel-dev/1Panel/agent/app/repo"
-	"github.com/1Panel-dev/1Panel/agent/app/task"
-	"github.com/1Panel-dev/1Panel/agent/buserr"
-	"github.com/1Panel-dev/1Panel/agent/constant"
-	"github.com/1Panel-dev/1Panel/agent/global"
-	"github.com/1Panel-dev/1Panel/agent/i18n"
-	"github.com/1Panel-dev/1Panel/agent/utils/firewall"
-	"github.com/1Panel-dev/1Panel/agent/utils/firewall/filter"
-	filterfirewalld "github.com/1Panel-dev/1Panel/agent/utils/firewall/filter/providers/firewalld"
-	filterufw "github.com/1Panel-dev/1Panel/agent/utils/firewall/filter/providers/ufw"
-	"github.com/1Panel-dev/1Panel/agent/utils/firewall/lifecycle"
-	lifecycleproviders "github.com/1Panel-dev/1Panel/agent/utils/firewall/lifecycle/providers"
+	"github.com/avaargsh/GPUPanel/agent/app/dto"
+	"github.com/avaargsh/GPUPanel/agent/app/repo"
+	"github.com/avaargsh/GPUPanel/agent/app/task"
+	"github.com/avaargsh/GPUPanel/agent/buserr"
+	"github.com/avaargsh/GPUPanel/agent/constant"
+	"github.com/avaargsh/GPUPanel/agent/global"
+	"github.com/avaargsh/GPUPanel/agent/i18n"
+	"github.com/avaargsh/GPUPanel/agent/utils/firewall"
+	"github.com/avaargsh/GPUPanel/agent/utils/firewall/filter"
+	filterfirewalld "github.com/avaargsh/GPUPanel/agent/utils/firewall/filter/providers/firewalld"
+	filterufw "github.com/avaargsh/GPUPanel/agent/utils/firewall/filter/providers/ufw"
+	"github.com/avaargsh/GPUPanel/agent/utils/firewall/lifecycle"
+	lifecycleproviders "github.com/avaargsh/GPUPanel/agent/utils/firewall/lifecycle/providers"
 	"github.com/google/uuid"
 )
 
@@ -974,7 +974,7 @@ func (s *FirewallService) ensureWebsitePorts(ctx context.Context, ports map[stri
 	if err != nil {
 		return err
 	}
-	const comment = "1panel website"
+	const comment = "gpupanel website"
 	rules := make([]filter.FirewallRule, 0, len(ports))
 	var scopes []filter.Scope
 	seenScopes := make(map[string]bool)

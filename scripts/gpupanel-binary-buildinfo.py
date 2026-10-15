@@ -22,7 +22,7 @@ spec = importlib.util.spec_from_file_location("gpupanel_artifact_license_guard",
 attestation = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(attestation)
 
-BINARIES = {"core": "bin/1panel-core", "agent": "bin/1panel-agent"}
+BINARIES = {"core": "bin/gpupanel-core", "agent": "bin/gpupanel-agent"}
 MODULE_LINE = re.compile(r"(?m)^module\s+(\S+)\s*$")
 GO_VERSION = re.compile(r":\s+(go\d+\.\d+(?:\.\d+)?\S*)\s*$")
 

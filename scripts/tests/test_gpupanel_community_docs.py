@@ -34,7 +34,7 @@ class CommunityDocsTest(unittest.TestCase):
     def test_contribution_commands_exist(self):
         docs = (ROOT / "CONTRIBUTING.md").read_text()
         self.assertIn("self-test --human", docs)
-        self.assertIn("npm run type-check", docs)
+        self.assertIn("pnpm typecheck", docs)
         self.assertIn("SECURITY.md", docs)
         self.assertTrue((ROOT / "scripts/gpupanel-bootstrap.py").is_file())
 
@@ -45,7 +45,7 @@ class CommunityDocsTest(unittest.TestCase):
         pr = (ROOT / ".github/PULL_REQUEST_TEMPLATE.md").read_text()
         for name in ("core/", "agent/", "frontend/", "catalog/"):
             self.assertIn(name, contract)
-        for phrase in ("500 physical lines", "npm run type-check", "npm run build:pro",
+        for phrase in ("500 physical lines", "pnpm typecheck", "pnpm build",
                        "idempotency", "GPL-3.0", "NOT RUN"):
             self.assertIn(phrase, contract)
         self.assertIn("fork", adr.lower())
@@ -54,7 +54,7 @@ class CommunityDocsTest(unittest.TestCase):
         self.assertIn("ADR-0001", contributing)
         for phrase in ("Security, isolation", "rollback", "N/A", "head SHA"):
             self.assertIn(phrase, pr)
-        self.assertTrue((ROOT / "frontend/package-lock.json").is_file())
+        self.assertTrue((ROOT / "frontend/pnpm-lock.yaml").is_file())
         self.assertFalse((ROOT / "bun.lock").exists())
         self.assertFalse((ROOT / "bun.lockb").exists())
 

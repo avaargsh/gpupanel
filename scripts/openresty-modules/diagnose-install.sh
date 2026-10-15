@@ -16,7 +16,7 @@ usage() {
     cat <<'EOF'
 Usage: diagnose-install.sh INSTALL_DIR [options]
 
-Collect a mostly read-only diagnostic report for an installed 1Panel OpenResty.
+Collect a mostly read-only diagnostic report for an installed GPUPanel OpenResty.
 The only container command with behavior is `nginx -t`; no reload is performed.
 
 Options:
@@ -255,12 +255,12 @@ import sys
 
 config_root = pathlib.Path(sys.argv[1])
 modules_root = pathlib.Path(sys.argv[2]).resolve()
-container_prefix = "/usr/local/openresty/nginx/modules/1panel/"
+container_prefix = "/usr/local/openresty/nginx/modules/gpupanel/"
 pattern = re.compile(r"^\s*load_module\s+([^;]+);", re.MULTILINE)
 failed = False
 print("config\tcontainer_path\thost_path\tresult")
 if config_root.exists():
-    for config in sorted(config_root.glob("1panel-module-*.conf")):
+    for config in sorted(config_root.glob("gpupanel-module-*.conf")):
         content = config.read_text(encoding="utf-8")
         for value in pattern.findall(content):
             container_path = value.strip().strip('"\'')
@@ -305,7 +305,7 @@ collect_compose_state() {
 
     if jq -e '
         [.services[].volumes[]?]
-        | (any(.[]; (.target | rtrimstr("/")) == "/usr/local/openresty/nginx/modules/1panel" and .read_only == true))
+        | (any(.[]; (.target | rtrimstr("/")) == "/usr/local/openresty/nginx/modules/gpupanel" and .read_only == true))
           and (any(.[]; (.target | rtrimstr("/")) == "/usr/local/openresty/nginx/conf/modules-enabled" and .read_only == true))
     ' "${OUTPUT_DIR}/compose.json" >/dev/null; then
         mark_passed "read-only module mounts"
@@ -341,10 +341,10 @@ modules = json.load(open(sys.argv[1], encoding="utf-8"))
 current = sys.argv[2]
 config_root = pathlib.Path(sys.argv[3])
 pattern = re.compile(r"^\s*load_module\s+([^;]+);", re.MULTILINE)
-prefix = "/usr/local/openresty/nginx/modules/1panel/"
+prefix = "/usr/local/openresty/nginx/modules/gpupanel/"
 loaded = set()
 if config_root.exists():
-    for config in config_root.glob("1panel-module-*.conf"):
+    for config in config_root.glob("gpupanel-module-*.conf"):
         for value in pattern.findall(config.read_text(encoding="utf-8")):
             container_path = value.strip().strip('"\'')
             if container_path.startswith(prefix):
@@ -430,10 +430,10 @@ collect_container_state() {
     docker exec "${CONTAINER}" /usr/local/openresty/nginx/sbin/nginx -V \
         >"${OUTPUT_DIR}/nginx-version.txt" 2>&1 || mark_failed "nginx -V"
     docker exec "${CONTAINER}" /bin/sh -c \
-        'find /usr/local/openresty/nginx/modules/1panel -type f -name "*.so" -exec sha256sum {} \; | sort' \
+        'find /usr/local/openresty/nginx/modules/gpupanel -type f -name "*.so" -exec sha256sum {} \; | sort' \
         >"${OUTPUT_DIR}/container-artifact-checksums.txt" 2>&1 || true
     docker exec "${CONTAINER}" /bin/sh -c \
-        'for f in $(find /usr/local/openresty/nginx/modules/1panel -type f -name "*.so" | sort); do echo "### $f"; ldd "$f" || true; done' \
+        'for f in $(find /usr/local/openresty/nginx/modules/gpupanel -type f -name "*.so" | sort); do echo "### $f"; ldd "$f" || true; done' \
         >"${OUTPUT_DIR}/container-artifact-ldd.txt" 2>&1 || true
 
     if [[ "${NGINX_TEST}" -eq 1 ]]; then

@@ -12,16 +12,16 @@ import (
 	"strings"
 	"time"
 
-	"github.com/1Panel-dev/1Panel/agent/app/model"
-	"github.com/1Panel-dev/1Panel/agent/global"
-	"github.com/1Panel-dev/1Panel/agent/i18n"
-	"github.com/1Panel-dev/1Panel/agent/utils/cmd"
+	"github.com/avaargsh/GPUPanel/agent/app/model"
+	"github.com/avaargsh/GPUPanel/agent/global"
+	"github.com/avaargsh/GPUPanel/agent/i18n"
+	"github.com/avaargsh/GPUPanel/agent/utils/cmd"
 	"github.com/docker/docker/api/types/image"
 	"github.com/pkg/errors"
 
-	"github.com/1Panel-dev/1Panel/agent/buserr"
-	"github.com/1Panel-dev/1Panel/agent/utils/docker"
-	"github.com/1Panel-dev/1Panel/agent/utils/files"
+	"github.com/avaargsh/GPUPanel/agent/buserr"
+	"github.com/avaargsh/GPUPanel/agent/utils/docker"
+	"github.com/avaargsh/GPUPanel/agent/utils/files"
 	_ "github.com/jackc/pgx/v5/stdlib"
 )
 

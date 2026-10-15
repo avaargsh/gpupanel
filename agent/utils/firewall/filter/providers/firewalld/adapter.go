@@ -9,8 +9,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/1Panel-dev/1Panel/agent/utils/cmd"
-	"github.com/1Panel-dev/1Panel/agent/utils/firewall/filter"
+	"github.com/avaargsh/GPUPanel/agent/utils/cmd"
+	"github.com/avaargsh/GPUPanel/agent/utils/firewall/filter"
 	"github.com/mattn/go-shellwords"
 )
 

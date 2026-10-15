@@ -10,11 +10,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/1Panel-dev/1Panel/core/app/model"
-	"github.com/1Panel-dev/1Panel/core/app/repo"
-	"github.com/1Panel-dev/1Panel/core/global"
-	"github.com/1Panel-dev/1Panel/core/init/proxy"
-	"github.com/1Panel-dev/1Panel/core/init/session/psession"
+	"github.com/avaargsh/GPUPanel/core/app/model"
+	"github.com/avaargsh/GPUPanel/core/app/repo"
+	"github.com/avaargsh/GPUPanel/core/global"
+	"github.com/avaargsh/GPUPanel/core/init/proxy"
+	"github.com/avaargsh/GPUPanel/core/init/session/psession"
 	"github.com/gin-gonic/gin"
 	"github.com/glebarez/sqlite"
 	"gorm.io/gorm"
@@ -27,10 +27,14 @@ func realUDSEvidenceSessionCookie(t *testing.T, user psession.SessionUser, ttl i
 	t.Helper()
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)
-	c.Request = httptest.NewRequest(http.MethodGet, "/api/v2/apps/installed/evidence/1", nil)
-	if err := global.SESSION.SetFresh(c, user, false, ttl); err != nil { t.Fatal(err) }
+	c.Request = httptest.NewRequest(http.MethodGet, "/api/v1/apps/installed/evidence/1", nil)
+	if err := global.SESSION.SetFresh(c, user, false, ttl); err != nil {
+		t.Fatal(err)
+	}
 	for _, cookie := range w.Result().Cookies() {
-		if cookie.HttpOnly { return cookie }
+		if cookie.HttpOnly {
+			return cookie
+		}
 	}
 	t.Fatal("no authenticated session cookie was minted")
 	return nil
@@ -53,10 +57,16 @@ func TestCoreEvidenceRealUnixAgentAndDocker(t *testing.T) {
 		global.DB, global.SESSION, proxy.LocalAgentProxy = originalDB, originalSession, originalProxy
 	})
 	db, err := gorm.Open(sqlite.Open(filepath.Join(t.TempDir(), "core.sqlite")), &gorm.Config{})
-	if err != nil { t.Fatal(err) }
-	if err := db.AutoMigrate(&model.Setting{}); err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := db.AutoMigrate(&model.Setting{}); err != nil {
+		t.Fatal(err)
+	}
 	global.DB = db
-	if err := repo.NewISettingRepo().UpdateOrCreate("SessionTimeout", "3600"); err != nil { t.Fatal(err) }
+	if err := repo.NewISettingRepo().UpdateOrCreate("SessionTimeout", "3600"); err != nil {
+		t.Fatal(err)
+	}
 	global.SESSION = psession.NewPSession("real-unix-evidence")
 	admin := realUDSEvidenceSessionCookie(t, psession.SessionUser{
 		ID: psession.SuperAdminSessionUserID, Name: "admin", Role: "ADMIN",
@@ -75,16 +85,16 @@ func TestCoreEvidenceRealUnixAgentAndDocker(t *testing.T) {
 		c.Next()
 	})
 	engine.Use(Proxy())
-	engine.GET("/api/v2/apps/installed/evidence/:appInstallId", func(c *gin.Context) {
+	engine.GET("/api/v1/apps/installed/evidence/:appInstallId", func(c *gin.Context) {
 		c.Status(http.StatusTeapot)
 	})
 	server := httptest.NewServer(engine)
 	defer server.Close()
 	tests := []struct {
 		name, node, query string
-		cookie *http.Cookie
-		apiKey bool
-		want int
+		cookie            *http.Cookie
+		apiKey            bool
+		want              int
 	}{
 		{name: "anonymous header spoof denied", node: "local", want: http.StatusUnauthorized},
 		{name: "other identity denied", cookie: other, node: "local", want: http.StatusForbidden},
@@ -96,17 +106,27 @@ func TestCoreEvidenceRealUnixAgentAndDocker(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			req, err := http.NewRequest(http.MethodGet, server.URL+"/api/v2/apps/installed/evidence/1"+tc.query, nil)
-			if err != nil { t.Fatal(err) }
+			req, err := http.NewRequest(http.MethodGet, server.URL+"/api/v1/apps/installed/evidence/1"+tc.query, nil)
+			if err != nil {
+				t.Fatal(err)
+			}
 			req.Header.Set("CurrentNode", tc.node)
 			req.Header.Set("X-Panel-User", "admin")
-			if tc.cookie != nil { req.AddCookie(tc.cookie) }
-			if tc.apiKey { req.Header.Set("X-CI-Valid-API-Key", "1") }
+			if tc.cookie != nil {
+				req.AddCookie(tc.cookie)
+			}
+			if tc.apiKey {
+				req.Header.Set("X-CI-Valid-API-Key", "1")
+			}
 			resp, err := http.DefaultClient.Do(req)
-			if err != nil { t.Fatal(err) }
+			if err != nil {
+				t.Fatal(err)
+			}
 			body, err := io.ReadAll(io.LimitReader(resp.Body, 512*1024))
 			_ = resp.Body.Close()
-			if err != nil { t.Fatal(err) }
+			if err != nil {
+				t.Fatal(err)
+			}
 			if resp.StatusCode != tc.want {
 				t.Fatalf("HTTP %d, expected %d: %q", resp.StatusCode, tc.want, string(body))
 			}
@@ -120,17 +140,21 @@ func TestCoreEvidenceRealUnixAgentAndDocker(t *testing.T) {
 				Code int `json:"code"`
 				Data struct {
 					Classification string `json:"classification"`
-					Verified bool `json:"verified"`
-					TaskID string `json:"taskId"`
-					Containers []struct {
-						Name string `json:"name"`
+					Verified       bool   `json:"verified"`
+					TaskID         string `json:"taskId"`
+					Containers     []struct {
+						Name  string `json:"name"`
 						State string `json:"state"`
 					} `json:"containers"`
 				} `json:"data"`
 			}
-			if err := json.Unmarshal(body, &out); err != nil { t.Fatal(err) }
+			if err := json.Unmarshal(body, &out); err != nil {
+				t.Fatal(err)
+			}
 			expected := "CONSISTENT"
-			if phase == "exited" { expected = "PARTIAL" }
+			if phase == "exited" {
+				expected = "PARTIAL"
+			}
 			if out.Code != 200 || out.Data.Classification != expected ||
 				out.Data.Verified || len(out.Data.Containers) != 1 ||
 				out.Data.Containers[0].State != phase || out.Data.TaskID == "" ||

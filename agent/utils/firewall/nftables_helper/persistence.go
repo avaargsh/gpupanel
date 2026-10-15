@@ -9,12 +9,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/1Panel-dev/1Panel/agent/global"
-	"github.com/1Panel-dev/1Panel/agent/utils/cmd"
-	"github.com/1Panel-dev/1Panel/agent/utils/firewall/filter"
+	"github.com/avaargsh/GPUPanel/agent/global"
+	"github.com/avaargsh/GPUPanel/agent/utils/cmd"
+	"github.com/avaargsh/GPUPanel/agent/utils/firewall/filter"
 )
 
-const RulesFile = "1panel_filter.nft"
+const RulesFile = "gpupanel_filter.nft"
 
 func PersistRuleset(ctx context.Context) error {
 	var ruleset strings.Builder

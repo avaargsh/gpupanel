@@ -7,15 +7,15 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/1Panel-dev/1Panel/core/app/auth"
-	baseDto "github.com/1Panel-dev/1Panel/core/app/dto"
-	"github.com/1Panel-dev/1Panel/core/app/repo"
-	"github.com/1Panel-dev/1Panel/core/global"
-	"github.com/1Panel-dev/1Panel/core/init/session/psession"
-	"github.com/1Panel-dev/1Panel/core/utils/mfa"
-	"github.com/1Panel-dev/1Panel/core/utils/req_helper/proxy_local"
-	terminalsession "github.com/1Panel-dev/1Panel/core/utils/terminal_session"
-	"github.com/1Panel-dev/1Panel/core/utils/xpack/providers"
+	"github.com/avaargsh/GPUPanel/core/app/auth"
+	baseDto "github.com/avaargsh/GPUPanel/core/app/dto"
+	"github.com/avaargsh/GPUPanel/core/app/repo"
+	"github.com/avaargsh/GPUPanel/core/global"
+	"github.com/avaargsh/GPUPanel/core/init/session/psession"
+	"github.com/avaargsh/GPUPanel/core/utils/mfa"
+	"github.com/avaargsh/GPUPanel/core/utils/req_helper/proxy_local"
+	terminalsession "github.com/avaargsh/GPUPanel/core/utils/terminal_session"
+	"github.com/avaargsh/GPUPanel/core/utils/xpack/providers"
 	"github.com/gin-gonic/gin"
 )
 
@@ -159,7 +159,7 @@ func (a *authHelper) RevokeTerminalSessions(scope, userID, authSessionID string)
 	}
 	_, err = proxy_local.NewLocalClientWithContext(
 		context.Background(),
-		"/api/v2/internal/terminal/sessions/revoke",
+		"/api/v1/internal/terminal/sessions/revoke",
 		http.MethodPost,
 		bytes.NewReader(body),
 		nil,

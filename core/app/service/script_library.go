@@ -11,18 +11,18 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/1Panel-dev/1Panel/core/app/dto"
-	"github.com/1Panel-dev/1Panel/core/app/model"
-	"github.com/1Panel-dev/1Panel/core/app/repo"
-	"github.com/1Panel-dev/1Panel/core/app/task"
-	"github.com/1Panel-dev/1Panel/core/buserr"
-	"github.com/1Panel-dev/1Panel/core/constant"
-	"github.com/1Panel-dev/1Panel/core/global"
-	"github.com/1Panel-dev/1Panel/core/i18n"
-	"github.com/1Panel-dev/1Panel/core/utils/common"
-	"github.com/1Panel-dev/1Panel/core/utils/files"
-	"github.com/1Panel-dev/1Panel/core/utils/req_helper"
-	"github.com/1Panel-dev/1Panel/core/utils/xpack"
+	"github.com/avaargsh/GPUPanel/core/app/dto"
+	"github.com/avaargsh/GPUPanel/core/app/model"
+	"github.com/avaargsh/GPUPanel/core/app/repo"
+	"github.com/avaargsh/GPUPanel/core/app/task"
+	"github.com/avaargsh/GPUPanel/core/buserr"
+	"github.com/avaargsh/GPUPanel/core/constant"
+	"github.com/avaargsh/GPUPanel/core/global"
+	"github.com/avaargsh/GPUPanel/core/i18n"
+	"github.com/avaargsh/GPUPanel/core/utils/common"
+	"github.com/avaargsh/GPUPanel/core/utils/files"
+	"github.com/avaargsh/GPUPanel/core/utils/req_helper"
+	"github.com/avaargsh/GPUPanel/core/utils/xpack"
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/copier"
 	"gopkg.in/yaml.v2"
@@ -267,7 +267,7 @@ func (u *ScriptService) sync(req dto.OperateByTaskID, versionRes []byte) error {
 			return fmt.Errorf("the format of data.yaml is err: %v", err)
 		}
 
-		tmpDir := path.Join(global.CONF.Base.InstallDir, "1panel/tmp/script")
+		tmpDir := path.Join(global.CONF.Base.InstallDir, "gpupanel/tmp/script")
 		if _, err := os.Stat(tmpDir); err != nil {
 			_ = os.MkdirAll(tmpDir, 0755)
 		}

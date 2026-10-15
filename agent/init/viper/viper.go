@@ -6,10 +6,10 @@ import (
 	"path"
 	"strconv"
 
-	"github.com/1Panel-dev/1Panel/agent/cmd/server/conf"
-	"github.com/1Panel-dev/1Panel/agent/global"
-	"github.com/1Panel-dev/1Panel/agent/utils/files"
-	"github.com/1Panel-dev/1Panel/agent/utils/xpack"
+	"github.com/avaargsh/GPUPanel/agent/cmd/server/conf"
+	"github.com/avaargsh/GPUPanel/agent/global"
+	"github.com/avaargsh/GPUPanel/agent/utils/files"
+	"github.com/avaargsh/GPUPanel/agent/utils/xpack"
 	"github.com/fsnotify/fsnotify"
 	"github.com/spf13/viper"
 	"gopkg.in/yaml.v3"
@@ -28,9 +28,9 @@ func Init() {
 	if config.Base.Mode != "" {
 		mode = config.Base.Mode
 	}
-	if mode == "dev" && fileOp.Stat("/opt/1panel/conf/app.yaml") {
+	if mode == "dev" && fileOp.Stat("/opt/gpupanel/conf/app.yaml") {
 		v.SetConfigName("app")
-		v.AddConfigPath(path.Join("/opt/1panel/conf"))
+		v.AddConfigPath(path.Join("/opt/gpupanel/conf"))
 		if err := v.ReadInConfig(); err != nil {
 			panic(fmt.Errorf("Fatal error config file: %s \n", err))
 		}

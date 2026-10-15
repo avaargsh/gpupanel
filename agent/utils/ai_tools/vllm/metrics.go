@@ -10,8 +10,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/1Panel-dev/1Panel/agent/app/model"
-	"github.com/1Panel-dev/1Panel/agent/utils/re"
+	"github.com/avaargsh/GPUPanel/agent/app/model"
+	"github.com/avaargsh/GPUPanel/agent/utils/re"
 )
 
 type Metrics map[string]map[string]float64

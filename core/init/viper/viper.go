@@ -6,9 +6,9 @@ import (
 	"os"
 	"path"
 
-	"github.com/1Panel-dev/1Panel/core/cmd/server/conf"
-	"github.com/1Panel-dev/1Panel/core/global"
-	"github.com/1Panel-dev/1Panel/core/utils/ctl_conf"
+	"github.com/avaargsh/GPUPanel/core/cmd/server/conf"
+	"github.com/avaargsh/GPUPanel/core/global"
+	"github.com/avaargsh/GPUPanel/core/utils/ctl_conf"
 	"github.com/fsnotify/fsnotify"
 	"github.com/spf13/viper"
 	"gopkg.in/yaml.v3"
@@ -30,10 +30,10 @@ func Init() {
 	if config.Base.Mode != "" {
 		mode = config.Base.Mode
 	}
-	_, err := os.Stat("/opt/1panel/conf/app.yaml")
+	_, err := os.Stat("/opt/gpupanel/conf/app.yaml")
 	if mode == "dev" && err == nil {
 		v.SetConfigName("app")
-		v.AddConfigPath(path.Join("/opt/1panel/conf"))
+		v.AddConfigPath(path.Join("/opt/gpupanel/conf"))
 		if err := v.ReadInConfig(); err != nil {
 			panic(fmt.Errorf("fatal error config file: %s", err))
 		}
@@ -61,7 +61,7 @@ func Init() {
 	if err := v.Unmarshal(&serverConfig); err != nil {
 		panic(err)
 	}
-	_, err = os.Stat("/opt/1panel/conf/app.yaml")
+	_, err = os.Stat("/opt/gpupanel/conf/app.yaml")
 	if mode == "dev" && err == nil {
 		if serverConfig.Base.InstallDir != "" {
 			baseDir = serverConfig.Base.InstallDir

@@ -10,19 +10,19 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/1Panel-dev/1Panel/agent/app/task"
-	"github.com/1Panel-dev/1Panel/agent/buserr"
+	"github.com/avaargsh/GPUPanel/agent/app/task"
+	"github.com/avaargsh/GPUPanel/agent/buserr"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 
-	"github.com/1Panel-dev/1Panel/agent/app/repo"
-	"github.com/1Panel-dev/1Panel/agent/global"
+	"github.com/avaargsh/GPUPanel/agent/app/repo"
+	"github.com/avaargsh/GPUPanel/agent/global"
 
-	"github.com/1Panel-dev/1Panel/agent/app/dto"
-	"github.com/1Panel-dev/1Panel/agent/constant"
-	"github.com/1Panel-dev/1Panel/agent/utils/compose"
-	"github.com/1Panel-dev/1Panel/agent/utils/docker"
-	"github.com/1Panel-dev/1Panel/agent/utils/encrypt"
+	"github.com/avaargsh/GPUPanel/agent/app/dto"
+	"github.com/avaargsh/GPUPanel/agent/constant"
+	"github.com/avaargsh/GPUPanel/agent/utils/compose"
+	"github.com/avaargsh/GPUPanel/agent/utils/docker"
+	"github.com/avaargsh/GPUPanel/agent/utils/encrypt"
 	dockerclient "github.com/docker/docker/client"
 	_ "github.com/go-sql-driver/mysql"
 )
@@ -99,7 +99,7 @@ func (u *RedisService) InstallCli(req dto.RedisCliInstall) (string, error) {
 		TaskID:   req.TaskID,
 		Name:     "1Panel-redis-cli-tools",
 		Image:    "redis:7.4.4",
-		Networks: []dto.ContainerNetwork{{Network: "1panel-network"}},
+		Networks: []dto.ContainerNetwork{{Network: "gpupanel-network"}},
 	}
 	running, err := taskRepo.GetFirst(
 		repo.WithByName(task.GetTaskName(item.Name, task.TaskCreate, task.TaskScopeContainer)),

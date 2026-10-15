@@ -23,6 +23,6 @@ func UpdatePanelPort(oldPort string, newPort uint) error {
 	if err != nil {
 		return err
 	}
-	_, err = NewLocalClient("/api/v2/hosts/firewall/port", http.MethodPost, bytes.NewReader(body), nil)
+	_, err = NewLocalClient("/api/v1/hosts/firewall/port", http.MethodPost, bytes.NewReader(body), nil)
 	return err
 }

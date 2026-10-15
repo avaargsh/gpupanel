@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/1Panel-dev/1Panel/agent/app/model"
-	"github.com/1Panel-dev/1Panel/agent/constant"
+	"github.com/avaargsh/GPUPanel/agent/app/model"
+	"github.com/avaargsh/GPUPanel/agent/constant"
 	"github.com/glebarez/sqlite"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
@@ -146,67 +146,81 @@ func TestAppInstallRestartRecoveryCoversLifecycleStates(t *testing.T) {
 	}
 }
 
-
 func TestInterruptedAppInstallationUnknownPreservesMetadata(t *testing.T) {
-    appDB, _, install := operationStatusTestDB(t)
-    install.Status = constant.StatusInstalling
-    if err := appDB.Omit(clause.Associations).Save(&install).Error; err != nil { t.Fatal(err) }
-    originalID, originalEnv, originalName := install.ID, install.Env, install.Name
-    if err := markInterruptedAppInstallationUnknown(appDB, &install); err != nil { t.Fatal(err) }
-    var stored model.AppInstall
-    if err := appDB.First(&stored, originalID).Error; err != nil { t.Fatal(err) }
-    if stored.Status != constant.StatusUnknown || install.Status != constant.StatusUnknown {
-        t.Fatalf("interrupted app marked %s/%s, expected Unknown", stored.Status, install.Status)
-    }
-    if stored.ID != originalID || stored.Env != originalEnv || stored.Name != originalName {
-        t.Fatalf("status-only recovery damaged install data: %+v", stored)
-    }
-    if stored.Message == "" {
-        t.Fatal("missing operator reconciliation warning")
-    }
-    // A subsequent restart must not alter UNKNOWN into a false terminal state.
-    if err := markInterruptedAppInstallationUnknown(appDB, &stored); err != nil { t.Fatal(err) }
-    if stored.Status != constant.StatusUnknown { t.Fatalf("repeat recovery changed %s", stored.Status) }
+	appDB, _, install := operationStatusTestDB(t)
+	install.Status = constant.StatusInstalling
+	if err := appDB.Omit(clause.Associations).Save(&install).Error; err != nil {
+		t.Fatal(err)
+	}
+	originalID, originalEnv, originalName := install.ID, install.Env, install.Name
+	if err := markInterruptedAppInstallationUnknown(appDB, &install); err != nil {
+		t.Fatal(err)
+	}
+	var stored model.AppInstall
+	if err := appDB.First(&stored, originalID).Error; err != nil {
+		t.Fatal(err)
+	}
+	if stored.Status != constant.StatusUnknown || install.Status != constant.StatusUnknown {
+		t.Fatalf("interrupted app marked %s/%s, expected Unknown", stored.Status, install.Status)
+	}
+	if stored.ID != originalID || stored.Env != originalEnv || stored.Name != originalName {
+		t.Fatalf("status-only recovery damaged install data: %+v", stored)
+	}
+	if stored.Message == "" {
+		t.Fatal("missing operator reconciliation warning")
+	}
+	// A subsequent restart must not alter UNKNOWN into a false terminal state.
+	if err := markInterruptedAppInstallationUnknown(appDB, &stored); err != nil {
+		t.Fatal(err)
+	}
+	if stored.Status != constant.StatusUnknown {
+		t.Fatalf("repeat recovery changed %s", stored.Status)
+	}
 }
 
 func TestInterruptedAppInstallationUnknownDoesNotClobberConcurrentUpdate(t *testing.T) {
-    appDB, _, install := operationStatusTestDB(t)
-    install.Status = constant.StatusInstalling
-    if err := appDB.Omit(clause.Associations).Save(&install).Error; err != nil { t.Fatal(err) }
-    snapshot := install
-    if err := appDB.Model(&model.AppInstall{}).Where("id = ?", install.ID).
-        Updates(map[string]interface{}{"status": constant.StatusRunning, "message": "newer operation"}).Error; err != nil {
-        t.Fatal(err)
-    }
-    if err := markInterruptedAppInstallationUnknown(appDB, &snapshot); err != nil { t.Fatal(err) }
-    var stored model.AppInstall
-    if err := appDB.First(&stored, install.ID).Error; err != nil { t.Fatal(err) }
-    if stored.Status != constant.StatusRunning || stored.Message != "newer operation" {
-        t.Fatalf("recovery overwrote newer operation: %s/%s", stored.Status, stored.Message)
-    }
+	appDB, _, install := operationStatusTestDB(t)
+	install.Status = constant.StatusInstalling
+	if err := appDB.Omit(clause.Associations).Save(&install).Error; err != nil {
+		t.Fatal(err)
+	}
+	snapshot := install
+	if err := appDB.Model(&model.AppInstall{}).Where("id = ?", install.ID).
+		Updates(map[string]interface{}{"status": constant.StatusRunning, "message": "newer operation"}).Error; err != nil {
+		t.Fatal(err)
+	}
+	if err := markInterruptedAppInstallationUnknown(appDB, &snapshot); err != nil {
+		t.Fatal(err)
+	}
+	var stored model.AppInstall
+	if err := appDB.First(&stored, install.ID).Error; err != nil {
+		t.Fatal(err)
+	}
+	if stored.Status != constant.StatusRunning || stored.Message != "newer operation" {
+		t.Fatalf("recovery overwrote newer operation: %s/%s", stored.Status, stored.Message)
+	}
 }
 
 func TestInterruptedAppInstallationUnknownCannotWriteWithoutDB(t *testing.T) {
-    _, _, install := operationStatusTestDB(t)
-    install.Status = constant.StatusInstalling
-    if err := markInterruptedAppInstallationUnknown(nil, &install); err == nil {
-        t.Fatal("missing app DB accepted status mutation")
-    }
+	_, _, install := operationStatusTestDB(t)
+	install.Status = constant.StatusInstalling
+	if err := markInterruptedAppInstallationUnknown(nil, &install); err == nil {
+		t.Fatal("missing app DB accepted status mutation")
+	}
 }
 
-
 func TestUnknownAppInstallationRejectsSideEffectingManagement(t *testing.T) {
-    for _, operation := range []string{"start", "stop", "restart", "delete", "upgrade", "rebuild", "reload", "update", "change-port"} {
-        if err := requireReconciledAppInstallation(constant.StatusUnknown, operation); err == nil {
-            t.Errorf("UNKNOWN install accepted %q side effect", operation)
-        }
-    }
-    for _, operation := range []string{"sync", "favorite"} {
-        if err := requireReconciledAppInstallation(constant.StatusUnknown, operation); err != nil {
-            t.Errorf("read/metadata operation %s rejected: %v", operation, err)
-        }
-    }
-    if err := requireReconciledAppInstallation(constant.StatusRunning, "start"); err != nil {
-        t.Fatalf("regular installed app unexpectedly denied: %v", err)
-    }
+	for _, operation := range []string{"start", "stop", "restart", "delete", "upgrade", "rebuild", "reload", "update", "change-port"} {
+		if err := requireReconciledAppInstallation(constant.StatusUnknown, operation); err == nil {
+			t.Errorf("UNKNOWN install accepted %q side effect", operation)
+		}
+	}
+	for _, operation := range []string{"sync", "favorite"} {
+		if err := requireReconciledAppInstallation(constant.StatusUnknown, operation); err != nil {
+			t.Errorf("read/metadata operation %s rejected: %v", operation, err)
+		}
+	}
+	if err := requireReconciledAppInstallation(constant.StatusRunning, "start"); err != nil {
+		t.Fatalf("regular installed app unexpectedly denied: %v", err)
+	}
 }

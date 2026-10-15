@@ -8,17 +8,17 @@ import (
 	"strings"
 	"time"
 
-	"github.com/1Panel-dev/1Panel/core/app/dto"
+	"github.com/avaargsh/GPUPanel/core/app/dto"
 
-	"github.com/1Panel-dev/1Panel/core/app/model"
-	"github.com/1Panel-dev/1Panel/core/app/repo"
-	"github.com/1Panel-dev/1Panel/core/constant"
-	"github.com/1Panel-dev/1Panel/core/global"
-	"github.com/1Panel-dev/1Panel/core/init/migration/helper"
-	"github.com/1Panel-dev/1Panel/core/utils/common"
-	"github.com/1Panel-dev/1Panel/core/utils/ctl_conf"
-	"github.com/1Panel-dev/1Panel/core/utils/encrypt"
-	"github.com/1Panel-dev/1Panel/core/utils/menutree"
+	"github.com/avaargsh/GPUPanel/core/app/model"
+	"github.com/avaargsh/GPUPanel/core/app/repo"
+	"github.com/avaargsh/GPUPanel/core/constant"
+	"github.com/avaargsh/GPUPanel/core/global"
+	"github.com/avaargsh/GPUPanel/core/init/migration/helper"
+	"github.com/avaargsh/GPUPanel/core/utils/common"
+	"github.com/avaargsh/GPUPanel/core/utils/ctl_conf"
+	"github.com/avaargsh/GPUPanel/core/utils/encrypt"
+	"github.com/avaargsh/GPUPanel/core/utils/menutree"
 	"github.com/go-gormigrate/gormigrate/v2"
 	"gorm.io/gorm"
 )
@@ -57,7 +57,7 @@ var InitSetting = &gormigrate.Migration{
 				return err
 			}
 		}
-		_ = ctl_conf.UpdateInFile("/usr/local/bin/1pctl", "ORIGINAL_PASSWORD", "**********")
+		_ = ctl_conf.UpdateInFile("/usr/local/bin/pctl", "ORIGINAL_PASSWORD", "**********")
 		if err := tx.Create(&model.Setting{Key: "Theme", Value: "light"}).Error; err != nil {
 			return err
 		}
@@ -330,7 +330,7 @@ var InitOneDrive = &gormigrate.Migration{
 		if err := tx.Create(&model.BackupAccount{
 			Name: "localhost",
 			Type: "LOCAL",
-			Vars: fmt.Sprintf("{\"dir\":\"%s\"}", path.Join(global.CONF.Base.InstallDir, "1panel/backup")),
+			Vars: fmt.Sprintf("{\"dir\":\"%s\"}", path.Join(global.CONF.Base.InstallDir, "gpupanel/backup")),
 		}).Error; err != nil {
 			return err
 		}

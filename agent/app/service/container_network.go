@@ -7,11 +7,11 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/1Panel-dev/1Panel/agent/app/dto"
-	"github.com/1Panel-dev/1Panel/agent/app/task"
-	"github.com/1Panel-dev/1Panel/agent/buserr"
-	"github.com/1Panel-dev/1Panel/agent/i18n"
-	"github.com/1Panel-dev/1Panel/agent/utils/docker"
+	"github.com/avaargsh/GPUPanel/agent/app/dto"
+	"github.com/avaargsh/GPUPanel/agent/app/task"
+	"github.com/avaargsh/GPUPanel/agent/buserr"
+	"github.com/avaargsh/GPUPanel/agent/i18n"
+	"github.com/avaargsh/GPUPanel/agent/utils/docker"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/client"
@@ -212,7 +212,7 @@ func cleanUnusedNetworks(t *task.Task, cli *client.Client) error {
 			return err
 		}
 		switch n.Name {
-		case "none", "host", "bridge", "1panel-network":
+		case "none", "host", "bridge", "gpupanel-network":
 			skipped++
 			continue
 		}

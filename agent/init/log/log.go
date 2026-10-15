@@ -7,9 +7,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/1Panel-dev/1Panel/agent/log"
+	"github.com/avaargsh/GPUPanel/agent/log"
 
-	"github.com/1Panel-dev/1Panel/agent/global"
+	"github.com/avaargsh/GPUPanel/agent/global"
 
 	"github.com/sirupsen/logrus"
 )
@@ -55,7 +55,7 @@ type MineFormatter struct{}
 func (s *MineFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 	detailInfo := ""
 	if entry.Caller != nil {
-		function := strings.ReplaceAll(entry.Caller.Function, "github.com/1Panel-dev/1Panel/agent/", "")
+		function := strings.ReplaceAll(entry.Caller.Function, "github.com/avaargsh/GPUPanel/agent/", "")
 		detailInfo = fmt.Sprintf("(%s: %d)", function, entry.Caller.Line)
 	}
 	if len(entry.Data) == 0 {

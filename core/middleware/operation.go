@@ -16,13 +16,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/1Panel-dev/1Panel/core/app/auth"
-	"github.com/1Panel-dev/1Panel/core/app/model"
-	"github.com/1Panel-dev/1Panel/core/app/repo"
-	"github.com/1Panel-dev/1Panel/core/cmd/server/docs"
-	"github.com/1Panel-dev/1Panel/core/constant"
-	"github.com/1Panel-dev/1Panel/core/global"
-	psessionUtils "github.com/1Panel-dev/1Panel/core/init/session/psession"
+	"github.com/avaargsh/GPUPanel/core/app/auth"
+	"github.com/avaargsh/GPUPanel/core/app/model"
+	"github.com/avaargsh/GPUPanel/core/app/repo"
+	"github.com/avaargsh/GPUPanel/core/cmd/server/docs"
+	"github.com/avaargsh/GPUPanel/core/constant"
+	"github.com/avaargsh/GPUPanel/core/global"
+	psessionUtils "github.com/avaargsh/GPUPanel/core/init/session/psession"
 	"github.com/gin-gonic/gin"
 	"github.com/glebarez/sqlite"
 	"gorm.io/gorm"
@@ -303,7 +303,7 @@ func (r *responseBodyWriter) Write(b []byte) (int, error) {
 }
 
 func loadLogInfo(path string) string {
-	path = replaceStr(path, "/api/v2", "/core", "/xpack", "/enterprise")
+	path = replaceStr(path, "/api/v1", "/core", "/xpack", "/enterprise")
 	if !strings.Contains(path, "/") {
 		return ""
 	}
@@ -315,8 +315,8 @@ func loadLogInfo(path string) string {
 }
 
 func normalizeOperationPath(reqPath string) string {
-	pathItem := strings.TrimPrefix(reqPath, "/api/v2")
-	pathItem = strings.TrimPrefix(pathItem, "/api/v2/core")
+	pathItem := strings.TrimPrefix(reqPath, "/api/v1")
+	pathItem = strings.TrimPrefix(pathItem, "/api/v1/core")
 	return pathItem
 }
 
@@ -324,13 +324,13 @@ func newDB(pathItem string) (*gorm.DB, error) {
 	dbFile := ""
 	switch {
 	case strings.HasPrefix(pathItem, "/core/xpack") || strings.HasPrefix(pathItem, "/xpack"):
-		dbFile = path.Join(global.CONF.Base.InstallDir, "1panel/db/xpack.db")
+		dbFile = path.Join(global.CONF.Base.InstallDir, "gpupanel/db/xpack.db")
 	case strings.HasPrefix(pathItem, "/core/enterprise") || strings.HasPrefix(pathItem, "/enterprise"):
-		dbFile = path.Join(global.CONF.Base.InstallDir, "1panel/db/enterprise.db")
+		dbFile = path.Join(global.CONF.Base.InstallDir, "gpupanel/db/enterprise.db")
 	case strings.HasPrefix(pathItem, "/core"):
-		dbFile = path.Join(global.CONF.Base.InstallDir, "1panel/db/core.db")
+		dbFile = path.Join(global.CONF.Base.InstallDir, "gpupanel/db/core.db")
 	default:
-		dbFile = path.Join(global.CONF.Base.InstallDir, "1panel/db/agent.db")
+		dbFile = path.Join(global.CONF.Base.InstallDir, "gpupanel/db/agent.db")
 	}
 
 	db, _ := gorm.Open(sqlite.Open(dbFile), &gorm.Config{

@@ -1,0 +1,6 @@
+[2026-10-15 16:28:21] [ERROR] download lang.tar.gz failed, err: 无法找到请求的资源 <no value>  
+[2026-10-15 16:28:22] [ERROR] download geo ip failed, err: 无法找到请求的资源 <no value>  
+[2026-10-15 16:28:31] [ERROR] download lang.tar.gz failed, err: 无法找到请求的资源 <no value>  
+[2026-10-15 16:28:31] [ERROR] download geo ip failed, err: 无法找到请求的资源 <no value>  
+[2026-10-15 16:28:32] [ERROR] download lang.tar.gz failed, err: 无法找到请求的资源 <no value>  
+[2026-10-15 16:28:32] [ERROR] download geo ip failed, err: 无法找到请求的资源 <no value>  

@@ -9,9 +9,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/1Panel-dev/1Panel/agent/utils/cmd"
-	"github.com/1Panel-dev/1Panel/agent/utils/controller"
-	"github.com/1Panel-dev/1Panel/agent/utils/firewall/filter"
+	"github.com/avaargsh/GPUPanel/agent/utils/cmd"
+	"github.com/avaargsh/GPUPanel/agent/utils/controller"
+	"github.com/avaargsh/GPUPanel/agent/utils/firewall/filter"
 )
 
 type Firewalld struct{}
@@ -93,7 +93,7 @@ func (f *Firewalld) Reset() error {
 }
 
 func (f *Firewalld) ResetBeforeStop() error {
-	backupDir := fmt.Sprintf("%s.1panel-backup-%d", firewalldConfigDir, time.Now().UnixNano())
+	backupDir := fmt.Sprintf("%s.gpupanel-backup-%d", firewalldConfigDir, time.Now().UnixNano())
 	rollback, err := replaceFirewalldConfig(
 		firewalldConfigDir,
 		backupDir,

@@ -4,11 +4,11 @@ import (
 	"encoding/json"
 	"time"
 
-	"github.com/1Panel-dev/1Panel/core/app/model"
-	"github.com/1Panel-dev/1Panel/core/constant"
-	"github.com/1Panel-dev/1Panel/core/global"
-	"github.com/1Panel-dev/1Panel/core/utils/cloud_storage"
-	"github.com/1Panel-dev/1Panel/core/utils/xpack"
+	"github.com/avaargsh/GPUPanel/core/app/model"
+	"github.com/avaargsh/GPUPanel/core/constant"
+	"github.com/avaargsh/GPUPanel/core/global"
+	"github.com/avaargsh/GPUPanel/core/utils/cloud_storage"
+	"github.com/avaargsh/GPUPanel/core/utils/xpack"
 )
 
 type backup struct{}

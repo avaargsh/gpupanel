@@ -13,15 +13,18 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: '12.8.1'
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
-          cache: npm
-          cache-dependency-path: frontend/package-lock.json
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
       - run: node scripts/verify-brand.mjs
-      - run: npm ci
+      - run: pnpm install --frozen-lockfile
         working-directory: frontend
-      - run: npm run build:pro
+      - run: pnpm build
         working-directory: frontend
-      - run: npm run type-check
+      - run: pnpm typecheck
         working-directory: frontend

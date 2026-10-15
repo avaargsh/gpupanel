@@ -254,8 +254,8 @@ func parseDockerGuardRuleTokens(tokens []string, family string) (Policy, string,
 			source = nextPolicyToken(tokens, index)
 		case "--comment", "comment":
 			marker := nextPolicyToken(tokens, index)
-			if strings.HasPrefix(marker, "1panel-docker:") {
-				policy.UUID = strings.TrimPrefix(marker, "1panel-docker:")
+			if strings.HasPrefix(marker, "gpupanel-docker:") {
+				policy.UUID = strings.TrimPrefix(marker, "gpupanel-docker:")
 			}
 		case "-j":
 			action = strings.ToLower(nextPolicyToken(tokens, index))

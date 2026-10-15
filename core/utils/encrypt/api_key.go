@@ -9,8 +9,8 @@ import (
 	"errors"
 	"io"
 
-	"github.com/1Panel-dev/1Panel/core/app/model"
-	"github.com/1Panel-dev/1Panel/core/global"
+	"github.com/avaargsh/GPUPanel/core/app/model"
+	"github.com/avaargsh/GPUPanel/core/global"
 )
 
 func APIKeyEncryptionKey() (string, error) {
@@ -34,7 +34,7 @@ func apiKeyAEAD(key string) (cipher.AEAD, error) {
 	if key == "" {
 		return nil, errors.New("API key encryption key unavailable")
 	}
-	derived := sha256.Sum256([]byte("1panel:api-key:v1:" + key))
+	derived := sha256.Sum256([]byte("gpupanel:api-key:v1:" + key))
 	block, err := aes.NewCipher(derived[:])
 	if err != nil {
 		return nil, err

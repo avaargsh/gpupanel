@@ -1,0 +1,5210 @@
+{
+  "go": {
+    "agent": {
+      "manifest_sha256": "c2e429d33f4c5f542f9239e90626f7882d5e4e1a9911b0b882d61af336615e8c",
+      "module": "github.com/avaargsh/GPUPanel/agent",
+      "replace_count": 1,
+      "replacements": [
+        {
+          "from": "github.com/go-acme/lego/v5",
+          "from_version": null,
+          "review": "FORK_REPLACEMENT_REVIEW",
+          "to": "github.com/1Panel-dev/lego/v5",
+          "to_version": "v5.3.1"
+        }
+      ],
+      "require_count": 218,
+      "requirements": [
+        {
+          "module": "filippo.io/edwards25519",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v1.2.0"
+        },
+        {
+          "module": "github.com/BurntSushi/toml",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v1.6.0"
+        },
+        {
+          "module": "github.com/Microsoft/go-winio",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v0.6.2"
+        },
+        {
+          "module": "github.com/alex-ant/gomath",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v0.0.0-20160516115720-89013a210a82"
+        },
+        {
+          "module": "github.com/alibabacloud-go/alibabacloud-gateway-spi",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v0.0.5"
+        },
+        {
+          "module": "github.com/alibabacloud-go/darabonba-openapi/v2",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v2.2.3"
+        },
+        {
+          "module": "github.com/alibabacloud-go/debug",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v1.0.1"
+        },
+        {
+          "module": "github.com/alibabacloud-go/tea",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v1.5.2"
+        },
+        {
+          "module": "github.com/alibabacloud-go/tea-utils/v2",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v2.0.9"
+        },
+        {
+          "module": "github.com/aliyun/aliyun-oss-go-sdk",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "direct",
+          "version": "v3.0.2+incompatible"
+        },
+        {
+          "module": "github.com/aliyun/credentials-go",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v1.4.12"
+        },
+        {
+          "module": "github.com/andybalholm/brotli",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v1.2.1"
+        },
+        {
+          "module": "github.com/aws/aws-sdk-go-v2",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v1.42.1"
+        },
+        {
+          "module": "github.com/aws/aws-sdk-go-v2/config",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v1.32.30"
+        },
+        {
+          "module": "github.com/aws/aws-sdk-go-v2/credentials",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v1.19.29"
+        },
+        {
+          "module": "github.com/aws/aws-sdk-go-v2/feature/ec2/imds",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v1.18.30"
+        },
+        {
+          "module": "github.com/aws/aws-sdk-go-v2/internal/configsources",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v1.4.30"
+        },
+        {
+          "module": "github.com/aws/aws-sdk-go-v2/internal/endpoints/v2",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v2.7.30"
+        },
+        {
+          "module": "github.com/aws/aws-sdk-go-v2/internal/v4a",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v1.4.31"
+        },
+        {
+          "module": "github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v1.13.13"
+        },
+        {
+          "module": "github.com/aws/aws-sdk-go-v2/service/internal/presigned-url",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v1.13.30"
+        },
+        {
+          "module": "github.com/aws/aws-sdk-go-v2/service/route53",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v1.64.1"
+        },
+        {
+          "module": "github.com/aws/aws-sdk-go-v2/service/signin",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v1.4.1"
+        },
+        {
+          "module": "github.com/aws/aws-sdk-go-v2/service/sso",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v1.32.1"
+        },
+        {
+          "module": "github.com/aws/aws-sdk-go-v2/service/ssooidc",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v1.37.1"
+        },
+        {
+          "module": "github.com/aws/aws-sdk-go-v2/service/sts",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v1.44.1"
+        },
+        {
+          "module": "github.com/aws/smithy-go",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v1.27.3"
+        },
+        {
+          "module": "github.com/baidubce/bce-sdk-go",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v0.9.270"
+        },
+        {
+          "module": "github.com/bodgit/plumbing",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v1.3.0"
+        },
+        {
+          "module": "github.com/bodgit/sevenzip",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v1.6.1"
+        },
+        {
+          "module": "github.com/bodgit/windows",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v1.0.1"
+        },
+        {
+          "module": "github.com/bytedance/gopkg",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v0.1.4"
+        },
+        {
+          "module": "github.com/bytedance/sonic",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v1.15.0"
+        },
+        {
+          "module": "github.com/bytedance/sonic/loader",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v0.5.1"
+        },
+        {
+          "module": "github.com/cenkalti/backoff/v4",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v4.3.0"
+        },
+        {
+          "module": "github.com/cenkalti/backoff/v5",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v5.0.3"
+        },
+        {
+          "module": "github.com/cespare/xxhash/v2",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v2.3.0"
+        },
+        {
+          "module": "github.com/clbanning/mxj",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v1.8.4"
+        },
+        {
+          "module": "github.com/clbanning/mxj/v2",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v2.7.0"
+        },
+        {
+          "module": "github.com/cloudwego/base64x",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v0.1.6"
+        },
+        {
+          "module": "github.com/compose-spec/compose-go/v2",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "direct",
+          "version": "v2.15.0"
+        },
+        {
+          "module": "github.com/containerd/errdefs",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v1.0.0"
+        },
+        {
+          "module": "github.com/containerd/errdefs/pkg",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v0.3.0"
+        },
+        {
+          "module": "github.com/containerd/log",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v0.1.0"
+        },
+        {
+          "module": "github.com/creack/pty",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "direct",
+          "version": "v1.1.24"
+        },
+        {
+          "module": "github.com/distribution/reference",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v0.6.0"
+        },
+        {
+          "module": "github.com/docker/cli",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "direct",
+          "version": "v29.9.0+incompatible"
+        },
+        {
+          "module": "github.com/docker/docker",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "direct",
+          "version": "v28.5.2+incompatible"
+        },
+        {
+          "module": "github.com/docker/docker-credential-helpers",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v0.9.5"
+        },
+        {
+          "module": "github.com/docker/go-connections",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "direct",
+          "version": "v0.8.2"
+        },
+        {
+          "module": "github.com/docker/go-units",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v0.5.0"
+        },
+        {
+          "module": "github.com/dsnet/compress",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v0.0.2-0.20230904184137-39efe44ab707"
+        },
+        {
+          "module": "github.com/dustin/go-humanize",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v1.0.1"
+        },
+        {
+          "module": "github.com/ebitengine/purego",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v0.11.1"
+        },
+        {
+          "module": "github.com/felixge/httpsnoop",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v1.0.4"
+        },
+        {
+          "module": "github.com/fsnotify/fsnotify",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "direct",
+          "version": "v1.10.1"
+        },
+        {
+          "module": "github.com/gabriel-vasile/mimetype",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v1.4.13"
+        },
+        {
+          "module": "github.com/gin-contrib/sse",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v1.1.1"
+        },
+        {
+          "module": "github.com/gin-gonic/gin",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "direct",
+          "version": "v1.12.0"
+        },
+        {
+          "module": "github.com/glebarez/go-sqlite",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v1.22.0"
+        },
+        {
+          "module": "github.com/glebarez/sqlite",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "direct",
+          "version": "v1.11.0"
+        },
+        {
+          "module": "github.com/go-acme/alidns-20150109/v5",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v5.5.0"
+        },
+        {
+          "module": "github.com/go-acme/esa-20240910/v3",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v3.4.0"
+        },
+        {
+          "module": "github.com/go-acme/lego/v5",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "direct",
+          "version": "v5.3.1"
+        },
+        {
+          "module": "github.com/go-gormigrate/gormigrate/v2",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "direct",
+          "version": "v2.1.6"
+        },
+        {
+          "module": "github.com/go-jose/go-jose/v4",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v4.1.4"
+        },
+        {
+          "module": "github.com/go-logr/logr",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v1.4.4"
+        },
+        {
+          "module": "github.com/go-logr/stdr",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v1.2.2"
+        },
+        {
+          "module": "github.com/go-ole/go-ole",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v1.3.0"
+        },
+        {
+          "module": "github.com/go-playground/locales",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v0.14.1"
+        },
+        {
+          "module": "github.com/go-playground/universal-translator",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v0.18.1"
+        },
+        {
+          "module": "github.com/go-playground/validator/v10",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "direct",
+          "version": "v10.30.3"
+        },
+        {
+          "module": "github.com/go-redis/redis",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "direct",
+          "version": "v6.15.9+incompatible"
+        },
+        {
+          "module": "github.com/go-resty/resty/v2",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "direct",
+          "version": "v2.17.2"
+        },
+        {
+          "module": "github.com/go-sql-driver/mysql",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "direct",
+          "version": "v1.10.0"
+        },
+        {
+          "module": "github.com/go-viper/mapstructure/v2",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v2.5.0"
+        },
+        {
+          "module": "github.com/goccy/go-json",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v0.10.6"
+        },
+        {
+          "module": "github.com/goccy/go-yaml",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v1.19.2"
+        },
+        {
+          "module": "github.com/gofrs/flock",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v0.13.0"
+        },
+        {
+          "module": "github.com/golang/snappy",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v1.0.0"
+        },
+        {
+          "module": "github.com/google/go-querystring",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v1.2.0"
+        },
+        {
+          "module": "github.com/google/pprof",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "direct",
+          "version": "v0.0.0-20250820193118-f64d9cf942d6"
+        },
+        {
+          "module": "github.com/google/uuid",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "direct",
+          "version": "v1.6.0"
+        },
+        {
+          "module": "github.com/gorilla/websocket",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "direct",
+          "version": "v1.5.4-0.20250319132907-e064f32e3674"
+        },
+        {
+          "module": "github.com/hashicorp/golang-lru/v2",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v2.0.7"
+        },
+        {
+          "module": "github.com/huaweicloud/huaweicloud-sdk-go-v3",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v0.1.205"
+        },
+        {
+          "module": "github.com/inconshreveable/mousetrap",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v1.1.0"
+        },
+        {
+          "module": "github.com/jackc/pgpassfile",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v1.0.0"
+        },
+        {
+          "module": "github.com/jackc/pgservicefile",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v0.0.0-20240606120523-5a60cdf6a761"
+        },
+        {
+          "module": "github.com/jackc/pgx/v5",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "direct",
+          "version": "v5.10.0"
+        },
+        {
+          "module": "github.com/jackc/puddle/v2",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v2.2.2"
+        },
+        {
+          "module": "github.com/jarcoal/httpmock",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v1.4.1"
+        },
+        {
+          "module": "github.com/jinzhu/copier",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "direct",
+          "version": "v0.4.0"
+        },
+        {
+          "module": "github.com/jinzhu/inflection",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v1.0.0"
+        },
+        {
+          "module": "github.com/jinzhu/now",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v1.1.5"
+        },
+        {
+          "module": "github.com/joho/godotenv",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "direct",
+          "version": "v1.5.1"
+        },
+        {
+          "module": "github.com/json-iterator/go",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v1.1.13-0.20220915233716-71ac16282d12"
+        },
+        {
+          "module": "github.com/klauspost/compress",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "direct",
+          "version": "v1.19.2"
+        },
+        {
+          "module": "github.com/klauspost/cpuid/v2",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v2.4.0"
+        },
+        {
+          "module": "github.com/klauspost/crc32",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v1.3.0"
+        },
+        {
+          "module": "github.com/klauspost/pgzip",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v1.2.6"
+        },
+        {
+          "module": "github.com/kr/fs",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v0.1.0"
+        },
+        {
+          "module": "github.com/leodido/go-urn",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v1.4.0"
+        },
+        {
+          "module": "github.com/lufia/plan9stats",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v0.0.0-20260330125221-c963978e514e"
+        },
+        {
+          "module": "github.com/mattn/go-isatty",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v0.0.22"
+        },
+        {
+          "module": "github.com/mattn/go-shellwords",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "direct",
+          "version": "v1.0.16"
+        },
+        {
+          "module": "github.com/maxatome/go-testdeep",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v1.14.0"
+        },
+        {
+          "module": "github.com/mholt/archiver/v4",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "direct",
+          "version": "v4.0.0-alpha.8"
+        },
+        {
+          "module": "github.com/miekg/dns",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "direct",
+          "version": "v1.1.73"
+        },
+        {
+          "module": "github.com/minio/crc64nvme",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v1.1.1"
+        },
+        {
+          "module": "github.com/minio/md5-simd",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v1.1.2"
+        },
+        {
+          "module": "github.com/minio/minio-go/v7",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "direct",
+          "version": "v7.3.0"
+        },
+        {
+          "module": "github.com/mitchellh/mapstructure",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v1.5.0"
+        },
+        {
+          "module": "github.com/moby/docker-image-spec",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v1.3.1"
+        },
+        {
+          "module": "github.com/moby/go-archive",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "direct",
+          "version": "v0.3.0"
+        },
+        {
+          "module": "github.com/moby/patternmatcher",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v0.6.1"
+        },
+        {
+          "module": "github.com/moby/sys/atomicwriter",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v0.1.0"
+        },
+        {
+          "module": "github.com/moby/sys/sequential",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v0.7.0"
+        },
+        {
+          "module": "github.com/moby/sys/user",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v0.4.1"
+        },
+        {
+          "module": "github.com/moby/sys/userns",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v0.1.0"
+        },
+        {
+          "module": "github.com/moby/term",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v0.5.2"
+        },
+        {
+          "module": "github.com/modern-go/concurrent",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v0.0.0-20180306012644-bacd9c7ef1dd"
+        },
+        {
+          "module": "github.com/modern-go/reflect2",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v1.0.3-0.20250322232337-35a7c28c31ee"
+        },
+        {
+          "module": "github.com/morikuni/aec",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v1.1.0"
+        },
+        {
+          "module": "github.com/mozillazg/go-httpheader",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v0.4.0"
+        },
+        {
+          "module": "github.com/namedotcom/go/v4",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v4.0.2"
+        },
+        {
+          "module": "github.com/ncruces/go-strftime",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v1.0.0"
+        },
+        {
+          "module": "github.com/nicksnyder/go-i18n/v2",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "direct",
+          "version": "v2.6.1"
+        },
+        {
+          "module": "github.com/nrdcg/freemyip",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v0.3.0"
+        },
+        {
+          "module": "github.com/nrdcg/goacmedns",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v0.2.0"
+        },
+        {
+          "module": "github.com/nrdcg/namesilo",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v0.5.0"
+        },
+        {
+          "module": "github.com/nrdcg/porkbun",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v0.4.0"
+        },
+        {
+          "module": "github.com/nwaples/rardecode/v2",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v2.2.2"
+        },
+        {
+          "module": "github.com/onsi/ginkgo",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v1.16.4"
+        },
+        {
+          "module": "github.com/onsi/gomega",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v1.37.0"
+        },
+        {
+          "module": "github.com/opencontainers/go-digest",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v1.0.0"
+        },
+        {
+          "module": "github.com/opencontainers/image-spec",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "direct",
+          "version": "v1.1.1"
+        },
+        {
+          "module": "github.com/oschwald/maxminddb-golang",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "direct",
+          "version": "v1.13.1"
+        },
+        {
+          "module": "github.com/ovh/go-ovh",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v1.9.0"
+        },
+        {
+          "module": "github.com/patrickmn/go-cache",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "direct",
+          "version": "v2.1.0+incompatible"
+        },
+        {
+          "module": "github.com/pelletier/go-toml/v2",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v2.3.1"
+        },
+        {
+          "module": "github.com/philhofer/fwd",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v1.2.0"
+        },
+        {
+          "module": "github.com/pierrec/lz4/v4",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v4.1.26"
+        },
+        {
+          "module": "github.com/pkg/errors",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "direct",
+          "version": "v0.9.1"
+        },
+        {
+          "module": "github.com/pkg/sftp",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "direct",
+          "version": "v1.13.11"
+        },
+        {
+          "module": "github.com/power-devops/perfstat",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v0.0.0-20260805114148-88456608a4f6"
+        },
+        {
+          "module": "github.com/qiniu/go-sdk/v7",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "direct",
+          "version": "v7.27.0"
+        },
+        {
+          "module": "github.com/quic-go/qpack",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v0.6.0"
+        },
+        {
+          "module": "github.com/quic-go/quic-go",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v0.59.1"
+        },
+        {
+          "module": "github.com/remyoudompheng/bigfft",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v0.0.0-20230129092748-24d4a6f8daec"
+        },
+        {
+          "module": "github.com/robfig/cron/v3",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "direct",
+          "version": "v3.0.1"
+        },
+        {
+          "module": "github.com/rs/xid",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v1.6.0"
+        },
+        {
+          "module": "github.com/sagikazarmark/locafero",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v0.12.0"
+        },
+        {
+          "module": "github.com/santhosh-tekuri/jsonschema/v6",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v6.0.2"
+        },
+        {
+          "module": "github.com/shirou/gopsutil/v4",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "direct",
+          "version": "v4.26.9"
+        },
+        {
+          "module": "github.com/sirupsen/logrus",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "direct",
+          "version": "v1.10.2"
+        },
+        {
+          "module": "github.com/skip2/go-qrcode",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "direct",
+          "version": "v0.0.0-20200617195104-da1b6568686e"
+        },
+        {
+          "module": "github.com/spf13/afero",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "direct",
+          "version": "v1.15.0"
+        },
+        {
+          "module": "github.com/spf13/cast",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v1.10.0"
+        },
+        {
+          "module": "github.com/spf13/cobra",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "direct",
+          "version": "v1.10.2"
+        },
+        {
+          "module": "github.com/spf13/pflag",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v1.0.10"
+        },
+        {
+          "module": "github.com/spf13/viper",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "direct",
+          "version": "v1.21.0"
+        },
+        {
+          "module": "github.com/subosito/gotenv",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "direct",
+          "version": "v1.6.0"
+        },
+        {
+          "module": "github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v1.3.133"
+        },
+        {
+          "module": "github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/dnspod",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v1.3.131"
+        },
+        {
+          "module": "github.com/tencentyun/cos-go-sdk-v5",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "direct",
+          "version": "v0.7.75"
+        },
+        {
+          "module": "github.com/therootcompany/xz",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v1.0.1"
+        },
+        {
+          "module": "github.com/tinylib/msgp",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v1.6.4"
+        },
+        {
+          "module": "github.com/tjfoc/gmsm",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v1.4.1"
+        },
+        {
+          "module": "github.com/tklauser/go-sysconf",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "direct",
+          "version": "v0.4.0"
+        },
+        {
+          "module": "github.com/tklauser/numcpus",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v0.12.0"
+        },
+        {
+          "module": "github.com/tomasen/fcgi_client",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "direct",
+          "version": "v0.0.0-20180423082037-2bb3d819fd19"
+        },
+        {
+          "module": "github.com/twitchyliquid64/golang-asm",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v0.15.1"
+        },
+        {
+          "module": "github.com/ugorji/go/codec",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v1.3.1"
+        },
+        {
+          "module": "github.com/ulikunitz/xz",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v0.5.15"
+        },
+        {
+          "module": "github.com/upyun/go-sdk",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "direct",
+          "version": "v2.1.0+incompatible"
+        },
+        {
+          "module": "github.com/volcengine/volc-sdk-golang",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v1.0.251"
+        },
+        {
+          "module": "github.com/xdg-go/pbkdf2",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v1.0.0"
+        },
+        {
+          "module": "github.com/xdg-go/scram",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v1.2.0"
+        },
+        {
+          "module": "github.com/xdg-go/stringprep",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v1.0.4"
+        },
+        {
+          "module": "github.com/xhit/go-str2duration/v2",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v2.1.0"
+        },
+        {
+          "module": "github.com/youmark/pkcs8",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v0.0.0-20240726163527-a2c0da244d78"
+        },
+        {
+          "module": "github.com/yusufpapurcu/wmi",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v1.2.4"
+        },
+        {
+          "module": "github.com/zeebo/xxh3",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v1.1.0"
+        },
+        {
+          "module": "go.mongodb.org/mongo-driver",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v1.17.10"
+        },
+        {
+          "module": "go.mongodb.org/mongo-driver/v2",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "direct",
+          "version": "v2.9.2"
+        },
+        {
+          "module": "go.opentelemetry.io/auto/sdk",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v1.2.1"
+        },
+        {
+          "module": "go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v0.68.0"
+        },
+        {
+          "module": "go.opentelemetry.io/otel",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v1.45.0"
+        },
+        {
+          "module": "go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v1.45.0"
+        },
+        {
+          "module": "go.opentelemetry.io/otel/metric",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v1.45.0"
+        },
+        {
+          "module": "go.opentelemetry.io/otel/sdk",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v1.45.0"
+        },
+        {
+          "module": "go.opentelemetry.io/otel/sdk/metric",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v1.45.0"
+        },
+        {
+          "module": "go.opentelemetry.io/otel/trace",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v1.45.0"
+        },
+        {
+          "module": "go.yaml.in/yaml/v3",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v3.0.5"
+        },
+        {
+          "module": "go.yaml.in/yaml/v4",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v4.0.0-rc.4"
+        },
+        {
+          "module": "go4.org",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v0.0.0-20260112195520-a5071408f32f"
+        },
+        {
+          "module": "golang.org/x/arch",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v0.26.0"
+        },
+        {
+          "module": "golang.org/x/crypto",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "direct",
+          "version": "v0.58.0"
+        },
+        {
+          "module": "golang.org/x/image",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v0.45.0"
+        },
+        {
+          "module": "golang.org/x/net",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "direct",
+          "version": "v0.60.0"
+        },
+        {
+          "module": "golang.org/x/oauth2",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v0.36.0"
+        },
+        {
+          "module": "golang.org/x/sync",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "direct",
+          "version": "v0.24.0"
+        },
+        {
+          "module": "golang.org/x/sys",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "direct",
+          "version": "v0.49.0"
+        },
+        {
+          "module": "golang.org/x/text",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "direct",
+          "version": "v0.43.0"
+        },
+        {
+          "module": "golang.org/x/time",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "direct",
+          "version": "v0.16.0"
+        },
+        {
+          "module": "google.golang.org/genproto",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "direct",
+          "version": "v0.0.0-20260414002931-afd174a4e478"
+        },
+        {
+          "module": "google.golang.org/grpc",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v1.83.2"
+        },
+        {
+          "module": "google.golang.org/protobuf",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v1.36.11"
+        },
+        {
+          "module": "gopkg.in/ini.v1",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "direct",
+          "version": "v1.67.3"
+        },
+        {
+          "module": "gopkg.in/yaml.v3",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "direct",
+          "version": "v3.0.1"
+        },
+        {
+          "module": "gorm.io/gorm",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "direct",
+          "version": "v1.31.2"
+        },
+        {
+          "module": "modernc.org/fileutil",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v1.4.0"
+        },
+        {
+          "module": "modernc.org/libc",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v1.72.0"
+        },
+        {
+          "module": "modernc.org/mathutil",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v1.7.1"
+        },
+        {
+          "module": "modernc.org/memory",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v1.11.0"
+        },
+        {
+          "module": "modernc.org/sqlite",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v1.48.2"
+        },
+        {
+          "module": "software.sslmate.com/src/go-pkcs12",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v0.7.3"
+        }
+      ]
+    },
+    "core": {
+      "manifest_sha256": "ee79401b73f8f3173cb47aff3bb2dbaf03a753ecd3c27a4006816cd13c19766d",
+      "module": "github.com/avaargsh/GPUPanel/core",
+      "replace_count": 0,
+      "replacements": [],
+      "require_count": 131,
+      "requirements": [
+        {
+          "module": "github.com/Azure/go-ntlmssp",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v0.1.1"
+        },
+        {
+          "module": "github.com/KyleBanks/depth",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v1.2.1"
+        },
+        {
+          "module": "github.com/beevik/etree",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "direct",
+          "version": "v1.7.0"
+        },
+        {
+          "module": "github.com/boombuler/barcode",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v1.1.0"
+        },
+        {
+          "module": "github.com/bytedance/gopkg",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v0.1.4"
+        },
+        {
+          "module": "github.com/bytedance/sonic",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v1.15.0"
+        },
+        {
+          "module": "github.com/bytedance/sonic/loader",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v0.5.1"
+        },
+        {
+          "module": "github.com/clipperhouse/uax29/v2",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v2.7.0"
+        },
+        {
+          "module": "github.com/cloudwego/base64x",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v0.1.6"
+        },
+        {
+          "module": "github.com/coreos/go-oidc/v3",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "direct",
+          "version": "v3.20.0"
+        },
+        {
+          "module": "github.com/creack/pty",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "direct",
+          "version": "v1.1.24"
+        },
+        {
+          "module": "github.com/crewjam/saml",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "direct",
+          "version": "v0.5.1"
+        },
+        {
+          "module": "github.com/dustin/go-humanize",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v1.0.1"
+        },
+        {
+          "module": "github.com/ebitengine/purego",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v0.11.1"
+        },
+        {
+          "module": "github.com/f-amaral/go-async",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v0.3.0"
+        },
+        {
+          "module": "github.com/fsnotify/fsnotify",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "direct",
+          "version": "v1.10.1"
+        },
+        {
+          "module": "github.com/fxamacker/cbor/v2",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v2.9.2"
+        },
+        {
+          "module": "github.com/gabriel-vasile/mimetype",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v1.4.13"
+        },
+        {
+          "module": "github.com/gin-contrib/gzip",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "direct",
+          "version": "v1.2.6"
+        },
+        {
+          "module": "github.com/gin-contrib/sse",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v1.1.1"
+        },
+        {
+          "module": "github.com/gin-gonic/gin",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "direct",
+          "version": "v1.12.0"
+        },
+        {
+          "module": "github.com/glebarez/go-sqlite",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v1.22.0"
+        },
+        {
+          "module": "github.com/glebarez/sqlite",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "direct",
+          "version": "v1.11.0"
+        },
+        {
+          "module": "github.com/go-asn1-ber/asn1-ber",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v1.5.8"
+        },
+        {
+          "module": "github.com/go-gormigrate/gormigrate/v2",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "direct",
+          "version": "v2.1.6"
+        },
+        {
+          "module": "github.com/go-jose/go-jose/v4",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "direct",
+          "version": "v4.1.4"
+        },
+        {
+          "module": "github.com/go-ldap/ldap/v3",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "direct",
+          "version": "v3.4.14"
+        },
+        {
+          "module": "github.com/go-ole/go-ole",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v1.2.6"
+        },
+        {
+          "module": "github.com/go-openapi/jsonpointer",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v0.23.0"
+        },
+        {
+          "module": "github.com/go-openapi/jsonreference",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v0.21.5"
+        },
+        {
+          "module": "github.com/go-openapi/spec",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v0.22.4"
+        },
+        {
+          "module": "github.com/go-openapi/swag/conv",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v0.26.0"
+        },
+        {
+          "module": "github.com/go-openapi/swag/jsonname",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v0.26.0"
+        },
+        {
+          "module": "github.com/go-openapi/swag/jsonutils",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v0.26.0"
+        },
+        {
+          "module": "github.com/go-openapi/swag/loading",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v0.26.0"
+        },
+        {
+          "module": "github.com/go-openapi/swag/stringutils",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v0.26.0"
+        },
+        {
+          "module": "github.com/go-openapi/swag/typeutils",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v0.26.0"
+        },
+        {
+          "module": "github.com/go-openapi/swag/yamlutils",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v0.26.0"
+        },
+        {
+          "module": "github.com/go-playground/locales",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v0.14.1"
+        },
+        {
+          "module": "github.com/go-playground/universal-translator",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v0.18.1"
+        },
+        {
+          "module": "github.com/go-playground/validator/v10",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "direct",
+          "version": "v10.30.3"
+        },
+        {
+          "module": "github.com/go-resty/resty/v2",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "direct",
+          "version": "v2.17.2"
+        },
+        {
+          "module": "github.com/go-viper/mapstructure/v2",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v2.5.0"
+        },
+        {
+          "module": "github.com/go-webauthn/webauthn",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "direct",
+          "version": "v0.17.4"
+        },
+        {
+          "module": "github.com/go-webauthn/x",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v0.2.6"
+        },
+        {
+          "module": "github.com/goccy/go-json",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v0.10.6"
+        },
+        {
+          "module": "github.com/goccy/go-yaml",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v1.19.2"
+        },
+        {
+          "module": "github.com/golang-jwt/jwt/v4",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v4.5.2"
+        },
+        {
+          "module": "github.com/golang-jwt/jwt/v5",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v5.3.1"
+        },
+        {
+          "module": "github.com/google/go-tpm",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v0.9.8"
+        },
+        {
+          "module": "github.com/google/pprof",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "direct",
+          "version": "v0.0.0-20250820193118-f64d9cf942d6"
+        },
+        {
+          "module": "github.com/google/uuid",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "direct",
+          "version": "v1.6.0"
+        },
+        {
+          "module": "github.com/gorilla/websocket",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "direct",
+          "version": "v1.5.3"
+        },
+        {
+          "module": "github.com/hhrutter/lzw",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v1.0.0"
+        },
+        {
+          "module": "github.com/hhrutter/pkcs7",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v0.2.0"
+        },
+        {
+          "module": "github.com/hhrutter/tiff",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v1.0.2"
+        },
+        {
+          "module": "github.com/inconshreveable/mousetrap",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v1.1.0"
+        },
+        {
+          "module": "github.com/jinzhu/copier",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "direct",
+          "version": "v0.4.0"
+        },
+        {
+          "module": "github.com/jinzhu/inflection",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v1.0.0"
+        },
+        {
+          "module": "github.com/jinzhu/now",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v1.1.5"
+        },
+        {
+          "module": "github.com/johnfercher/go-tree",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v1.1.0"
+        },
+        {
+          "module": "github.com/johnfercher/maroto/v2",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "direct",
+          "version": "v2.4.1"
+        },
+        {
+          "module": "github.com/jonboulle/clockwork",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v0.5.0"
+        },
+        {
+          "module": "github.com/json-iterator/go",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v1.1.12"
+        },
+        {
+          "module": "github.com/klauspost/cpuid/v2",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v2.3.0"
+        },
+        {
+          "module": "github.com/kr/fs",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v0.1.0"
+        },
+        {
+          "module": "github.com/leodido/go-urn",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v1.4.0"
+        },
+        {
+          "module": "github.com/lufia/plan9stats",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v0.0.0-20211012122336-39d0f177ccd0"
+        },
+        {
+          "module": "github.com/mattermost/xml-roundtrip-validator",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "direct",
+          "version": "v0.1.0"
+        },
+        {
+          "module": "github.com/mattn/go-isatty",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v0.0.21"
+        },
+        {
+          "module": "github.com/mattn/go-runewidth",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v0.0.21"
+        },
+        {
+          "module": "github.com/modern-go/concurrent",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v0.0.0-20180306012644-bacd9c7ef1dd"
+        },
+        {
+          "module": "github.com/modern-go/reflect2",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v1.0.2"
+        },
+        {
+          "module": "github.com/ncruces/go-strftime",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v1.0.0"
+        },
+        {
+          "module": "github.com/nicksnyder/go-i18n/v2",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "direct",
+          "version": "v2.6.1"
+        },
+        {
+          "module": "github.com/oschwald/maxminddb-golang",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "direct",
+          "version": "v1.13.1"
+        },
+        {
+          "module": "github.com/patrickmn/go-cache",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "direct",
+          "version": "v2.1.0+incompatible"
+        },
+        {
+          "module": "github.com/pdfcpu/pdfcpu",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v0.11.1"
+        },
+        {
+          "module": "github.com/pelletier/go-toml/v2",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v2.3.0"
+        },
+        {
+          "module": "github.com/philhofer/fwd",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v1.2.0"
+        },
+        {
+          "module": "github.com/phpdave11/gofpdf",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v1.4.3"
+        },
+        {
+          "module": "github.com/pkg/errors",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "direct",
+          "version": "v0.9.1"
+        },
+        {
+          "module": "github.com/pkg/sftp",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "direct",
+          "version": "v1.13.11"
+        },
+        {
+          "module": "github.com/power-devops/perfstat",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v0.0.0-20260805114148-88456608a4f6"
+        },
+        {
+          "module": "github.com/quic-go/qpack",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v0.6.0"
+        },
+        {
+          "module": "github.com/quic-go/quic-go",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v0.59.1"
+        },
+        {
+          "module": "github.com/remyoudompheng/bigfft",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v0.0.0-20230129092748-24d4a6f8daec"
+        },
+        {
+          "module": "github.com/robfig/cron/v3",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "direct",
+          "version": "v3.0.1"
+        },
+        {
+          "module": "github.com/russellhaering/goxmldsig",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "direct",
+          "version": "v1.6.1"
+        },
+        {
+          "module": "github.com/sagikazarmark/locafero",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v0.12.0"
+        },
+        {
+          "module": "github.com/shirou/gopsutil/v4",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "direct",
+          "version": "v4.26.9"
+        },
+        {
+          "module": "github.com/sirupsen/logrus",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "direct",
+          "version": "v1.10.2"
+        },
+        {
+          "module": "github.com/skip2/go-qrcode",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "direct",
+          "version": "v0.0.0-20200617195104-da1b6568686e"
+        },
+        {
+          "module": "github.com/soheilhy/cmux",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "direct",
+          "version": "v0.1.5"
+        },
+        {
+          "module": "github.com/spf13/afero",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v1.15.0"
+        },
+        {
+          "module": "github.com/spf13/cast",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v1.10.0"
+        },
+        {
+          "module": "github.com/spf13/cobra",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "direct",
+          "version": "v1.10.2"
+        },
+        {
+          "module": "github.com/spf13/pflag",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v1.0.10"
+        },
+        {
+          "module": "github.com/spf13/viper",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "direct",
+          "version": "v1.21.0"
+        },
+        {
+          "module": "github.com/subosito/gotenv",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v1.6.0"
+        },
+        {
+          "module": "github.com/swaggo/files/v2",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "direct",
+          "version": "v2.0.2"
+        },
+        {
+          "module": "github.com/swaggo/swag",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "direct",
+          "version": "v1.16.6"
+        },
+        {
+          "module": "github.com/tinylib/msgp",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v1.6.4"
+        },
+        {
+          "module": "github.com/tklauser/go-sysconf",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v0.4.0"
+        },
+        {
+          "module": "github.com/tklauser/numcpus",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v0.12.0"
+        },
+        {
+          "module": "github.com/twitchyliquid64/golang-asm",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v0.15.1"
+        },
+        {
+          "module": "github.com/ugorji/go/codec",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v1.3.1"
+        },
+        {
+          "module": "github.com/x448/float16",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v0.8.4"
+        },
+        {
+          "module": "github.com/xlzd/gotp",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "direct",
+          "version": "v0.1.0"
+        },
+        {
+          "module": "github.com/yusufpapurcu/wmi",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v1.2.4"
+        },
+        {
+          "module": "go.mongodb.org/mongo-driver/v2",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v2.9.2"
+        },
+        {
+          "module": "go.yaml.in/yaml/v3",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v3.0.5"
+        },
+        {
+          "module": "golang.org/x/arch",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v0.26.0"
+        },
+        {
+          "module": "golang.org/x/crypto",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "direct",
+          "version": "v0.58.0"
+        },
+        {
+          "module": "golang.org/x/image",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "direct",
+          "version": "v0.45.0"
+        },
+        {
+          "module": "golang.org/x/mod",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v0.41.0"
+        },
+        {
+          "module": "golang.org/x/net",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "direct",
+          "version": "v0.60.0"
+        },
+        {
+          "module": "golang.org/x/oauth2",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "direct",
+          "version": "v0.36.0"
+        },
+        {
+          "module": "golang.org/x/sync",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v0.24.0"
+        },
+        {
+          "module": "golang.org/x/sys",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "direct",
+          "version": "v0.49.0"
+        },
+        {
+          "module": "golang.org/x/term",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "direct",
+          "version": "v0.47.0"
+        },
+        {
+          "module": "golang.org/x/text",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "direct",
+          "version": "v0.43.0"
+        },
+        {
+          "module": "golang.org/x/tools",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v0.51.0"
+        },
+        {
+          "module": "google.golang.org/protobuf",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v1.36.11"
+        },
+        {
+          "module": "gopkg.in/yaml.v2",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "direct",
+          "version": "v2.4.0"
+        },
+        {
+          "module": "gopkg.in/yaml.v3",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "direct",
+          "version": "v3.0.1"
+        },
+        {
+          "module": "gorm.io/gorm",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "direct",
+          "version": "v1.31.2"
+        },
+        {
+          "module": "modernc.org/libc",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v1.72.0"
+        },
+        {
+          "module": "modernc.org/mathutil",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v1.7.1"
+        },
+        {
+          "module": "modernc.org/memory",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v1.11.0"
+        },
+        {
+          "module": "modernc.org/sqlite",
+          "review": "THIRD_PARTY_REVIEW",
+          "scope": "indirect",
+          "version": "v1.48.2"
+        }
+      ]
+    }
+  },
+  "overall_review": "THIRD_PARTY_REVIEW",
+  "pnpm": {
+    "count": 382,
+    "lock_sha256": "652f01419a6754e7c5acf94259a16e69a4181b6b440b5ceaff2d77a5aefe112b",
+    "lockfile_version": "9.0",
+    "manifests": [
+      {
+        "path": "frontend/package.json",
+        "sha256": "e792d8d4d6ed2899ea57fefb06d047061c3d2965c25955216a662b72850f3920"
+      },
+      {
+        "path": "frontend/apps/panel/package.json",
+        "sha256": "2bc797fb0529525a4b9862a73a70fd19b047fdd298315555669e69652f5c392e"
+      }
+    ],
+    "missing_license_hints": 382,
+    "package_manager": "pnpm",
+    "packages": [
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@pnpm/exe.android-arm64",
+        "path": "@pnpm/exe.android-arm64@12.8.1",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "12.8.1"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@pnpm/exe.android-x64",
+        "path": "@pnpm/exe.android-x64@12.8.1",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "12.8.1"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@pnpm/exe.darwin-arm64",
+        "path": "@pnpm/exe.darwin-arm64@12.8.1",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "12.8.1"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@pnpm/exe.darwin-x64",
+        "path": "@pnpm/exe.darwin-x64@12.8.1",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "12.8.1"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@pnpm/exe.freebsd-x64",
+        "path": "@pnpm/exe.freebsd-x64@12.8.1",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "12.8.1"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@pnpm/exe.linux-arm64-musl",
+        "path": "@pnpm/exe.linux-arm64-musl@12.8.1",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "12.8.1"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@pnpm/exe.linux-arm64",
+        "path": "@pnpm/exe.linux-arm64@12.8.1",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "12.8.1"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@pnpm/exe.linux-ppc64",
+        "path": "@pnpm/exe.linux-ppc64@12.8.1",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "12.8.1"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@pnpm/exe.linux-riscv64",
+        "path": "@pnpm/exe.linux-riscv64@12.8.1",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "12.8.1"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@pnpm/exe.linux-s390x",
+        "path": "@pnpm/exe.linux-s390x@12.8.1",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "12.8.1"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@pnpm/exe.linux-x64-musl",
+        "path": "@pnpm/exe.linux-x64-musl@12.8.1",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "12.8.1"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@pnpm/exe.linux-x64",
+        "path": "@pnpm/exe.linux-x64@12.8.1",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "12.8.1"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@pnpm/exe.win32-arm64",
+        "path": "@pnpm/exe.win32-arm64@12.8.1",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "12.8.1"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@pnpm/exe.win32-x64",
+        "path": "@pnpm/exe.win32-x64@12.8.1",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "12.8.1"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "pnpm",
+        "path": "pnpm@12.8.1",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "12.8.1"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@babel/code-frame",
+        "path": "@babel/code-frame@7.29.7",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "7.29.7"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@babel/compat-data",
+        "path": "@babel/compat-data@7.29.7",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "7.29.7"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@babel/core",
+        "path": "@babel/core@7.29.7",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "7.29.7"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@babel/generator",
+        "path": "@babel/generator@7.29.8",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "7.29.8"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@babel/helper-compilation-targets",
+        "path": "@babel/helper-compilation-targets@7.29.7",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "7.29.7"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@babel/helper-globals",
+        "path": "@babel/helper-globals@7.29.7",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "7.29.7"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@babel/helper-module-imports",
+        "path": "@babel/helper-module-imports@7.29.7",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "7.29.7"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@babel/helper-module-transforms",
+        "path": "@babel/helper-module-transforms@7.29.7",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "7.29.7"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@babel/helper-plugin-utils",
+        "path": "@babel/helper-plugin-utils@7.29.7",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "7.29.7"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@babel/helper-string-parser",
+        "path": "@babel/helper-string-parser@7.29.7",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "7.29.7"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@babel/helper-validator-identifier",
+        "path": "@babel/helper-validator-identifier@7.29.7",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "7.29.7"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@babel/helper-validator-option",
+        "path": "@babel/helper-validator-option@7.29.7",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "7.29.7"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@babel/helpers",
+        "path": "@babel/helpers@7.29.10",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "7.29.10"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@babel/parser",
+        "path": "@babel/parser@7.29.9",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "7.29.9"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@babel/plugin-transform-react-jsx-self",
+        "path": "@babel/plugin-transform-react-jsx-self@7.29.7",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "7.29.7"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@babel/plugin-transform-react-jsx-source",
+        "path": "@babel/plugin-transform-react-jsx-source@7.29.7",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "7.29.7"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@babel/runtime",
+        "path": "@babel/runtime@7.29.10",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "7.29.10"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@babel/template",
+        "path": "@babel/template@7.29.7",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "7.29.7"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@babel/traverse",
+        "path": "@babel/traverse@7.29.10",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "7.29.10"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@babel/types",
+        "path": "@babel/types@7.29.8",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "7.29.8"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@dnd-kit/accessibility",
+        "path": "@dnd-kit/accessibility@3.1.1",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "3.1.1"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@dnd-kit/core",
+        "path": "@dnd-kit/core@6.3.1",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "6.3.1"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@dnd-kit/sortable",
+        "path": "@dnd-kit/sortable@7.0.2",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "7.0.2"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@dnd-kit/utilities",
+        "path": "@dnd-kit/utilities@3.2.2",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "3.2.2"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@douyinfe/semi-animation-react",
+        "path": "@douyinfe/semi-animation-react@2.104.0",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "2.104.0"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@douyinfe/semi-animation-styled",
+        "path": "@douyinfe/semi-animation-styled@2.104.0",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "2.104.0"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@douyinfe/semi-animation",
+        "path": "@douyinfe/semi-animation@2.104.0",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "2.104.0"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@douyinfe/semi-foundation",
+        "path": "@douyinfe/semi-foundation@2.104.0",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "2.104.0"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@douyinfe/semi-icons",
+        "path": "@douyinfe/semi-icons@2.104.0",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "2.104.0"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@douyinfe/semi-illustrations",
+        "path": "@douyinfe/semi-illustrations@2.104.0",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "2.104.0"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@douyinfe/semi-json-viewer-core",
+        "path": "@douyinfe/semi-json-viewer-core@2.104.0",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "2.104.0"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@douyinfe/semi-theme-default",
+        "path": "@douyinfe/semi-theme-default@2.104.0",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "2.104.0"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@douyinfe/semi-ui",
+        "path": "@douyinfe/semi-ui@2.104.0",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "2.104.0"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@esbuild/aix-ppc64",
+        "path": "@esbuild/aix-ppc64@0.25.12",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "0.25.12"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@esbuild/android-arm64",
+        "path": "@esbuild/android-arm64@0.25.12",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "0.25.12"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@esbuild/android-arm",
+        "path": "@esbuild/android-arm@0.25.12",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "0.25.12"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@esbuild/android-x64",
+        "path": "@esbuild/android-x64@0.25.12",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "0.25.12"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@esbuild/darwin-arm64",
+        "path": "@esbuild/darwin-arm64@0.25.12",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "0.25.12"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@esbuild/darwin-x64",
+        "path": "@esbuild/darwin-x64@0.25.12",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "0.25.12"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@esbuild/freebsd-arm64",
+        "path": "@esbuild/freebsd-arm64@0.25.12",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "0.25.12"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@esbuild/freebsd-x64",
+        "path": "@esbuild/freebsd-x64@0.25.12",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "0.25.12"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@esbuild/linux-arm64",
+        "path": "@esbuild/linux-arm64@0.25.12",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "0.25.12"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@esbuild/linux-arm",
+        "path": "@esbuild/linux-arm@0.25.12",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "0.25.12"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@esbuild/linux-ia32",
+        "path": "@esbuild/linux-ia32@0.25.12",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "0.25.12"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@esbuild/linux-loong64",
+        "path": "@esbuild/linux-loong64@0.25.12",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "0.25.12"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@esbuild/linux-mips64el",
+        "path": "@esbuild/linux-mips64el@0.25.12",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "0.25.12"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@esbuild/linux-ppc64",
+        "path": "@esbuild/linux-ppc64@0.25.12",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "0.25.12"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@esbuild/linux-riscv64",
+        "path": "@esbuild/linux-riscv64@0.25.12",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "0.25.12"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@esbuild/linux-s390x",
+        "path": "@esbuild/linux-s390x@0.25.12",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "0.25.12"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@esbuild/linux-x64",
+        "path": "@esbuild/linux-x64@0.25.12",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "0.25.12"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@esbuild/netbsd-arm64",
+        "path": "@esbuild/netbsd-arm64@0.25.12",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "0.25.12"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@esbuild/netbsd-x64",
+        "path": "@esbuild/netbsd-x64@0.25.12",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "0.25.12"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@esbuild/openbsd-arm64",
+        "path": "@esbuild/openbsd-arm64@0.25.12",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "0.25.12"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@esbuild/openbsd-x64",
+        "path": "@esbuild/openbsd-x64@0.25.12",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "0.25.12"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@esbuild/openharmony-arm64",
+        "path": "@esbuild/openharmony-arm64@0.25.12",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "0.25.12"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@esbuild/sunos-x64",
+        "path": "@esbuild/sunos-x64@0.25.12",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "0.25.12"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@esbuild/win32-arm64",
+        "path": "@esbuild/win32-arm64@0.25.12",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "0.25.12"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@esbuild/win32-ia32",
+        "path": "@esbuild/win32-ia32@0.25.12",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "0.25.12"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@esbuild/win32-x64",
+        "path": "@esbuild/win32-x64@0.25.12",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "0.25.12"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@floating-ui/core",
+        "path": "@floating-ui/core@1.8.0",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "1.8.0"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@floating-ui/dom",
+        "path": "@floating-ui/dom@1.8.0",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "1.8.0"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@floating-ui/utils",
+        "path": "@floating-ui/utils@0.2.12",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "0.2.12"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@jridgewell/gen-mapping",
+        "path": "@jridgewell/gen-mapping@0.3.13",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "0.3.13"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@jridgewell/remapping",
+        "path": "@jridgewell/remapping@2.3.5",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "2.3.5"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@jridgewell/resolve-uri",
+        "path": "@jridgewell/resolve-uri@3.1.2",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "3.1.2"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@jridgewell/sourcemap-codec",
+        "path": "@jridgewell/sourcemap-codec@1.6.0",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "1.6.0"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@jridgewell/trace-mapping",
+        "path": "@jridgewell/trace-mapping@0.3.31",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "0.3.31"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@mdx-js/mdx",
+        "path": "@mdx-js/mdx@3.1.1",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "3.1.1"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@napi-rs/lzma-linux-x64-gnu",
+        "path": "@napi-rs/lzma-linux-x64-gnu@1.5.1",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "1.5.1"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@reduxjs/toolkit",
+        "path": "@reduxjs/toolkit@2.13.0",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "2.13.0"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@rolldown/pluginutils",
+        "path": "@rolldown/pluginutils@1.0.0-beta.27",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "1.0.0-beta.27"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@rollup/rollup-android-arm-eabi",
+        "path": "@rollup/rollup-android-arm-eabi@4.64.5",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "4.64.5"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@rollup/rollup-android-arm64",
+        "path": "@rollup/rollup-android-arm64@4.64.5",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "4.64.5"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@rollup/rollup-darwin-arm64",
+        "path": "@rollup/rollup-darwin-arm64@4.64.5",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "4.64.5"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@rollup/rollup-darwin-x64",
+        "path": "@rollup/rollup-darwin-x64@4.64.5",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "4.64.5"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@rollup/rollup-freebsd-arm64",
+        "path": "@rollup/rollup-freebsd-arm64@4.64.5",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "4.64.5"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@rollup/rollup-freebsd-x64",
+        "path": "@rollup/rollup-freebsd-x64@4.64.5",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "4.64.5"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@rollup/rollup-linux-arm-gnueabihf",
+        "path": "@rollup/rollup-linux-arm-gnueabihf@4.64.5",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "4.64.5"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@rollup/rollup-linux-arm-musleabihf",
+        "path": "@rollup/rollup-linux-arm-musleabihf@4.64.5",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "4.64.5"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@rollup/rollup-linux-arm64-gnu",
+        "path": "@rollup/rollup-linux-arm64-gnu@4.64.5",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "4.64.5"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@rollup/rollup-linux-arm64-musl",
+        "path": "@rollup/rollup-linux-arm64-musl@4.64.5",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "4.64.5"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@rollup/rollup-linux-loong64-gnu",
+        "path": "@rollup/rollup-linux-loong64-gnu@4.64.5",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "4.64.5"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@rollup/rollup-linux-loong64-musl",
+        "path": "@rollup/rollup-linux-loong64-musl@4.64.5",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "4.64.5"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@rollup/rollup-linux-ppc64-gnu",
+        "path": "@rollup/rollup-linux-ppc64-gnu@4.64.5",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "4.64.5"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@rollup/rollup-linux-ppc64-musl",
+        "path": "@rollup/rollup-linux-ppc64-musl@4.64.5",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "4.64.5"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@rollup/rollup-linux-riscv64-gnu",
+        "path": "@rollup/rollup-linux-riscv64-gnu@4.64.5",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "4.64.5"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@rollup/rollup-linux-riscv64-musl",
+        "path": "@rollup/rollup-linux-riscv64-musl@4.64.5",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "4.64.5"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@rollup/rollup-linux-s390x-gnu",
+        "path": "@rollup/rollup-linux-s390x-gnu@4.64.5",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "4.64.5"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@rollup/rollup-linux-x64-gnu",
+        "path": "@rollup/rollup-linux-x64-gnu@4.64.5",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "4.64.5"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@rollup/rollup-linux-x64-musl",
+        "path": "@rollup/rollup-linux-x64-musl@4.64.5",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "4.64.5"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@rollup/rollup-openbsd-x64",
+        "path": "@rollup/rollup-openbsd-x64@4.64.5",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "4.64.5"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@rollup/rollup-openharmony-arm64",
+        "path": "@rollup/rollup-openharmony-arm64@4.64.5",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "4.64.5"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@rollup/rollup-win32-arm64-msvc",
+        "path": "@rollup/rollup-win32-arm64-msvc@4.64.5",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "4.64.5"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@rollup/rollup-win32-ia32-msvc",
+        "path": "@rollup/rollup-win32-ia32-msvc@4.64.5",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "4.64.5"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@rollup/rollup-win32-x64-gnu",
+        "path": "@rollup/rollup-win32-x64-gnu@4.64.5",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "4.64.5"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@rollup/rollup-win32-x64-msvc",
+        "path": "@rollup/rollup-win32-x64-msvc@4.64.5",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "4.64.5"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@standard-schema/spec",
+        "path": "@standard-schema/spec@1.1.0",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "1.1.0"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@standard-schema/utils",
+        "path": "@standard-schema/utils@0.3.0",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "0.3.0"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@tiptap/core",
+        "path": "@tiptap/core@3.31.4",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "3.31.4"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@tiptap/extension-blockquote",
+        "path": "@tiptap/extension-blockquote@3.31.4",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "3.31.4"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@tiptap/extension-bold",
+        "path": "@tiptap/extension-bold@3.31.4",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "3.31.4"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@tiptap/extension-bubble-menu",
+        "path": "@tiptap/extension-bubble-menu@3.31.4",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "3.31.4"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@tiptap/extension-bullet-list",
+        "path": "@tiptap/extension-bullet-list@3.31.4",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "3.31.4"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@tiptap/extension-code-block",
+        "path": "@tiptap/extension-code-block@3.31.4",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "3.31.4"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@tiptap/extension-code",
+        "path": "@tiptap/extension-code@3.31.4",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "3.31.4"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@tiptap/extension-document",
+        "path": "@tiptap/extension-document@3.31.4",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "3.31.4"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@tiptap/extension-dropcursor",
+        "path": "@tiptap/extension-dropcursor@3.31.4",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "3.31.4"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@tiptap/extension-floating-menu",
+        "path": "@tiptap/extension-floating-menu@3.31.4",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "3.31.4"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@tiptap/extension-gapcursor",
+        "path": "@tiptap/extension-gapcursor@3.31.4",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "3.31.4"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@tiptap/extension-hard-break",
+        "path": "@tiptap/extension-hard-break@3.31.4",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "3.31.4"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@tiptap/extension-heading",
+        "path": "@tiptap/extension-heading@3.31.4",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "3.31.4"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@tiptap/extension-horizontal-rule",
+        "path": "@tiptap/extension-horizontal-rule@3.31.4",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "3.31.4"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@tiptap/extension-image",
+        "path": "@tiptap/extension-image@3.31.4",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "3.31.4"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@tiptap/extension-italic",
+        "path": "@tiptap/extension-italic@3.31.4",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "3.31.4"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@tiptap/extension-link",
+        "path": "@tiptap/extension-link@3.31.4",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "3.31.4"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@tiptap/extension-list-item",
+        "path": "@tiptap/extension-list-item@3.31.4",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "3.31.4"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@tiptap/extension-list-keymap",
+        "path": "@tiptap/extension-list-keymap@3.31.4",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "3.31.4"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@tiptap/extension-list",
+        "path": "@tiptap/extension-list@3.31.4",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "3.31.4"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@tiptap/extension-mention",
+        "path": "@tiptap/extension-mention@3.31.4",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "3.31.4"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@tiptap/extension-ordered-list",
+        "path": "@tiptap/extension-ordered-list@3.31.4",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "3.31.4"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@tiptap/extension-paragraph",
+        "path": "@tiptap/extension-paragraph@3.31.4",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "3.31.4"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@tiptap/extension-strike",
+        "path": "@tiptap/extension-strike@3.31.4",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "3.31.4"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@tiptap/extension-text-align",
+        "path": "@tiptap/extension-text-align@3.31.4",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "3.31.4"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@tiptap/extension-text-style",
+        "path": "@tiptap/extension-text-style@3.31.4",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "3.31.4"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@tiptap/extension-text",
+        "path": "@tiptap/extension-text@3.31.4",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "3.31.4"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@tiptap/extension-underline",
+        "path": "@tiptap/extension-underline@3.31.4",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "3.31.4"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@tiptap/extensions",
+        "path": "@tiptap/extensions@3.31.4",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "3.31.4"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@tiptap/pm",
+        "path": "@tiptap/pm@3.31.4",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "3.31.4"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@tiptap/react",
+        "path": "@tiptap/react@3.31.4",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "3.31.4"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@tiptap/starter-kit",
+        "path": "@tiptap/starter-kit@3.31.4",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "3.31.4"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@tiptap/suggestion",
+        "path": "@tiptap/suggestion@3.31.4",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "3.31.4"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@types/babel__core",
+        "path": "@types/babel__core@7.20.5",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "7.20.5"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@types/babel__generator",
+        "path": "@types/babel__generator@7.27.0",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "7.27.0"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@types/babel__template",
+        "path": "@types/babel__template@7.4.4",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "7.4.4"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@types/babel__traverse",
+        "path": "@types/babel__traverse@7.28.0",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "7.28.0"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@types/crypto-js",
+        "path": "@types/crypto-js@4.2.2",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "4.2.2"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@types/debug",
+        "path": "@types/debug@4.1.13",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "4.1.13"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@types/estree-jsx",
+        "path": "@types/estree-jsx@1.0.5",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "1.0.5"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@types/estree",
+        "path": "@types/estree@1.0.9",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "1.0.9"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@types/hast",
+        "path": "@types/hast@3.0.5",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "3.0.5"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@types/mdast",
+        "path": "@types/mdast@4.0.4",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "4.0.4"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@types/mdx",
+        "path": "@types/mdx@2.0.14",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "2.0.14"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@types/ms",
+        "path": "@types/ms@2.1.0",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "2.1.0"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@types/node",
+        "path": "@types/node@22.20.5",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "22.20.5"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@types/react-dom",
+        "path": "@types/react-dom@19.3.0",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "19.3.0"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@types/react",
+        "path": "@types/react@19.3.0",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "19.3.0"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@types/unist",
+        "path": "@types/unist@2.0.11",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "2.0.11"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@types/unist",
+        "path": "@types/unist@3.0.3",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "3.0.3"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@types/use-sync-external-store",
+        "path": "@types/use-sync-external-store@0.0.6",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "0.0.6"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@ungap/structured-clone",
+        "path": "@ungap/structured-clone@1.4.0",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "1.4.0"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@vitejs/plugin-react",
+        "path": "@vitejs/plugin-react@4.7.0",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "4.7.0"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@xterm/addon-fit",
+        "path": "@xterm/addon-fit@0.10.0",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "0.10.0"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "@xterm/xterm",
+        "path": "@xterm/xterm@5.5.0",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "5.5.0"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "acorn-jsx",
+        "path": "acorn-jsx@5.3.2",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "5.3.2"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "acorn",
+        "path": "acorn@8.19.0",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "8.19.0"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "astring",
+        "path": "astring@1.9.0",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "1.9.0"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "async-validator",
+        "path": "async-validator@3.5.2",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "3.5.2"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "bail",
+        "path": "bail@2.0.2",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "2.0.2"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "baseline-browser-mapping",
+        "path": "baseline-browser-mapping@2.11.28",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "2.11.28"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "bezier-easing",
+        "path": "bezier-easing@2.1.0",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "2.1.0"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "browserslist",
+        "path": "browserslist@4.29.3",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "4.29.3"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "caniuse-lite",
+        "path": "caniuse-lite@1.0.30001815",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "1.0.30001815"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "ccount",
+        "path": "ccount@2.0.1",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "2.0.1"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "character-entities-html4",
+        "path": "character-entities-html4@2.1.0",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "2.1.0"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "character-entities-legacy",
+        "path": "character-entities-legacy@3.0.0",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "3.0.0"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "character-entities",
+        "path": "character-entities@2.0.2",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "2.0.2"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "character-reference-invalid",
+        "path": "character-reference-invalid@2.0.1",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "2.0.1"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "classnames",
+        "path": "classnames@2.5.1",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "2.5.1"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "clsx",
+        "path": "clsx@2.1.1",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "2.1.1"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "collapse-white-space",
+        "path": "collapse-white-space@2.1.0",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "2.1.0"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "comma-separated-tokens",
+        "path": "comma-separated-tokens@2.0.3",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "2.0.3"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "compute-scroll-into-view",
+        "path": "compute-scroll-into-view@1.0.20",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "1.0.20"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "convert-source-map",
+        "path": "convert-source-map@2.0.0",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "2.0.0"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "cookie",
+        "path": "cookie@1.1.1",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "1.1.1"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "copy-text-to-clipboard",
+        "path": "copy-text-to-clipboard@2.2.0",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "2.2.0"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "crypto-js",
+        "path": "crypto-js@4.2.0",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "4.2.0"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "csstype",
+        "path": "csstype@3.2.3",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "3.2.3"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "date-fns-tz",
+        "path": "date-fns-tz@1.3.8",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "1.3.8"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "date-fns",
+        "path": "date-fns@2.30.0",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "2.30.0"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "debug",
+        "path": "debug@4.4.3",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "4.4.3"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "decode-named-character-reference",
+        "path": "decode-named-character-reference@1.3.0",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "1.3.0"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "dequal",
+        "path": "dequal@2.0.3",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "2.0.3"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "devlop",
+        "path": "devlop@1.1.0",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "1.1.0"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "echarts",
+        "path": "echarts@5.6.0",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "5.6.0"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "electron-to-chromium",
+        "path": "electron-to-chromium@1.5.452",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "1.5.452"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "esast-util-from-estree",
+        "path": "esast-util-from-estree@2.0.0",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "2.0.0"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "esast-util-from-js",
+        "path": "esast-util-from-js@2.0.1",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "2.0.1"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "esbuild",
+        "path": "esbuild@0.25.12",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "0.25.12"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "escalade",
+        "path": "escalade@3.2.0",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "3.2.0"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "escape-string-regexp",
+        "path": "escape-string-regexp@5.0.0",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "5.0.0"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "estree-util-attach-comments",
+        "path": "estree-util-attach-comments@3.0.0",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "3.0.0"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "estree-util-build-jsx",
+        "path": "estree-util-build-jsx@3.0.1",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "3.0.1"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "estree-util-is-identifier-name",
+        "path": "estree-util-is-identifier-name@3.0.0",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "3.0.0"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "estree-util-scope",
+        "path": "estree-util-scope@1.0.1",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "1.0.1"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "estree-util-to-js",
+        "path": "estree-util-to-js@2.0.0",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "2.0.0"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "estree-util-visit",
+        "path": "estree-util-visit@2.0.0",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "2.0.0"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "estree-walker",
+        "path": "estree-walker@3.0.3",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "3.0.3"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "extend",
+        "path": "extend@3.0.2",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "3.0.2"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "fast-copy",
+        "path": "fast-copy@3.1.0",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "3.1.0"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "fast-equals",
+        "path": "fast-equals@5.4.4",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "5.4.4"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "fdir",
+        "path": "fdir@6.5.0",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "6.5.0"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "fsevents",
+        "path": "fsevents@2.3.3",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "2.3.3"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "gensync",
+        "path": "gensync@1.0.0-beta.2",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "1.0.0-beta.2"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "hast-util-to-estree",
+        "path": "hast-util-to-estree@3.1.3",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "3.1.3"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "hast-util-to-jsx-runtime",
+        "path": "hast-util-to-jsx-runtime@2.3.6",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "2.3.6"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "hast-util-whitespace",
+        "path": "hast-util-whitespace@3.0.0",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "3.0.0"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "html-parse-stringify",
+        "path": "html-parse-stringify@3.1.0",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "3.1.0"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "i18next",
+        "path": "i18next@24.2.3",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "24.2.3"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "immer",
+        "path": "immer@11.1.21",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "11.1.21"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "inline-style-parser",
+        "path": "inline-style-parser@0.2.7",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "0.2.7"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "is-alphabetical",
+        "path": "is-alphabetical@2.0.1",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "2.0.1"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "is-alphanumerical",
+        "path": "is-alphanumerical@2.0.1",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "2.0.1"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "is-decimal",
+        "path": "is-decimal@2.0.1",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "2.0.1"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "is-hexadecimal",
+        "path": "is-hexadecimal@2.0.1",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "2.0.1"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "is-plain-obj",
+        "path": "is-plain-obj@4.1.0",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "4.1.0"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "js-tokens",
+        "path": "js-tokens@4.0.0",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "4.0.0"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "jsencrypt",
+        "path": "jsencrypt@3.5.4",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "3.5.4"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "jsesc",
+        "path": "jsesc@3.1.0",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "3.1.0"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "json5",
+        "path": "json5@2.2.3",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "2.2.3"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "jsonc-parser",
+        "path": "jsonc-parser@3.3.1",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "3.3.1"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "linkifyjs",
+        "path": "linkifyjs@4.3.3",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "4.3.3"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "lodash",
+        "path": "lodash@4.18.1",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "4.18.1"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "longest-streak",
+        "path": "longest-streak@3.1.0",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "3.1.0"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "loose-envify",
+        "path": "loose-envify@1.4.0",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "1.4.0"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "lottie-web",
+        "path": "lottie-web@5.13.0",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "5.13.0"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "lru-cache",
+        "path": "lru-cache@5.1.1",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "5.1.1"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "markdown-extensions",
+        "path": "markdown-extensions@2.0.0",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "2.0.0"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "markdown-table",
+        "path": "markdown-table@3.0.4",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "3.0.4"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "mdast-util-find-and-replace",
+        "path": "mdast-util-find-and-replace@3.0.3",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "3.0.3"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "mdast-util-from-markdown",
+        "path": "mdast-util-from-markdown@2.1.0",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "2.1.0"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "mdast-util-gfm-autolink-literal",
+        "path": "mdast-util-gfm-autolink-literal@2.0.1",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "2.0.1"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "mdast-util-gfm-footnote",
+        "path": "mdast-util-gfm-footnote@2.1.0",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "2.1.0"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "mdast-util-gfm-strikethrough",
+        "path": "mdast-util-gfm-strikethrough@2.0.1",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "2.0.1"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "mdast-util-gfm-table",
+        "path": "mdast-util-gfm-table@2.0.0",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "2.0.0"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "mdast-util-gfm-task-list-item",
+        "path": "mdast-util-gfm-task-list-item@2.0.0",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "2.0.0"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "mdast-util-gfm",
+        "path": "mdast-util-gfm@3.1.0",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "3.1.0"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "mdast-util-mdx-expression",
+        "path": "mdast-util-mdx-expression@2.0.1",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "2.0.1"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "mdast-util-mdx-jsx",
+        "path": "mdast-util-mdx-jsx@3.2.0",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "3.2.0"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "mdast-util-mdx",
+        "path": "mdast-util-mdx@3.0.0",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "3.0.0"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "mdast-util-mdxjs-esm",
+        "path": "mdast-util-mdxjs-esm@2.0.1",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "2.0.1"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "mdast-util-phrasing",
+        "path": "mdast-util-phrasing@4.1.0",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "4.1.0"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "mdast-util-to-hast",
+        "path": "mdast-util-to-hast@13.2.1",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "13.2.1"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "mdast-util-to-markdown",
+        "path": "mdast-util-to-markdown@2.2.0",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "2.2.0"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "mdast-util-to-string",
+        "path": "mdast-util-to-string@4.0.0",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "4.0.0"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "memoize-one",
+        "path": "memoize-one@5.2.1",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "5.2.1"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "micromark-core-commonmark",
+        "path": "micromark-core-commonmark@2.0.4",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "2.0.4"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "micromark-extension-gfm-autolink-literal",
+        "path": "micromark-extension-gfm-autolink-literal@2.1.0",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "2.1.0"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "micromark-extension-gfm-footnote",
+        "path": "micromark-extension-gfm-footnote@2.1.0",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "2.1.0"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "micromark-extension-gfm-strikethrough",
+        "path": "micromark-extension-gfm-strikethrough@2.1.0",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "2.1.0"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "micromark-extension-gfm-table",
+        "path": "micromark-extension-gfm-table@2.1.2",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "2.1.2"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "micromark-extension-gfm-tagfilter",
+        "path": "micromark-extension-gfm-tagfilter@2.0.0",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "2.0.0"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "micromark-extension-gfm-task-list-item",
+        "path": "micromark-extension-gfm-task-list-item@2.1.0",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "2.1.0"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "micromark-extension-gfm",
+        "path": "micromark-extension-gfm@3.0.0",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "3.0.0"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "micromark-extension-mdx-expression",
+        "path": "micromark-extension-mdx-expression@3.0.1",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "3.0.1"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "micromark-extension-mdx-jsx",
+        "path": "micromark-extension-mdx-jsx@3.0.2",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "3.0.2"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "micromark-extension-mdx-md",
+        "path": "micromark-extension-mdx-md@2.0.0",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "2.0.0"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "micromark-extension-mdxjs-esm",
+        "path": "micromark-extension-mdxjs-esm@3.0.0",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "3.0.0"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "micromark-extension-mdxjs",
+        "path": "micromark-extension-mdxjs@3.0.0",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "3.0.0"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "micromark-factory-destination",
+        "path": "micromark-factory-destination@2.0.1",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "2.0.1"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "micromark-factory-label",
+        "path": "micromark-factory-label@2.0.1",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "2.0.1"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "micromark-factory-mdx-expression",
+        "path": "micromark-factory-mdx-expression@2.0.3",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "2.0.3"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "micromark-factory-space",
+        "path": "micromark-factory-space@2.1.0",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "2.1.0"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "micromark-factory-title",
+        "path": "micromark-factory-title@2.0.1",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "2.0.1"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "micromark-factory-whitespace",
+        "path": "micromark-factory-whitespace@2.0.1",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "2.0.1"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "micromark-util-character",
+        "path": "micromark-util-character@2.1.1",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "2.1.1"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "micromark-util-chunked",
+        "path": "micromark-util-chunked@2.0.1",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "2.0.1"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "micromark-util-classify-character",
+        "path": "micromark-util-classify-character@2.0.1",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "2.0.1"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "micromark-util-combine-extensions",
+        "path": "micromark-util-combine-extensions@2.0.1",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "2.0.1"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "micromark-util-decode-numeric-character-reference",
+        "path": "micromark-util-decode-numeric-character-reference@2.0.2",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "2.0.2"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "micromark-util-decode-string",
+        "path": "micromark-util-decode-string@2.0.1",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "2.0.1"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "micromark-util-edit-map",
+        "path": "micromark-util-edit-map@1.0.0",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "1.0.0"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "micromark-util-encode",
+        "path": "micromark-util-encode@2.0.1",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "2.0.1"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "micromark-util-events-to-acorn",
+        "path": "micromark-util-events-to-acorn@2.0.3",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "2.0.3"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "micromark-util-html-tag-name",
+        "path": "micromark-util-html-tag-name@2.0.1",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "2.0.1"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "micromark-util-normalize-identifier",
+        "path": "micromark-util-normalize-identifier@2.0.1",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "2.0.1"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "micromark-util-resolve-all",
+        "path": "micromark-util-resolve-all@2.0.1",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "2.0.1"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "micromark-util-sanitize-uri",
+        "path": "micromark-util-sanitize-uri@2.0.1",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "2.0.1"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "micromark-util-subtokenize",
+        "path": "micromark-util-subtokenize@2.1.0",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "2.1.0"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "micromark-util-symbol",
+        "path": "micromark-util-symbol@2.0.1",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "2.0.1"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "micromark-util-types",
+        "path": "micromark-util-types@2.0.3",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "2.0.3"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "micromark",
+        "path": "micromark@4.0.3",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "4.0.3"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "ms",
+        "path": "ms@2.1.3",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "2.1.3"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "nanoid",
+        "path": "nanoid@3.3.20",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "3.3.20"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "node-releases",
+        "path": "node-releases@2.0.58",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "2.0.58"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "object-assign",
+        "path": "object-assign@4.1.1",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "4.1.1"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "orderedmap",
+        "path": "orderedmap@2.1.1",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "2.1.1"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "parse-entities",
+        "path": "parse-entities@4.0.2",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "4.0.2"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "picocolors",
+        "path": "picocolors@1.1.1",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "1.1.1"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "picomatch",
+        "path": "picomatch@4.0.7",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "4.0.7"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "postcss",
+        "path": "postcss@8.5.29",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "8.5.29"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "prismjs",
+        "path": "prismjs@1.30.0",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "1.30.0"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "prop-types",
+        "path": "prop-types@15.8.1",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "15.8.1"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "property-information",
+        "path": "property-information@7.2.0",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "7.2.0"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "prosemirror-changeset",
+        "path": "prosemirror-changeset@2.4.4",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "2.4.4"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "prosemirror-commands",
+        "path": "prosemirror-commands@1.7.2",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "1.7.2"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "prosemirror-dropcursor",
+        "path": "prosemirror-dropcursor@1.8.4",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "1.8.4"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "prosemirror-gapcursor",
+        "path": "prosemirror-gapcursor@1.4.1",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "1.4.1"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "prosemirror-history",
+        "path": "prosemirror-history@1.5.1",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "1.5.1"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "prosemirror-inputrules",
+        "path": "prosemirror-inputrules@1.5.1",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "1.5.1"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "prosemirror-keymap",
+        "path": "prosemirror-keymap@1.2.3",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "1.2.3"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "prosemirror-model",
+        "path": "prosemirror-model@1.25.12",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "1.25.12"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "prosemirror-schema-list",
+        "path": "prosemirror-schema-list@1.5.1",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "1.5.1"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "prosemirror-state",
+        "path": "prosemirror-state@1.4.4",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "1.4.4"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "prosemirror-tables",
+        "path": "prosemirror-tables@1.8.5",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "1.8.5"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "prosemirror-transform",
+        "path": "prosemirror-transform@1.12.2",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "1.12.2"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "prosemirror-view",
+        "path": "prosemirror-view@1.42.6",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "1.42.6"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "react-dom",
+        "path": "react-dom@19.3.0",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "19.3.0"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "react-draggable",
+        "path": "react-draggable@4.7.2",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "4.7.2"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "react-i18next",
+        "path": "react-i18next@15.7.4",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "15.7.4"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "react-is",
+        "path": "react-is@16.13.1",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "16.13.1"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "react-redux",
+        "path": "react-redux@9.3.0",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "9.3.0"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "react-refresh",
+        "path": "react-refresh@0.17.0",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "0.17.0"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "react-resizable",
+        "path": "react-resizable@3.2.0",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "3.2.0"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "react-router-dom",
+        "path": "react-router-dom@7.18.4",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "7.18.4"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "react-router",
+        "path": "react-router@7.18.4",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "7.18.4"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "react-window",
+        "path": "react-window@1.8.11",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "1.8.11"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "react",
+        "path": "react@19.3.0",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "19.3.0"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "recma-build-jsx",
+        "path": "recma-build-jsx@1.0.0",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "1.0.0"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "recma-jsx",
+        "path": "recma-jsx@1.0.1",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "1.0.1"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "recma-parse",
+        "path": "recma-parse@1.0.0",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "1.0.0"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "recma-stringify",
+        "path": "recma-stringify@1.0.0",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "1.0.0"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "redux-thunk",
+        "path": "redux-thunk@3.1.0",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "3.1.0"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "redux",
+        "path": "redux@5.0.1",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "5.0.1"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "rehype-recma",
+        "path": "rehype-recma@1.0.0",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "1.0.0"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "remark-gfm",
+        "path": "remark-gfm@4.0.1",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "4.0.1"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "remark-mdx",
+        "path": "remark-mdx@3.1.1",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "3.1.1"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "remark-parse",
+        "path": "remark-parse@11.0.0",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "11.0.0"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "remark-rehype",
+        "path": "remark-rehype@11.1.2",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "11.1.2"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "remark-stringify",
+        "path": "remark-stringify@11.0.0",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "11.0.0"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "reselect",
+        "path": "reselect@5.3.0",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "5.3.0"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "reset-css",
+        "path": "reset-css@5.0.2",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "5.0.2"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "rollup",
+        "path": "rollup@4.64.5",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "4.64.5"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "rope-sequence",
+        "path": "rope-sequence@1.3.4",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "1.3.4"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "scheduler",
+        "path": "scheduler@0.28.0",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "0.28.0"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "scroll-into-view-if-needed",
+        "path": "scroll-into-view-if-needed@2.2.31",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "2.2.31"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "semver",
+        "path": "semver@6.3.1",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "6.3.1"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "set-cookie-parser",
+        "path": "set-cookie-parser@2.7.2",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "2.7.2"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "source-map-js",
+        "path": "source-map-js@1.2.2",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "1.2.2"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "source-map",
+        "path": "source-map@0.7.6",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "0.7.6"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "space-separated-tokens",
+        "path": "space-separated-tokens@2.0.2",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "2.0.2"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "stringify-entities",
+        "path": "stringify-entities@4.0.4",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "4.0.4"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "style-to-js",
+        "path": "style-to-js@1.1.21",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "1.1.21"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "style-to-object",
+        "path": "style-to-object@1.0.14",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "1.0.14"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "tinyglobby",
+        "path": "tinyglobby@0.2.17",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "0.2.17"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "trim-lines",
+        "path": "trim-lines@3.0.1",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "3.0.1"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "trough",
+        "path": "trough@2.2.0",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "2.2.0"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "tslib",
+        "path": "tslib@2.3.0",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "2.3.0"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "typescript",
+        "path": "typescript@5.9.3",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "5.9.3"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "undici-types",
+        "path": "undici-types@6.21.0",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "6.21.0"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "unified",
+        "path": "unified@11.0.5",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "11.0.5"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "unist-util-is",
+        "path": "unist-util-is@6.0.1",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "6.0.1"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "unist-util-position-from-estree",
+        "path": "unist-util-position-from-estree@2.0.0",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "2.0.0"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "unist-util-position",
+        "path": "unist-util-position@5.0.0",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "5.0.0"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "unist-util-stringify-position",
+        "path": "unist-util-stringify-position@4.0.0",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "4.0.0"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "unist-util-visit-parents",
+        "path": "unist-util-visit-parents@6.0.2",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "6.0.2"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "unist-util-visit",
+        "path": "unist-util-visit@5.1.0",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "5.1.0"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "update-browserslist-db",
+        "path": "update-browserslist-db@1.3.4",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "1.3.4"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "use-sync-external-store",
+        "path": "use-sync-external-store@1.7.0",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "1.7.0"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "utility-types",
+        "path": "utility-types@3.11.0",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "3.11.0"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "vfile-message",
+        "path": "vfile-message@4.0.3",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "4.0.3"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "vfile",
+        "path": "vfile@6.0.3",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "6.0.3"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "vite",
+        "path": "vite@6.4.4",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "6.4.4"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "void-elements",
+        "path": "void-elements@3.1.0",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "3.1.0"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "w3c-keyname",
+        "path": "w3c-keyname@2.2.8",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "2.2.8"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "yallist",
+        "path": "yallist@3.1.1",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "3.1.1"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "zrender",
+        "path": "zrender@5.6.1",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "5.6.1"
+      },
+      {
+        "license_hint": null,
+        "linked": false,
+        "name": "zwitch",
+        "path": "zwitch@2.0.4",
+        "review": "THIRD_PARTY_REVIEW",
+        "version": "2.0.4"
+      }
+    ]
+  },
+  "purpose": "manifest_inventory_not_license_grant_or_sbom",
+  "schema_version": 1,
+  "source_scope": "pnpm lock metadata + Go require/replace; excludes downloadable code, assets and release binaries",
+  "summary": {
+    "go_direct_entries": 103,
+    "go_replace_entries": 1,
+    "go_require_entries": 349,
+    "pnpm_entries": 382,
+    "pnpm_missing_license_hints": 382
+  }
+}

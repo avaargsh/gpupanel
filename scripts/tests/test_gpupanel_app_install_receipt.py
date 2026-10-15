@@ -5,7 +5,7 @@ import unittest
 ROOT = Path(__file__).resolve().parents[2]
 HELPER = ROOT / "agent/app/service/app_install_receipt_inspect.go"
 TASK = ROOT / "agent/app/service/task.go"
-UI = ROOT / "frontend/src/components/log/file/index.vue"
+UI = ROOT / "frontend/apps/panel/src/pages/app/InstallReceipt.tsx"
 
 
 class AppInstallReceiptContract(unittest.TestCase):
@@ -32,11 +32,10 @@ class AppInstallReceiptContract(unittest.TestCase):
 
     def test_ui_disables_tailing_and_download_of_synthetic_log(self):
         s = UI.read_text(encoding="utf-8")
-        self.assertIn("res.data.scope === 'admission'", s)
-        self.assertIn("isTailDisabled.value = true;", s)
-        self.assertIn("onCloseLog();", s)
-        self.assertIn('v-if="showDownload && !!logPath"', s)
-
+        self.assertIn("result.data.scope === 'admission'", s)
+        self.assertIn('Admission only; no completed-install proof', s)
+        self.assertNotIn('pollingInterval', s)
+        self.assertNotIn('download', s.split('export default function', 1)[1])
 
 if __name__ == "__main__":
     unittest.main()

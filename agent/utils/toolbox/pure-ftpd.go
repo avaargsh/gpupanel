@@ -13,12 +13,12 @@ import (
 	"sync"
 	"time"
 
-	"github.com/1Panel-dev/1Panel/agent/buserr"
-	"github.com/1Panel-dev/1Panel/agent/constant"
-	"github.com/1Panel-dev/1Panel/agent/global"
-	"github.com/1Panel-dev/1Panel/agent/utils/cmd"
-	"github.com/1Panel-dev/1Panel/agent/utils/controller"
-	"github.com/1Panel-dev/1Panel/agent/utils/toolbox/helper"
+	"github.com/avaargsh/GPUPanel/agent/buserr"
+	"github.com/avaargsh/GPUPanel/agent/constant"
+	"github.com/avaargsh/GPUPanel/agent/global"
+	"github.com/avaargsh/GPUPanel/agent/utils/cmd"
+	"github.com/avaargsh/GPUPanel/agent/utils/controller"
+	"github.com/avaargsh/GPUPanel/agent/utils/toolbox/helper"
 )
 
 type Ftp struct{}

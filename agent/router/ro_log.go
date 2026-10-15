@@ -1,7 +1,7 @@
 package router
 
 import (
-	v2 "github.com/1Panel-dev/1Panel/agent/app/api/v2"
+	v1 "github.com/avaargsh/GPUPanel/agent/app/api/v1"
 	"github.com/gin-gonic/gin"
 )
 
@@ -9,7 +9,7 @@ type LogRouter struct{}
 
 func (s *LogRouter) InitRouter(Router *gin.RouterGroup) {
 	operationRouter := Router.Group("logs")
-	baseApi := v2.ApiGroupApp.BaseApi
+	baseApi := v1.ApiGroupApp.BaseApi
 	{
 		operationRouter.GET("/system/files", baseApi.GetSystemFiles)
 		operationRouter.GET("/system/status", baseApi.GetSystemLogStatus)

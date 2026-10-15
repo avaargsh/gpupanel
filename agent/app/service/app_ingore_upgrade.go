@@ -1,10 +1,10 @@
 package service
 
 import (
-	"github.com/1Panel-dev/1Panel/agent/app/dto/request"
-	"github.com/1Panel-dev/1Panel/agent/app/dto/response"
-	"github.com/1Panel-dev/1Panel/agent/app/model"
-	"github.com/1Panel-dev/1Panel/agent/app/repo"
+	"github.com/avaargsh/GPUPanel/agent/app/dto/request"
+	"github.com/avaargsh/GPUPanel/agent/app/dto/response"
+	"github.com/avaargsh/GPUPanel/agent/app/model"
+	"github.com/avaargsh/GPUPanel/agent/app/repo"
 	"github.com/pkg/errors"
 	"gorm.io/gorm"
 )

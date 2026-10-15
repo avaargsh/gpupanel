@@ -1,7 +1,7 @@
 package router
 
 import (
-	v2 "github.com/1Panel-dev/1Panel/agent/app/api/v2"
+	v1 "github.com/avaargsh/GPUPanel/agent/app/api/v1"
 	"github.com/gin-gonic/gin"
 )
 
@@ -9,7 +9,7 @@ type CronjobRouter struct{}
 
 func (s *CronjobRouter) InitRouter(Router *gin.RouterGroup) {
 	cmdRouter := Router.Group("cronjobs")
-	baseApi := v2.ApiGroupApp.BaseApi
+	baseApi := v1.ApiGroupApp.BaseApi
 	{
 		cmdRouter.POST("", baseApi.CreateCronjob)
 		cmdRouter.POST("/next", baseApi.LoadNextHandle)

@@ -1,10 +1,10 @@
 package auth
 
 import (
-	"github.com/1Panel-dev/1Panel/core/app/dto"
-	"github.com/1Panel-dev/1Panel/core/app/repo"
-	"github.com/1Panel-dev/1Panel/core/buserr"
-	"github.com/1Panel-dev/1Panel/core/init/session/psession"
+	"github.com/avaargsh/GPUPanel/core/app/dto"
+	"github.com/avaargsh/GPUPanel/core/app/repo"
+	"github.com/avaargsh/GPUPanel/core/buserr"
+	"github.com/avaargsh/GPUPanel/core/init/session/psession"
 	"github.com/gin-gonic/gin"
 )
 

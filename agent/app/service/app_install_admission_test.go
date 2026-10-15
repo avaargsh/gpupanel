@@ -6,9 +6,9 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/1Panel-dev/1Panel/agent/app/model"
-	"github.com/1Panel-dev/1Panel/agent/app/task"
-	"github.com/1Panel-dev/1Panel/agent/constant"
+	"github.com/avaargsh/GPUPanel/agent/app/model"
+	"github.com/avaargsh/GPUPanel/agent/app/task"
+	"github.com/avaargsh/GPUPanel/agent/constant"
 	"github.com/glebarez/sqlite"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
@@ -142,7 +142,7 @@ func TestAppInstallTaskAdmissionFailureCannotReleaseOrClobberRunning(t *testing.
 	// no longer overwrite its status, even if another path reports an error.
 	if err := db.Model(&model.Task{}).Where("id = ?", id).
 		Updates(map[string]interface{}{
-			"status": constant.StatusExecuting,
+			"status":      constant.StatusExecuting,
 			"resource_id": uint(123),
 		}).Error; err != nil {
 		t.Fatal(err)

@@ -7,9 +7,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/1Panel-dev/1Panel/agent/app/dto"
-	"github.com/1Panel-dev/1Panel/agent/buserr"
-	"github.com/1Panel-dev/1Panel/agent/utils/toolbox"
+	"github.com/avaargsh/GPUPanel/agent/app/dto"
+	"github.com/avaargsh/GPUPanel/agent/buserr"
+	"github.com/avaargsh/GPUPanel/agent/utils/toolbox"
 )
 
 const defaultFail2BanPath = "/etc/fail2ban/jail.local"

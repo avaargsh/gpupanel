@@ -10,11 +10,11 @@ import (
 	"sync/atomic"
 	"testing"
 
-	"github.com/1Panel-dev/1Panel/core/app/model"
-	"github.com/1Panel-dev/1Panel/core/app/repo"
-	"github.com/1Panel-dev/1Panel/core/global"
-	"github.com/1Panel-dev/1Panel/core/init/proxy"
-	"github.com/1Panel-dev/1Panel/core/init/session/psession"
+	"github.com/avaargsh/GPUPanel/core/app/model"
+	"github.com/avaargsh/GPUPanel/core/app/repo"
+	"github.com/avaargsh/GPUPanel/core/global"
+	"github.com/avaargsh/GPUPanel/core/init/proxy"
+	"github.com/avaargsh/GPUPanel/core/init/session/psession"
 	"github.com/gin-gonic/gin"
 	"github.com/glebarez/sqlite"
 	"gorm.io/gorm"
@@ -50,7 +50,7 @@ func TestCoreAppEvidenceProxyHTTPGate(t *testing.T) {
 	var reached atomic.Int32
 	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		reached.Add(1)
-		if req.URL.Path != "/api/v2/apps/installed/evidence/10" {
+		if req.URL.Path != "/api/v1/apps/installed/evidence/10" {
 			t.Errorf("unexpected Agent request path: %s", req.URL.Path)
 		}
 		w.Header().Set("Content-Type", "application/json")
@@ -73,7 +73,7 @@ func TestCoreAppEvidenceProxyHTTPGate(t *testing.T) {
 		c.Next()
 	})
 	engine.Use(Proxy())
-	engine.GET("/api/v2/apps/installed/evidence/:appInstallId", func(c *gin.Context) {
+	engine.GET("/api/v1/apps/installed/evidence/:appInstallId", func(c *gin.Context) {
 		c.Status(http.StatusTeapot) // Reaching Gin fallback is never success.
 	})
 	// A real HTTP server supplies ReverseProxy's CloseNotifier/flush contract;
@@ -83,10 +83,10 @@ func TestCoreAppEvidenceProxyHTTPGate(t *testing.T) {
 
 	tests := []struct {
 		name, query, node string
-		cookie           *http.Cookie
-		apiKey           bool
-		expected         int
-		forwarded        bool
+		cookie            *http.Cookie
+		apiKey            bool
+		expected          int
+		forwarded         bool
 	}{
 		{name: "anonymous spoofed header", node: "local", expected: http.StatusUnauthorized},
 		{name: "real admin cookie forwards local", cookie: admin, node: "local", expected: http.StatusOK, forwarded: true},
@@ -99,7 +99,7 @@ func TestCoreAppEvidenceProxyHTTPGate(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			before := reached.Load()
-			req, err := http.NewRequest(http.MethodGet, coreServer.URL+"/api/v2/apps/installed/evidence/10"+tt.query, nil)
+			req, err := http.NewRequest(http.MethodGet, coreServer.URL+"/api/v1/apps/installed/evidence/10"+tt.query, nil)
 			if err != nil {
 				t.Fatal(err)
 			}

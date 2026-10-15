@@ -18,7 +18,7 @@ const (
 	TypeImageBuild    = "image-build"
 	TypeComposeCreate = "compose-create"
 
-	InterruptedMsg = "the task was interrupted due to the restart of the 1panel service"
+	InterruptedMsg = "the task was interrupted due to the restart of the gpupanel service"
 )
 
 const (

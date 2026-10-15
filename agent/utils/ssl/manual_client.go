@@ -16,8 +16,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/1Panel-dev/1Panel/agent/app/dto"
-	"github.com/1Panel-dev/1Panel/agent/app/model"
+	"github.com/avaargsh/GPUPanel/agent/app/dto"
+	"github.com/avaargsh/GPUPanel/agent/app/model"
 	"github.com/go-acme/lego/v5/certificate"
 	"github.com/miekg/dns"
 	"golang.org/x/crypto/acme"

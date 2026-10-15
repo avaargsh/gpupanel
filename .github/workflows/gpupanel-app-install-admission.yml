@@ -2,14 +2,14 @@ name: GPUPanel agent app install admission
 on:
   pull_request:
     paths:
-      - 'agent/app/api/v2/app.go'
+      - 'agent/app/api/v1/app.go'
       - 'agent/app/service/app.go'
       - 'agent/app/repo/task.go'
       - 'agent/app/repo/task_restart_recovery_test.go'
       - 'agent/app/service/app_install.go'
       - 'agent/app/service/task.go'
       - 'agent/app/service/app_install_receipt*.go'
-      - 'frontend/src/components/log/file/index.vue'
+      - 'frontend/apps/panel/src/**'
       - 'agent/app/service/app_operation_status.go'
       - 'agent/app/service/app_operation_status_test.go'
       - 'agent/app/service/app_utils.go'

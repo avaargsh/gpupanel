@@ -20,30 +20,30 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"github.com/1Panel-dev/1Panel/agent/app/task"
-	"github.com/1Panel-dev/1Panel/agent/i18n"
-	"github.com/1Panel-dev/1Panel/agent/utils/convert"
-	"github.com/1Panel-dev/1Panel/agent/utils/ini_conf"
+	"github.com/avaargsh/GPUPanel/agent/app/task"
+	"github.com/avaargsh/GPUPanel/agent/i18n"
+	"github.com/avaargsh/GPUPanel/agent/utils/convert"
+	"github.com/avaargsh/GPUPanel/agent/utils/ini_conf"
 
-	"github.com/1Panel-dev/1Panel/agent/app/dto"
+	"github.com/avaargsh/GPUPanel/agent/app/dto"
 	"github.com/jinzhu/copier"
 	"golang.org/x/text/encoding"
 	"golang.org/x/text/encoding/simplifiedchinese"
 
-	"github.com/1Panel-dev/1Panel/agent/app/repo"
+	"github.com/avaargsh/GPUPanel/agent/app/repo"
 
-	"github.com/1Panel-dev/1Panel/agent/app/dto/request"
-	"github.com/1Panel-dev/1Panel/agent/app/dto/response"
-	"github.com/1Panel-dev/1Panel/agent/buserr"
-	"github.com/1Panel-dev/1Panel/agent/constant"
+	"github.com/avaargsh/GPUPanel/agent/app/dto/request"
+	"github.com/avaargsh/GPUPanel/agent/app/dto/response"
+	"github.com/avaargsh/GPUPanel/agent/buserr"
+	"github.com/avaargsh/GPUPanel/agent/constant"
 	"golang.org/x/net/html/charset"
 	"golang.org/x/sys/unix"
 	"golang.org/x/text/transform"
 
-	"github.com/1Panel-dev/1Panel/agent/global"
-	"github.com/1Panel-dev/1Panel/agent/utils/common"
-	"github.com/1Panel-dev/1Panel/agent/utils/files"
-	terminalai "github.com/1Panel-dev/1Panel/agent/utils/terminal/ai"
+	"github.com/avaargsh/GPUPanel/agent/global"
+	"github.com/avaargsh/GPUPanel/agent/utils/common"
+	"github.com/avaargsh/GPUPanel/agent/utils/files"
+	terminalai "github.com/avaargsh/GPUPanel/agent/utils/terminal/ai"
 	"github.com/pkg/errors"
 )
 
@@ -91,7 +91,7 @@ type IFileService interface {
 }
 
 const (
-	fileRemarkXattr         = "user.1panel.remark"
+	fileRemarkXattr         = "user.gpupanel.remark"
 	fileRemarkEncodedMaxLen = 256
 )
 
@@ -289,7 +289,7 @@ func (f *FileService) Create(op request.FileCreate) error {
 func (f *FileService) Delete(op request.FileDelete) error {
 	if op.IsDir {
 		excludeDir := global.Dir.DataDir
-		if path.Base(op.Path) == ".1panel_clash" || op.Path == excludeDir {
+		if path.Base(op.Path) == ".gpupanel_clash" || op.Path == excludeDir {
 			return buserr.New("ErrPathNotDelete")
 		}
 	}

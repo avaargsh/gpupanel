@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/1Panel-dev/1Panel/core/utils/security"
+	"github.com/avaargsh/GPUPanel/core/utils/security"
 	"github.com/gin-gonic/gin"
 )
 
@@ -32,7 +32,7 @@ func isFrontendFallbackRequest(c *gin.Context) bool {
 	if strings.HasPrefix(path, "/api/") ||
 		strings.HasPrefix(path, "/assets/") ||
 		strings.HasPrefix(path, "/public") ||
-		strings.HasPrefix(path, "/1panel/swagger/") ||
+		strings.HasPrefix(path, "/gpupanel/swagger/") ||
 		path == "/favicon.ico" {
 		return false
 	}

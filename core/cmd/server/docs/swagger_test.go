@@ -18,12 +18,12 @@ func TestGenerateXlog(t *testing.T) {
 	fset := token.NewFileSet()
 
 	apiDirs := []string{
-		filepath.Join(workDir, "agent/app/api/v2"),
-		filepath.Join(workDir, "core/app/api/v2"),
-		filepath.Join(workDir, "agent/xpack/app/api/v2"),
-		filepath.Join(workDir, "core/xpack/app/api/v2"),
-		filepath.Join(workDir, "agent/enterprise/app/api/v2"),
-		filepath.Join(workDir, "core/enterprise/app/api/v2"),
+		filepath.Join(workDir, "agent/app/api/v1"),
+		filepath.Join(workDir, "core/app/api/v1"),
+		filepath.Join(workDir, "agent/xpack/app/api/v1"),
+		filepath.Join(workDir, "core/xpack/app/api/v1"),
+		filepath.Join(workDir, "agent/enterprise/app/api/v1"),
+		filepath.Join(workDir, "core/enterprise/app/api/v1"),
 	}
 
 	xlogMap := make(map[string]operationJson)
@@ -167,7 +167,7 @@ func panelWorkDir(t *testing.T) string {
 	}
 	workDir, err := filepath.Abs(filepath.Join(wd, "../../../.."))
 	if err != nil {
-		t.Fatalf("resolve 1Panel work dir failed: %v", err)
+		t.Fatalf("resolve GPUPanel work dir failed: %v", err)
 	}
 	return workDir
 }
@@ -201,9 +201,9 @@ const docTemplate = "aa"
 var SwaggerInfo = &swag.Spec{
 	Version:          "2.0",
 	Host:             "localhost",
-	BasePath:         "/api/v2",
+	BasePath:         "/api/v1",
 	Schemes:          []string{},
-	Title:            "1Panel",
+	Title:            "GPUPanel",
 	Description:      "Top-Rated Web-based Linux Server Management Tool",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,

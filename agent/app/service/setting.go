@@ -10,17 +10,17 @@ import (
 	"strings"
 	"time"
 
-	"github.com/1Panel-dev/1Panel/agent/app/dto"
-	"github.com/1Panel-dev/1Panel/agent/app/dto/request"
-	"github.com/1Panel-dev/1Panel/agent/app/dto/response"
-	"github.com/1Panel-dev/1Panel/agent/app/model"
-	"github.com/1Panel-dev/1Panel/agent/app/repo"
-	"github.com/1Panel-dev/1Panel/agent/buserr"
-	"github.com/1Panel-dev/1Panel/agent/constant"
-	"github.com/1Panel-dev/1Panel/agent/global"
-	"github.com/1Panel-dev/1Panel/agent/utils/encrypt"
-	"github.com/1Panel-dev/1Panel/agent/utils/ssh"
-	terminalai "github.com/1Panel-dev/1Panel/agent/utils/terminal/ai"
+	"github.com/avaargsh/GPUPanel/agent/app/dto"
+	"github.com/avaargsh/GPUPanel/agent/app/dto/request"
+	"github.com/avaargsh/GPUPanel/agent/app/dto/response"
+	"github.com/avaargsh/GPUPanel/agent/app/model"
+	"github.com/avaargsh/GPUPanel/agent/app/repo"
+	"github.com/avaargsh/GPUPanel/agent/buserr"
+	"github.com/avaargsh/GPUPanel/agent/constant"
+	"github.com/avaargsh/GPUPanel/agent/global"
+	"github.com/avaargsh/GPUPanel/agent/utils/encrypt"
+	"github.com/avaargsh/GPUPanel/agent/utils/ssh"
+	terminalai "github.com/avaargsh/GPUPanel/agent/utils/terminal/ai"
 	"github.com/jinzhu/copier"
 )
 
@@ -120,7 +120,7 @@ func (u *SettingService) GetFileHistorySettingInfo() (*response.FileHistorySetti
 func (u *SettingService) GetWebsiteDir() string {
 	value, _ := settingRepo.GetValueByKey("WEBSITE_DIR")
 	if value == "" {
-		return path.Join(global.Dir.BaseDir, "1panel", "www")
+		return path.Join(global.Dir.BaseDir, "gpupanel", "www")
 	}
 	return value
 }

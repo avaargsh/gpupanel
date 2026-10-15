@@ -7,7 +7,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/1Panel-dev/1Panel/agent/utils/cmd"
+	"github.com/avaargsh/GPUPanel/agent/utils/cmd"
 )
 
 type provider interface {

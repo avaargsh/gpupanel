@@ -5,7 +5,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/1Panel-dev/1Panel/agent/global"
+	"github.com/avaargsh/GPUPanel/agent/global"
 	"github.com/gin-gonic/gin"
 )
 
@@ -23,11 +23,11 @@ func TestAppEvidenceLocalMasterOnly(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			global.IsMaster = tc.master
 			engine := gin.New()
-			engine.GET("/api/v2/apps/installed/evidence/:appInstallId",
+			engine.GET("/api/v1/apps/installed/evidence/:appInstallId",
 				localMasterAppEvidenceOnly,
 				func(c *gin.Context) { c.Status(http.StatusNoContent) })
 			w := httptest.NewRecorder()
-			req := httptest.NewRequest(http.MethodGet, "/api/v2/apps/installed/evidence/1", nil)
+			req := httptest.NewRequest(http.MethodGet, "/api/v1/apps/installed/evidence/1", nil)
 			// Host-identifying headers cannot elevate a nonmaster node Agent.
 			req.Header.Set("X-Panel-User", "admin")
 			req.Header.Set("CurrentNode", "local")

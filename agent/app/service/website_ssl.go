@@ -19,21 +19,21 @@ import (
 	"github.com/go-acme/lego/v5/certificate"
 	legoLogger "github.com/go-acme/lego/v5/log"
 
-	"github.com/1Panel-dev/1Panel/agent/app/dto/request"
-	"github.com/1Panel-dev/1Panel/agent/app/dto/response"
-	"github.com/1Panel-dev/1Panel/agent/app/model"
-	"github.com/1Panel-dev/1Panel/agent/app/repo"
-	"github.com/1Panel-dev/1Panel/agent/app/task"
-	"github.com/1Panel-dev/1Panel/agent/buserr"
-	"github.com/1Panel-dev/1Panel/agent/constant"
-	"github.com/1Panel-dev/1Panel/agent/global"
-	"github.com/1Panel-dev/1Panel/agent/i18n"
-	"github.com/1Panel-dev/1Panel/agent/utils/cmd"
-	"github.com/1Panel-dev/1Panel/agent/utils/common"
-	"github.com/1Panel-dev/1Panel/agent/utils/files"
-	"github.com/1Panel-dev/1Panel/agent/utils/req_helper"
-	"github.com/1Panel-dev/1Panel/agent/utils/ssl"
-	"github.com/1Panel-dev/1Panel/agent/utils/xpack"
+	"github.com/avaargsh/GPUPanel/agent/app/dto/request"
+	"github.com/avaargsh/GPUPanel/agent/app/dto/response"
+	"github.com/avaargsh/GPUPanel/agent/app/model"
+	"github.com/avaargsh/GPUPanel/agent/app/repo"
+	"github.com/avaargsh/GPUPanel/agent/app/task"
+	"github.com/avaargsh/GPUPanel/agent/buserr"
+	"github.com/avaargsh/GPUPanel/agent/constant"
+	"github.com/avaargsh/GPUPanel/agent/global"
+	"github.com/avaargsh/GPUPanel/agent/i18n"
+	"github.com/avaargsh/GPUPanel/agent/utils/cmd"
+	"github.com/avaargsh/GPUPanel/agent/utils/common"
+	"github.com/avaargsh/GPUPanel/agent/utils/files"
+	"github.com/avaargsh/GPUPanel/agent/utils/req_helper"
+	"github.com/avaargsh/GPUPanel/agent/utils/ssl"
+	"github.com/avaargsh/GPUPanel/agent/utils/xpack"
 	gormv2 "gorm.io/gorm"
 )
 
@@ -616,7 +616,7 @@ func (w WebsiteSSLService) obtainSSL(id uint, autoRenew bool) error {
 }
 
 func runShellScriptFile(workDir, shell string, logger *log.Logger) error {
-	file, err := os.CreateTemp("", "1panel-shell-*.sh")
+	file, err := os.CreateTemp("", "gpupanel-shell-*.sh")
 	if err != nil {
 		return err
 	}

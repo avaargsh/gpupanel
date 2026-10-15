@@ -3,8 +3,8 @@ package service
 import (
 	"errors"
 
-	"github.com/1Panel-dev/1Panel/agent/app/model"
-	"github.com/1Panel-dev/1Panel/agent/constant"
+	"github.com/avaargsh/GPUPanel/agent/app/model"
+	"github.com/avaargsh/GPUPanel/agent/constant"
 	"gorm.io/gorm"
 )
 
@@ -75,7 +75,6 @@ func reconcileAppInstallTaskFailure(install *model.AppInstall, operation string,
 	return nil
 }
 
-
 // markInterruptedAppInstallationUnknown is a status-only, CAS-protected
 // reconciliation marker. It is NOT a Docker observation, successful install,
 // rollback or permission to repeat a side effect. The existing installation
@@ -101,7 +100,6 @@ func markInterruptedAppInstallationUnknown(appDB *gorm.DB, install *model.AppIns
 	}
 	return nil
 }
-
 
 // requireReconciledAppInstallation blocks side-effecting application operations
 // while an interrupted install's actual outcome has not been verified.

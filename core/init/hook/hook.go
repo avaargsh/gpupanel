@@ -4,14 +4,14 @@ import (
 	"os/exec"
 	"strings"
 
-	"github.com/1Panel-dev/1Panel/core/app/repo"
-	"github.com/1Panel-dev/1Panel/core/app/service"
-	"github.com/1Panel-dev/1Panel/core/constant"
-	"github.com/1Panel-dev/1Panel/core/global"
-	"github.com/1Panel-dev/1Panel/core/utils/common"
-	"github.com/1Panel-dev/1Panel/core/utils/ctl_conf"
-	"github.com/1Panel-dev/1Panel/core/utils/encrypt"
-	"github.com/1Panel-dev/1Panel/core/utils/xpack"
+	"github.com/avaargsh/GPUPanel/core/app/repo"
+	"github.com/avaargsh/GPUPanel/core/app/service"
+	"github.com/avaargsh/GPUPanel/core/constant"
+	"github.com/avaargsh/GPUPanel/core/global"
+	"github.com/avaargsh/GPUPanel/core/utils/common"
+	"github.com/avaargsh/GPUPanel/core/utils/ctl_conf"
+	"github.com/avaargsh/GPUPanel/core/utils/encrypt"
+	"github.com/avaargsh/GPUPanel/core/utils/xpack"
 )
 
 func Init() {
@@ -88,8 +88,8 @@ func handleUserInfo(tags string, settingRepo repo.ISettingRepo) {
 		}
 	}
 
-	_ = ctl_conf.RemoveValueFromFile("/usr/local/bin/1pctl", "CHANGE_USER_INFO", global.CONF.Base.ChangeUserInfo)
-	_ = ctl_conf.UpdateInFile("/usr/local/bin/1pctl", "ORIGINAL_PASSWORD", "**********")
+	_ = ctl_conf.RemoveValueFromFile("/usr/local/bin/pctl", "CHANGE_USER_INFO", global.CONF.Base.ChangeUserInfo)
+	_ = ctl_conf.UpdateInFile("/usr/local/bin/pctl", "ORIGINAL_PASSWORD", "**********")
 }
 
 func generateKey() {

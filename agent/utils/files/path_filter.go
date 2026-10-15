@@ -6,7 +6,7 @@ import (
 )
 
 var sensitivePanelPaths = []string{
-	"/.1panel_clash",
+	"/.gpupanel_clash",
 }
 
 func ShouldFilterSensitivePath(path string) bool {

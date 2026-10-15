@@ -4,12 +4,12 @@ import (
 	"encoding/base64"
 	"fmt"
 
-	"github.com/1Panel-dev/1Panel/agent/app/dto"
-	"github.com/1Panel-dev/1Panel/agent/app/model"
-	"github.com/1Panel-dev/1Panel/agent/app/repo"
-	"github.com/1Panel-dev/1Panel/agent/buserr"
-	"github.com/1Panel-dev/1Panel/agent/utils/encrypt"
-	"github.com/1Panel-dev/1Panel/agent/utils/ssh"
+	"github.com/avaargsh/GPUPanel/agent/app/dto"
+	"github.com/avaargsh/GPUPanel/agent/app/model"
+	"github.com/avaargsh/GPUPanel/agent/app/repo"
+	"github.com/avaargsh/GPUPanel/agent/buserr"
+	"github.com/avaargsh/GPUPanel/agent/utils/encrypt"
+	"github.com/avaargsh/GPUPanel/agent/utils/ssh"
 	"github.com/jinzhu/copier"
 	"github.com/pkg/errors"
 )

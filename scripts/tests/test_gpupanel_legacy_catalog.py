@@ -18,7 +18,7 @@ class UpstreamRetirement(unittest.TestCase):
     def test_disable_without_mutating_installation_history(self):
         src = (ROOT / "agent/app/service/legacy_catalog.go").read_text()
         self.assertIn("return false", src)
-        handler = (ROOT / "agent/app/api/v2/app.go").read_text()
+        handler = (ROOT / "agent/app/api/v1/app.go").read_text()
         self.assertIn("if !service.LegacyRemoteCatalogEnabled()", handler)
         self.assertIn("original 1Panel remote app catalog is retired", handler)
         self.assertIn("service.IsRetiredRemoteAppDetail(req.AppDetailId)", handler)

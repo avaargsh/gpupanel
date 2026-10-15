@@ -7,13 +7,13 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/1Panel-dev/1Panel/core/global"
-	"github.com/1Panel-dev/1Panel/core/i18n"
-	cmdUtils "github.com/1Panel-dev/1Panel/core/utils/cmd"
-	"github.com/1Panel-dev/1Panel/core/utils/common"
-	"github.com/1Panel-dev/1Panel/core/utils/controller"
-	"github.com/1Panel-dev/1Panel/core/utils/ctl_conf"
-	"github.com/1Panel-dev/1Panel/core/utils/files"
+	"github.com/avaargsh/GPUPanel/core/global"
+	"github.com/avaargsh/GPUPanel/core/i18n"
+	cmdUtils "github.com/avaargsh/GPUPanel/core/utils/cmd"
+	"github.com/avaargsh/GPUPanel/core/utils/common"
+	"github.com/avaargsh/GPUPanel/core/utils/controller"
+	"github.com/avaargsh/GPUPanel/core/utils/ctl_conf"
+	"github.com/avaargsh/GPUPanel/core/utils/files"
 
 	"github.com/spf13/cobra"
 )
@@ -27,14 +27,14 @@ var restoreCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		i18n.UseI18nForCmd(language)
 		if !isRoot() {
-			fmt.Println(i18n.GetMsgWithMapForCmd("SudoHelper", map[string]interface{}{"cmd": "sudo 1pctl restore"}))
+			fmt.Println(i18n.GetMsgWithMapForCmd("SudoHelper", map[string]interface{}{"cmd": "sudo pctl restore"}))
 			return nil
 		}
-		baseDir, err := ctl_conf.LoadFromFile("/usr/local/bin/1pctl", "BASE_DIR")
+		baseDir, err := ctl_conf.LoadFromFile("/usr/local/bin/pctl", "BASE_DIR")
 		if err != nil {
 			return fmt.Errorf("handle load `BASE_DIR` failed, err: %v", err)
 		}
-		upgradeDir := path.Join(baseDir, "1panel", "tmp", "upgrade")
+		upgradeDir := path.Join(baseDir, "gpupanel", "tmp", "upgrade")
 
 		tmpPath, err := loadRestorePath(upgradeDir)
 		if err != nil {
@@ -47,38 +47,38 @@ var restoreCmd = &cobra.Command{
 		tmpPath = path.Join(upgradeDir, tmpPath, "original")
 
 		fmt.Println(i18n.GetMsgWithMapForCmd("RestoreStep1", map[string]interface{}{"name": tmpPath}))
-		if err := files.CopyItem(false, true, path.Join(tmpPath, "1panel-agent"), "/usr/local/bin"); err != nil {
+		if err := files.CopyItem(false, true, path.Join(tmpPath, "gpupanel-agent"), "/usr/local/bin"); err != nil {
 			return err
 		}
-		if err := files.CopyItem(false, true, path.Join(tmpPath, "1panel-core"), "/usr/local/bin"); err != nil {
+		if err := files.CopyItem(false, true, path.Join(tmpPath, "gpupanel-core"), "/usr/local/bin"); err != nil {
 			return err
 		}
 		if err := files.CopyItem(true, true, path.Join(tmpPath, "lang"), "/usr/local/bin"); err != nil {
 			return err
 		}
-		if err := files.CopyItem(false, true, path.Join(tmpPath, "GeoIP.mmdb"), path.Join(baseDir, "1panel/geo")); err != nil {
+		if err := files.CopyItem(false, true, path.Join(tmpPath, "GeoIP.mmdb"), path.Join(baseDir, "gpupanel/geo")); err != nil {
 			return err
 		}
-		_, _ = cmdUtils.NewCommandMgr().RunWithStdout("chmod", "755", "/usr/local/bin/1panel-agent", "/usr/local/bin/1panel-core")
+		_, _ = cmdUtils.NewCommandMgr().RunWithStdout("chmod", "755", "/usr/local/bin/gpupanel-agent", "/usr/local/bin/gpupanel-core")
 
 		fmt.Println(i18n.GetMsgByKeyForCmd("RestoreStep2"))
-		if err := files.CopyItem(false, true, path.Join(tmpPath, "1pctl"), "/usr/local/bin"); err != nil {
+		if err := files.CopyItem(false, true, path.Join(tmpPath, "pctl"), "/usr/local/bin"); err != nil {
 			return err
 		}
-		_, _ = cmdUtils.NewCommandMgr().RunWithStdout("chmod", "755", "/usr/local/bin/1pctl")
+		_, _ = cmdUtils.NewCommandMgr().RunWithStdout("chmod", "755", "/usr/local/bin/pctl")
 		_, _ = cmdUtils.NewCommandMgr().RunWithStdout("cp", "-r", path.Join(tmpPath, "lang"), "/usr/local/bin")
-		geoPath := path.Join(global.CONF.Base.InstallDir, "1panel/geo")
+		geoPath := path.Join(global.CONF.Base.InstallDir, "gpupanel/geo")
 		_ = os.MkdirAll(geoPath, os.ModePerm)
 		_, _ = cmdUtils.NewCommandMgr().RunWithStdout("cp", path.Join(tmpPath, "GeoIP.mmdb"), geoPath+"/")
 
 		fmt.Println(i18n.GetMsgByKeyForCmd("RestoreStep3"))
 		svcBasePath, _ := controller.GetServicePath("")
-		svcCoreName, _ := controller.LoadServiceName("1panel-core")
-		selCoreName, _ := controller.SelectInitScript("1panel-core")
-		scriptCoreName, _ := controller.GetScriptName("1panel-core")
-		svcAgentName, _ := controller.LoadServiceName("1panel-agent")
-		selAgentName, _ := controller.SelectInitScript("1panel-agent")
-		scriptAgentName, _ := controller.GetScriptName("1panel-agent")
+		svcCoreName, _ := controller.LoadServiceName("gpupanel-core")
+		selCoreName, _ := controller.SelectInitScript("gpupanel-core")
+		scriptCoreName, _ := controller.GetScriptName("gpupanel-core")
+		svcAgentName, _ := controller.LoadServiceName("gpupanel-agent")
+		selAgentName, _ := controller.SelectInitScript("gpupanel-agent")
+		scriptAgentName, _ := controller.GetScriptName("gpupanel-agent")
 		if err := files.CopyItem(false, true, path.Join(tmpPath, svcCoreName), svcBasePath); err != nil {
 			if err := files.CopyItem(false, true, path.Join(tmpPath, selCoreName), path.Join(svcBasePath, scriptCoreName)); err != nil {
 				return err
@@ -94,16 +94,16 @@ var restoreCmd = &cobra.Command{
 			if err := os.Chmod(path.Join(tmpPath, "db"), 0700); err != nil {
 				return err
 			}
-			dbPath := path.Join(baseDir, "1panel")
+			dbPath := path.Join(baseDir, "gpupanel")
 			targetDBDir := path.Join(dbPath, "db")
 			if err := os.RemoveAll(targetDBDir); err != nil {
-				global.LOG.Errorf("rollback 1panel db cleanup failed, err: %v", err)
+				global.LOG.Errorf("rollback gpupanel db cleanup failed, err: %v", err)
 			}
 			if err := files.CopyItem(true, true, path.Join(tmpPath, "db"), dbPath); err != nil {
-				global.LOG.Errorf("rollback 1panel db failed, err: %v", err)
+				global.LOG.Errorf("rollback gpupanel db failed, err: %v", err)
 			}
 			if err := cleanOrphanSQLiteSidecars(targetDBDir); err != nil {
-				global.LOG.Errorf("rollback 1panel db sidecar cleanup failed, err: %v", err)
+				global.LOG.Errorf("rollback gpupanel db sidecar cleanup failed, err: %v", err)
 			}
 		}
 
@@ -140,7 +140,7 @@ func loadRestorePath(upgradeDir string) (string, error) {
 }
 
 func loadRollbackVersion(upgradeDir string) string {
-	info, err := ctl_conf.LoadFromFile(path.Join(upgradeDir, "1pctl"), "ORIGINAL_VERSION")
+	info, err := ctl_conf.LoadFromFile(path.Join(upgradeDir, "pctl"), "ORIGINAL_VERSION")
 	if err != nil {
 		return "-"
 	}

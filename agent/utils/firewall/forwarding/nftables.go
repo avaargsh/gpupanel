@@ -11,18 +11,18 @@ import (
 	"strings"
 	"time"
 
-	"github.com/1Panel-dev/1Panel/agent/global"
-	"github.com/1Panel-dev/1Panel/agent/utils/cmd"
-	firewallutil "github.com/1Panel-dev/1Panel/agent/utils/firewall"
-	"github.com/1Panel-dev/1Panel/agent/utils/firewall/filter"
-	"github.com/1Panel-dev/1Panel/agent/utils/firewall/nftables_helper"
+	"github.com/avaargsh/GPUPanel/agent/global"
+	"github.com/avaargsh/GPUPanel/agent/utils/cmd"
+	firewallutil "github.com/avaargsh/GPUPanel/agent/utils/firewall"
+	"github.com/avaargsh/GPUPanel/agent/utils/firewall/filter"
+	"github.com/avaargsh/GPUPanel/agent/utils/firewall/nftables_helper"
 )
 
 const (
 	nftForwardFamily = "ip"
-	nftForwardTable  = "nft_1panel_forward"
-	nftForwardFile   = "1panel_forward.nft"
-	nftForwardMarker = "1panel-forward:"
+	nftForwardTable  = "nft_gpupanel_forward"
+	nftForwardFile   = "gpupanel_forward.nft"
+	nftForwardMarker = "gpupanel-forward:"
 )
 
 type Nftables struct {

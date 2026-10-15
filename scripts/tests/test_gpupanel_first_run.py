@@ -1,39 +1,15 @@
 from pathlib import Path
 import unittest
-
 ROOT = Path(__file__).resolve().parents[2]
-SOURCE = ROOT / "frontend/src/views/home/gpupanel-first-run.vue"
-
-
 class FirstRunContract(unittest.TestCase):
-    def test_only_existing_routes(self):
-        src = SOURCE.read_text()
-        paths = ("/hosts/monitor/monitor", "/containers", "/apps/all")
-        modules = "\n".join(p.read_text() for p in (ROOT / "frontend/src/routers/modules").glob("*.ts"))
-        for path in paths:
-            self.assertIn(f"'{path}'", src)
-        self.assertIn("path: '/hosts/monitor/monitor'", modules)
-        self.assertIn("path: '/containers'", modules)
-        self.assertIn("path: 'all'", modules)
-        self.assertNotIn("/workspaces", src)
-
-    def test_real_status_permission_and_current_node(self):
-        src = SOURCE.read_text()
-        for needle in ("loadContainerStatus(currentNode.value", "loadDockerStatus(currentNode.value",
-                       "if (!daemon.data?.isExist)", "if (!daemon.data.isActive)", "hasRouteAccess(target)",
-                       "Number.isFinite(response.data?.running)", "if (serial !== requestSerial) return",
-                       "watch(currentNode", "if (canOpen(path))"):
-            self.assertIn(needle, src)
-        self.assertNotIn("localStorage", src)
-
-    def test_i18n_and_home_entry(self):
-        home = (ROOT / "frontend/src/views/home/index.vue").read_text()
-        self.assertIn("<GPUPanelFirstRun", home)
-        for language in ("zh", "en"):
-            locale = (ROOT / f"frontend/src/lang/modules/{language}.ts").read_text()
-            for token in ("firstRunTitle", "dockerUnavailable", "dockerReady", "appsStep"):
-                self.assertIn(token + ":", locale)
-
-
-if __name__ == "__main__":
-    unittest.main()
+    def test_status_comes_from_actual_docker_api_and_is_not_installation_proof(self):
+        src = (ROOT / 'frontend/apps/panel/src/components/FirstRun.tsx').read_text()
+        for item in ('useGetDockerStatusQuery', 'useGetContainerStatusQuery', 'isExist', 'isActive', 'Number.isFinite', 'currentData', 'state.ui.currentNode'):
+            self.assertIn(item, src)
+        self.assertIn('do not prove installation acceptance', src)
+    def test_dashboard_has_no_synthesized_metrics(self):
+        src = (ROOT / 'frontend/apps/panel/src/pages/HomePage.tsx').read_text()
+        self.assertIn('<FirstRun />', src)
+        self.assertNotIn('Math.sin', src)
+        self.assertNotIn('Math.cos', src)
+        self.assertNotIn('?? 8.6', src)

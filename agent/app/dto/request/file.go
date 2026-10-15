@@ -1,8 +1,8 @@
 package request
 
 import (
-	"github.com/1Panel-dev/1Panel/agent/app/dto"
-	"github.com/1Panel-dev/1Panel/agent/utils/files"
+	"github.com/avaargsh/GPUPanel/agent/app/dto"
+	"github.com/avaargsh/GPUPanel/agent/utils/files"
 )
 
 type FileOption struct {

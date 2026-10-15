@@ -17,29 +17,29 @@ import (
 	"strings"
 	"time"
 
-	"github.com/1Panel-dev/1Panel/agent/app/dto"
-	"github.com/1Panel-dev/1Panel/agent/app/model"
-	"github.com/1Panel-dev/1Panel/agent/app/repo"
-	"github.com/1Panel-dev/1Panel/agent/app/task"
-	"github.com/1Panel-dev/1Panel/agent/buserr"
-	"github.com/1Panel-dev/1Panel/agent/constant"
-	"github.com/1Panel-dev/1Panel/agent/global"
-	"github.com/1Panel-dev/1Panel/agent/i18n"
-	"github.com/1Panel-dev/1Panel/agent/utils/cmd"
-	"github.com/1Panel-dev/1Panel/agent/utils/controller"
-	"github.com/1Panel-dev/1Panel/agent/utils/docker"
-	"github.com/1Panel-dev/1Panel/agent/utils/firewall"
-	dockerfirewall "github.com/1Panel-dev/1Panel/agent/utils/firewall/docker_guard"
-	"github.com/1Panel-dev/1Panel/agent/utils/firewall/filter"
-	filterfirewalld "github.com/1Panel-dev/1Panel/agent/utils/firewall/filter/providers/firewalld"
-	filteriptables "github.com/1Panel-dev/1Panel/agent/utils/firewall/filter/providers/iptables"
-	filternftables "github.com/1Panel-dev/1Panel/agent/utils/firewall/filter/providers/nftables"
-	filterufw "github.com/1Panel-dev/1Panel/agent/utils/firewall/filter/providers/ufw"
-	"github.com/1Panel-dev/1Panel/agent/utils/firewall/forwarding"
-	"github.com/1Panel-dev/1Panel/agent/utils/firewall/iptables_helper"
-	"github.com/1Panel-dev/1Panel/agent/utils/firewall/lifecycle"
-	lifecycleproviders "github.com/1Panel-dev/1Panel/agent/utils/firewall/lifecycle/providers"
-	"github.com/1Panel-dev/1Panel/agent/utils/firewall/nftables_helper"
+	"github.com/avaargsh/GPUPanel/agent/app/dto"
+	"github.com/avaargsh/GPUPanel/agent/app/model"
+	"github.com/avaargsh/GPUPanel/agent/app/repo"
+	"github.com/avaargsh/GPUPanel/agent/app/task"
+	"github.com/avaargsh/GPUPanel/agent/buserr"
+	"github.com/avaargsh/GPUPanel/agent/constant"
+	"github.com/avaargsh/GPUPanel/agent/global"
+	"github.com/avaargsh/GPUPanel/agent/i18n"
+	"github.com/avaargsh/GPUPanel/agent/utils/cmd"
+	"github.com/avaargsh/GPUPanel/agent/utils/controller"
+	"github.com/avaargsh/GPUPanel/agent/utils/docker"
+	"github.com/avaargsh/GPUPanel/agent/utils/firewall"
+	dockerfirewall "github.com/avaargsh/GPUPanel/agent/utils/firewall/docker_guard"
+	"github.com/avaargsh/GPUPanel/agent/utils/firewall/filter"
+	filterfirewalld "github.com/avaargsh/GPUPanel/agent/utils/firewall/filter/providers/firewalld"
+	filteriptables "github.com/avaargsh/GPUPanel/agent/utils/firewall/filter/providers/iptables"
+	filternftables "github.com/avaargsh/GPUPanel/agent/utils/firewall/filter/providers/nftables"
+	filterufw "github.com/avaargsh/GPUPanel/agent/utils/firewall/filter/providers/ufw"
+	"github.com/avaargsh/GPUPanel/agent/utils/firewall/forwarding"
+	"github.com/avaargsh/GPUPanel/agent/utils/firewall/iptables_helper"
+	"github.com/avaargsh/GPUPanel/agent/utils/firewall/lifecycle"
+	lifecycleproviders "github.com/avaargsh/GPUPanel/agent/utils/firewall/lifecycle/providers"
+	"github.com/avaargsh/GPUPanel/agent/utils/firewall/nftables_helper"
 	containertypes "github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/system"
 	"github.com/docker/docker/client"
@@ -53,7 +53,7 @@ const (
 	firewallTaskDocker     = "FirewallTaskDocker"
 )
 
-const fail2BanRestoreWithFirewallMarker = "/run/1panel_fail2ban_restore_with_firewall"
+const fail2BanRestoreWithFirewallMarker = "/run/gpupanel_fail2ban_restore_with_firewall"
 
 type firewallLifecycleClient struct{ lifecycle.Client }
 
@@ -2628,7 +2628,7 @@ func firewallBackupDirectory(subsystem string) (string, error) {
 	default:
 		return "", filter.ErrInvalidRule
 	}
-	return filepath.Join(global.Dir.BaseDir, "1panel", "backup", "firewall", directory), nil
+	return filepath.Join(global.Dir.BaseDir, "gpupanel", "backup", "firewall", directory), nil
 }
 
 func readFirewallBackup(name string) ([]dto.FirewallRuleExportItem, error) {

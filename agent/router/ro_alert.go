@@ -1,7 +1,7 @@
 package router
 
 import (
-	v2 "github.com/1Panel-dev/1Panel/agent/app/api/v2"
+	v1 "github.com/avaargsh/GPUPanel/agent/app/api/v1"
 	"github.com/gin-gonic/gin"
 )
 
@@ -10,7 +10,7 @@ type AlertRouter struct {
 
 func (a *AlertRouter) InitRouter(Router *gin.RouterGroup) {
 	alertRouter := Router.Group("alert")
-	baseApi := v2.ApiGroupApp.BaseApi
+	baseApi := v1.ApiGroupApp.BaseApi
 	{
 		alertRouter.POST("", baseApi.CreateAlert)
 		alertRouter.POST("/update", baseApi.UpdateAlert)

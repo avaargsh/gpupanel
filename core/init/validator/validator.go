@@ -4,7 +4,7 @@ import (
 	"regexp"
 	"unicode"
 
-	"github.com/1Panel-dev/1Panel/core/global"
+	"github.com/avaargsh/GPUPanel/core/global"
 	"github.com/go-playground/validator/v10"
 )
 

@@ -1,0 +1,15 @@
+.........................artifact attribution report written to /tmp/tmp3udvr8qt/attestation.json
+...........Go binary metadata report written to /tmp/tmpmdsygihb/report.json
+.........................................dependency inventory written to /tmp/tmp05a08vs1/report.json
+dependency inventory blocked: cannot read JSON manifest /tmp/tmp05a08vs1/frontend/package-lock.json: Expecting property name enclosed in double quotes: line 1 column 2 (char 1)
+...........................................................................license inventory written to /tmp/tmp3hcbpicm/inventory.json
+license inventory blocked: git rev-parse --verify failed: Command '['git', 'rev-parse', '--verify', '--end-of-options', 'not-a-commit^{commit}']' returned non-zero exit status 128.
+.............................................................................
+----------------------------------------------------------------------
+Ran 229 tests in 1.477s
+
+OK
+GPUPanel | Profile: test
+  [FOUND] Python
+  [NOT CACHED] artifact: example.tar.gz
+  Next: docs/gpupanel/GETTING_STARTED.zh-CN.md

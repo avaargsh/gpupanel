@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/1Panel-dev/1Panel/agent/cmd/server/cmd"
+	"github.com/avaargsh/GPUPanel/agent/cmd/server/cmd"
 	"os"
 )
 
@@ -12,15 +12,15 @@ import (
 // @termsOfService http://swagger.io/terms/
 // @license.name GPL-3.0
 // @license.url https://www.gnu.org/licenses/gpl-3.0.html
-// @BasePath /api/v2
+// @BasePath /api/v1
 // @schemes http https
 
 // @securityDefinitions.apikey ApiKeyAuth
-// @description Custom Token Format, Format: md5('1panel' + API-Key + UnixTimestamp).
+// @description Custom Token Format, Format: md5('gpupanel' + API-Key + UnixTimestamp).
 // @description ```
 // @description eg:
-// @description curl -X GET "http://{host}:{port}/api/v2/toolbox/device/base" \
-// @description -H "1Panel-Token: <1panel_token>" \
+// @description curl -X GET "http://{host}:{port}/api/v1/toolbox/device/base" \
+// @description -H "1Panel-Token: <gpupanel_token>" \
 // @description -H "1Panel-Timestamp: <current_unix_timestamp>"
 // @description ```
 // @description - `1Panel-Token` is the key for the panel API Key.

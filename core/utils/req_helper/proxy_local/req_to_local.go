@@ -15,9 +15,9 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"github.com/1Panel-dev/1Panel/core/app/dto"
-	"github.com/1Panel-dev/1Panel/core/global"
-	"github.com/1Panel-dev/1Panel/core/i18n"
+	"github.com/avaargsh/GPUPanel/core/app/dto"
+	"github.com/avaargsh/GPUPanel/core/global"
+	"github.com/avaargsh/GPUPanel/core/i18n"
 )
 
 func NewLocalClient(reqUrl, reqMethod string, body io.Reader, ctx *gin.Context) (interface{}, error) {
@@ -27,7 +27,7 @@ func NewLocalClient(reqUrl, reqMethod string, body io.Reader, ctx *gin.Context) 
 }
 
 func NewLocalClientWithContext(requestContext context.Context, reqURL, reqMethod string, body io.Reader, ctx *gin.Context, timeout time.Duration) (interface{}, error) {
-	client := newReusableClientWithTimeout("/etc/1panel/agent.sock", timeout)
+	client := newReusableClientWithTimeout("/etc/gpupanel/agent.sock", timeout)
 	defer client.CloseIdleConnections()
 	return client.RequestWithContext(requestContext, reqURL, reqMethod, body, ctx)
 }
@@ -38,7 +38,7 @@ type ReusableClient struct {
 }
 
 func NewReusableClient() *ReusableClient {
-	return newReusableClient("/etc/1panel/agent.sock")
+	return newReusableClient("/etc/gpupanel/agent.sock")
 }
 
 func newReusableClient(sockPath string) *ReusableClient {

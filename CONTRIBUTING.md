@@ -14,12 +14,12 @@ Read [AGENTS.md](AGENTS.md) before any design or code change and [ADR-0001: fork
 
 ### Verified command mapping
 
-Current repository: **npm** frontend (not a root Bun workspace), plus separate **Go** modules and Python developer checks. The example `bun run precheck`, `bun run build:web`, `bun run db:generate`, `bun run db:migrate` and `bun run run-data-migrations` commands from other stacks are **not provided here**; do not claim they ran.
+Current repository: **pnpm / React** frontend (not a root Bun workspace), plus separate **Go** modules and Python developer checks. The example `bun run precheck`, `bun run build:web`, `bun run db:generate`, `bun run db:migrate` and `bun run run-data-migrations` commands from other stacks are **not provided here**; do not claim they ran.
 
 | Change type | Minimum local gate |
 | --- | --- |
 | Python utilities / catalog | `python3 -m unittest discover -s scripts/tests -p 'test_gpupanel_*.py' -v` |
-| Frontend | `cd frontend && npm ci && npm run type-check && npm run build:pro` |
+| Frontend | `cd frontend && pnpm install --frozen-lockfile && pnpm typecheck && pnpm build` |
 | Core | `cd core && go test ./<affected-package>` then broader `go test ./...` when environment permits |
 | Agent | `cd agent && go test ./<affected-package>` then broader `go test ./...` when environment permits |
 | Schema / stored data | Locate actual Go/GORM migration ownership; test forward migration, deterministic backfill if any, rollback/recovery on disposable DB |
@@ -56,9 +56,9 @@ Frontend development (requires Node/npm and dependencies):
 
 ```bash
 cd frontend
-npm ci
-npm run build:pro
-npm run type-check
+pnpm install --frozen-lockfile
+pnpm build
+pnpm typecheck
 ```
 
 Go changes: run focused tests against the module, and record the exact Go version and any hardware dependencies. Do not claim a production-ready feature from a compiled package alone.
@@ -80,3 +80,11 @@ Do not mask failing type checks with `any`, `@ts-ignore` or ignored CI. Where a 
 ## Issue reports
 
 Use the repository's bug form, redact passwords, access tokens, node addresses, hostnames, serial numbers, tenant identifiers and private process arguments. If a screenshot contains user data, remove it before uploading. A minimal local reproduction is usually more helpful than a full production log.
+
+## Current engineering entrypoints
+
+Use [docs/README.md](docs/README.md) for the current React/pnpm workflow, directory
+policy, test boundaries and disposable local VM instructions. Historical Vue
+commands are evidence for their original revision only. Keep raw installation
+credentials, VM disks and private keys under ignored `.local/`; publish only
+redacted records under `docs/evidence/<date>/<task>/`.

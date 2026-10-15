@@ -43,7 +43,7 @@ class ReleaseTests(unittest.TestCase):
         with tarfile.open(self.archive) as src, tarfile.open(bad, "w:gz") as dst:
             for member in src.getmembers():
                 content = src.extractfile(member).read()
-                if member.name.endswith("1panel-agent"):
+                if member.name.endswith("gpupanel-agent"):
                     content = b"tampered agent"  # changes length, too
                 member.size = len(content)
                 dst.addfile(member, io.BytesIO(content))
@@ -65,7 +65,7 @@ class ReleaseTests(unittest.TestCase):
         self.package()
         evil = self.root / "link.tar.gz"
         with tarfile.open(evil, "w:gz") as tar:
-            symlink = tarfile.TarInfo("gpupanel/bin/1panel-core")
+            symlink = tarfile.TarInfo("gpupanel/bin/gpupanel-core")
             symlink.type = tarfile.SYMTYPE
             symlink.linkname = "/etc/passwd"
             tar.addfile(symlink)
@@ -92,6 +92,10 @@ class ReleaseTests(unittest.TestCase):
         (web / "index.html").write_text("<html>GPUPanel preview</html>" + "x"*100)
         (web / "assets").mkdir()
         (web / "assets/app.js").write_text("js")
+        dist = root / "frontend/apps/panel/dist"
+        (dist / "assets").mkdir(parents=True)
+        (dist / "index.html").write_text("<html>GPUPanel preview</html>" + "x"*100)
+        (dist / "assets/app.js").write_text("js")
         calls = []
         def fake_run(args, cwd, env=None):
             calls.append((args, cwd, env))
@@ -100,7 +104,7 @@ class ReleaseTests(unittest.TestCase):
         with patch.object(release, "checked_run", side_effect=fake_run):
             result = release.build(root, self.stage, offline=True)
         self.assertFalse(result["production_install_ready"])
-        self.assertTrue(any(args[:3] == ["npm", "ci", "--offline"] for args, _, _ in calls))
+        self.assertTrue(any(args[:4] == ["pnpm", "install", "--frozen-lockfile", "--offline"] for args, _, _ in calls))
         self.assertTrue(any(args[0] == "go" for args, _, _ in calls))
         self.assertEqual(sum(args[0] == "go" for args, _, _ in calls), 2)
         for args, _, env in calls:

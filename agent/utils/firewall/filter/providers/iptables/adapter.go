@@ -8,10 +8,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/1Panel-dev/1Panel/agent/utils/cmd"
-	"github.com/1Panel-dev/1Panel/agent/utils/firewall/filter"
-	native "github.com/1Panel-dev/1Panel/agent/utils/firewall/iptables_helper"
-	"github.com/1Panel-dev/1Panel/agent/utils/firewall/lifecycle"
+	"github.com/avaargsh/GPUPanel/agent/utils/cmd"
+	"github.com/avaargsh/GPUPanel/agent/utils/firewall/filter"
+	native "github.com/avaargsh/GPUPanel/agent/utils/firewall/iptables_helper"
+	"github.com/avaargsh/GPUPanel/agent/utils/firewall/lifecycle"
 	"github.com/mattn/go-shellwords"
 )
 
@@ -391,7 +391,7 @@ func compileChange(snapshot filter.RuleSet, change filter.RuleChange) (filter.Ru
 		(normalized.Scope.Family == filter.FamilyIPv6 && normalized.Protocol == "icmp") {
 		return filter.RuleCommands{}, fmt.Errorf("%w: protocol %q does not match %s", filter.ErrInvalidRule, normalized.Protocol, normalized.Scope.Family)
 	}
-	marker := "1panel-rule:" + normalized.UUID
+	marker := "gpupanel-rule:" + normalized.UUID
 
 	position := len(snapshot.Rules) + 1
 	verb := "-I"
@@ -838,7 +838,7 @@ func parseRule(scope filter.Scope, raw string, position int) filter.ObservedRule
 		return opaque()
 	}
 	marker := ""
-	if strings.HasPrefix(comment, "1panel-rule:") {
+	if strings.HasPrefix(comment, "gpupanel-rule:") {
 		marker = comment
 	} else {
 		normalized.Description = comment
