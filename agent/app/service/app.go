@@ -990,7 +990,7 @@ func deleteCustomApp() {
 }
 
 func (a AppService) SyncAppListFromRemote(taskID string) (err error) {
-	if !legacyRemoteCatalogEnabled() {
+	if !LegacyRemoteCatalogEnabled() {
 		return fmt.Errorf("legacy upstream 1Panel application catalog is retired in GPUPanel")
 	}
 	if xpack.MultiNodeProvider.IsUseCustomApp() {
