@@ -46,6 +46,7 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { loadContainerStatus, loadDockerStatus } from '@/api/modules/container';
 import { loadGPUInfo } from '@/api/modules/ai';
+import { summarizeGPUReadiness } from '@/utils/gpu-first-run';
 import { useGlobalStore } from '@/composables/useGlobalStore';
 import { hasRouteAccess } from '@/utils/rbac';
 import i18n from '@/lang';
@@ -98,9 +99,6 @@ const gpuVersionHint = computed(() => {
         cuda: gpuCudaCapability.value || '-',
     });
 });
-const safeVersion = (value: unknown): string =>
-    typeof value === 'string' && /^[0-9A-Za-z.+\- ]{1,48}$/.test(value) ? value : '';
-
 const refreshGPU = async () => {
     const serial = ++gpuRequestSerial;
     gpuDeviceCount.value = 0;
@@ -114,27 +112,11 @@ const refreshGPU = async () => {
     try {
         const res = await loadGPUInfo();
         if (serial !== gpuRequestSerial) return;
-        const data = res?.data;
-        if (!data || ![data.gpu, data.npu, data.xpu].some(Array.isArray)) {
-            gpuState.value = 'unavailable';
-            return;
-        }
-        const gpu = Array.isArray(data.gpu) ? data.gpu : [];
-        const npu = Array.isArray(data.npu) ? data.npu : [];
-        const xpu = Array.isArray(data.xpu) ? data.xpu : [];
-        // Older collectors can put Ascend devices in the gpu array.
-        const legacyNpu = gpu.filter((item) => item?.type === 'ascend').length;
-        const conventionalGpu = gpu.filter((item) => item?.type === 'nvidia' || item?.type === 'amd').length;
-        const devices = conventionalGpu + (npu.length || legacyNpu) + xpu.length;
-        const warnings = Array.isArray(data.warnings) && data.warnings.length > 0;
-        gpuDeviceCount.value = devices;
-        // CUDA reported here is the NVIDIA driver compatibility indication,
-        // not the locally installed toolkit or a verified torch runtime.
-        if (gpu.some((item) => item?.type === 'nvidia')) {
-            gpuDriver.value = safeVersion(data.driverVersion);
-            gpuCudaCapability.value = safeVersion(data.cudaVersion);
-        }
-        gpuState.value = devices === 0 ? (warnings ? 'unavailable' : 'none') : (warnings ? 'partial' : 'ready');
+        const summary = summarizeGPUReadiness(res?.data);
+        gpuDeviceCount.value = summary.devices;
+        gpuDriver.value = summary.driver;
+        gpuCudaCapability.value = summary.cudaCompatibility;
+        gpuState.value = summary.state;
     } catch {
         if (serial === gpuRequestSerial) gpuState.value = 'unavailable';
     }
@@ -198,7 +180,7 @@ onBeforeUnmount(() => {
     &__header { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
     &__header h2 { font-size: 17px; font-weight: 600; margin: 0; }
     &__header p { color: var(--el-text-color-secondary); font-size: 13px; margin: 6px 0 14px; }
-    &__steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+    &__steps { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
     &__step { min-width: 0; }
     &__step-title { display: flex; align-items: center; gap: 8px; }
     &__step-title strong { font-size: 14px; }
@@ -207,6 +189,7 @@ onBeforeUnmount(() => {
     &__action { padding-top: 10px; }
     &__notice { color: var(--el-text-color-secondary); font-size: 12px; margin: 12px 0 0; }
     &__gpu-hint { color: var(--el-text-color-secondary); font-size: 11px; margin: 5px 0 0; overflow-wrap: anywhere; }
-    @media (max-width: 950px) { &__steps { grid-template-columns: 1fr; } }
+    @media (max-width: 1200px) { &__steps { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+    @media (max-width: 650px) { &__steps { grid-template-columns: 1fr; } }
 }
 </style>
