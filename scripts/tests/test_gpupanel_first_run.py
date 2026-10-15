@@ -19,7 +19,8 @@ class FirstRunContract(unittest.TestCase):
 
     def test_real_status_permission_and_current_node(self):
         src = SOURCE.read_text()
-        for needle in ("loadContainerStatus(currentNode.value", "hasRouteAccess(target)",
+        for needle in ("loadContainerStatus(currentNode.value", "loadDockerStatus(currentNode.value",
+                       "if (!daemon.data?.isExist)", "if (!daemon.data.isActive)", "hasRouteAccess(target)",
                        "Number.isFinite(response.data?.running)", "if (serial !== requestSerial) return",
                        "watch(currentNode", "if (canOpen(path))"):
             self.assertIn(needle, src)

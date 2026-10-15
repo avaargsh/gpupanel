@@ -18,7 +18,7 @@
                     <strong>{{ $t(step.title) }}</strong>
                 </div>
                 <p>{{ $t(step.description) }}</p>
-                <el-text v-if="step.path === '/containers'" size="small" :type="dockerState === 'ready' ? 'success' : dockerState === 'unavailable' ? 'warning' : 'info'">
+                <el-text v-if="step.path === '/containers'" size="small" :type="dockerState === 'ready' ? 'success' : dockerState !== 'ready' && dockerState !== 'checking' ? 'warning' : 'info'">
                     {{ dockerMessage }}
                 </el-text>
                 <div class="gpupanel-first-run__action">
@@ -37,7 +37,7 @@
 <script lang="ts" setup>
 import { computed, onMounted, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
-import { loadContainerStatus } from '@/api/modules/container';
+import { loadContainerStatus, loadDockerStatus } from '@/api/modules/container';
 import { useGlobalStore } from '@/composables/useGlobalStore';
 import { hasRouteAccess } from '@/utils/rbac';
 import i18n from '@/lang';
@@ -55,10 +55,12 @@ const canOpen = (path: string) => {
     return target.matched.length > 0 && hasRouteAccess(target);
 };
 const visibleSteps = computed(() => steps.filter((step) => canOpen(step.path)));
-const dockerState = ref<'checking' | 'ready' | 'unavailable'>('checking');
+const dockerState = ref<'checking' | 'ready' | 'unavailable' | 'missing' | 'stopped'>('checking');
 const dockerRunning = ref(0);
 const dockerMessage = computed(() => {
     if (dockerState.value === 'checking') return i18n.global.t('gpupanel.dockerChecking');
+    if (dockerState.value === 'missing') return i18n.global.t('gpupanel.dockerNotInstalled');
+    if (dockerState.value === 'stopped') return i18n.global.t('gpupanel.dockerNotRunning');
     if (dockerState.value === 'unavailable') return i18n.global.t('gpupanel.dockerUnavailable');
     return i18n.global.t('gpupanel.dockerReady', { count: dockerRunning.value });
 });
@@ -71,6 +73,18 @@ const refreshDocker = async () => {
     }
     dockerState.value = 'checking';
     try {
+        // The upstream container-count endpoint swallows some Docker list errors.
+        // A successful list response alone must not be treated as daemon health.
+        const daemon = await loadDockerStatus(currentNode.value || undefined);
+        if (serial !== requestSerial) return;
+        if (!daemon.data?.isExist) {
+            dockerState.value = 'missing';
+            return;
+        }
+        if (!daemon.data.isActive) {
+            dockerState.value = 'stopped';
+            return;
+        }
         const response = await loadContainerStatus(currentNode.value || undefined);
         if (serial !== requestSerial) return;
         if (!Number.isFinite(response.data?.running) || response.data.running < 0) {

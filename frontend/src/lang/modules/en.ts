@@ -16,6 +16,8 @@ const message = {
         appsStepDesc: 'Use the existing App Store or Compose workflow',
         dockerChecking: 'Checking Docker…',
         dockerReady: 'Docker reachable; running containers: {count}',
+        dockerNotInstalled: 'Docker was not detected on this node; install it through an approved method',
+        dockerNotRunning: 'Docker is installed but the daemon is not responding',
         dockerUnavailable: 'Docker status is unavailable; check service, node and permissions',
         dockerRestricted: 'Your account has no container-view permission',
         checkAgain: 'Check again',
