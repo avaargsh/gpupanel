@@ -1,0 +1,23 @@
+name: GPUPanel Ubuntu bootstrap
+on:
+  pull_request:
+    paths:
+      - 'scripts/gpupanel-bootstrap.py'
+      - 'scripts/tests/test_gpupanel_bootstrap.py'
+      - 'profiles/**'
+      - '.github/workflows/gpupanel-bootstrap-checks.yml'
+  workflow_dispatch:
+jobs:
+  offline-bootstrap:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python3 -m py_compile scripts/gpupanel-bootstrap.py scripts/tests/test_gpupanel_bootstrap.py
+      - run: python3 -m unittest discover -s scripts/tests -p 'test_gpupanel_bootstrap.py' -v
+      - run: python3 scripts/gpupanel-bootstrap.py doctor
+      - run: python3 scripts/gpupanel-bootstrap.py plan
