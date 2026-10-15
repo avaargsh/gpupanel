@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+# Copyright 2026 GPUPanel contributors
+# SPDX-License-Identifier: Apache-2.0
+# See LICENSES/Apache-2.0.txt for the license terms.
 """Read-only, evidence-first Git source provenance inventory; never grants licenses."""
 from __future__ import annotations
 

@@ -69,7 +69,7 @@ Archive SHA-256 is an internal consistency check, not publisher signature verifi
 
 ## Attribution and licensing
 
-GPUPanel is an independent derivative, **not an official 1Panel release or endorsed by the original project**. The original 1Panel copyright notices and `LICENSE` (GPL-3.0) are retained. This fork's new brand assets are identified separately; the upstream 1Panel name must remain in attribution, license notices, and compatibility context rather than being indiscriminately erased. See [NOTICE.md](NOTICE.md).
+GPUPanel is an independent derivative, **not an official 1Panel release or endorsed by the original project**. The original 1Panel copyright notices and `LICENSE` (GPL-3.0) are retained. This fork's new brand assets are identified separately; the upstream 1Panel name must remain in attribution, license notices, and compatibility context rather than being indiscriminately erased. See [NOTICE.md](NOTICE.md). A narrowly scoped set of independently authored audit scripts/tests is also offered under file-level Apache-2.0 terms; see [scope](docs/gpupanel/APACHE_FILE_SCOPE.md) and [license text](LICENSES/Apache-2.0.txt). **The 1Panel-based GPUPanel distribution remains GPL-3.0.**
 
 ## Scope of first round
 
