@@ -160,6 +160,17 @@ with sync_playwright() as p:
     page.set_viewport_size({'width': 1280, 'height': 1000})
     page.evaluate('() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))')
     page.screenshot(path=str(OUTPUT / 'home-zh.png'), full_page=True)
+    # Fixed assistant must not obscure readiness links at the desktop viewport.
+    launcher = page.get_by_role('button', name='AI 助手').bounding_box()
+    assert launcher
+    for link in page.locator('.workbench-readiness-actions a').all():
+        target = link.bounding_box()
+        assert target
+        intersects = (launcher['x'] < target['x'] + target['width']
+                      and launcher['x'] + launcher['width'] > target['x']
+                      and launcher['y'] < target['y'] + target['height']
+                      and launcher['y'] + launcher['height'] > target['y'])
+        assert not intersects, 'AI launcher must not cover readiness links'
     page.set_viewport_size({'width': 640, 'height': 900})
     page.evaluate('() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))')
     assert page.evaluate('document.documentElement.scrollWidth <= innerWidth')
