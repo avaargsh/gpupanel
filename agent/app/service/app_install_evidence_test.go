@@ -9,6 +9,7 @@ import (
 
 	"github.com/1Panel-dev/1Panel/agent/app/model"
 	"github.com/1Panel-dev/1Panel/agent/constant"
+	"github.com/docker/docker/api/types/container"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
@@ -159,5 +160,53 @@ func TestAppInstallEvidenceBoundedOwnershipScan(t *testing.T) {
 	if observerCalled || result.Classification != appEvidenceUnknown || result.Verified ||
 		len(result.Reasons) != 1 || result.Reasons[0] != "OWNERSHIP_SCAN_LIMIT" {
 		t.Fatalf("saturated owner lookup did not fail closed: %+v (called=%v)", result, observerCalled)
+	}
+}
+
+func TestAppInstallEvidenceDockerAliasNameMatching(t *testing.T) {
+	summaries := []container.Summary{
+		{ID: "one", Names: []string{"/non-install-alias", "/evidence-container"},
+			State: "running", Labels: map[string]string{"com.docker.compose.project": "my-app"}},
+		{ID: "two", Names: nil, State: "running"},
+		{ID: "three", Names: []string{"/evidence-container-other"}, State: "running"},
+	}
+	got := appEvidenceObservationsByRequestedName([]string{"evidence-container"}, summaries)
+	if len(got) != 1 || got[0].Name != "evidence-container" ||
+		got[0].State != "running" || got[0].Labels["com.docker.compose.project"] != "my-app" {
+		t.Fatalf("second Docker alias was not matched exactly: %+v", got)
+	}
+}
+
+func TestAppInstallEvidenceMultipleAliasesNeverCreateExtraContainers(t *testing.T) {
+	summaries := []container.Summary{
+		{ID: "one", Names: []string{"/unrelated", "/first", "/second"}, State: "running"},
+	}
+	got := appEvidenceObservationsByRequestedName([]string{"first", "second"}, summaries)
+	if len(got) != 1 || got[0].Name != "first" {
+		t.Fatalf("one physical container must not fabricate two observations: %+v", got)
+	}
+	appDB, taskDB, install := appEvidenceFixture(t, constant.StatusRunning, constant.StatusSuccess)
+	install.ContainerName = "first,second"
+	if err := appDB.Omit(clause.Associations).Save(&install).Error; err != nil {
+		t.Fatal(err)
+	}
+	out, err := inspectAppInstallEvidence(appDB, taskDB, install.ID, func([]string) ([]appContainerObservation, error) {
+		return got, nil
+	})
+	if err != nil { t.Fatal(err) }
+	if out.Verified || out.Classification != appEvidencePartial || len(out.Containers) != 2 ||
+		out.Containers[1].State != "missing" {
+		t.Fatalf("aliases incorrectly proved two containers: %+v", out)
+	}
+}
+
+func TestAppInstallEvidenceIgnoresUnrequestedAndNamelessContainers(t *testing.T) {
+	summaries := []container.Summary{
+		{Names: nil, State: "running"},
+		{Names: []string{"/target-extra"}, State: "running"},
+		{Names: []string{"/TARGET"}, State: "running"},
+	}
+	if got := appEvidenceObservationsByRequestedName([]string{"target"}, summaries); len(got) != 0 {
+		t.Fatalf("unexpected false-positive evidence: %+v", got)
 	}
 }
