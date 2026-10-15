@@ -5,8 +5,8 @@
                 <h2>{{ $t('gpupanel.firstRunTitle') }}</h2>
                 <p>{{ $t('gpupanel.firstRunDescription') }}</p>
             </div>
-            <el-button v-if="canOpen('/containers')" link type="primary"
-                :loading="dockerState === 'checking'" @click="refreshDocker">
+            <el-button v-if="canOpen('/containers') || canOpen('/ai/gpu/current')" link type="primary"
+                :loading="dockerState === 'checking' || gpuState === 'checking'" @click="refreshEnvironment">
                 {{ $t('gpupanel.checkAgain') }}
             </el-button>
         </header>
@@ -18,6 +18,13 @@
                     <strong>{{ $t(step.title) }}</strong>
                 </div>
                 <p>{{ $t(step.description) }}</p>
+                <el-text v-if="step.path === '/ai/gpu/current'" size="small"
+                    :type="gpuState === 'ready' ? 'success' : gpuState === 'checking' ? 'info' : 'warning'">
+                    {{ gpuMessage }}
+                </el-text>
+                <p v-if="step.path === '/ai/gpu/current' && gpuVersionHint" class="gpupanel-first-run__gpu-hint">
+                    {{ gpuVersionHint }}
+                </p>
                 <el-text v-if="step.path === '/containers'" size="small" :type="dockerState === 'ready' ? 'success' : dockerState === 'checking' ? 'info' : 'warning'">
                     {{ dockerMessage }}
                 </el-text>
@@ -35,9 +42,10 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, onMounted, ref, watch } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { loadContainerStatus, loadDockerStatus } from '@/api/modules/container';
+import { loadGPUInfo } from '@/api/modules/ai';
 import { useGlobalStore } from '@/composables/useGlobalStore';
 import { hasRouteAccess } from '@/utils/rbac';
 import i18n from '@/lang';
@@ -46,8 +54,9 @@ const router = useRouter();
 const { currentNode } = useGlobalStore();
 const steps = [
     { order: 1, path: '/hosts/monitor/monitor', title: 'gpupanel.hostStep', description: 'gpupanel.hostStepDesc' },
-    { order: 2, path: '/containers', title: 'gpupanel.dockerStep', description: 'gpupanel.dockerStepDesc' },
-    { order: 3, path: '/apps/all', title: 'gpupanel.appsStep', description: 'gpupanel.appsStepDesc' },
+    { order: 2, path: '/ai/gpu/current', title: 'gpupanel.gpuStep', description: 'gpupanel.gpuStepDesc' },
+    { order: 3, path: '/containers', title: 'gpupanel.dockerStep', description: 'gpupanel.dockerStepDesc' },
+    { order: 4, path: '/apps/all', title: 'gpupanel.appsStep', description: 'gpupanel.appsStepDesc' },
 ] as const;
 
 const canOpen = (path: string) => {
@@ -64,6 +73,73 @@ const dockerMessage = computed(() => {
     if (dockerState.value === 'unavailable') return i18n.global.t('gpupanel.dockerUnavailable');
     return i18n.global.t('gpupanel.dockerReady', { count: dockerRunning.value });
 });
+// Reuse the existing authenticated accelerator collector. This is an observation
+// of devices, NOT proof of CUDA toolkit, PyTorch or inference runtime readiness.
+type GPUObservationState = 'checking' | 'ready' | 'partial' | 'none' | 'unavailable' | 'restricted';
+const gpuState = ref<GPUObservationState>('checking');
+const gpuDeviceCount = ref(0);
+const gpuDriver = ref('');
+const gpuCudaCapability = ref('');
+let gpuRequestSerial = 0;
+const gpuMessage = computed(() => {
+    if (gpuState.value === 'checking') return i18n.global.t('gpupanel.gpuChecking');
+    if (gpuState.value === 'restricted') return i18n.global.t('gpupanel.gpuRestricted');
+    if (gpuState.value === 'none') return i18n.global.t('gpupanel.gpuNone');
+    if (gpuState.value === 'unavailable') return i18n.global.t('gpupanel.gpuUnavailable');
+    return i18n.global.t(gpuState.value === 'partial' ? 'gpupanel.gpuPartial' : 'gpupanel.gpuDetected', {
+        count: gpuDeviceCount.value,
+    });
+});
+const gpuVersionHint = computed(() => {
+    if (gpuState.value !== 'ready' && gpuState.value !== 'partial') return '';
+    if (!gpuDriver.value && !gpuCudaCapability.value) return '';
+    return i18n.global.t('gpupanel.gpuDriverHint', {
+        driver: gpuDriver.value || '-',
+        cuda: gpuCudaCapability.value || '-',
+    });
+});
+const safeVersion = (value: unknown): string =>
+    typeof value === 'string' && /^[0-9A-Za-z.+\- ]{1,48}$/.test(value) ? value : '';
+
+const refreshGPU = async () => {
+    const serial = ++gpuRequestSerial;
+    gpuDeviceCount.value = 0;
+    gpuDriver.value = '';
+    gpuCudaCapability.value = '';
+    if (!canOpen('/ai/gpu/current')) {
+        gpuState.value = 'restricted';
+        return;
+    }
+    gpuState.value = 'checking';
+    try {
+        const res = await loadGPUInfo();
+        if (serial !== gpuRequestSerial) return;
+        const data = res?.data;
+        if (!data || ![data.gpu, data.npu, data.xpu].some(Array.isArray)) {
+            gpuState.value = 'unavailable';
+            return;
+        }
+        const gpu = Array.isArray(data.gpu) ? data.gpu : [];
+        const npu = Array.isArray(data.npu) ? data.npu : [];
+        const xpu = Array.isArray(data.xpu) ? data.xpu : [];
+        // Older collectors can put Ascend devices in the gpu array.
+        const legacyNpu = gpu.filter((item) => item?.type === 'ascend').length;
+        const conventionalGpu = gpu.filter((item) => item?.type === 'nvidia' || item?.type === 'amd').length;
+        const devices = conventionalGpu + (npu.length || legacyNpu) + xpu.length;
+        const warnings = Array.isArray(data.warnings) && data.warnings.length > 0;
+        gpuDeviceCount.value = devices;
+        // CUDA reported here is the NVIDIA driver compatibility indication,
+        // not the locally installed toolkit or a verified torch runtime.
+        if (gpu.some((item) => item?.type === 'nvidia')) {
+            gpuDriver.value = safeVersion(data.driverVersion);
+            gpuCudaCapability.value = safeVersion(data.cudaVersion);
+        }
+        gpuState.value = devices === 0 ? (warnings ? 'unavailable' : 'none') : (warnings ? 'partial' : 'ready');
+    } catch {
+        if (serial === gpuRequestSerial) gpuState.value = 'unavailable';
+    }
+};
+
 let requestSerial = 0;
 const refreshDocker = async () => {
     const serial = ++requestSerial;
@@ -101,8 +177,16 @@ const open = async (path: string) => {
     // Frontend visibility is advisory. Backend permissions remain authoritative.
     if (canOpen(path)) await router.push(path);
 };
-onMounted(() => { void refreshDocker(); });
-watch(currentNode, () => { void refreshDocker(); });
+const refreshEnvironment = () => {
+    void refreshGPU();
+    void refreshDocker();
+};
+onMounted(refreshEnvironment);
+watch(currentNode, refreshEnvironment);
+onBeforeUnmount(() => {
+    ++gpuRequestSerial;
+    ++requestSerial;
+});
 </script>
 
 <style scoped lang="scss">
@@ -122,6 +206,7 @@ watch(currentNode, () => { void refreshDocker(); });
     &__step p { color: var(--el-text-color-secondary); font-size: 12px; min-height: 18px; }
     &__action { padding-top: 10px; }
     &__notice { color: var(--el-text-color-secondary); font-size: 12px; margin: 12px 0 0; }
+    &__gpu-hint { color: var(--el-text-color-secondary); font-size: 11px; margin: 5px 0 0; overflow-wrap: anywhere; }
     @media (max-width: 950px) { &__steps { grid-template-columns: 1fr; } }
 }
 </style>
