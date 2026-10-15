@@ -40,7 +40,8 @@ class PendingAppInstallRecoveryContract(unittest.TestCase):
         self.assertIn("node: currentNode.value || 'local'", self.form)
         self.assertIn("appKey: appKey.value", self.form)
         self.assertIn("pendingNode.value !== currentNode.value", self.form)
-        self.assertIn("openWithTaskID(taskID, undefined, pendingNode.value", self.form)
+        self.assertIn("openWithTaskID(taskID, undefined, targetNode || pendingNode.value", self.form)
+        self.assertIn("openTaskLog(taskID, receipt.node)", self.form)
         self.assertIn("pendingAppKey", self.form)
 
     def test_storage_is_per_tab_small_and_never_persists_secrets(self):
