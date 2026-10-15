@@ -28,9 +28,10 @@ jobs:
       - run: python3 -m unittest discover -s scripts/tests -p 'test_gpupanel_native_catalog.py' -v
       - run: pnpm install --frozen-lockfile
         working-directory: frontend
+      # React workspace tests; integrated UI flows run in the mainline browser job.
+      - run: pnpm test
+        working-directory: frontend
       - run: pnpm build
         working-directory: frontend
       - run: pnpm typecheck
-        working-directory: frontend
-      - run: node --test tests/local-app-page.test.mjs
         working-directory: frontend

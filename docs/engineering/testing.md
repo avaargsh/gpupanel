@@ -24,6 +24,10 @@ Go 测试中需要专用 Docker 或 Agent socket 的用例由环境变量门槛�
 环境版本、可复制命令、通过/失败/阻塞/跳过、恢复方式。原始安装日志、账号密码、
 私钥、Cookie、数据库、VM 磁盘放 `.local/`，只将脱敏结果发布到文档目录。
 
-当前根仓库尚无初始提交，不能伪造 `HEAD` 身份。预览归档可能为
-`source_commit=unknown`，来源归属检查应继续阻断。不可变来源证明和生产验收需要
-另行通过；单次本地安装成功也不自动完成升级回滚、完整 Docker/App 生命周期或多租户验收。
+Host、First-run 和 Native Catalog 工作流运行各自的 Python 契约检查以及当前
+React workspace 的 `pnpm test`、构建和类型检查。跨页面模拟浏览器用例统一由
+`gpupanel-mainline.yml` 的 `frontend-baseline` 执行；不再引用已移除的 Vue 测试路径。
+
+历史证据中的 `source_commit=unknown` 仅描述当时未提交的工作区，不代表当前 HEAD。
+不可变来源证明和生产验收仍需独立核对；单次本地安装成功不自动完成升级回滚、
+完整 Docker/App 生命周期或多租户验收。
