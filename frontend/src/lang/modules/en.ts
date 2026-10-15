@@ -42,8 +42,8 @@ const message = {
         dockerRestricted: 'Your account has no container-view permission',
         checkAgain: 'Check again',
         firstRunNotice: 'Only existing validated routes are shown. No Docker auto-install or privileged action is performed.',
-        quickStart: 'Current Host · Quick Actions',
-        quickStartDescription: 'Start with host, containers and terminal. Kubernetes and AI workspaces remain optional future integrations.',
+        quickStart: 'Personal GPU Workstation · Quick Actions',
+        quickStartDescription: 'Open existing GPU monitoring, Docker, files, terminal and model services. The catalog shows current availability; the AI assistant entry is in the bottom-right corner.',
         openModule: 'Open',
     },
     apiKeyManagement: {
