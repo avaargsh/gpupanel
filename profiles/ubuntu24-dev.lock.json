@@ -1,0 +1,54 @@
+{
+  "format_version": 1,
+  "profile": "ubuntu24-personal-dev",
+  "os": "ubuntu-24.04",
+  "description": "Read-only detection and pinned verified artifacts; no automatic installation. Add signed/pinned software URLs with sha256 only when vetted.",
+  "tools": [
+    {
+      "name": "git",
+      "command": "git",
+      "category": "source"
+    },
+    {
+      "name": "python3",
+      "command": "python3",
+      "category": "language"
+    },
+    {
+      "name": "docker",
+      "command": "docker",
+      "category": "containers"
+    },
+    {
+      "name": "node",
+      "command": "node",
+      "category": "language"
+    },
+    {
+      "name": "codex",
+      "command": "codex",
+      "category": "ai-coding"
+    },
+    {
+      "name": "opencode",
+      "command": "opencode",
+      "category": "ai-coding"
+    },
+    {
+      "name": "nvidia-smi",
+      "command": "nvidia-smi",
+      "category": "gpu"
+    },
+    {
+      "name": "rocminfo",
+      "command": "rocminfo",
+      "category": "gpu"
+    },
+    {
+      "name": "mx-smi",
+      "command": "mx-smi",
+      "category": "gpu"
+    }
+  ],
+  "artifacts": []
+}
