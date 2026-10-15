@@ -1,0 +1,23 @@
+name: GPUPanel preview staging
+on:
+  pull_request:
+    paths:
+      - 'scripts/gpupanel-preview-stage.py'
+      - 'scripts/tests/test_gpupanel_preview_stage.py'
+      - 'scripts/gpupanel-catalog-workspace.py'
+      - 'scripts/gpupanel-release.py'
+      - '.github/workflows/gpupanel-preview-stage.yml'
+      - 'docs/gpupanel/PREVIEW_STAGING.md'
+  workflow_dispatch:
+jobs:
+  preview-staging:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python3 -m py_compile scripts/gpupanel-preview-stage.py
+      - run: python3 -m unittest discover -s scripts/tests -p 'test_gpupanel_preview_stage.py' -v
