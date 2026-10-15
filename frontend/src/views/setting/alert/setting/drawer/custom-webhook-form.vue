@@ -456,7 +456,7 @@ const updateBodyTemplate = (template: string) => {
 const formatJsonBody = () => {
     if (props.modelValue.body.type !== 'json') return;
     const result = formatCustomWebhookJsonTemplate(props.modelValue.body.template);
-    if (!result.success) {
+    if (result.success === false) {
         MsgError(
             i18n.global.t(
                 result.error === 'bodyTooLarge'
