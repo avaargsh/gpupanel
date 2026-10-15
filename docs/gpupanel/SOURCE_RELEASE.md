@@ -33,3 +33,10 @@ Current Go startup still assumes data/CLI paths including `/usr/local/bin/1pctl`
 - [ ] Login -> Host -> Docker create/start/logs/stop/delete end-to-end acceptance
 
 Release manifest uses `status=source-preview-not-installable` and verifies every included file. Do not publish it as a production distribution. The full source build runs in CI on PRs alongside hermetic contract tests; successful compilation is still not proof that installation or first-login succeeds.
+
+
+## Bounded archive verification (2026-10-15)
+
+The source-preview packager and verifier reject unexpectedly large members (256 MiB per Core/Agent binary, 8 MiB per attribution text, 64 KiB manifest; 600 MiB cumulative members). Before invoking Python tar parsing, verification scans the gzip stream in bounded 1 MiB chunks and rejects a tar expansion above the 604 MiB safety ceiling, including oversized PAX payloads. It accepts only the five expected regular files and fails on duplicates, extra members, invalid descriptor types, invalid versions and hash mismatches. Release metadata cannot override the preview-only manifest status.
+
+This is a resource-exhaustion and malformed-artifact hardening measure; it is **not** cryptographic publisher authentication, a signed release, an installer or G3 acceptance. The existing staging tool inherits this stricter verification. If legitimate build artifacts outgrow these limits, require a measured, reviewed limit change rather than silently skipping verification.

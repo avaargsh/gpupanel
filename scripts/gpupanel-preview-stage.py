@@ -139,7 +139,10 @@ def stage(archive: Path, home: Path, approved: bool) -> dict:
                     frozen.write(chunk)
                 frozen.flush()
                 os.fsync(frozen.fileno())
-            snapshot_report = release.verify(snapshot)
+            try:
+                snapshot_report = release.verify(snapshot)
+            except release.ReleaseError as exc:
+                raise PreviewError("source archive changed between plan and staging or became invalid") from exc
             if (snapshot_report["sha256"] != plan["archiveSha256"]
                     or snapshot_report["version"] != plan["version"]):
                 raise PreviewError("source archive changed between plan and staging")
