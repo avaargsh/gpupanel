@@ -1,0 +1,38 @@
+name: GPUPanel Host read-only Docker investigation
+on:
+  pull_request:
+    paths:
+      - 'scripts/gpupanel-host-investigate.py'
+      - 'scripts/tests/test_gpupanel_host_investigate.py'
+      - 'docs/gpupanel/HOST_DOCKER_INVESTIGATION.md'
+      - '.github/workflows/gpupanel-host-investigate.yml'
+  workflow_dispatch:
+jobs:
+  host-readonly-investigation:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Compile CLI
+        run: python3 -m py_compile scripts/gpupanel-host-investigate.py
+      - name: Read-only negative contract tests
+        run: python3 -m unittest discover -s scripts/tests -p 'test_gpupanel_host_investigate.py' -v
+      - name: Default plan never contacts Docker (expected exit 2)
+        run: |
+          python3 - <<'PY'
+          import json
+          import subprocess
+          import sys
+          result = subprocess.run(
+              [sys.executable, "scripts/gpupanel-host-investigate.py", "--container", "gpupanel-fixture"],
+              check=False, capture_output=True, text=True,
+          )
+          assert result.returncode == 2, (result.returncode, result.stderr)
+          report = json.loads(result.stdout)
+          assert report["status"] == "NOT_CHECKED"
+          assert report["executed"] is False and report["mutations"] is False
+          PY
