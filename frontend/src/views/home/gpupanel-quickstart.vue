@@ -28,12 +28,16 @@ import { hasRouteAccess } from '@/utils/rbac';
 
 const router = useRouter();
 const entries = [
-    { path: '/hosts/monitor/monitor', title: 'menu.monitor', icon: 'p-system-monitor-menu' },
-    { path: '/hosts/files', title: 'menu.files', icon: 'p-file-menu' },
-    { path: '/hosts/disk', title: 'menu.disk', icon: 'p-disk-menu' },
-    { path: '/containers', title: 'menu.container', icon: 'p-docker1' },
-    { path: '/terminal', title: 'menu.terminal', icon: 'p-terminal2' },
+    // Personal GPU workstation: start with useful existing Host and local AI pages.
+    // No new installers or runtime behavior are introduced by these links.
     { path: '/ai/gpu/current', title: 'aiTools.gpu.gpu', icon: 'p-gpu-menu' },
+    { path: '/hosts/monitor/monitor', title: 'menu.monitor', icon: 'p-system-monitor-menu' },
+    { path: '/containers', title: 'menu.container', icon: 'p-docker1' },
+    { path: '/hosts/files', title: 'menu.files', icon: 'p-file-menu' },
+    { path: '/terminal', title: 'menu.terminal', icon: 'p-terminal2' },
+    { path: '/ai/model/account', title: 'aiTools.model.model', icon: 'p-moxing-menu' },
+    { path: '/apps/all', title: 'gpupanel.catalogNav', icon: 'p-appstore' },
+    { path: '/hosts/disk', title: 'menu.disk', icon: 'p-disk-menu' },
 ] as const;
 
 const canOpen = (path: string) => {
