@@ -127,7 +127,7 @@ def inspect(probe_torch: bool = False, *, reader=importlib.metadata.version,
         "toolkitVerified": False,
         "torchKernelVerified": False,
         "installPerformed": False,
-        "environmentModified": False,
+        "environmentModified": "UNKNOWN" if probe_torch else False,
     }
 
 
