@@ -1,0 +1,46 @@
+{
+  "schemaVersion": 1,
+  "definitions": [
+    {
+      "id": "gpupanel.dev.python",
+      "name": "Python developer workstation",
+      "kind": "devtool",
+      "status": "planned",
+      "targets": [
+        "linux-host"
+      ],
+      "description": "Version-pinned Python and uv development environment; installation not yet implemented."
+    },
+    {
+      "id": "gpupanel.dev.ai-coding",
+      "name": "AI Coding workstation",
+      "kind": "devtool",
+      "status": "planned",
+      "targets": [
+        "linux-host"
+      ],
+      "description": "Developer tools and configuration for restricted-network Ubuntu; providers and assets require review."
+    },
+    {
+      "id": "gpupanel.apps.compose",
+      "name": "Docker Compose application",
+      "kind": "application",
+      "status": "planned",
+      "targets": [
+        "docker-compose"
+      ],
+      "description": "Future normalized Catalog adapter over existing 1Panel App Store; no standalone installer yet."
+    },
+    {
+      "id": "gpupanel.workspace.ai",
+      "name": "Persistent AI workspace",
+      "kind": "workspace",
+      "status": "planned",
+      "targets": [
+        "kubernetes"
+      ],
+      "description": "Future optional integration; Kubernetes is not part of the single-host MVP."
+    }
+  ],
+  "revisions": []
+}
