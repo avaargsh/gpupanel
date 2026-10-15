@@ -27,6 +27,8 @@ const message = {
         catalogLoadFailed: '应用目录加载失败：请检查网络、权限或仓库同步状态。',
         catalogRetry: '重试加载',
         catalogLocalSync: '同步本地应用',
+        catalogSyncConfirm: '同步会重新扫描本机应用定义目录，并可能下架已从目录移除的未安装应用定义。已安装应用仍按现有机制保留。确认开始吗？',
+        catalogSyncFailed: '无法发起本地同步。请检查权限及任务服务后重试。',
         catalogSyncPending: '本地同步已受理。请查看任务日志并刷新列表确认结果；请求成功不代表同步完成。',
         catalogEmpty: '当前筛选条件下没有应用；可尝试清除筛选或同步目录。',
         catalogClearFilters: '清除筛选',
