@@ -17,7 +17,7 @@ jobs:
         with:
           python-version: '3.12'
       - run: python3 -m unittest discover -s scripts/tests -p 'test_gpupanel_runtime_namespace.py' -v
-      - run: python3 scripts/gpupanel-runtime-namespace.py --human
+      - run: python3 scripts/gpupanel-runtime-namespace.py
       - name: Ensure strict future release gate fails closed
         run: |
           if python3 scripts/gpupanel-runtime-namespace.py --strict; then
