@@ -1,0 +1,84 @@
+import importlib.util
+from pathlib import Path
+import unittest
+from unittest.mock import patch
+
+ROOT = Path(__file__).resolve().parents[2]
+spec = importlib.util.spec_from_file_location("gpupanel_docker_smoke", ROOT / "scripts/gpupanel-docker-smoke.py")
+mod = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(mod)
+IMAGE = "docker.io/library/busybox@sha256:" + "a"*64
+
+
+class DockerSmokeContract(unittest.TestCase):
+    def test_plan_does_not_call_docker(self):
+        def forbidden(*args):
+            raise AssertionError("Docker CLI called before approval")
+        result = mod.smoke(IMAGE, False, executor=forbidden)
+        self.assertEqual(result["status"], "APPROVAL_REQUIRED")
+        self.assertFalse(result["executed"])
+
+    def test_reject_mutable_or_shell_injected_image(self):
+        for image in ("busybox:latest", "busybox", IMAGE + ";echo x", "https://example.com/a",
+                      "docker.io/library/busybox@sha256:BAD"):
+            with self.assertRaises(mod.SmokeError):
+                mod.smoke(image, False)
+
+    def test_approved_lifecycle_no_pull_and_cleanup(self):
+        commands = []
+        def fake(_binary, *args):
+            commands.append(args)
+            if args[0] == "logs":
+                return mod.MARKER
+            if args[0] == "inspect":
+                return "0"
+            return "ok"
+        with patch.object(mod.os, "geteuid", return_value=1000), \
+             patch.object(mod.shutil, "which", return_value="/usr/bin/docker"):
+            result = mod.smoke(IMAGE, True, executor=fake)
+        self.assertEqual(result["status"], "PASSED")
+        self.assertTrue(result["containerRemoved"])
+        create = next(args for args in commands if args[0] == "create")
+        for flag in ("--pull=never", "--network=none", "--read-only", "--cap-drop=ALL",
+                     "--security-opt", "no-new-privileges", "--entrypoint"):
+            self.assertIn(flag, create)
+        self.assertNotIn("-v", create)
+        self.assertNotIn("--privileged", create)
+        self.assertNotIn("pull", [x[0] for x in commands])
+        self.assertEqual(commands[-1][0:2], ("rm", "-f"))
+
+    def test_failed_logs_cleanup_still_required(self):
+        commands = []
+        def fake(_binary, *args):
+            commands.append(args)
+            if args[0] == "logs":
+                raise mod.SmokeError("failed")
+            return "ok"
+        with patch.object(mod.os, "geteuid", return_value=1000), \
+             patch.object(mod.shutil, "which", return_value="/usr/bin/docker"):
+            with self.assertRaises(mod.SmokeError):
+                mod.smoke(IMAGE, True, executor=fake)
+        self.assertEqual(commands[-1][0], "rm")
+
+    def test_refuse_root_before_docker_access(self):
+        with patch.object(mod.os, "geteuid", return_value=0):
+            with self.assertRaises(mod.SmokeError):
+                mod.smoke(IMAGE, True)
+
+    def test_cleanup_failure_not_reported_as_success(self):
+        def fake(_binary, *args):
+            if args[0] == "rm":
+                raise mod.SmokeError("cleanup failed")
+            if args[0] == "logs":
+                return mod.MARKER
+            if args[0] == "inspect":
+                return "0"
+            return "ok"
+        with patch.object(mod.os, "geteuid", return_value=1000), \
+             patch.object(mod.shutil, "which", return_value="/usr/bin/docker"):
+            with self.assertRaisesRegex(mod.SmokeError, "cleanup"):
+                mod.smoke(IMAGE, True, executor=fake)
+
+
+if __name__ == "__main__":
+    unittest.main()

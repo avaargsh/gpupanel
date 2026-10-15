@@ -1,0 +1,20 @@
+name: GPUPanel Docker smoke contracts
+on:
+  pull_request:
+    paths:
+      - 'scripts/gpupanel-docker-smoke.py'
+      - 'scripts/tests/test_gpupanel_docker_smoke.py'
+      - '.github/workflows/gpupanel-docker-smoke.yml'
+  workflow_dispatch:
+jobs:
+  synthetic-docker:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python3 -m py_compile scripts/gpupanel-docker-smoke.py
+      - run: python3 -m unittest discover -s scripts/tests -p 'test_gpupanel_docker_smoke.py' -v
