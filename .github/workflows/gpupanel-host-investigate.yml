@@ -21,5 +21,18 @@ jobs:
         run: python3 -m py_compile scripts/gpupanel-host-investigate.py
       - name: Read-only negative contract tests
         run: python3 -m unittest discover -s scripts/tests -p 'test_gpupanel_host_investigate.py' -v
-      - name: Default plan never contacts Docker
-        run: python3 scripts/gpupanel-host-investigate.py --container gpupanel-fixture
+      - name: Default plan never contacts Docker (expected exit 2)
+        run: |
+          python3 - <<'PY'
+          import json
+          import subprocess
+          import sys
+          result = subprocess.run(
+              [sys.executable, "scripts/gpupanel-host-investigate.py", "--container", "gpupanel-fixture"],
+              check=False, capture_output=True, text=True,
+          )
+          assert result.returncode == 2, (result.returncode, result.stderr)
+          report = json.loads(result.stdout)
+          assert report["status"] == "NOT_CHECKED"
+          assert report["executed"] is False and report["mutations"] is False
+          PY
