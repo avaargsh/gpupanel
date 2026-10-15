@@ -1406,7 +1406,7 @@ func handleErr(install model.AppInstall, err error, out string) error {
 }
 
 func doNotNeedSync(installed model.AppInstall) bool {
-	return appInstallOperationPending(installed.Status) || installed.Status == constant.StatusSyncing ||
+	return appInstallOperationPending(installed.Status) || installed.Status == constant.StatusUnknown || installed.Status == constant.StatusSyncing ||
 		installed.Status == constant.StatusInstallErr || installed.Status == constant.StatusUpgradeErr || installed.Status == constant.StatusUpErr
 }
 
