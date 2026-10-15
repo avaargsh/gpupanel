@@ -20,11 +20,7 @@ export default function Sidebar() {
         <nav className="workspace-nav" aria-label={t('workbench.personal')}>
             {navSections.map((section) => <section key={section.titleKey}>
                 <h2 className={collapsed ? 'visually-hidden' : 'workspace-nav-heading'}>{t(section.titleKey)}</h2>
-                {section.items.map((item) => item.unavailable ?
-                    <button key={item.path} className="workspace-nav-link unavailable" aria-disabled="true" aria-label={`${t(item.labelKey)} · ${t('workbench.notConnected')}`}
-                        title={`${t(item.labelKey)} · ${t('workbench.notConnected')}`}>
-                        {item.icon}{!collapsed && <><span>{t(item.labelKey)}</span><small>{t('workbench.notConnected')}</small></>}
-                    </button> :
+                {section.items.filter((item) => !item.unavailable).map((item) =>
                     <Link key={item.path} className="workspace-nav-link" to={item.path}
                         title={t(item.labelKey)} aria-label={t(item.labelKey)}
                         aria-current={active === item.path ? 'page' : undefined}>
