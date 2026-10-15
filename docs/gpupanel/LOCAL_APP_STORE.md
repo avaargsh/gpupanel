@@ -41,3 +41,14 @@ The persisted receipt begins as `App / TaskInstall / Executing` with `resource_i
 Non-goals and remaining gaps: this does not deduplicate **different task IDs** racing for the same application name, prevent an internal/non-HTTP caller from bypassing the API guard, guarantee atomicity between the separate TaskDB and application DB, or solve a crash between an AppInstall insert and Task.Execute. The existing runner still uses `Save` on the claimed row; fault injection and crash recovery are required to validate its lifecycle. The TaskDB receipt is inspectable by existing task list APIs but may not yet have a task log file if synchronous setup failed. Per-name serialization and backend outcome contract remain unverified for G5.
 
 Test evidence required: `cd agent && go test ./app/service -run '^TestAppInstallTaskAdmission' -count=1` (concurrent same-ID claims, open another SQLite connection, failure persistence, and started-task protection), plus API route-order static contract. Real host restart/crash, different-ID collisions and installed-state reconciliation remain **NOT RUN**.
+
+
+## Unlinked App install receipt diagnostics (2026-10-15)
+
+The Agent reserves an installation Task UUID in TaskDB before it creates any execution log or associates an AppInstall resource ID. If installation fails or the process exits in that window, the Task record survives but its `log_file` can be empty. The inherited Task Log API previously tried to open an empty file path and returned an error; a user could not inspect the receipt surfaced by the App Store's retry guard.
+
+The Task Log API now provides a **read-only synthetic admission diagnostic** exclusively for `TaskScopeApp + TaskInstall + resource_id=0 + empty log_file`, retaining the recorded TaskDB status. It queries AppInstall DB for a case-insensitive same-name count and presents one of three outcomes: **no name match**, **one or more name matches**, or **DB lookup unavailable**. None is a confirmed Docker or filesystem outcome. A same-name row is **not operation-linked** and could have been created by a different Task UUID. Missing AppInstall is also **not proof** that side effects never happened.
+
+The normal log viewer disables polling and download for this `scope=admission` diagnostic, and instructs the operator to inspect original-node installed-app state, Task history, Docker containers and persisted filesystem state **before attempting any retry**. No rows, containers, volumes, tasks or secrets are modified, and no background recovery or auto-delete is initiated.
+
+Tests: `python3 -m unittest discover -s scripts/tests -p 'test_gpupanel_app_install_receipt.py' -v` and `cd agent && go test ./app/service -run '^(TestAppInstallTaskAdmission|TestAppInstallAdmissionReceipt)' -count=1`. The real API/browser/Docker and crash/lost-ACK Golden Path is still **NOT RUN**; G3–G6 and multi-node readiness remain open.
