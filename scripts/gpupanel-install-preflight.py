@@ -18,6 +18,30 @@ MIN_FREE_BYTES = 5 * 1024 ** 3
 OLD_PATHS = ("usr/local/bin/1pctl", "etc/1panel", "opt/1panel",
              "usr/local/bin/1panel", "usr/local/bin/1panel-agent",
              "etc/systemd/system/1panel.service", "etc/systemd/system/1panel-agent.service")
+# A repeated GPUPanel install can be just as destructive as a 1Panel collision.
+# These are candidate ownership paths, not a declaration that installation
+# into any path is implemented or authorized.
+GPUPANEL_PATHS = ("usr/local/bin/gpupanel", "usr/local/bin/gpupanel-agent",
+                  "etc/gpupanel", "opt/gpupanel", "var/lib/gpupanel",
+                  "etc/systemd/system/gpupanel.service",
+                  "etc/systemd/system/gpupanel-agent.service")
+RUNTIME_PATHS = OLD_PATHS + GPUPANEL_PATHS
+
+
+def unsafe_runtime_path_parents(root: Path) -> list[str]:
+    """Detect redirected parents before any installer attempts to own a path.
+
+    This is metadata-only, and catches dangling symlinks too. The root itself
+    must be a literal directory for the real host check.
+    """
+    redirected = set()
+    for relative in RUNTIME_PATHS:
+        parent = root
+        for part in Path(relative).parts[:-1]:
+            parent = parent / part
+            if parent.is_symlink():
+                redirected.add("/" + str(parent.relative_to(root)))
+    return sorted(redirected)
 
 
 def read_os_release(root: Path) -> tuple[str, str]:
@@ -44,13 +68,21 @@ def inspect_host(root: Path, free_bytes: int | None = None) -> dict:
     else:
         add("operating_system", "BLOCKED", f"Detected {os_id} {version}",
             "Use a disposable Ubuntu 24.04 VM; other OS versions are not validated")
-    collisions = ["/" + name for name in OLD_PATHS if (root / name).exists() or (root / name).is_symlink()]
+    collisions = ["/" + name for name in RUNTIME_PATHS
+                  if (root / name).exists() or (root / name).is_symlink()]
     if collisions:
-        add("runtime_collision", "BLOCKED", "Legacy 1Panel runtime paths exist: " + ", ".join(collisions),
-            "Do not overwrite existing 1Panel; require backup, namespace isolation and a migration/rollback plan")
+        add("runtime_collision", "BLOCKED", "Existing panel/runtime paths: " + ", ".join(collisions),
+            "Refuse co-install/upgrade until operator-owned backup, path ownership and tested rollback are reviewed")
     else:
-        add("runtime_collision", "PASS", "No known legacy 1Panel paths detected",
-            "This does not prove GPUPanel services can safely start")
+        add("runtime_collision", "PASS", "No known 1Panel or GPUPanel runtime targets detected",
+            "This is a bounded collision inventory, not installer approval")
+    redirected = unsafe_runtime_path_parents(root)
+    if redirected:
+        add("runtime_path_symlink", "BLOCKED", "Runtime path parents are symlinks: " + ", ".join(redirected),
+            "Do not follow redirected target directories; inspect real paths and ownership independently")
+    else:
+        add("runtime_path_symlink", "PASS", "No known runtime path parent redirects detected",
+            "Still review actual service and data path ownership before installation")
     if free_bytes is None:
         try:
             free_bytes = shutil.disk_usage(root).free
