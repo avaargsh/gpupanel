@@ -242,7 +242,7 @@ const changeTag = (key: string) => {
     search();
 };
 
-const readList = async (requestSync = false, sortAll = false): Promise<boolean> => {
+const readList = async (requestSync = false, sortAll = false, background = false): Promise<boolean> => {
     if (sortMode.value && !sortAll) return false;
     const ticket = listRevision.next(currentNode.value);
     const req: App.AppInstallSearch = {
@@ -254,7 +254,8 @@ const readList = async (requestSync = false, sortAll = false): Promise<boolean> 
         sync: requestSync,
     };
     if (!sortAll) localStorage.setItem('app-installed-page-size', String(req.pageSize));
-    loading.value = true;
+    // A silent poll retains visible cards until an updated result arrives.
+    loading.value = !background;
     loadError.value = false;
     try {
         const response = await searchAppInstalled(req, ticket.node || undefined);
@@ -540,7 +541,7 @@ const saveSortOrder = async () => {
 
 const startPolling = () => {
     if (timer !== null) clearInterval(timer);
-    timer = setInterval(() => { void search(); }, 1000 * 30);
+    timer = setInterval(() => { void readList(false, false, true); }, 1000 * 30);
 };
 const exitSortMode = () => {
     if (sortableInstance) {
