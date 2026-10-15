@@ -3,7 +3,7 @@
 For the Ubuntu 24.04 Host-first Golden Path:
 
 ```bash
-python3 scripts/gpupanel-install-preflight.py --human
+python3 scripts/gpupanel-install-preflight.py
 python3 scripts/gpupanel-release.py build --version dev
 python3 scripts/gpupanel-release.py verify dist/gpupanel-preview.tar.gz
 ```
