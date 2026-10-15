@@ -16,6 +16,8 @@
             </template>
             <template #main>
                 <el-alert type="info" :closable="false" :title="$t('gpupanel.catalogNotice')" class="mb-3" />
+                <el-alert v-if="syncAccepted" type="info" :closable="true" @close="syncAccepted = false"
+                    :title="$t('gpupanel.catalogSyncPending')" class="mb-3" />
                 <el-alert v-if="legacyInstallRequested" type="warning" :closable="false"
                     :title="$t('gpupanel.catalogLegacyInstallLink')" class="mb-3" />
                 <el-alert v-if="loadError" type="error" :closable="false" :title="$t('gpupanel.catalogLoadFailed')" class="mb-3">
@@ -66,6 +68,7 @@ const apps = ref<App.AppItem[]>([]);
 const loading = ref(false);
 const loadError = ref(false);
 const syncing = ref(false);
+const syncAccepted = ref(false);
 const isActive = ref(false);
 const isExist = ref(false);
 const installRef = ref<InstanceType<typeof Install>>();
@@ -83,7 +86,7 @@ const hasFilters = computed(() => !!req.name.trim() || req.tags.length > 0);
 // Installation is only available from a verified local search result and user click.
 const legacyInstallRequested = computed(() => typeof route.query.install === 'string');
 let searchRevision = 0;
-let mounted = false;
+let firstActivation = true;
 
 const refresh = async () => {
     const revision = ++searchRevision;
@@ -157,6 +160,7 @@ const syncLocal = async () => {
         // HTTP acceptance is not completion: keep the operation marked busy
         // until the user closes the actual task log and the list is re-read.
         await syncLocalApp({ taskID });
+        syncAccepted.value = true;
         taskLogRef.value?.openWithTaskID(taskID);
     } catch {
         syncing.value = false;
@@ -167,12 +171,14 @@ const finishLocalSync = () => {
     syncing.value = false;
     void refresh();
 };
-onMounted(() => {
-    mounted = true;
-    void refresh();
-});
+onMounted(() => { void refresh(); });
 onActivated(() => {
-    if (mounted) void refresh();
+    // KeepAlive calls this on first mount as well; avoid duplicate reads.
+    if (firstActivation) {
+        firstActivation = false;
+    } else {
+        void refresh();
+    }
 });
 watch(currentNode, () => {
     ++searchRevision;
