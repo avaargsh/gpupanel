@@ -143,7 +143,7 @@ const openTaskLog = (taskID: string, targetNode?: string) => {
     taskLogRef.value?.openWithTaskID(taskID, undefined, targetNode || pendingNode.value || currentNode.value);
 };
 const inspectUncertainTask = () => {
-    if (pendingNode.value !== currentNode.value) {
+    if (pendingNode.value !== (currentNode.value || 'local')) {
         MsgError(i18n.global.t('gpupanel.appInstallSwitchNode'));
         return;
     }
@@ -151,7 +151,7 @@ const inspectUncertainTask = () => {
 };
 const acknowledgeReview = async () => {
     if (phase.value !== 'uncertain' || !lastAttemptTaskID.value) return;
-    if (pendingNode.value !== currentNode.value) {
+    if (pendingNode.value !== (currentNode.value || 'local')) {
         MsgError(i18n.global.t('gpupanel.appInstallSwitchNode'));
         return;
     }
