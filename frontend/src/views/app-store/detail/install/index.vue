@@ -98,6 +98,11 @@ const guardDrawerClose = (done: () => void) => {
 const handleClose = () => {
     if (loading.value) return;
     open.value = false;
+    if (phase.value === 'uncertain') {
+        // Preserve the unresolved task even if the drawer is dismissed. Any
+        // later app-install click will reopen this receipt, not silently reset it.
+        return;
+    }
     phase.value = 'idle';
     initError.value = false;
     lastAttemptTaskID.value = '';
@@ -207,6 +212,10 @@ const handleSubmit = async () => {
 
 const acceptParams = async (props: { app: { key: string; batchInstallSupport?: boolean }; params?: unknown }) => {
     if (loading.value || open.value) return;
+    if (phase.value === 'uncertain') {
+        open.value = true;
+        return;
+    }
     appKey.value = props.app.key;
     batchInstallSupport.value = !!props.app.batchInstallSupport;
     phase.value = 'idle';
