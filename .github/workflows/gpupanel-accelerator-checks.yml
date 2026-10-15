@@ -1,0 +1,23 @@
+name: GPUPanel accelerator adapter contract
+on:
+  pull_request:
+    paths:
+      - 'agent/utils/ai_tools/accelerator/**'
+      - 'agent/go.mod'
+      - '.github/workflows/gpupanel-accelerator-checks.yml'
+  workflow_dispatch:
+jobs:
+  provider-contract:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: agent/go.mod
+          cache-dependency-path: agent/go.sum
+      - run: test -z "$(gofmt -l utils/ai_tools/accelerator/provider_contract_test.go)"
+        working-directory: agent
+      - run: go test ./utils/ai_tools/accelerator -run 'Test(Injected|Partial|AllProviders|Cancelled|Adapter)' -count=1
+        working-directory: agent
