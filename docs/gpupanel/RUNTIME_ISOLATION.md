@@ -1,6 +1,6 @@
 # GPUPanel runtime namespace isolation ledger
 
-Run `python3 scripts/gpupanel-runtime-namespace.py --human` to review inherited 1Panel paths. Use `--strict` in any future installer/release gate: it exits **2 until a separate independently reviewed isolation proof exists**. It does not create, overwrite, migrate or back up host data.
+Run `python3 scripts/gpupanel-runtime-namespace.py` to review inherited 1Panel paths. Use `--strict` in any future installer/release gate: it exits **2 until a separate independently reviewed isolation proof exists**. It does not create, overwrite, migrate or back up host data.
 
 ## What this means for shipping
 
