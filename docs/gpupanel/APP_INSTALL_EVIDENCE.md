@@ -28,6 +28,11 @@ AppInstall ID only; the two changes do not replace each other.
   app environment, Compose content, TaskDB error logs and raw Docker labels.
 - Queries AppInstall DB, TaskDB and *read-only* Docker ContainerList. Performs
   no task creation, Compose Up/Down, DB Save/Update or self-healing.
+- Ownership correlation reads at most 1024 AppInstall IDs/container-name fields, in
+  stable ascending-ID order. At this bound the scan stops and returns
+  `UNKNOWN / OWNERSHIP_SCAN_LIMIT` without Docker observation rather than
+  incorrectly asserting no later competing owners. Larger fleets require an
+  indexed ownership relation and independently reviewed migration.
 - `verified` is **always false**. The response is a non-atomic snapshot and is
   never a substitute for independent health/data/owner verification.
 
@@ -81,3 +86,21 @@ cd agent
 go test ./app/service -run '^TestAppInstallEvidence' -count=1
 go test ./app/api/v2 ./router -run '^$' -count=1
 ```
+
+## Disposable real-Docker CI probe (not API acceptance)
+
+The evidence workflow builds an offline static Go fixture in a `FROM scratch`
+image, and launches a uniquely named non-root-runner Docker container with no
+network, mounts, privileged mode or capabilities. The Go service test queries
+the **real Docker Engine through the production Agent observer**, with fresh
+SQLite AppInstall/TaskDB fixtures; it verifies Running -> `CONSISTENT`
+(`verified=false`), then stops the same container and verifies Exited ->
+`PARTIAL`, with no DB mutations. Cleanup checks immutable container ID and a
+per-run nonce label before deleting only that disposable container.
+
+The fixture is not a real GPUPanel/Core HTTP session, AppStore install, or
+evidence that a container belongs to a submitted operation. The workflow runs
+on ephemeral GitHub-hosted Ubuntu and must be independently rerun on a
+disposable Ubuntu VM during G5. A passing probe does **not** authorize merging
+the endpoint until user/Host-scoped Core proxy authorization and negative tests
+are established.
