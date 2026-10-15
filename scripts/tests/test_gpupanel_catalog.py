@@ -46,13 +46,13 @@ class CatalogContract(unittest.TestCase):
             "adapter":"verified-asset", "recipeId":"test-static-fixture", "source":{
               "provider":"official","uri":"http://example.invalid/pkg", "sha256":"a"*64}}]
         with self.assertRaises(catalog.CatalogError):
-            catalog.validate(v, frozenset({"test-static-fixture"}))
+            catalog.validate(v, catalog.APPROVED_RECIPES | frozenset({"test-static-fixture"}))
         v["revisions"][0]["source"]["uri"]="https://example.invalid/pkg"
         v["revisions"][0]["id"]=catalog.revision_digest(v["revisions"][0])
-        catalog.validate(v, frozenset({"test-static-fixture"}))
+        catalog.validate(v, catalog.APPROVED_RECIPES | frozenset({"test-static-fixture"}))
         v["revisions"][0]["source"]["sha256"]="a"
         with self.assertRaises(catalog.CatalogError):
-            catalog.validate(v, frozenset({"test-static-fixture"}))
+            catalog.validate(v, catalog.APPROVED_RECIPES | frozenset({"test-static-fixture"}))
 
     def test_revision_id_detects_content_mutation(self):
         v = copy.deepcopy(self.index)
@@ -62,10 +62,10 @@ class CatalogContract(unittest.TestCase):
                 "uri":"https://example.invalid/fixture.tar.gz", "sha256":"a"*64}}
         item["id"] = catalog.revision_digest(item)
         v["revisions"].append(item)
-        catalog.validate(v, frozenset({"test-static-fixture"}))
+        catalog.validate(v, catalog.APPROVED_RECIPES | frozenset({"test-static-fixture"}))
         item["version"] = "1.0.1"
         with self.assertRaises(catalog.CatalogError):
-            catalog.validate(v, frozenset({"test-static-fixture"}))
+            catalog.validate(v, catalog.APPROVED_RECIPES | frozenset({"test-static-fixture"}))
 
     def test_cli_verify_browse_and_plan_read_only(self):
         with redirect_stdout(StringIO()) as out:
