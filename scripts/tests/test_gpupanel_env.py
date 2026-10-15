@@ -106,7 +106,7 @@ class OfflineUVEnvironmentTest(unittest.TestCase):
         self.assertEqual(user_work.read_text(), "keep")
 
     def test_default_cli_output_readable_and_json_after_command(self):
-        with patch.object(env, "DEFAULT_TARGET", self.target):
+        with patch.object(env, "DEFAULT_TARGET", self.target), patch.object(env.Path, "home", return_value=self.home):
             output = io.StringIO()
             with contextlib.redirect_stdout(output):
                 self.assertEqual(env.main(["plan"]), 0 if shutil.which("uv") else 2)
