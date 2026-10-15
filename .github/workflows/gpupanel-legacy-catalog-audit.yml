@@ -1,0 +1,21 @@
+name: GPUPanel legacy Catalog audit
+on:
+  pull_request:
+    paths:
+      - 'scripts/gpupanel-legacy-catalog-audit.py'
+      - 'scripts/tests/test_gpupanel_legacy_catalog_audit.py'
+      - '.github/workflows/gpupanel-legacy-catalog-audit.yml'
+      - 'docs/gpupanel/LEGACY_CATALOG_AUDIT.md'
+  workflow_dispatch:
+jobs:
+  sqlite-readonly-audit:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python3 -m py_compile scripts/gpupanel-legacy-catalog-audit.py
+      - run: python3 -m unittest discover -s scripts/tests -p 'test_gpupanel_legacy_catalog_audit.py' -v
