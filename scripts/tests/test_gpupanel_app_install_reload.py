@@ -50,7 +50,9 @@ class PendingAppInstallRecoveryContract(unittest.TestCase):
         self.assertNotIn("window.localStorage", h)
         self.assertIn("MAX_RECEIPT_BYTES", h)
         self.assertIn("UUID.test(receipt.taskID)", h)
-        self.assertIn("readPendingAppInstall()?.taskID === receipt.taskID", h)
+        self.assertIn("confirmed?.taskID === receipt.taskID", h)
+        self.assertIn("confirmed.node === receipt.node", h)
+        self.assertIn("confirmed.appKey === receipt.appKey", h)
         self.assertIn("existing.taskID !== receipt.taskID", h)
         self.assertIn("expectedTaskID", h)
         for secret in ("password:", "params:", "apiKey:", "token:", "dockerCompose:"):
