@@ -2,6 +2,20 @@ import { getFuLocaleMessage } from '@/lang/fu';
 
 const message = {
     gpupanel: {
+        appEvidenceTitle: 'App installation evidence',
+        appEvidenceView: 'Inspect evidence',
+        appEvidenceNotice: 'Local read-only snapshot of AppInstall, TaskDB and Docker. Matching records do not prove installation success, ownership or permission to retry. Never retry UNKNOWN without independent reconciliation.',
+        appEvidenceRefresh: 'Read latest evidence',
+        appEvidenceLoadFailed: 'Unable to read evidence. Check local administrator login and Agent health, then try again.',
+        appEvidenceClassification: 'Observed classification',
+        appEvidenceObservedAt: 'Observed at',
+        appEvidenceAppStatus: 'App record state',
+        appEvidenceTask: 'Install task ID',
+        appEvidenceTaskStatus: 'Task record state',
+        appEvidenceReasons: 'Diagnostic reason codes',
+        appEvidenceContainers: 'Observed containers',
+        appEvidenceNotVerified: 'Not verified. Even CONSISTENT means metadata agreement only; it does not prove readiness or execution ownership.',
+        appEvidenceNone: 'No observation available',
         catalogNav: 'Software & Environments',
         catalogPreview: 'Preview · Web installer not available',
         catalogSearchPlaceholder: 'Search software, environments or targets',
