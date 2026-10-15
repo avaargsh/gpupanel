@@ -35,6 +35,8 @@ class LocalAppPortalTest(unittest.TestCase):
         self.assertIn("apps.value.some(", src)
         self.assertIn("installRef.value?.acceptParams({ app: response.data })", src)
         self.assertIn("syncLocalApp({ taskID })", src)
+        self.assertIn("ElMessageBox.confirm", src)
+        self.assertIn("syncRevision", src)
 
     def test_install_deep_link_does_not_bypass_route_authorization(self):
         source = (ROOT / "frontend/src/routers/index.ts").read_text()
@@ -55,7 +57,7 @@ class LocalAppPortalTest(unittest.TestCase):
         for lang in ("zh", "en"):
             content = (ROOT / f"frontend/src/lang/modules/{lang}.ts").read_text()
             for key in ("catalogNotice:", "catalogLocalSync:", "catalogLoadFailed:",
-                        "catalogSyncPending:", "catalogInstalled:"):
+                        "catalogSyncPending:", "catalogSyncConfirm:", "catalogSyncFailed:", "catalogInstalled:"):
                 self.assertIn(key, content)
 
 
