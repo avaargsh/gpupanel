@@ -29,6 +29,7 @@ def module(name: str, path: Path):
 preflight = module("gpupanel_first_run_preflight", ROOT / "scripts/gpupanel-install-preflight.py")
 namespace = module("gpupanel_first_run_namespace", ROOT / "scripts/gpupanel-runtime-namespace.py")
 catalog = module("gpupanel_first_run_catalog", ROOT / "scripts/gpupanel-catalog.py")
+python_doctor = module("gpupanel_first_run_python", ROOT / "scripts/gpupanel-python-doctor.py")
 
 
 def docker_health(probe: bool, *, which=shutil.which, runner=subprocess.run) -> dict:
@@ -60,9 +61,10 @@ def docker_health(probe: bool, *, which=shutil.which, runner=subprocess.run) -> 
 
 
 def overview(host_root: Path, repo_root: Path, free_bytes: int | None = None,
-             probe_docker: bool = False) -> dict:
+             probe_docker: bool = False, probe_torch: bool = False) -> dict:
     host = preflight.inspect_host(host_root, free_bytes=free_bytes)
     docker = docker_health(probe_docker)
+    python_environment = python_doctor.inspect(probe_torch=probe_torch)
     runtime = namespace.audit(repo_root)
     index = catalog.load(repo_root / "catalog/index.json")
     enabled = []
@@ -78,6 +80,7 @@ def overview(host_root: Path, repo_root: Path, free_bytes: int | None = None,
         "mode": "read-only-first-run-overview",
         "host": {"checks": host["checks"], "blockers": host_blockers},
         "docker": docker,
+        "developerEnvironment": python_environment,
         "catalog": {"definitions": len(index["definitions"]), "approvedUserWorkflows": enabled},
         "systemRuntime": {"installable": False, "namespaceRisks": runtime["blocked"],
                           "unknownIsolationRisks": runtime["unknown"],
@@ -100,11 +103,14 @@ def overview(host_root: Path, repo_root: Path, free_bytes: int | None = None,
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="GPUPanel Host first-run review (read only)")
     parser.add_argument("--human", action="store_true", help="print concise Chinese operator guidance")
+    parser.add_argument("--probe-torch", action="store_true",
+                        help="opt in to importing PyTorch in an isolated timed subprocess (may initialize CUDA)")
     parser.add_argument("--probe-docker", action="store_true",
                         help="opt in to read-only daemon health of current Docker CLI context (may be remote)")
     args = parser.parse_args(argv)
     try:
-        report = overview(Path("/"), ROOT, probe_docker=args.probe_docker)
+        report = overview(Path("/"), ROOT, probe_docker=args.probe_docker,
+                          probe_torch=args.probe_torch)
     except (OSError, ValueError, TypeError, catalog.CatalogError) as exc:
         print(json.dumps({"status": "FAILED", "error": str(exc)}, ensure_ascii=False), file=sys.stderr)
         return 2
@@ -115,6 +121,10 @@ def main(argv: list[str] | None = None) -> int:
         for check in report["host"]["checks"]:
             print(f"  [{check['state']}] {check['code']}: {check['detail']}")
         print(f"Docker daemon: {report['docker']['status']}（当前 CLI context，可能是远端）")
+        env = report["developerEnvironment"]
+        print(f"Python {env['python']['version']}，PyTorch 安装状态: {env['torch']['status']}，"
+              f"GPU 运行时: {env['runtime']['status']}")
+        print("PyTorch 可选 --probe-torch；不自动导入第三方包，不代表 CUDA Toolkit 可用。")
         print("当前可用：Python 标准库项目模板（仅本机 CLI，需要明确批准写入）")
         print("完整 GPUPanel Core/Agent 系统安装：未开放；首次登录和 Docker API 闭环未验收。")
         for step in report["recommendedNextActions"]:
