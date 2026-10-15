@@ -13,6 +13,7 @@
             :title="$t('gpupanel.appInstallUncertain')" class="mb-3">
             <template #default>
                 <p role="status">{{ $t('gpupanel.appInstallTaskHint') }}</p>
+                <p class="gpupanel-install-origin">{{ pendingAppKey }} · {{ pendingNode }}</p>
                 <code class="gpupanel-install-task-id">{{ lastAttemptTaskID }}</code>
                 <div class="gpupanel-install-actions">
                     <el-button type="primary" plain @click="inspectUncertainTask">
@@ -52,16 +53,22 @@ import { newUUID } from '@/utils/id';
 import { routerToName } from '@/utils/router';
 import TaskLog from '@/components/log/task/index.vue';
 import i18n from '@/lang';
+import { useGlobalStore } from '@/composables/useGlobalStore';
+import { readPendingAppInstall, savePendingAppInstall, clearPendingAppInstall } from '@/utils/app-install-pending';
 
 defineOptions({ name: 'AppInstallPage' });
 
 type SubmissionPhase = 'idle' | 'validating' | 'confirming' | 'submitting' | 'uncertain';
 const router = useRouter();
+const { currentNode } = useGlobalStore();
+const recoveredReceipt = readPendingAppInstall();
 const open = ref(false);
-const phase = ref<SubmissionPhase>('idle');
+const phase = ref<SubmissionPhase>(recoveredReceipt ? 'uncertain' : 'idle');
 const initializing = ref(false);
 const initError = ref(false);
-const lastAttemptTaskID = ref('');
+const lastAttemptTaskID = ref(recoveredReceipt?.taskID || '');
+const pendingNode = ref(recoveredReceipt?.node || '');
+const pendingAppKey = ref(recoveredReceipt?.appKey || '');
 const loading = computed(() => initializing.value ||
     phase.value === 'validating' || phase.value === 'confirming' || phase.value === 'submitting');
 const installFormRef = ref<InstanceType<typeof AppInstallForm>>();
@@ -106,6 +113,8 @@ const handleClose = () => {
     phase.value = 'idle';
     initError.value = false;
     lastAttemptTaskID.value = '';
+    pendingNode.value = '';
+    pendingAppKey.value = '';
     installFormRef.value?.resetForm();
     if (router.currentRoute.value.query.install) routerToName('AppAll');
 };
@@ -131,13 +140,21 @@ const retryInit = () => {
 };
 
 const openTaskLog = (taskID: string) => {
-    taskLogRef.value?.openWithTaskID(taskID);
+    taskLogRef.value?.openWithTaskID(taskID, undefined, pendingNode.value || currentNode.value);
 };
 const inspectUncertainTask = () => {
+    if (pendingNode.value !== currentNode.value) {
+        MsgError(i18n.global.t('gpupanel.appInstallSwitchNode'));
+        return;
+    }
     if (lastAttemptTaskID.value) openTaskLog(lastAttemptTaskID.value);
 };
 const acknowledgeReview = async () => {
     if (phase.value !== 'uncertain' || !lastAttemptTaskID.value) return;
+    if (pendingNode.value !== currentNode.value) {
+        MsgError(i18n.global.t('gpupanel.appInstallSwitchNode'));
+        return;
+    }
     try {
         await ElMessageBox.confirm(i18n.global.t('gpupanel.appInstallRetryConfirm'),
             i18n.global.t('gpupanel.appInstallReviewDone'), {
@@ -148,8 +165,11 @@ const acknowledgeReview = async () => {
     } catch {
         return;
     }
+    clearPendingAppInstall();
     phase.value = 'idle';
     lastAttemptTaskID.value = '';
+    pendingNode.value = '';
+    pendingAppKey.value = '';
 };
 
 // The phase switches synchronously before any validation/confirmation await,
@@ -186,7 +206,17 @@ const handleSubmit = async () => {
 
         phase.value = 'submitting';
         const taskID = newUUID();
+        const receipt = { taskID, node: currentNode.value || 'local', appKey: appKey.value };
+        // Save BEFORE HTTP POST. Without a recoverable receipt, fail closed:
+        // a reload during an ambiguous request could otherwise duplicate work.
+        if (!savePendingAppInstall(receipt)) {
+            phase.value = 'idle';
+            MsgError(i18n.global.t('gpupanel.appInstallStorageUnavailable'));
+            return;
+        }
         lastAttemptTaskID.value = taskID;
+        pendingNode.value = receipt.node;
+        pendingAppKey.value = receipt.appKey;
         submitData.taskID = taskID;
         try {
             if (submitData.pushNode) {
@@ -201,6 +231,7 @@ const handleSubmit = async () => {
             phase.value = 'uncertain';
             return;
         }
+        clearPendingAppInstall();
         phase.value = 'idle';
         handleClose();
         // An accepted request is NOT a completed deployment. Show task evidence.
@@ -229,5 +260,6 @@ defineExpose({ acceptParams });
 
 <style scoped>
 .gpupanel-install-task-id { display: block; overflow-wrap: anywhere; margin-top: 8px; }
+.gpupanel-install-origin { overflow-wrap: anywhere; margin: 4px 0; }
 .gpupanel-install-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
 </style>
