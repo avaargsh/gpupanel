@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """Read-only GPUPanel first-run readiness overview.
 
-This command never installs packages, starts services, writes files or invokes
-Docker. It deliberately separates usable user-local workflows from unsupported
+This command never installs packages, starts services or writes files. An opt-in
+Docker info probe is read-only and may contact the active (remote) context.
+It deliberately separates usable user-local workflows from unsupported
 Core/Agent system installation.
 """
 from __future__ import annotations
