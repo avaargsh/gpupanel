@@ -8,11 +8,12 @@ spec = importlib.util.spec_from_file_location("gpupanel_docker_smoke", ROOT / "s
 mod = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(mod)
 IMAGE = "docker.io/library/busybox@sha256:" + "a"*64
+CREATED_ID = "f" * 64
 
 
 def inspected_result(args):
-    if args[0] == "inspect" and "Labels" in args[2]:
-        return args[-1].removeprefix("gpupanel-accept-")
+    if args[0] == "inspect" and "Labels" in " ".join(args):
+        return CREATED_ID + " " + args[-1].removeprefix("gpupanel-accept-")
     return "0"
 
 
@@ -38,7 +39,7 @@ class DockerSmokeContract(unittest.TestCase):
                 return mod.MARKER
             if args[0] == "inspect":
                 return inspected_result(args)
-            return "ok"
+            return CREATED_ID if args[0] == "create" else "ok"
         with patch.object(mod.os, "geteuid", return_value=1000), \
              patch.object(mod.shutil, "which", return_value="/usr/bin/docker"):
             result = mod.smoke(IMAGE, True, executor=fake)
@@ -51,7 +52,9 @@ class DockerSmokeContract(unittest.TestCase):
         self.assertNotIn("-v", create)
         self.assertNotIn("--privileged", create)
         self.assertNotIn("pull", [x[0] for x in commands])
-        self.assertEqual(commands[-1][0:2], ("rm", "-f"))
+        self.assertEqual(commands[-1], ("rm", "-f", CREATED_ID))
+        for action in ("start", "logs"):
+            self.assertEqual(next(x for x in commands if x[0] == action)[-1], CREATED_ID)
 
     def test_failed_logs_cleanup_still_required(self):
         commands = []
@@ -61,7 +64,7 @@ class DockerSmokeContract(unittest.TestCase):
                 raise mod.SmokeError("failed")
             if args[0] == "inspect":
                 return inspected_result(args)
-            return "ok"
+            return CREATED_ID if args[0] == "create" else "ok"
         with patch.object(mod.os, "geteuid", return_value=1000), \
              patch.object(mod.shutil, "which", return_value="/usr/bin/docker"):
             with self.assertRaises(mod.SmokeError):
@@ -79,7 +82,7 @@ class DockerSmokeContract(unittest.TestCase):
                 return mod.MARKER
             if args[0] == "inspect":
                 return inspected_result(args)
-            return "ok"
+            return CREATED_ID if args[0] == "create" else "ok"
         self.assertEqual(mod.smoke(local, False, fixture_entrypoint=True)["status"], "APPROVAL_REQUIRED")
         with patch.object(mod.os, "geteuid", return_value=1000), \
              patch.object(mod.shutil, "which", return_value="/usr/bin/docker"):
@@ -98,7 +101,7 @@ class DockerSmokeContract(unittest.TestCase):
         def bad(_binary, *args):
             if args[0] == "image":
                 return "sha256:" + "a" * 64
-            return "ok"
+            return CREATED_ID if args[0] == "create" else "ok"
         with patch.object(mod.os, "geteuid", return_value=1000), \
              patch.object(mod.shutil, "which", return_value="/usr/bin/docker"):
             with self.assertRaisesRegex(mod.SmokeError, "did not match"):
@@ -112,7 +115,7 @@ class DockerSmokeContract(unittest.TestCase):
                 raise mod.SmokeError("create response lost")
             if args[0] == "inspect":
                 return inspected_result(args)
-            return "ok"
+            return CREATED_ID if args[0] == "create" else "ok"
         with patch.object(mod.os, "geteuid", return_value=1000), \
              patch.object(mod.shutil, "which", return_value="/usr/bin/docker"):
             with self.assertRaisesRegex(mod.SmokeError, "create response lost"):
@@ -126,14 +129,73 @@ class DockerSmokeContract(unittest.TestCase):
             calls.append(args)
             if args[0] == "create":
                 raise mod.SmokeError("name collision")
-            if args[0] == "inspect" and "Labels" in args[2]:
+            if args[0] == "inspect" and "Labels" in " ".join(args):
                 return "foreign-owner"
-            return "ok"
+            return CREATED_ID if args[0] == "create" else "ok"
         with patch.object(mod.os, "geteuid", return_value=1000), \
              patch.object(mod.shutil, "which", return_value="/usr/bin/docker"):
             with self.assertRaisesRegex(mod.SmokeError, "ownership unverified"):
                 mod.smoke(IMAGE, True, executor=fake)
         self.assertNotIn("rm", [args[0] for args in calls])
+
+
+    def test_malformed_create_ack_does_not_start_and_recovers_by_owned_id(self):
+        calls = []
+        def fake(_binary, *args):
+            calls.append(args)
+            if args[0] == "create":
+                return "not-a-docker-id"
+            if args[0] == "inspect":
+                return inspected_result(args)
+            return "ok"
+        with patch.object(mod.os, "geteuid", return_value=1000), \
+             patch.object(mod.shutil, "which", return_value="/usr/bin/docker"):
+            with self.assertRaisesRegex(mod.SmokeError, "immutable container ID"):
+                mod.smoke(IMAGE, True, executor=fake)
+        self.assertNotIn("start", [x[0] for x in calls])
+        self.assertEqual(calls[-1], ("rm", "-f", CREATED_ID))
+
+    def test_untrusted_cleanup_identity_never_removes_container(self):
+        for ownership in ("not-an-id " + "a" * 16,
+                          "e" * 64 + " foreign-owner",
+                          CREATED_ID + " foreign-owner",
+                          CREATED_ID + " " + "a" * 16 + " extra"):
+            calls = []
+            def fake(_binary, *args):
+                calls.append(args)
+                if args[0] == "create":
+                    return CREATED_ID
+                if args[0] == "logs":
+                    return mod.MARKER
+                if args[0] == "inspect" and "Labels" in " ".join(args):
+                    return ownership
+                if args[0] == "inspect":
+                    return "0"
+                return "ok"
+            with patch.object(mod.os, "geteuid", return_value=1000), \
+                 patch.object(mod.shutil, "which", return_value="/usr/bin/docker"):
+                with self.assertRaisesRegex(mod.SmokeError, "ownership unverified"):
+                    mod.smoke(IMAGE, True, executor=fake)
+            self.assertNotIn("rm", [x[0] for x in calls])
+
+    def test_name_replaced_with_same_nonce_is_not_removed(self):
+        calls = []
+        def fake(_binary, *args):
+            calls.append(args)
+            if args[0] == "create":
+                return CREATED_ID
+            if args[0] == "logs":
+                return mod.MARKER
+            if args[0] == "inspect" and "Labels" in " ".join(args):
+                return "e" * 64 + " " + args[-1].removeprefix("gpupanel-accept-")
+            if args[0] == "inspect":
+                return "0"
+            return "ok"
+        with patch.object(mod.os, "geteuid", return_value=1000), \
+             patch.object(mod.shutil, "which", return_value="/usr/bin/docker"):
+            with self.assertRaisesRegex(mod.SmokeError, "ownership unverified"):
+                mod.smoke(IMAGE, True, executor=fake)
+        self.assertNotIn("rm", [x[0] for x in calls])
 
     def test_refuse_root_before_docker_access(self):
         with patch.object(mod.os, "geteuid", return_value=0):
@@ -148,7 +210,7 @@ class DockerSmokeContract(unittest.TestCase):
                 return mod.MARKER
             if args[0] == "inspect":
                 return inspected_result(args)
-            return "ok"
+            return CREATED_ID if args[0] == "create" else "ok"
         with patch.object(mod.os, "geteuid", return_value=1000), \
              patch.object(mod.shutil, "which", return_value="/usr/bin/docker"):
             with self.assertRaisesRegex(mod.SmokeError, "cleanup"):
