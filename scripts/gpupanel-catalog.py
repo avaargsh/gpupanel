@@ -18,7 +18,7 @@ SHA = re.compile(r"^[0-9a-f]{64}$")
 KINDS = {"application", "devtool", "workspace", "model", "workflow"}
 TARGETS = {"linux-host", "docker-compose", "kubernetes"}
 ADAPTERS = {"host-package", "docker-compose", "verified-asset"}
-SOURCES = {"official", "mirror", "modelscope", "acr", "offline"}
+SOURCES = {"official", "mirror", "modelscope", "acr"}
 
 # Reviewed recipes must be added here with separate implementation/tests.
 # Catalog files can never self-authorize a new command or executor.
@@ -59,12 +59,19 @@ def check_string(obj: dict, key: str, name: str) -> str:
     return value
 
 
+def revision_digest(revision: dict) -> str:
+    """Content-address a revision using its canonical JSON fields, excluding id."""
+    body = {key: value for key, value in revision.items() if key != "id"}
+    canonical = json.dumps(body, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+
+
 def validate_revision(revision: dict, definitions: set[str], approved_recipes: frozenset[str]) -> None:
     required = {"id", "definitionId", "version", "adapter", "recipeId", "source"}
     check_keys(revision, required, set(), "revision")
     rid = check_string(revision, "id", "revision")
-    if not REV.fullmatch(rid):
-        raise CatalogError("revision: invalid id")
+    if not SHA.fullmatch(rid):
+        raise CatalogError("revision: id must be a sha256 content digest")
     definition_id = check_string(revision, "definitionId", "revision")
     if definition_id not in definitions:
         raise CatalogError("revision: unknown definition")
@@ -89,6 +96,8 @@ def validate_revision(revision: dict, definitions: set[str], approved_recipes: f
     checksum = check_string(source, "sha256", "source")
     if not SHA.fullmatch(checksum):
         raise CatalogError("source: invalid sha256")
+    if rid != revision_digest(revision):
+        raise CatalogError("revision: immutable content digest mismatch")
 
 
 def validate(obj: dict, approved_recipes: frozenset[str] = APPROVED_RECIPES) -> None:

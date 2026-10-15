@@ -48,8 +48,22 @@ class CatalogContract(unittest.TestCase):
         with self.assertRaises(catalog.CatalogError):
             catalog.validate(v, frozenset({"test-static-fixture"}))
         v["revisions"][0]["source"]["uri"]="https://example.invalid/pkg"
+        v["revisions"][0]["id"]=catalog.revision_digest(v["revisions"][0])
         catalog.validate(v, frozenset({"test-static-fixture"}))
         v["revisions"][0]["source"]["sha256"]="a"
+        with self.assertRaises(catalog.CatalogError):
+            catalog.validate(v, frozenset({"test-static-fixture"}))
+
+    def test_revision_id_detects_content_mutation(self):
+        v = copy.deepcopy(self.index)
+        item = {"id":"placeholder", "definitionId":"gpupanel.dev.python",
+                "version":"1.0.0", "adapter":"verified-asset",
+                "recipeId":"test-static-fixture", "source":{"provider":"official",
+                "uri":"https://example.invalid/fixture.tar.gz", "sha256":"a"*64}}
+        item["id"] = catalog.revision_digest(item)
+        v["revisions"].append(item)
+        catalog.validate(v, frozenset({"test-static-fixture"}))
+        item["version"] = "1.0.1"
         with self.assertRaises(catalog.CatalogError):
             catalog.validate(v, frozenset({"test-static-fixture"}))
 
