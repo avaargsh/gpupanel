@@ -76,6 +76,10 @@ func TestCoreAppEvidenceProxyHTTPGate(t *testing.T) {
 	engine.GET("/api/v2/apps/installed/evidence/:appInstallId", func(c *gin.Context) {
 		c.Status(http.StatusTeapot) // Reaching Gin fallback is never success.
 	})
+	// A real HTTP server supplies ReverseProxy's CloseNotifier/flush contract;
+	// ResponseRecorder is insufficient for Gin's writer implementation.
+	coreServer := httptest.NewServer(engine)
+	defer coreServer.Close()
 
 	tests := []struct {
 		name, query, node string
@@ -95,7 +99,10 @@ func TestCoreAppEvidenceProxyHTTPGate(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			before := reached.Load()
-			req := httptest.NewRequest(http.MethodGet, "/api/v2/apps/installed/evidence/10"+tt.query, nil)
+			req, err := http.NewRequest(http.MethodGet, coreServer.URL+"/api/v2/apps/installed/evidence/10"+tt.query, nil)
+			if err != nil {
+				t.Fatal(err)
+			}
 			req.Header.Set("CurrentNode", tt.node)
 			req.Header.Set("X-Panel-User", "admin")
 			if tt.cookie != nil {
@@ -104,10 +111,17 @@ func TestCoreAppEvidenceProxyHTTPGate(t *testing.T) {
 			if tt.apiKey {
 				req.Header.Set("X-Test-Verified-API-Key", "1")
 			}
-			rec := httptest.NewRecorder()
-			engine.ServeHTTP(rec, req)
-			if rec.Code != tt.expected {
-				t.Fatalf("got HTTP %d, want %d, body=%q", rec.Code, tt.expected, rec.Body.String())
+			res, err := http.DefaultClient.Do(req)
+			if err != nil {
+				t.Fatal(err)
+			}
+			body, err := io.ReadAll(res.Body)
+			_ = res.Body.Close()
+			if err != nil {
+				t.Fatal(err)
+			}
+			if res.StatusCode != tt.expected {
+				t.Fatalf("got HTTP %d, want %d, body=%q", res.StatusCode, tt.expected, string(body))
 			}
 			delta := reached.Load() - before
 			if tt.forwarded && delta != 1 {
@@ -116,8 +130,8 @@ func TestCoreAppEvidenceProxyHTTPGate(t *testing.T) {
 			if !tt.forwarded && delta != 0 {
 				t.Fatalf("denied request leaked to Agent %d times", delta)
 			}
-			if tt.forwarded && !strings.Contains(rec.Body.String(), `"verified":false`) {
-				t.Fatalf("unexpected upstream diagnostic body: %q", rec.Body.String())
+			if tt.forwarded && !strings.Contains(string(body), `"verified":false`) {
+				t.Fatalf("unexpected upstream diagnostic body: %q", string(body))
 			}
 		})
 	}
