@@ -2,9 +2,6 @@ package cron
 
 import (
 	"context"
-	"crypto/rand"
-	"fmt"
-	"math/big"
 	"time"
 
 	"github.com/1Panel-dev/1Panel/agent/app/model"
@@ -67,19 +64,7 @@ func Run() {
 	if _, err := global.Cron.AddJob("0 */6 * * *", job.NewSSLJob()); err != nil {
 		global.LOG.Errorf("can not add  ssl corn job: %s", err.Error())
 	}
-	minuteRand, err := rand.Int(rand.Reader, big.NewInt(60))
-	if err != nil {
-		global.LOG.Errorf("generate random minute failed: %v", err)
-		minuteRand = big.NewInt(0)
-	}
-	hourRand, err := rand.Int(rand.Reader, big.NewInt(3))
-	if err != nil {
-		global.LOG.Errorf("generate random hour failed: %v", err)
-		hourRand = big.NewInt(0)
-	}
-	if _, err := global.Cron.AddJob(fmt.Sprintf("%v %v * * *", minuteRand.Int64(), hourRand.Int64()), job.NewAppStoreJob()); err != nil {
-		global.LOG.Errorf("can not add  appstore corn job: %s", err.Error())
-	}
+	// GPUPanel owns its Catalog. Never automatically repopulate the retired upstream 1Panel App Store.
 	if _, err := global.Cron.AddJob("0 3 */31 * *", job.NewBackupJob()); err != nil {
 		global.LOG.Errorf("can not add  backup token refresh corn job: %s", err.Error())
 	}

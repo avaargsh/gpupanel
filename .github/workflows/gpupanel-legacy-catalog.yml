@@ -1,0 +1,34 @@
+name: GPUPanel legacy Catalog retirement
+on:
+  pull_request:
+    paths:
+      - 'agent/cron/cron.go'
+      - 'agent/app/repo/app.go'
+      - 'agent/app/service/app.go'
+      - 'agent/app/service/legacy_catalog*'
+      - 'scripts/tests/test_gpupanel_legacy_catalog.py'
+      - '.github/workflows/gpupanel-legacy-catalog.yml'
+  workflow_dispatch:
+jobs:
+  static-contract:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python3 -m unittest discover -s scripts/tests -p 'test_gpupanel_legacy_catalog.py' -v
+  go-contract:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: agent/go.mod
+          cache-dependency-path: agent/go.sum
+      - run: go test ./app/service -run TestLegacyRemoteCatalogCannotBeReenabled -count=1
+        working-directory: agent
