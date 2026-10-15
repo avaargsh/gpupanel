@@ -37,7 +37,7 @@
 @media (max-width: 1279px) { .host-observation { display: none; } .workspace-content { padding: 24px 24px 88px; } .workspace-task-link { display: none; } }
 @media (max-width: 900px) { .workspace-sidebar { width: 64px; min-width: 64px; } .workspace-sidebar .workspace-brand { padding: 0 17px; } .workspace-brand > span:last-child:not(.workspace-mark), .workspace-nav-link > span:not(.semi-icon), .workspace-nav-link > small, .workspace-nav-heading, .workspace-sidebar-footer > span { display: none; } .workspace-sidebar .workspace-nav { padding-inline: 8px; } .workspace-sidebar .workspace-nav-link { padding: 0; justify-content: center; } .workspace-search { max-width: 160px; } .host-scope { margin-left: 4px; padding-left: 12px; } }
 @media (max-width: 640px) { .workspace-search { display: none !important; } .workspace-content { padding: 20px 16px 88px; } .host-scope { display: flex; border: 0; padding: 0; margin-left: 4px; } .host-scope-label { max-width: 110px; } .host-scope > .semi-icon, .workspace-page-title { display: none; } }
-.assistant-launcher { position: fixed; bottom: 20px; right: 24px; z-index: 20; border: 1px solid var(--semi-color-border); box-shadow: 0 4px 16px #00000010; }
+.assistant-launcher { position: fixed; bottom: 18px; right: 20px; z-index: 20; width: 42px; height: 42px; padding: 0; border-radius: 12px; border: 1px solid var(--semi-color-border); box-shadow: 0 4px 16px #00000010; }
 .assistant-body { display: flex; flex-direction: column; gap: 18px; }
 .assistant-context { display: flex; flex-direction: column; gap: 6px; padding: 16px; border: 1px solid var(--semi-color-border); border-radius: 10px; }
 .assistant-context small, .assistant-context span { color: var(--semi-color-text-2); font-size: 12px; }
@@ -49,3 +49,5 @@
 .assistant-heading h2 { font-size: 17px; font-weight: 600; }
 .assistant-body { padding: 24px; }
 .workspace-sidebar, .workspace-header { box-sizing: border-box; }
+
+@media (max-width: 640px) { .assistant-launcher { right: 12px; bottom: 12px; width: 40px; height: 40px; } }
