@@ -165,7 +165,7 @@ const acknowledgeReview = async () => {
     } catch {
         return;
     }
-    clearPendingAppInstall();
+    clearPendingAppInstall(lastAttemptTaskID.value);
     phase.value = 'idle';
     lastAttemptTaskID.value = '';
     pendingNode.value = '';
@@ -231,7 +231,7 @@ const handleSubmit = async () => {
             phase.value = 'uncertain';
             return;
         }
-        clearPendingAppInstall();
+        clearPendingAppInstall(lastAttemptTaskID.value);
         phase.value = 'idle';
         handleClose();
         // An accepted request is NOT a completed deployment. Show task evidence.
