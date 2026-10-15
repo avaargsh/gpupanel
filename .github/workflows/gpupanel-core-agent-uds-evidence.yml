@@ -1,0 +1,106 @@
+name: GPUPanel Core to real Agent Unix evidence acceptance
+on:
+  pull_request:
+    paths:
+      - 'core/init/proxy/proxy.go'
+      - 'core/init/router/proxy_evidence_real_uds_test.go'
+      - 'agent/test/evidenceci/main.go'
+      - '.github/workflows/gpupanel-core-agent-uds-evidence.yml'
+  workflow_dispatch:
+jobs:
+  real-unix-agent-docker-evidence:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: agent/go.mod
+          cache-dependency-path: agent/go.sum
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: core/go.mod
+          cache-dependency-path: core/go.sum
+      - name: Build Agent HTTP fixture and Core test-only Go embed files
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p core/cmd/server/web/assets
+          printf '<!doctype html><html><body>CI-only GPUPanel evidence probe</body></html>\n' > core/cmd/server/web/index.html
+          printf 'no production bundle\n' > core/cmd/server/web/assets/ci-evidence-placeholder.txt
+          (cd agent && go build -trimpath -o /tmp/gpupanel-evidence-ci-agent ./test/evidenceci)
+      - name: Core cookie to real Agent Unix HTTP to disposable Docker
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(id -u)" != 0
+          docker info >/dev/null
+          tmp="$(mktemp -d)"
+          chmod 0700 "$tmp"
+          nonce="$(python3 -c 'import secrets; print(secrets.token_hex(8))')"
+          name="gpupanel-evidence-${nonce}"
+          tag="gpupanel-evidence-uds-ci:${nonce}"
+          socket="$tmp/agent.sock"
+          cid=""
+          agent_pid=""
+          cleanup() {
+            status=$?
+            trap - EXIT
+            if [[ -n "$agent_pid" ]]; then
+              kill "$agent_pid" 2>/dev/null || true
+              wait "$agent_pid" 2>/dev/null || true
+            fi
+            if [[ -n "$cid" ]]; then
+              observed="$(docker inspect --type container --format '{{.Id}} {{index .Config.Labels "io.gpupanel.evidence.nonce"}}' "$cid" 2>/dev/null || true)"
+              if [[ "$observed" != "$cid $nonce" ]]; then
+                echo 'Refusing Docker cleanup: ID/nonce ownership proof failed' >&2
+                exit 1
+              fi
+              docker rm -f "$cid" >/dev/null || exit 1
+            fi
+            docker image rm "$tag" >/dev/null 2>&1 || true
+            rm -rf "$tmp"
+            exit "$status"
+          }
+          trap cleanup EXIT
+          cat > "$tmp/main.go" <<'EOF'
+          package main
+          import "time"
+          func main() { time.Sleep(15 * time.Minute) }
+          EOF
+          (cd "$tmp" && GO111MODULE=off CGO_ENABLED=0 go build -trimpath -o fixture main.go)
+          printf 'FROM scratch\nCOPY fixture /fixture\n' > "$tmp/Dockerfile"
+          docker build --network none --pull=false -t "$tag" "$tmp" >/dev/null
+          cid="$(docker create --pull=never --name "$name" --label "io.gpupanel.evidence.nonce=$nonce" \
+            --label "com.docker.compose.project=$name" --network none --read-only --cap-drop ALL \
+            --security-opt no-new-privileges --pids-limit 32 --memory 128m --cpus 0.5 \
+            --entrypoint /fixture "$tag")"
+          [[ "$cid" =~ ^[0-9a-f]{64}$ ]]
+          docker start "$cid" >/dev/null
+          GPUPANEL_E2E_CI_ONLY=1 GPUPANEL_E2E_SOCKET="$socket" GPUPANEL_EVIDENCE_CONTAINER="$name" \
+            /tmp/gpupanel-evidence-ci-agent >"$tmp/agent.log" 2>&1 &
+          agent_pid=$!
+          ready=0
+          for attempt in $(seq 1 30); do
+            if [[ -S "$socket" ]] && curl --silent --show-error --fail --unix-socket "$socket" \
+                "http://unix/api/v2/apps/installed/evidence/1" -o /dev/null 2>/dev/null; then
+              ready=1
+              break
+            fi
+            if ! kill -0 "$agent_pid" 2>/dev/null; then
+              echo 'Disposable Agent crashed during startup' >&2
+              cat "$tmp/agent.log" >&2
+              exit 1
+            fi
+            sleep 1
+          done
+          test "$ready" = 1
+          test "$(stat -c %a "$socket")" = 600
+          (cd core && GPUPANEL_E2E_SOCKET="$socket" GPUPANEL_EVIDENCE_PHASE=running \
+            go test ./init/router -run TestCoreEvidenceRealUnixAgentAndDocker -count=1 -v)
+          docker stop -t 3 "$cid" >/dev/null
+          test "$(docker inspect --type container --format '{{.State.Status}}' "$cid")" = exited
+          (cd core && GPUPANEL_E2E_SOCKET="$socket" GPUPANEL_EVIDENCE_PHASE=exited \
+            go test ./init/router -run TestCoreEvidenceRealUnixAgentAndDocker -count=1 -v)

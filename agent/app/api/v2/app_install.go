@@ -2,6 +2,7 @@ package v2
 
 import (
 	"github.com/1Panel-dev/1Panel/agent/app/dto/request"
+	"github.com/1Panel-dev/1Panel/agent/app/service"
 
 	"github.com/1Panel-dev/1Panel/agent/app/api/v2/helper"
 	"github.com/1Panel-dev/1Panel/agent/app/dto"
@@ -325,6 +326,30 @@ func (b *BaseApi) UpdateAppConfig(c *gin.Context) {
 		return
 	}
 	helper.Success(c)
+}
+
+// @Tags App
+// @Summary Inspect installed app reconciliation evidence (read-only)
+// @Param appInstallId path integer true "App install id"
+// @Success 200 {object} service.AppInstallEvidence
+// @Security ApiKeyAuth
+// @Security Timestamp
+// @Router /apps/installed/evidence/:appInstallId [get]
+func (b *BaseApi) GetAppInstallEvidence(c *gin.Context) {
+	// Even redacted diagnostics may expose host/application inventory.
+	// Do not allow intermediaries or browser caches to retain snapshots.
+	c.Header("Cache-Control", "no-store")
+	appInstallId, err := helper.GetIntParamByKey(c, "appInstallId")
+	if err != nil {
+		helper.BadRequest(c, err)
+		return
+	}
+	evidence, err := service.InspectAppInstallEvidence(appInstallId)
+	if err != nil {
+		helper.InternalServer(c, err)
+		return
+	}
+	helper.SuccessWithData(c, evidence)
 }
 
 // @Tags App
