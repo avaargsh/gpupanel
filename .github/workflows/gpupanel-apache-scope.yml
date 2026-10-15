@@ -1,0 +1,31 @@
+name: GPUPanel Apache file-scope guard
+on:
+  pull_request:
+    paths:
+      - 'LICENSE'
+      - 'NOTICE.md'
+      - 'README.md'
+      - 'LICENSES/Apache-2.0.txt'
+      - 'docs/gpupanel/APACHE_FILE_SCOPE.md'
+      - 'scripts/gpupanel-license-audit.py'
+      - 'scripts/gpupanel-dependency-audit.py'
+      - 'scripts/tests/test_gpupanel_license_audit.py'
+      - 'scripts/tests/test_gpupanel_dependency_audit.py'
+      - 'scripts/tests/test_gpupanel_apache_scope.py'
+      - '.github/workflows/gpupanel-apache-scope.yml'
+  workflow_dispatch:
+jobs:
+  scope:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python3 -m unittest discover -s scripts/tests -p 'test_gpupanel_apache_scope.py' -v
+      - name: Confirm explicit mixed-license scope
+        run: |
+          echo 'Only four independently authored audit Python files have Apache-2.0 file-level headers.'
+          echo 'Whole GPUPanel distribution remains GPL-3.0 due to inherited 1Panel code.'
