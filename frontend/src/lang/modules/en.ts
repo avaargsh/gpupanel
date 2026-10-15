@@ -27,6 +27,8 @@ const message = {
         catalogLoadFailed: 'Unable to load the application catalog. Check network, permissions or sync status.',
         catalogRetry: 'Retry',
         catalogLocalSync: 'Sync local apps',
+        catalogSyncConfirm: 'Sync rescans local app definitions and may retire uninstalled entries that are no longer on disk. Existing installations remain preserved under current rules. Continue?',
+        catalogSyncFailed: 'Could not start local sync. Check permissions and the task service before retrying.',
         catalogSyncPending: 'Local sync was accepted. Check task logs and refresh the list to verify the result; request acceptance is not completion.',
         catalogEmpty: 'No applications match the current filters. Clear filters or sync the catalog.',
         catalogClearFilters: 'Clear filters',
