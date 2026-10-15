@@ -39,7 +39,7 @@ class PendingAppInstallRecoveryContract(unittest.TestCase):
     def test_receipt_binds_node_and_original_app(self):
         self.assertIn("node: currentNode.value || 'local'", self.form)
         self.assertIn("appKey: appKey.value", self.form)
-        self.assertIn("pendingNode.value !== currentNode.value", self.form)
+        self.assertIn("pendingNode.value !== (currentNode.value || 'local')", self.form)
         self.assertIn("openWithTaskID(taskID, undefined, targetNode || pendingNode.value", self.form)
         self.assertIn("openTaskLog(taskID, receipt.node)", self.form)
         self.assertIn("pendingAppKey", self.form)
