@@ -94,10 +94,23 @@
                                 <template #buttons>
                                     <div
                                         class="d-button flex flex-wrap items-center justify-start gap-1.5"
-                                        v-if="mode === 'installed' && installed.status != 'Installing'"
+                                        v-if="mode === 'installed' && !sortMode"
                                     >
+                                        <el-button
+                                            v-if="currentNode === '' || currentNode === 'local'"
+                                            v-permission
+                                            class="app-button"
+                                            type="info"
+                                            plain
+                                            round
+                                            size="small"
+                                            @click="openEvidence(installed)"
+                                        >
+                                            {{ $t('gpupanel.appEvidenceView') }}
+                                        </el-button>
                                         <template v-for="(button, key) in buttons" :key="key">
                                             <el-button
+                                                v-if="installed.status != 'Installing'"
                                                 v-permission
                                                 class="app-button"
                                                 :type="button.disabled && button.disabled(installed) ? 'info' : ''"
@@ -135,6 +148,7 @@
     <AppParams ref="appParamRef" @close="search" />
     <AppUpgrade ref="upgradeRef" @close="search" />
     <AppIgnore ref="ignoreRef" @close="search" />
+    <AppEvidence ref="evidenceRef" />
     <ComposeLogs ref="composeLogRef" />
     <TerminalDialog ref="dialogTerminalRef" />
     <TaskLog ref="taskLogRef" @close="search" />
@@ -152,6 +166,7 @@ import AppDelete from './delete/index.vue';
 import AppParams from './detail/index.vue';
 import AppUpgrade from './upgrade/index.vue';
 import AppIgnore from './ignore/index.vue';
+import AppEvidence from './evidence/index.vue';
 import TaskLog from '@/components/log/task/index.vue';
 import Detail from '@/views/app-store/detail/index.vue';
 import Tags from '@/views/app-store/components/tag.vue';
@@ -208,6 +223,7 @@ const deleteRef = ref();
 const appParamRef = ref();
 const upgradeRef = ref();
 const ignoreRef = ref();
+const evidenceRef = ref();
 const composeLogRef = ref();
 const dialogTerminalRef = ref();
 const taskLogRef = ref();
@@ -229,6 +245,12 @@ const mode = ref('installed');
 const defaultLink = ref('');
 const detailRef = ref();
 const ignoreAppRef = ref();
+
+const openEvidence = (row: App.AppInstalled) => {
+    // The diagnostic API is local-superadmin only; Core repeats this check.
+    if (currentNode.value !== '' && currentNode.value !== 'local') return;
+    evidenceRef.value?.acceptParams(row);
+};
 
 const openDetail = (key: string) => {
     detailRef.value.acceptParams(key, 'install');
@@ -588,6 +610,7 @@ onMounted(() => {
 });
 
 watch(currentNode, () => {
+    evidenceRef.value?.close();
     listRevision.invalidate();
     // Do not run the initial on-mount sync on a different node after switching.
     if (startupTimer !== null) {
@@ -613,6 +636,7 @@ watch(currentNode, () => {
 });
 
 onUnmounted(() => {
+    evidenceRef.value?.close();
     listRevision.invalidate();
     if (timer !== null) clearInterval(timer);
     if (startupTimer !== null) clearTimeout(startupTimer);
