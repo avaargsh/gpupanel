@@ -111,9 +111,35 @@ func (t TaskRepo) Update(ctx context.Context, task *model.Task) error {
 }
 
 func (t TaskRepo) UpdateRunningTaskToFailed() error {
-	return getTaskDb(t.WithByStatus(constant.StatusExecuting)).Model(&model.Task{}).Updates(map[string]interface{}{
-		"status": constant.StatusFailed, "error_msg": constant.InterruptedMsg, "end_at": time.Now(),
-	}).Error
+	return reconcileRunningTasksOnRestart(global.TaskDB)
+}
+
+// reconcileRunningTasksOnRestart separates a potentially side-effecting App
+// installation from ordinary interrupted tasks. An interrupted install is
+// UNKNOWN, not proven FAILED: Docker resources may already have been created.
+// Keep the existing Task ID occupied and require evidence-based reconciliation.
+// Both updates happen in one TaskDB transaction; there is no automatic retry.
+func reconcileRunningTasksOnRestart(db *gorm.DB) error {
+	if db == nil {
+		return gorm.ErrInvalidDB
+	}
+	return db.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Model(&model.Task{}).
+			Where("status = ? AND type = ? AND operate = ?",
+				constant.StatusExecuting, "App", "TaskInstall").
+			Updates(map[string]interface{}{
+				"status": constant.StatusUnknown,
+				"error_msg": "installation interrupted; inspect task, app record and Docker resources before retrying",
+				"end_at": time.Now(),
+			}).Error; err != nil {
+			return err
+		}
+		return tx.Model(&model.Task{}).
+			Where("status = ?", constant.StatusExecuting).
+			Updates(map[string]interface{}{
+				"status": constant.StatusFailed, "error_msg": constant.InterruptedMsg, "end_at": time.Now(),
+			}).Error
+	})
 }
 
 func (t TaskRepo) CountExecutingTask() (int64, error) {
