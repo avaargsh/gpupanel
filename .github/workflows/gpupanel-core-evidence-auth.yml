@@ -18,6 +18,13 @@ jobs:
         with:
           go-version-file: core/go.mod
           cache-dependency-path: core/go.sum
+      - name: Supply CI-only embed placeholders for route unit tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p core/cmd/server/web/assets
+          printf '<!doctype html><html><body>GPUPanel auth unit fixture</body></html>\n' > core/cmd/server/web/index.html
+          printf 'not production assets\n' > core/cmd/server/web/assets/auth-unit-fixture.txt
       - name: Real session-cookie and denial checks at Core forwarding boundary
         working-directory: core
         run: go test ./init/router -run '^(TestCoreAppEvidenceAuthorization|TestCoreAppEvidencePathNormalization)$' -count=1 -v
