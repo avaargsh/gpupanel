@@ -1,0 +1,25 @@
+{
+  "kind": "LIVE bare-metal read-only final checks",
+  "binary_sha256": {
+    "core": "afc3a23e02be50150aa64cdd236d35d87e46345abd45e1c8bac494244d24aa39",
+    "agent": "2b651f4d93f494d85d0f3cb6e13b210ec743819a0470cb118ab3ed213a5e3b9a"
+  },
+  "agent_unix_http_health": true,
+  "permissions": {
+    "/etc/gpupanel": "0o700",
+    "/etc/gpupanel/agent.sock": "0o600",
+    "/opt/gpupanel/pctl": "0o700"
+  },
+  "terminal_file_retained_after_restart": true,
+  "credential_and_entry_records_retained_after_restart": true,
+  "loopback_binding_persisted": true,
+  "four_successful_tasks_retained_after_restart": true,
+  "loopback_listener_only": true,
+  "iptables_rules_unchanged": true,
+  "ip6tables_rules_unchanged": true,
+  "preexisting_foreign_fixture_processes_preserved": true,
+  "all_preexisting_container_ids_and_states_retained": true,
+  "docker_networks_unchanged": true,
+  "owned_canaries_cleaned": true,
+  "geoip_sha256": "fcad15e747a1fc3091ff69c36609fa1bf0721f453ea3f019d03bf7002976c80b"
+}

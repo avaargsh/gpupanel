@@ -12,7 +12,8 @@
 | 本地真机安装 | [安装边界与操作说明](operations/host-install.md) |
 | 本机隔离安装与停止 | [本地 VM 安装测试](operations/local-install-test.md) |
 | GeoIP 获取与恢复 | [操作说明](operations/geoip.md) |
-| 当前本地安装结果 | [本轮证据](evidence/2026-10-16/local-install/RESULTS.md) |
+| 当前真机安装结果 | [真实主机/终端/Docker链路](evidence/2026-10-16/host-install/RESULTS.md) |
+| 上一轮 VM 安装结果 | [本轮证据](evidence/2026-10-16/local-install/RESULTS.md) |
 | 1Panel 优化与本地 React 整合 | [整合说明](gpupanel/LOCAL_REMOTE_INTEGRATION.md) |
 | 上一轮源码整合证据 | [历史证据](evidence/2026-10-15/remote-integration/RESULTS.md) |
 | 产品与后续门槛 | [ROADMAP](gpupanel/ROADMAP.md)、[GOLDEN_PATH](gpupanel/GOLDEN_PATH.md) |

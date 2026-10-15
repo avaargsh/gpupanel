@@ -6,11 +6,16 @@ import os
 from pathlib import Path
 import subprocess
 import time
+import sys
+import traceback
 import uuid
 from playwright.sync_api import sync_playwright, expect
 
 ROOT = Path(__file__).resolve().parents[2]
 STATE = ROOT / '.local/host-install'
+STATE.mkdir(parents=True, exist_ok=True, mode=0o700)
+STATE.chmod(0o700)
+os.umask(0o077)
 credentials = json.loads((STATE / 'credentials.json').read_text())
 URL = credentials['url']
 assert URL == 'http://127.0.0.1:9999', 'Refuse an unrelated target'
@@ -70,6 +75,7 @@ def denied(response):
 
 
 created = False
+failure = None
 try:
     assert subprocess.run(DOCKER + ['inspect', canary], capture_output=True).returncode != 0
     image = json.loads(subprocess.check_output(DOCKER + ['image', 'inspect', 'python:3.14-slim'], text=True))[0]
@@ -219,8 +225,19 @@ try:
         browser.close()
     (STATE / 'browser-live.json').write_text(json.dumps(result, indent=2) + '\n')
     print(json.dumps(result, indent=2))
+except Exception:
+    failure = traceback.format_exc()
+    for key in ('password', 'entrance'):
+        failure = failure.replace(credentials[key], '<REDACTED>')
 finally:
     if created:
-        value = inspect()
-        if value:
-            subprocess.run(DOCKER + ['rm', '-f', value['Id']], check=True, capture_output=True)
+        try:
+            value = inspect()
+            if value:
+                subprocess.run(DOCKER + ['rm', '-f', value['Id']], check=True, capture_output=True)
+        except Exception:
+            failure = (failure or '') + '\nOwned canary cleanup not proven; inspect the private run receipt.\n'
+            (STATE / 'recovery.json').write_text(json.dumps({'run':run,'canary':canary,'cleanup_verified':False}))
+if failure:
+    print(failure, file=sys.stderr)
+    raise SystemExit(1)

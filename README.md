@@ -10,7 +10,7 @@ Agent 和内嵌 React 19 前端；保留 Host、Docker、本地应用等现有�
 
 - [文档入口](docs/README.md)
 - [工程目录](docs/engineering/project-structure.md) · [开发指南](docs/engineering/development.md)
-- [本机 VM 安装测试](docs/operations/local-install-test.md) · [当前执行结果](docs/evidence/2026-10-16/local-install/RESULTS.md)
+- [本机 VM 安装测试](docs/operations/local-install-test.md) · [当前真机实测](docs/evidence/2026-10-16/host-install/RESULTS.md)
 - [远程 1Panel 优化整合](docs/gpupanel/LOCAL_REMOTE_INTEGRATION.md)
 
 ## 开发与验证
