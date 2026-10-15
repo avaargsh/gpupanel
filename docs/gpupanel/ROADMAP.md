@@ -1,6 +1,8 @@
 # GPUPanel: product-first execution roadmap
 
-Decision date: 2026-10-15. **Freeze new GPU vendor integrations**, including MetaX and any other new driver, until the Ubuntu Host product loop is independently accepted. Existing upstream GPU monitoring can remain available; it is not the focus of this milestone.
+Decision date: 2026-10-15. Delivery decision: **fork-first direct reuse of inherited 1Panel source**, with staged cleanup of obsolete internals. Details: [ADR-0001](ADR-0001-FORK-FIRST.md) and [engineering contract](../../AGENTS.md). Modifying 1Panel files *in this repository* is allowed now; overwriting a live installed 1Panel instance without backup, approval and recovery proof is not. G3 still requires evidence for real installation, but a fully separate runtime namespace is no longer a prerequisite for building Host features.
+
+**Freeze new GPU vendor integrations**, including MetaX and any other new driver, until the Ubuntu Host product loop is independently accepted. Existing upstream GPU monitoring can remain available; it is not the focus of this milestone.
 
 ## Product definition and strict boundaries
 
@@ -18,7 +20,7 @@ Decision date: 2026-10-15. **Freeze new GPU vendor integrations**, including Met
 | G0 Brand & frontend baseline | GPUPanel name, branding and compilable web | real Vue build/type-check CI | PASS (source) |
 | G1 Read-only environment review | check local tools, collision risk and trusted cache | fixture tests + Ubuntu CI, no side-effects | PASS (diagnostics only) |
 | G2 Source build + artifact | Vite assets embedded in Go Core, agent built, verified tarball | full Ubuntu Node/Go build, archive checksum and attribution | PASS (CI source preview only, not an installer) |
-| G3 Safe installer/upgrade/rollback | fresh Ubuntu install, explicit data namespace, no legacy collisions | disposable VM, systemd/service setup and rollback | BLOCKED |
+| G3 Safe installer/upgrade/rollback | fresh Ubuntu install using reviewed inherited or new paths; refuse unsafe co-install overwrite | disposable VM, systemd/service setup, data backup and rollback | BLOCKED |
 | G4 Login and Host | authenticate then observe host, file, disk, terminal | browser + API, negative auth & RBAC tests | NOT RUN |
 | G5 Docker + app | container create/start/log/stop/delete and application install/uninstall | live Docker engine and authenticated API | NOT RUN |
 | G6 Failure and recovery | stop services, malformed package, interrupted update and restore | evidence, repeatability and independent verification | NOT RUN |
@@ -39,7 +41,7 @@ Build only after non-Kubernetes Host workflow works reliably; multi-host identit
 
 ## Quality rules
 
-1. Never globally rename 1Panel binary paths, Go import modules, config keys and data directories without a proven migration.
+1. Direct modification/removal of inherited internal 1Panel source is allowed. Any change to installed runtime paths, externally visible APIs or stored data still requires versioned migration, negative tests and rollback evidence.
 2. No fake "success" when an API is accepted but a service is not running; record desired/observed states separately.
 3. No hard-coded vendor-specific hardware assumptions.
 4. No upstream paid/proprietary code or assets inherited by implication of GPL fork.

@@ -38,6 +38,26 @@ class CommunityDocsTest(unittest.TestCase):
         self.assertIn("SECURITY.md", docs)
         self.assertTrue((ROOT / "scripts/gpupanel-bootstrap.py").is_file())
 
+    def test_engineering_contract_maps_to_existing_toolchain(self):
+        contract = (ROOT / "AGENTS.md").read_text()
+        adr = (ROOT / "docs/gpupanel/ADR-0001-FORK-FIRST.md").read_text()
+        contributing = (ROOT / "CONTRIBUTING.md").read_text()
+        pr = (ROOT / ".github/PULL_REQUEST_TEMPLATE.md").read_text()
+        for name in ("core/", "agent/", "frontend/", "catalog/"):
+            self.assertIn(name, contract)
+        for phrase in ("500 physical lines", "npm run type-check", "npm run build:pro",
+                       "idempotency", "GPL-3.0", "NOT RUN"):
+            self.assertIn(phrase, contract)
+        self.assertIn("fork", adr.lower())
+        self.assertIn("existing live installation", adr)
+        self.assertIn("AGENTS.md", contributing)
+        self.assertIn("ADR-0001", contributing)
+        for phrase in ("Security, isolation", "rollback", "N/A", "head SHA"):
+            self.assertIn(phrase, pr)
+        self.assertTrue((ROOT / "frontend/package-lock.json").is_file())
+        self.assertFalse((ROOT / "bun.lock").exists())
+        self.assertFalse((ROOT / "bun.lockb").exists())
+
 
 if __name__ == "__main__":
     unittest.main()

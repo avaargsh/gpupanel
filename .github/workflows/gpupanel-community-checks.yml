@@ -2,7 +2,10 @@ name: GPUPanel community documents
 on:
   pull_request:
     paths:
+      - 'AGENTS.md'
       - 'CONTRIBUTING.md'
+      - 'docs/gpupanel/ADR-0001-FORK-FIRST.md'
+      - 'docs/gpupanel/ROADMAP.md'
       - 'SECURITY.md'
       - '.github/ISSUE_TEMPLATE/**'
       - '.github/PULL_REQUEST_TEMPLATE.md'
