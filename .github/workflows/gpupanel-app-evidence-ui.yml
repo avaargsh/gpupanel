@@ -27,7 +27,7 @@ jobs:
         run: node --experimental-strip-types --test frontend/src/views/app-store/installed/evidence/evidence.test.mjs
       - run: npm ci
         working-directory: frontend
-      - run: npm run type-check
-        working-directory: frontend
       - run: npm run build:pro
+        working-directory: frontend
+      - run: npm run type-check
         working-directory: frontend
