@@ -5,8 +5,8 @@ Scope: first-party build reproducibility for **Ubuntu 24.04 / Linux amd64** sour
 ## How it works
 
 ```bash
-python3 scripts/gpupanel-bootstrap.py doctor --human
-python3 scripts/gpupanel-bootstrap.py self-test --human
+python3 scripts/gpupanel-bootstrap.py doctor
+python3 scripts/gpupanel-bootstrap.py self-test
 python3 scripts/gpupanel-release.py build --version dev
 python3 scripts/gpupanel-release.py verify dist/gpupanel-preview.tar.gz
 ```
