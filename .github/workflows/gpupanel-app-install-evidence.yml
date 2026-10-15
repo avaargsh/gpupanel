@@ -36,7 +36,8 @@ jobs:
         run: go test ./app/api/v2 ./router -run '^__GPUPANEL_NONE__' -count=1
       - name: Reject remote Agent node evidence even with spoofed metadata
         working-directory: agent
-        run: go test ./router -run '^TestAppEvidenceLocalMasterOnly
+        run: go test ./router -run TestAppEvidenceLocalMasterOnly -count=1 -v
+      - name: Real isolated Docker state observation using Agent service
         shell: bash
         run: |
           set -euo pipefail
