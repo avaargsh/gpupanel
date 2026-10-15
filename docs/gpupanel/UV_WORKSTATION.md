@@ -24,6 +24,17 @@ This creates a genuine virtual environment using the already installed **uv**, n
 
 It uses `uv venv --no-project --no-config --offline --no-python-downloads --no-managed-python --relocatable --python <current-interpreter>` on a private staging path, verifies the new Python process, then atomically renames into the chosen location with no-replace behavior. This is intentionally **not an automatic Python installer**, so Python and uv must already be present. The installed environment contains **no PyTorch, CUDA Toolkit, or Jupyter** unless the user adds them later using a separately reviewed dependency lock and uv workflow.
 
+## See installed packages without changing the environment
+
+After creating a verified uv environment, list the packages really installed in it:
+
+```bash
+python3 scripts/gpupanel-env.py packages
+python3 scripts/gpupanel-env.py packages --json
+```
+
+This calls `uv pip list --python <environment>/bin/python --format json --offline --no-config` using the existing uv executable, with a timeout and bounded output. The command is read-only: it neither resolves dependencies nor downloads wheels. Unverified environments refuse inventory; external subprocess errors and private stderr are not surfaced. The package list **does not mean a compatible or reproducible dependency lock exists**. Installing, pinning and caching reviewed PyTorch/Jupyter dependencies remain a separate approval-gated slice.
+
 ## CLI output for people and tools
 
 All primary diagnostics are now readable without a special flag. For scripts, choose `--json` explicitly:
