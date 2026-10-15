@@ -25,7 +25,7 @@ function AssistantPanel({ node }: { node: string }) {
     }, [open]);
     const page = currentNav(location.pathname, location.search);
     return <>
-        <Button aria-label={t('workbench.assistantLauncher')} className="assistant-launcher" icon={<IconAIWandLevel1 />} onClick={() => setOpen(true)}>{t('workbench.assistantLauncher')}</Button>
+        <Button aria-label={t('workbench.assistantLauncher')} title={t('workbench.assistantLauncher')} className="assistant-launcher" icon={<IconAIWandLevel1 />} onClick={() => setOpen(true)} />
         <dialog ref={dialog} className="workspace-assistant" aria-labelledby="assistant-title"
             onCancel={(event) => { event.preventDefault(); setOpen(false); }} onClose={() => setOpen(false)}>
             <header className="assistant-heading"><h2 id="assistant-title">GPUPanel Assistant</h2><Button aria-label={t('common.close')} onClick={() => setOpen(false)}>{t('common.close')}</Button></header>
