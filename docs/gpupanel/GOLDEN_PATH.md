@@ -28,9 +28,11 @@ python3 scripts/gpupanel-release.py verify dist/gpupanel-preview.tar.gz
 
 Requires Node and Go toolchains, dependency access (or seeded offline caches) and sufficiently provisioned CI/host. A passing archive proves only file integrity and buildability.
 
-## 3 — Dedicated runtime install/rollback (NOT IMPLEMENTED)
+## 3 — Controlled fork install/rollback (G3 BLOCKED)
 
-Do not call upstream official installer. Must add GPUPanel-specific isolated data directory and service units, cryptographically verifiable release manifest, random first-admin credentials, controlled bind/TLS, preflight permission review, backup and deterministic rollback. Prove no collision with an existing 1Panel system.
+Do not call the upstream official installer on a live host as a GPUPanel upgrade. **A wholly separate runtime namespace is not a prerequisite for editing this fork or building Host features.** A disposable-VM installer may use reviewed inherited paths or new paths, but must document their ownership, service-name/data collisions and migration implications before side effects.
+
+For an installable release, require a cryptographically verifiable manifest, random first-admin credentials, reviewed bind/TLS configuration, preflight permission checks, existing-state backup, an approved target-path/service plan, and independently verified rollback/restore. If an existing 1Panel installation or user data is detected, fail closed until explicit operator approval, a preservation/migration plan and tested restoration exist. **G3 is not accepted** on source-build or docs-only evidence.
 
 ## 4 — Login, Host and authorization (NOT TESTED)
 
