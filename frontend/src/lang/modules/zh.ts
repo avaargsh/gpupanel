@@ -2,6 +2,20 @@ import { getFuLocaleMessage } from '@/lang/fu';
 
 const message = {
     gpupanel: {
+        appEvidenceTitle: '应用安装观测证据',
+        appEvidenceView: '查看证据',
+        appEvidenceNotice: '仅读取本机 AppInstall、TaskDB 和 Docker 当前状态。记录一致不代表安装成功、归属已证明或允许重试；UNKNOWN 必须先独立对账。',
+        appEvidenceRefresh: '重新读取证据',
+        appEvidenceLoadFailed: '无法读取证据。请检查本机管理员登录状态和 Agent 连接后重试。',
+        appEvidenceClassification: '观测分类',
+        appEvidenceObservedAt: '观测时间',
+        appEvidenceAppStatus: '应用记录状态',
+        appEvidenceTask: '安装任务 ID',
+        appEvidenceTaskStatus: '任务记录状态',
+        appEvidenceReasons: '诊断原因代码',
+        appEvidenceContainers: '容器观测',
+        appEvidenceNotVerified: '未完成验证。即使 CONSISTENT，也只表示元数据观测一致，不代表服务就绪或执行归属已证明。',
+        appEvidenceNone: '暂无观测结果',
         catalogNav: '软件与环境目录',
         catalogPreview: '预览 · Web 安装器尚未开放',
         catalogSearchPlaceholder: '搜索软件、环境或部署目标',
