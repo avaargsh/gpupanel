@@ -354,12 +354,24 @@ func (a AppService) Install(req request.AppInstallCreate, executeScript bool) (a
 }
 
 func (a AppService) installWithHooks(req request.AppInstallCreate, executeScript bool, hooks *appInstallHooks) (appInstall *model.AppInstall, err error) {
-	if err = docker.CreateDefaultDockerNetwork(); err != nil {
-		err = buserr.WithDetail("Err1PanelNetworkFailed", err.Error(), nil)
+	// Guard the complete synchronous check-and-create phase, including calls
+	// from non-HTTP paths. The async runner starts only after AppInstall exists.
+	// This is not a durable inter-process fence or crash-recovery contract.
+	unlockName := lockAppInstallPreparation(req.Name)
+	defer unlockName()
+
+	// Do this read before creating the default Docker network. A failed DB
+	// lookup must not be treated as "no existing installation".
+	existing, lookupErr := appInstallRepo.ListBy(context.Background(), repo.WithByLowerName(req.Name))
+	if lookupErr != nil {
+		return nil, fmt.Errorf("check existing app installation: %w", lookupErr)
+	}
+	if len(existing) > 0 {
+		err = buserr.New("ErrAppNameExist")
 		return
 	}
-	if list, _ := appInstallRepo.ListBy(context.Background(), repo.WithByLowerName(req.Name)); len(list) > 0 {
-		err = buserr.New("ErrAppNameExist")
+	if err = docker.CreateDefaultDockerNetwork(); err != nil {
+		err = buserr.WithDetail("Err1PanelNetworkFailed", err.Error(), nil)
 		return
 	}
 	var (

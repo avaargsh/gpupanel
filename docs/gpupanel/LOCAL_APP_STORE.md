@@ -41,3 +41,40 @@ The persisted receipt begins as `App / TaskInstall / Executing` with `resource_i
 Non-goals and remaining gaps: this does not deduplicate **different task IDs** racing for the same application name, prevent an internal/non-HTTP caller from bypassing the API guard, guarantee atomicity between the separate TaskDB and application DB, or solve a crash between an AppInstall insert and Task.Execute. The existing runner still uses `Save` on the claimed row; fault injection and crash recovery are required to validate its lifecycle. The TaskDB receipt is inspectable by existing task list APIs but may not yet have a task log file if synchronous setup failed. Per-name serialization and backend outcome contract remain unverified for G5.
 
 Test evidence required: `cd agent && go test ./app/service -run '^TestAppInstallTaskAdmission' -count=1` (concurrent same-ID claims, open another SQLite connection, failure persistence, and started-task protection), plus API route-order static contract. Real host restart/crash, different-ID collisions and installed-state reconciliation remain **NOT RUN**.
+
+
+## Synchronous same-name install preparation guard (2026-10-15)
+
+The existing AppInstall synchronous preparation path previously used a case-insensitive
+read-before-create check without locking. Two concurrent requests with **different
+Task IDs** could pass that check simultaneously, despite the separate TaskDB
+per-task-ID durable admission fence.
+
+This narrow implementation adds a bounded, process-local lock keyed by normalized
+installation name inside `installWithHooks`, ahead of the existing-name check,
+Docker network creation and AppInstall DB insert. It covers alternate callers
+of the same service, not just the HTTP handler. A DB lookup failure now fails
+closed before creating the network, rather than being mistaken for no install.
+
+The critical section ends after synchronous preparation has inserted the
+AppInstall record and scheduled the task; it does **not** serialize the entire
+hour-long async pull/install. Later same-name requests should see the persisted
+record and reject. Independent names do not block each other. The internal
+lock reference map is reclaimed once no callers/waiters remain.
+
+**This does not prove exactly-once installation** across multiple agent
+processes, a crash before AppInstall insertion, another direct Docker writer,
+or separate TaskDB and app DB commits. A crashed / interrupted attempt
+still requires independent reconciliation of TaskDB, app installs, files,
+containers and network resources. Operator action must not blindly retry an
+UNKNOWN task. This patch introduces no new on-disk schema, no implicit
+cleanup and no privileged installer.
+
+Run focused checks:
+```bash
+python3 -m unittest discover -s scripts/tests -p 'test_gpupanel_app_install_preparation.py' -v
+cd agent && go test ./app/service -run '^(TestAppInstallTaskAdmission|TestAppInstallPreparation)' -count=1
+```
+
+G5 live Docker + authenticated API + power-loss/lost-ACK tests remain
+**NOT RUN** until the disposable host G3/G4 gates are independently accepted.

@@ -3,8 +3,11 @@ on:
   pull_request:
     paths:
       - 'agent/app/api/v2/app.go'
+      - 'agent/app/service/app.go'
       - 'agent/app/service/app_install_admission*.go'
+      - 'agent/app/service/app_install_prepare_lock*.go'
       - 'scripts/tests/test_gpupanel_app_install_admission.py'
+      - 'scripts/tests/test_gpupanel_app_install_preparation.py'
       - '.github/workflows/gpupanel-app-install-admission.yml'
   workflow_dispatch:
 jobs:
@@ -20,10 +23,12 @@ jobs:
           python-version: '3.12'
       - name: Check before-side-effect API contract
         run: python3 -m unittest discover -s scripts/tests -p 'test_gpupanel_app_install_admission.py' -v
+      - name: App-name check/create ordering contract
+        run: python3 -m unittest discover -s scripts/tests -p 'test_gpupanel_app_install_preparation.py' -v
       - uses: actions/setup-go@v6
         with:
           go-version-file: agent/go.mod
           cache-dependency-path: agent/go.sum
       - name: Concurrent SQLite task admission tests
         working-directory: agent
-        run: go test ./app/service -run '^TestAppInstallTaskAdmission' -count=1
+        run: go test ./app/service -run '^(TestAppInstallTaskAdmission|TestAppInstallPreparation)' -count=1
