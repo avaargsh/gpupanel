@@ -3,7 +3,7 @@ import importlib.util
 from pathlib import Path
 import tempfile
 import unittest
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 
 ROOT = Path(__file__).resolve().parents[2]
 spec = importlib.util.spec_from_file_location("gpupanel_first_run_overview", ROOT / "scripts/gpupanel-first-run-overview.py")
@@ -40,6 +40,23 @@ class FirstRunOverviewTest(unittest.TestCase):
                 runner=lambda *a, **k: Mock(returncode=0, stdout="host\nsecret\n", stderr=""))
         self.assertEqual(result["status"], "INVALID_RESPONSE")
         self.assertFalse(result["daemonVerified"])
+
+
+    def test_developer_environment_probe_is_opt_in(self):
+        sample = {
+            "python": {"status": "DETECTED", "version": "3.12.0"},
+            "torch": {"status": "INSTALLED_UNVERIFIED", "version": "2.6.0"},
+            "runtime": {"status": "NOT_CHECKED"},
+            "toolkitVerified": False,
+            "installPerformed": False,
+        }
+        with patch.object(overview.python_doctor, "inspect", return_value=sample) as inspect:
+            default = overview.overview(Path("/"), ROOT, free_bytes=15 * 1024 ** 3)
+            inspect.assert_called_once_with(probe_torch=False)
+        self.assertEqual(default["developerEnvironment"]["runtime"]["status"], "NOT_CHECKED")
+        with patch.object(overview.python_doctor, "inspect", return_value=sample) as inspect:
+            overview.overview(Path("/"), ROOT, free_bytes=15 * 1024 ** 3, probe_torch=True)
+            inspect.assert_called_once_with(probe_torch=True)
 
     def test_current_source_is_not_a_system_installer(self):
         report = overview.overview(Path("/"), ROOT, free_bytes=15 * 1024 ** 3)
