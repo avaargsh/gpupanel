@@ -1,3 +1,7 @@
+# Copyright 2026 GPUPanel contributors
+# SPDX-License-Identifier: Apache-2.0
+# See LICENSES/Apache-2.0.txt for the license terms.
+
 """Offline fixture tests for a conservative third-party dependency inventory."""
 from __future__ import annotations
 
