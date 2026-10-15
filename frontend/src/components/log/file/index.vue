@@ -16,7 +16,7 @@
             </el-checkbox>
             <el-button
                 class="ml-2.5"
-                v-if="showDownload"
+                v-if="showDownload && !!logPath"
                 @click="onDownload"
                 icon="Download"
                 :disabled="logs.length === 0"
@@ -287,6 +287,14 @@ const getContent = async (pre: boolean) => {
 
     if (res.data.scope == 'tail') {
         showTail.value = false;
+    }
+    // A pre-execution install admission has no file to tail. Its synthetic
+    // read-only diagnostic retains the recorded TaskDB status, but requires
+    // operator reconciliation rather than endless polling or blind retry.
+    if (res.data.scope === 'admission') {
+        isTailDisabled.value = true;
+        showTail.value = false;
+        onCloseLog();
     }
 
     if (res.data.taskStatus && res.data.taskStatus !== 'Executing') {
