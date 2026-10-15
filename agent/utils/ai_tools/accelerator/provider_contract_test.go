@@ -12,6 +12,7 @@ type fixtureProvider struct {
 	snapshot *ProviderSnapshot
 	err      error
 }
+
 func (p fixtureProvider) Kind() Kind { return p.kind }
 func (p fixtureProvider) Collect(context.Context) (*ProviderSnapshot, error) {
 	return p.snapshot, p.err
