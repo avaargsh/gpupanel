@@ -572,6 +572,15 @@ func (a *AppInstallService) SyncAll(systemInit bool) error {
 		return err
 	}
 	for _, i := range allList {
+		// An interrupted installation may have already written local files,
+		// AppInstall metadata or Docker resources. Preserve UNKNOWN rather than
+		// asserting InstallErr or automatically retrying after agent restart.
+		if systemInit && i.Status == constant.StatusInstalling {
+			if err := markInterruptedAppInstallationUnknown(global.DB, &i); err != nil {
+				return err
+			}
+			continue
+		}
 		if appInstallOperationInterruptedOnRestart(i.Status) {
 			if systemInit {
 				i.Status = appInstallOperationFailureStatus(i.Status)
@@ -943,6 +952,12 @@ func (a *AppInstallService) GetParams(id uint) (*response.AppConfig, error) {
 }
 
 func syncAppInstallStatus(appInstall *model.AppInstall, force bool) error {
+	// Unknown is a durable operator-review state, not a Docker health check.
+	// Do not automatically turn it into Running/Error based on partial
+	// container discovery or a normal status refresh.
+	if appInstall.Status == constant.StatusUnknown {
+		return nil
+	}
 	operation := ""
 	switch appInstall.Status {
 	case constant.StatusInstalling:
