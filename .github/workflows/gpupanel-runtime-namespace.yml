@@ -1,0 +1,26 @@
+name: GPUPanel runtime namespace audit
+on:
+  pull_request:
+    paths:
+      - 'scripts/gpupanel-runtime-namespace.py'
+      - 'scripts/tests/test_gpupanel_runtime_namespace.py'
+      - '.github/workflows/gpupanel-runtime-namespace.yml'
+  workflow_dispatch:
+jobs:
+  namespace-audit:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python3 -m unittest discover -s scripts/tests -p 'test_gpupanel_runtime_namespace.py' -v
+      - run: python3 scripts/gpupanel-runtime-namespace.py --human
+      - name: Ensure strict future release gate fails closed
+        run: |
+          if python3 scripts/gpupanel-runtime-namespace.py --strict; then
+            echo 'expected strict installer gate to block' >&2
+            exit 1
+          fi
