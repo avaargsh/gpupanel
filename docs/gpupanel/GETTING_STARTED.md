@@ -18,6 +18,18 @@ python3 scripts/gpupanel-bootstrap.py self-test
 
 FOUND is **executable presence only**, not a version or driver health check. The lock contains no approved downloadable software initially. No packages or executables are installed by these commands. Self-test is an isolated offline bundle roundtrip with synthetic bytes.
 
+## Create a Python environment with uv
+
+Use an existing trusted `uv` and a regular Ubuntu user to create a **new offline environment**. No driver, Python or PyTorch packages are downloaded:
+
+```bash
+python3 scripts/gpupanel-env.py plan
+python3 scripts/gpupanel-env.py create --approve
+python3 scripts/gpupanel-env.py status
+```
+
+Readable output is the default. Add `--json` after a command for scripts, e.g. `python3 scripts/gpupanel-env.py status --json`. Existing directories are never overwritten. See [uv workstation](UV_WORKSTATION.md).
+
 ## Two separate installation-like workflows
 
 **A. The available Python standard-library starter creates only project files, not Python:**
