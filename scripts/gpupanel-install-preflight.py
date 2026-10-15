@@ -97,8 +97,8 @@ def inspect_host(root: Path, free_bytes: int | None = None) -> dict:
             "note": "Read-only checks do not establish first-login or Docker lifecycle readiness"}
 
 
-def present(result: dict, human: bool) -> None:
-    if not human:
+def present(result: dict, json_output: bool) -> None:
+    if json_output:
         print(json.dumps(result, ensure_ascii=False, indent=2))
         return
     print("GPUPanel | Single-host installation preflight (READ ONLY)")
@@ -112,10 +112,10 @@ def present(result: dict, human: bool) -> None:
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="GPUPanel collision/OS/disk preflight (never installs)")
-    parser.add_argument("--human", action="store_true", help="human-readable output instead of JSON")
+    parser.add_argument("--json", action="store_true", help="machine-readable output")
     args = parser.parse_args(argv)
     result = inspect_host(Path("/"))
-    present(result, args.human)
+    present(result, args.json)
     return 2 if result["blockers"] else 0
 
 
