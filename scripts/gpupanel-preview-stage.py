@@ -11,6 +11,7 @@ import hashlib
 import importlib.util
 import json
 import os
+import stat
 from pathlib import Path
 import sys
 import tarfile
@@ -114,9 +115,31 @@ def stage(archive: Path, home: Path, approved: bool) -> dict:
         workspace.prepare_user_parents(dst, home)
         with tempfile.TemporaryDirectory(prefix=".gpupanel-preview-stage-", dir=dst.parent) as tmp:
             pending = Path(tmp)
+            # Snapshot the source into a private staging dir. Verification of the
+            # source path is NOT authority to later re-open that mutable path.
+            snapshot = pending / ".source-snapshot.tar.gz"
+            fd = os.open(archive, os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0))
+            with os.fdopen(fd, "rb") as source, snapshot.open("xb") as frozen:
+                if not stat.S_ISREG(os.fstat(source.fileno()).st_mode):
+                    raise PreviewError("source archive must be a regular file")
+                count = 0
+                while True:
+                    chunk = source.read(1024 * 1024)
+                    if not chunk:
+                        break
+                    count += len(chunk)
+                    if count > release.MAX_ARCHIVE_BYTES:
+                        raise PreviewError("source snapshot exceeds archive size limit")
+                    frozen.write(chunk)
+                frozen.flush()
+                os.fsync(frozen.fileno())
+            snapshot_report = release.verify(snapshot)
+            if (snapshot_report["sha256"] != plan["archiveSha256"]
+                    or snapshot_report["version"] != plan["version"]):
+                raise PreviewError("source archive changed between plan and staging")
             (pending / "bin").mkdir(mode=0o700)
             contents = {}
-            with tarfile.open(archive, "r:gz") as tar:
+            with tarfile.open(snapshot, "r:gz") as tar:
                 for name in MEMBERS:
                     stream = tar.extractfile("gpupanel/" + name)
                     if stream is None:
@@ -130,6 +153,7 @@ def stage(archive: Path, home: Path, approved: bool) -> dict:
                         os.fsync(output.fileno())
                     # Source-preview binaries are deliberately non-executable.
                     path.chmod(0o600)
+            snapshot.unlink()
             record = {"formatVersion": 1, "version": plan["version"],
                       "archiveSha256": plan["archiveSha256"], "serviceInstalled": False,
                       "files": {name: digest(data) for name, data in contents.items()}}

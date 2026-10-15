@@ -13,7 +13,7 @@ python3 scripts/gpupanel-preview-stage.py status dev
 python3 scripts/gpupanel-preview-stage.py remove dev --approve
 ```
 
-The tool validates the archive's *self-contained* manifest and SHA-256 hashes, refuses root/symlinked and existing targets, and stages files atomically to `~/GPUPanel/previews/source-<version>`. Bundled Core/Agent files are deliberately staged **without executable permissions**. Files in the slot are monitored against a receipt, and deletion is limited to the exact known members; user-changed files or unexpected additions block removal. It never touches `/etc/1panel`, `/opt/1panel`, `1pctl`, `/.1panel_clash`, Docker or systemd.
+The tool validates the archive's *self-contained* manifest and SHA-256 hashes, copies the approved bytes to a private temporary snapshot, verifies that snapshot matches the planned archive digest, and extracts **only from the verified snapshot**. It refuses root/symlinked and existing targets, and stages files atomically to `~/GPUPanel/previews/source-<version>`. Bundled Core/Agent files are deliberately staged **without executable permissions**. Files in the slot are monitored against a receipt, and deletion is limited to the exact known members; user-changed files or unexpected additions block removal. It never touches `/etc/1panel`, `/opt/1panel`, `1pctl`, `/.1panel_clash`, Docker or systemd.
 
 **Trust limit:** a self-contained checksum does not authenticate the publisher. This is an engineering preview with no signed provenance or secure first-admin setup. No system installation, upgrade, network endpoint, server health check or production readiness is implied.
 
