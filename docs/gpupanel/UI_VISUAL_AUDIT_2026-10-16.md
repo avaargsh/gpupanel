@@ -39,6 +39,14 @@
 
 ## Limits and follow-up
 
-This patch is a scoped **visual-polish candidate**, not a full rebrand, new design system, new backend, or complete pixel-level evaluation. Screenshot binary assets from the parent PR were not available in this working tool session, so pixel differences have **not** been verified here. Do not merge based solely on this code review.
+This patch is a scoped **visual-polish candidate**, not a full rebrand, new design system, new backend, or complete pixel-level evaluation. Parent PR #92's committed screenshot assets were subsequently inspected (light/dark/zh/1024/640/assistant). They show that unavailable project/environment actions and redundant blue navigation links compete with the primary workspace actions, especially at 1024/640 widths. **New screenshots for this candidate are not yet visually reviewed;** the workflow below publishes simulated snapshots for comparison. Do not merge based solely on this code review.
 
 Recommended later work: unify `tokens.ts` with Semi theme variables, create reusable PageHeader/SectionHeader/MetricCard primitives after a visual baseline passes, and gradually bring legacy management pages into the same density scale without broad selectors or unsupported redesign claims.
+
+## Follow-up visual pass
+
+- Hide unavailable Project/Environment **sidebar** entries until their backend lifecycle API exists; keep the disabled New Project affordance on Home and do not invent records.
+- Reduce empty-project icon/card prominence and secondary tool-link saturation; leave actionable Terminal and Apps as primary home links.
+- Change stale `home.noData` localization from 'showing sample data' to an explicit observation failure, aligned with the no-fabrication contract.
+- Add a scoped browser layout check and `.github/workflows/gpupanel-vnext-visual-smoke.yml`; its artifact screenshots use **mocked API**, not live Ubuntu or real GPU telemetry.
+- Gate PR promotion on completed browser workflow and artifact review; do not equate typecheck/build with visual acceptance.
