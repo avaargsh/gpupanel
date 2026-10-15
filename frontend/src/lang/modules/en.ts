@@ -6,9 +6,9 @@ const message = {
         catalogPreview: 'Preview · Web installer not available',
         catalogSearchPlaceholder: 'Search software, environments or targets',
 
-        catalogNotice: 'Shows only local application definitions on this node. Sync local sources, inspect details, and explicitly confirm installation. The inherited 1Panel remote feed remains retired.'
+        catalogNotice: 'Shows only local application definitions on this node. Sync local sources, inspect details, and explicitly confirm installation. The inherited 1Panel remote feed remains retired.',
 
-        catalogLegacyInstallLink: 'Legacy install links do not automatically open or execute installation. Choose and confirm an application from the local directory.'
+        catalogLegacyInstallLink: 'Legacy install links do not automatically open or execute installation. Choose and confirm an application from the local directory.',
         catalogInstalled: 'Installed Apps',
         catalogCompose: 'Docker Compose',
         catalogPlanned: 'Planned',
@@ -47,7 +47,7 @@ const message = {
         dockerStepDesc: 'Read Docker status from the current host',
         appsStep: 'Browse software and environments',
 
-        appsStepDesc: 'Local application definitions use the existing install flow; the retired remote feed stays disabled'
+        appsStepDesc: 'Local application definitions use the existing install flow; the retired remote feed stays disabled',
         dockerChecking: 'Checking Docker…',
         dockerReady: 'Docker reachable; running containers: {count}',
         dockerNotInstalled: 'Docker was not detected on this node; install it through an approved method',
