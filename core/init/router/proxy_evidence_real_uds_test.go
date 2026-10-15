@@ -23,6 +23,19 @@ import (
 // This test sends real HTTP through Core's production Proxy() and production
 // Unix-socket ReverseProxy implementation into the production Agent AppRouter.
 // The Agent process and Docker are disposable CI fixtures, not installed hosts.
+func realUDSEvidenceSessionCookie(t *testing.T, user psession.SessionUser, ttl int) *http.Cookie {
+	t.Helper()
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = httptest.NewRequest(http.MethodGet, "/api/v2/apps/installed/evidence/1", nil)
+	if err := global.SESSION.SetFresh(c, user, false, ttl); err != nil { t.Fatal(err) }
+	for _, cookie := range w.Result().Cookies() {
+		if cookie.HttpOnly { return cookie }
+	}
+	t.Fatal("no authenticated session cookie was minted")
+	return nil
+}
+
 func TestCoreEvidenceRealUnixAgentAndDocker(t *testing.T) {
 	socket := os.Getenv("GPUPANEL_E2E_SOCKET")
 	phase := os.Getenv("GPUPANEL_EVIDENCE_PHASE")
@@ -45,10 +58,10 @@ func TestCoreEvidenceRealUnixAgentAndDocker(t *testing.T) {
 	global.DB = db
 	if err := repo.NewISettingRepo().UpdateOrCreate("SessionTimeout", "3600"); err != nil { t.Fatal(err) }
 	global.SESSION = psession.NewPSession("real-unix-evidence")
-	admin := evidenceTestSession(t, psession.SessionUser{
+	admin := realUDSEvidenceSessionCookie(t, psession.SessionUser{
 		ID: psession.SuperAdminSessionUserID, Name: "admin", Role: "ADMIN",
 	}, 3600)
-	other := evidenceTestSession(t, psession.SessionUser{
+	other := realUDSEvidenceSessionCookie(t, psession.SessionUser{
 		ID: "not-superadmin", Name: "other", Role: "ADMIN",
 	}, 3600)
 	proxy.LocalAgentProxy = proxy.NewLocalAgentProxyForSocket(socket)
