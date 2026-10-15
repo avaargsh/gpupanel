@@ -52,6 +52,18 @@ python3 scripts/gpupanel-env.py status
 
 默认显示可读说明；脚本消费请使用 `--json`，例如 `python3 scripts/gpupanel-env.py status --json`。只新建个人目录，不覆盖已有项目；uv 在离线模式下使用当前 Python，不下载 Python。详见 [uv 环境工作流](UV_WORKSTATION.md)。
 
+### 新建可运行的 uv Python 项目
+
+```bash
+python3 scripts/gpupanel-uv-project.py plan
+python3 scripts/gpupanel-uv-project.py create --approve
+python3 scripts/gpupanel-uv-project.py status
+cd ~/GPUPanel/projects/uv-python-starter
+uv run --locked --offline python main.py
+```
+
+由 uv 原生生成 `pyproject.toml` 和 `uv.lock`，离线项目不安装第三方依赖；不会覆盖用户修改。PyTorch/Jupyter 模板与离线镜像尚未交付。
+
 ## 4. 两种不同的“安装”操作
 
 **A. 当前可用的是 Python 项目文件创建（不是安装 Python）：** 需要 Python 3.12+，在普通 Ubuntu 用户的终端、仓库根目录执行：
