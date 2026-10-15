@@ -5,6 +5,9 @@ on:
       - 'scripts/gpupanel-release.py'
       - 'scripts/tests/test_gpupanel_release.py'
       - 'scripts/gpupanel-artifact-license-audit.py'
+      - 'scripts/gpupanel-binary-buildinfo.py'
+      - 'scripts/tests/test_gpupanel_binary_buildinfo.py'
+      - 'docs/gpupanel/BINARY_BUILDINFO_AUDIT.md'
       - 'scripts/tests/test_gpupanel_artifact_license_audit.py'
       - 'docs/gpupanel/ARTIFACT_LICENSE_ATTESTATION.md'
       - '.github/workflows/gpupanel-source-release.yml'
@@ -23,6 +26,7 @@ jobs:
       - run: python3 -m py_compile scripts/gpupanel-release.py scripts/tests/test_gpupanel_release.py
       - run: python3 -m unittest discover -s scripts/tests -p 'test_gpupanel_release.py' -v
       - run: python3 -m unittest discover -s scripts/tests -p 'test_gpupanel_artifact_license_audit.py' -v
+      - run: python3 -m unittest discover -s scripts/tests -p 'test_gpupanel_binary_buildinfo.py' -v
   full-source-build:
     # Product artifact gate: exercise the real Vite -> Go embed -> Core/Agent build.
     runs-on: ubuntu-24.04
@@ -44,3 +48,4 @@ jobs:
       - run: python3 scripts/gpupanel-release.py build --version ci-$(git rev-parse --short HEAD)
       - run: python3 scripts/gpupanel-release.py verify dist/gpupanel-preview.tar.gz
       - run: python3 scripts/gpupanel-artifact-license-audit.py --archive dist/gpupanel-preview.tar.gz --output dist/gpupanel-preview-license-attestation.json
+      - run: python3 scripts/gpupanel-binary-buildinfo.py --archive dist/gpupanel-preview.tar.gz --output dist/gpupanel-binary-buildinfo.json
