@@ -170,6 +170,15 @@ func (b *BaseApi) InstallApp(c *gin.Context) {
 	if err := helper.CheckBindAndValidate(&req, c); err != nil {
 		return
 	}
+	retired, err := service.IsRetiredRemoteAppDetail(req.AppDetailId)
+	if err != nil {
+		helper.InternalServer(c, err)
+		return
+	}
+	if retired {
+		helper.BadRequest(c, errors.New("new installations from the original 1Panel app catalog are retired in GPUPanel"))
+		return
+	}
 	install, err := appService.Install(req, true)
 	if err != nil {
 		helper.InternalServer(c, err)

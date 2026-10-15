@@ -21,6 +21,10 @@ class UpstreamRetirement(unittest.TestCase):
         handler = (ROOT / "agent/app/api/v2/app.go").read_text()
         self.assertIn("if !service.LegacyRemoteCatalogEnabled()", handler)
         self.assertIn("original 1Panel remote app catalog is retired", handler)
+        self.assertIn("service.IsRetiredRemoteAppDetail(req.AppDetailId)", handler)
+        self.assertIn("new installations from the original 1Panel app catalog are retired", handler)
+        self.assertLess(handler.index("service.IsRetiredRemoteAppDetail(req.AppDetailId)"),
+                        handler.index("appService.Install(req, true)"))
         self.assertNotIn("Delete", src)
         self.assertNotIn("os.Getenv", src)
         app = (ROOT / "agent/app/service/app.go").read_text()
