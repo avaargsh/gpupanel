@@ -3,8 +3,12 @@ on:
   pull_request:
     paths:
       - 'agent/app/api/v2/app.go'
+      - 'agent/app/service/task.go'
+      - 'agent/app/service/app_install_receipt*.go'
+      - 'frontend/src/components/log/file/index.vue'
       - 'agent/app/service/app_install_admission*.go'
       - 'scripts/tests/test_gpupanel_app_install_admission.py'
+      - 'scripts/tests/test_gpupanel_app_install_receipt.py'
       - '.github/workflows/gpupanel-app-install-admission.yml'
   workflow_dispatch:
 jobs:
@@ -20,10 +24,12 @@ jobs:
           python-version: '3.12'
       - name: Check before-side-effect API contract
         run: python3 -m unittest discover -s scripts/tests -p 'test_gpupanel_app_install_admission.py' -v
+      - name: Read-only orphan install receipt contract
+        run: python3 -m unittest discover -s scripts/tests -p 'test_gpupanel_app_install_receipt.py' -v
       - uses: actions/setup-go@v6
         with:
           go-version-file: agent/go.mod
           cache-dependency-path: agent/go.sum
       - name: Concurrent SQLite task admission tests
         working-directory: agent
-        run: go test ./app/service -run '^TestAppInstallTaskAdmission' -count=1
+        run: go test ./app/service -run '^(TestAppInstallTaskAdmission|TestAppInstallAdmissionReceipt)' -count=1
