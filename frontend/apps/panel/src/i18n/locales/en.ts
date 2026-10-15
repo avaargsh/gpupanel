@@ -134,7 +134,7 @@ const en: LocaleResource = {
         hostname: 'Hostname',
         quickAccess: 'Quick access',
         liveLoad: 'Live load',
-        noData: 'Backend offline — showing sample data',
+        noData: 'Some metrics are unavailable. Check the host connection and retry.',
         refresh: 'Refresh',
     },
     host: {
