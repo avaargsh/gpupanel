@@ -1,7 +1,7 @@
 package router
 
 import (
-	v2 "github.com/1Panel-dev/1Panel/agent/app/api/v2"
+	v1 "github.com/avaargsh/GPUPanel/agent/app/api/v1"
 	"github.com/gin-gonic/gin"
 )
 
@@ -9,7 +9,7 @@ type SettingRouter struct{}
 
 func (s *SettingRouter) InitRouter(Router *gin.RouterGroup) {
 	settingRouter := Router.Group("settings")
-	baseApi := v2.ApiGroupApp.BaseApi
+	baseApi := v1.ApiGroupApp.BaseApi
 	{
 		settingRouter.POST("/search", baseApi.GetSettingInfo)
 		settingRouter.POST("/terminal/ai/search", baseApi.GetTerminalAISettingInfo)

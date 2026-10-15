@@ -6,9 +6,9 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/1Panel-dev/1Panel/core/global"
-	"github.com/1Panel-dev/1Panel/core/init/proxy"
-	"github.com/1Panel-dev/1Panel/core/utils/ssh"
+	"github.com/avaargsh/GPUPanel/core/global"
+	"github.com/avaargsh/GPUPanel/core/init/proxy"
+	"github.com/avaargsh/GPUPanel/core/utils/ssh"
 	"github.com/gin-gonic/gin"
 )
 

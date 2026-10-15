@@ -32,16 +32,16 @@ import (
 	"unicode"
 	"unicode/utf8"
 
-	"github.com/1Panel-dev/1Panel/agent/buserr"
+	"github.com/avaargsh/GPUPanel/agent/buserr"
 
-	"github.com/1Panel-dev/1Panel/agent/constant"
-	"github.com/1Panel-dev/1Panel/agent/utils/cmd"
-	"github.com/1Panel-dev/1Panel/agent/utils/req_helper"
+	"github.com/avaargsh/GPUPanel/agent/constant"
+	"github.com/avaargsh/GPUPanel/agent/utils/cmd"
+	"github.com/avaargsh/GPUPanel/agent/utils/req_helper"
 	cZip "github.com/klauspost/compress/zip"
 	"golang.org/x/text/encoding/simplifiedchinese"
 	"golang.org/x/text/transform"
 
-	"github.com/1Panel-dev/1Panel/agent/global"
+	"github.com/avaargsh/GPUPanel/agent/global"
 	"github.com/mholt/archiver/v4"
 	"github.com/spf13/afero"
 	"golang.org/x/sync/singleflight"
@@ -591,7 +591,7 @@ func (f FileOp) DownloadFileWithProcess(rawURL, dst, key string, options Downloa
 			process.Attempt = attempt
 			saveDownloadProcess(process)
 		}
-		part := filepath.Join(filepath.Dir(dst), ".1panel-download-"+rand.Text()+".part")
+		part := filepath.Join(filepath.Dir(dst), ".gpupanel-download-"+rand.Text()+".part")
 		out, runErr := os.OpenFile(part, os.O_RDWR|os.O_CREATE|os.O_EXCL, 0666)
 		var record string
 		var partInfo os.FileInfo
@@ -1111,7 +1111,7 @@ func CleanupInterruptedDownloads() error {
 		data, err := os.ReadFile(recordPath)
 		var record downloadPartRecord
 		if err != nil || json.Unmarshal(data, &record) != nil || !filepath.IsAbs(record.Path) ||
-			!strings.HasPrefix(filepath.Base(record.Path), ".1panel-download-") ||
+			!strings.HasPrefix(filepath.Base(record.Path), ".gpupanel-download-") ||
 			filepath.Base(record.Path)+".json" != entry.Name() {
 			errs = append(errs, fmt.Errorf("invalid download recovery record: %s", entry.Name()))
 			continue

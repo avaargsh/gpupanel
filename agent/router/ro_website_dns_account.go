@@ -1,7 +1,7 @@
 package router
 
 import (
-	v2 "github.com/1Panel-dev/1Panel/agent/app/api/v2"
+	v1 "github.com/avaargsh/GPUPanel/agent/app/api/v1"
 	"github.com/gin-gonic/gin"
 )
 
@@ -11,7 +11,7 @@ type WebsiteDnsAccountRouter struct {
 func (a *WebsiteDnsAccountRouter) InitRouter(Router *gin.RouterGroup) {
 	groupRouter := Router.Group("websites/dns")
 
-	baseApi := v2.ApiGroupApp.BaseApi
+	baseApi := v1.ApiGroupApp.BaseApi
 	{
 		groupRouter.POST("/search", baseApi.PageWebsiteDnsAccount)
 		groupRouter.POST("", baseApi.CreateWebsiteDnsAccount)

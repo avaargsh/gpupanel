@@ -4,10 +4,10 @@ import (
 	"encoding/json"
 	"strings"
 
-	"github.com/1Panel-dev/1Panel/agent/app/dto"
-	"github.com/1Panel-dev/1Panel/agent/app/model"
-	providercatalog "github.com/1Panel-dev/1Panel/agent/app/provider"
-	"github.com/1Panel-dev/1Panel/agent/app/service"
+	"github.com/avaargsh/GPUPanel/agent/app/dto"
+	"github.com/avaargsh/GPUPanel/agent/app/model"
+	providercatalog "github.com/avaargsh/GPUPanel/agent/app/provider"
+	"github.com/avaargsh/GPUPanel/agent/app/service"
 
 	"gorm.io/gorm"
 )

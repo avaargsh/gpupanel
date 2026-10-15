@@ -9,9 +9,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/1Panel-dev/1Panel/agent/utils/cmd"
-	"github.com/1Panel-dev/1Panel/agent/utils/firewall/filter"
-	"github.com/1Panel-dev/1Panel/agent/utils/re"
+	"github.com/avaargsh/GPUPanel/agent/utils/cmd"
+	"github.com/avaargsh/GPUPanel/agent/utils/firewall/filter"
+	"github.com/avaargsh/GPUPanel/agent/utils/re"
 )
 
 var ErrAlreadyEnabled = errors.New("ufw rule already exists")
@@ -335,7 +335,7 @@ func compileChange(snapshot filter.RuleSet, change filter.RuleChange) (filter.Ru
 	if normalized.UUID == "" {
 		return filter.RuleCommands{}, fmt.Errorf("%w: rule UUID is required", filter.ErrInvalidRule)
 	}
-	marker := "1panel-rule:" + normalized.UUID
+	marker := "gpupanel-rule:" + normalized.UUID
 
 	position := insertionPosition(snapshot, normalized)
 	expected := observedForRule(normalized, marker, position)
@@ -859,7 +859,7 @@ func parseUnrecognizedNumberedRule(scope filter.Scope, raw string) (filter.Obser
 
 func ownedMarker(comment string) string {
 	comment = strings.TrimSpace(comment)
-	if strings.HasPrefix(comment, "1panel-rule:") && strings.TrimSpace(strings.TrimPrefix(comment, "1panel-rule:")) != "" {
+	if strings.HasPrefix(comment, "gpupanel-rule:") && strings.TrimSpace(strings.TrimPrefix(comment, "gpupanel-rule:")) != "" {
 		return comment
 	}
 	return ""

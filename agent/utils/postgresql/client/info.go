@@ -1,7 +1,7 @@
 package client
 
 import (
-	"github.com/1Panel-dev/1Panel/agent/app/task"
+	"github.com/avaargsh/GPUPanel/agent/app/task"
 	_ "github.com/jackc/pgx/v5/stdlib"
 )
 

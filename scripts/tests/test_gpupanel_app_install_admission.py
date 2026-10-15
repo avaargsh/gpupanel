@@ -6,7 +6,7 @@ ROOT = Path(__file__).resolve().parents[2]
 
 class AppInstallAdmissionContract(unittest.TestCase):
     def test_api_reserves_before_invoking_mutating_service(self):
-        source = (ROOT / "agent/app/api/v2/app.go").read_text()
+        source = (ROOT / "agent/app/api/v1/app.go").read_text()
         start = source.index("func (b *BaseApi) InstallApp(c *gin.Context) {")
         end = source.index("// @Tags App", start + 10)
         block = source[start:end]

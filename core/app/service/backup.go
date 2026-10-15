@@ -8,16 +8,16 @@ import (
 	"strings"
 	"time"
 
-	"github.com/1Panel-dev/1Panel/core/app/dto"
-	"github.com/1Panel-dev/1Panel/core/app/model"
-	"github.com/1Panel-dev/1Panel/core/app/repo"
-	"github.com/1Panel-dev/1Panel/core/buserr"
-	"github.com/1Panel-dev/1Panel/core/constant"
-	"github.com/1Panel-dev/1Panel/core/global"
-	"github.com/1Panel-dev/1Panel/core/utils/cloud_storage"
-	"github.com/1Panel-dev/1Panel/core/utils/encrypt"
-	"github.com/1Panel-dev/1Panel/core/utils/req_helper/proxy_local"
-	"github.com/1Panel-dev/1Panel/core/utils/xpack"
+	"github.com/avaargsh/GPUPanel/core/app/dto"
+	"github.com/avaargsh/GPUPanel/core/app/model"
+	"github.com/avaargsh/GPUPanel/core/app/repo"
+	"github.com/avaargsh/GPUPanel/core/buserr"
+	"github.com/avaargsh/GPUPanel/core/constant"
+	"github.com/avaargsh/GPUPanel/core/global"
+	"github.com/avaargsh/GPUPanel/core/utils/cloud_storage"
+	"github.com/avaargsh/GPUPanel/core/utils/encrypt"
+	"github.com/avaargsh/GPUPanel/core/utils/req_helper/proxy_local"
+	"github.com/avaargsh/GPUPanel/core/utils/xpack"
 	"github.com/jinzhu/copier"
 )
 
@@ -115,7 +115,7 @@ func (u *BackupService) Delete(name string) error {
 	if backup.Type == constant.Local {
 		return buserr.New("ErrBackupLocal")
 	}
-	if _, err := proxy_local.NewLocalClient(fmt.Sprintf("/api/v2/backups/check/%s", name), http.MethodGet, nil, nil); err != nil {
+	if _, err := proxy_local.NewLocalClient(fmt.Sprintf("/api/v1/backups/check/%s", name), http.MethodGet, nil, nil); err != nil {
 		global.LOG.Errorf("check used of local cronjob failed, err: %v", err)
 		return buserr.New("ErrBackupInUsed")
 	}

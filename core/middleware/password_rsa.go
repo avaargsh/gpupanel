@@ -2,7 +2,7 @@ package middleware
 
 import (
 	"encoding/base64"
-	"github.com/1Panel-dev/1Panel/core/app/repo"
+	"github.com/avaargsh/GPUPanel/core/app/repo"
 	"github.com/gin-gonic/gin"
 )
 

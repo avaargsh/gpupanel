@@ -49,7 +49,7 @@ class BinaryInventoryTests(unittest.TestCase):
         self.git("commit", "-qm", "fork")
         self.commit = self.git("rev-parse", "HEAD").strip()
         stage = self.root / "stage"
-        for name in ("bin/1panel-core", "bin/1panel-agent"):
+        for name in ("bin/gpupanel-core", "bin/gpupanel-agent"):
             f = stage / name
             f.parent.mkdir(parents=True, exist_ok=True)
             f.write_bytes(b"fake binary")
@@ -72,7 +72,7 @@ class BinaryInventoryTests(unittest.TestCase):
     def inspect(self, core=CORE, agent=AGENT):
         with patch.object(audit, "run_buildinfo",
                           side_effect=lambda _path, name:
-                          core if name.endswith("1panel-core") else agent):
+                          core if name.endswith("gpupanel-core") else agent):
             return audit.inspect(self.repo, self.archive, self.base)
 
     def test_both_binaries_match_committed_modules(self):
@@ -124,13 +124,13 @@ class BinaryInventoryTests(unittest.TestCase):
     def test_missing_go_tool_fails_closed(self):
         with patch("subprocess.run", side_effect=FileNotFoundError):
             with self.assertRaisesRegex(audit.InventoryError, "go version"):
-                audit.run_buildinfo(Path("/unused"), "bin/1panel-core")
+                audit.run_buildinfo(Path("/unused"), "bin/gpupanel-core")
 
     def test_cli_writes_machine_report(self):
         output = self.root / "report.json"
         with patch.object(audit, "run_buildinfo",
                           side_effect=lambda _path, name:
-                          CORE if name.endswith("1panel-core") else AGENT):
+                          CORE if name.endswith("gpupanel-core") else AGENT):
             code = audit.main(["--repo", str(self.repo), "--archive", str(self.archive),
                                "--baseline", self.base, "--output", str(output)])
         self.assertEqual(code, 0)

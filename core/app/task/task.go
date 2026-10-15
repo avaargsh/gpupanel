@@ -9,11 +9,11 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/1Panel-dev/1Panel/core/app/model"
-	"github.com/1Panel-dev/1Panel/core/app/repo"
-	"github.com/1Panel-dev/1Panel/core/constant"
-	"github.com/1Panel-dev/1Panel/core/global"
-	"github.com/1Panel-dev/1Panel/core/i18n"
+	"github.com/avaargsh/GPUPanel/core/app/model"
+	"github.com/avaargsh/GPUPanel/core/app/repo"
+	"github.com/avaargsh/GPUPanel/core/constant"
+	"github.com/avaargsh/GPUPanel/core/global"
+	"github.com/avaargsh/GPUPanel/core/i18n"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 )
@@ -94,7 +94,7 @@ func NewTask(name, operate, taskScope, taskID string, resourceID uint) (*Task, e
 	if taskID == "" {
 		taskID = uuid.New().String()
 	}
-	logItem := path.Join(global.CONF.Base.InstallDir, "1panel/log/task")
+	logItem := path.Join(global.CONF.Base.InstallDir, "gpupanel/log/task")
 	logDir := path.Join(logItem, taskScope)
 	if _, err := os.Stat(logDir); os.IsNotExist(err) {
 		if err = os.MkdirAll(logDir, constant.DirPerm); err != nil {

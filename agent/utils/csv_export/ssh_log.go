@@ -4,9 +4,9 @@ import (
 	"encoding/csv"
 	"os"
 
-	"github.com/1Panel-dev/1Panel/agent/app/dto"
-	"github.com/1Panel-dev/1Panel/agent/constant"
-	"github.com/1Panel-dev/1Panel/agent/i18n"
+	"github.com/avaargsh/GPUPanel/agent/app/dto"
+	"github.com/avaargsh/GPUPanel/agent/constant"
+	"github.com/avaargsh/GPUPanel/agent/i18n"
 )
 
 func ExportSSHLogs(filename string, logs []dto.SSHHistory) error {

@@ -16,22 +16,22 @@ import (
 	"strings"
 	"time"
 
-	cmd2 "github.com/1Panel-dev/1Panel/agent/utils/cmd"
+	cmd2 "github.com/avaargsh/GPUPanel/agent/utils/cmd"
 
-	"github.com/1Panel-dev/1Panel/agent/i18n"
+	"github.com/avaargsh/GPUPanel/agent/i18n"
 
-	"github.com/1Panel-dev/1Panel/agent/app/dto"
-	"github.com/1Panel-dev/1Panel/agent/app/dto/request"
-	"github.com/1Panel-dev/1Panel/agent/app/dto/response"
-	"github.com/1Panel-dev/1Panel/agent/app/model"
-	"github.com/1Panel-dev/1Panel/agent/app/repo"
-	"github.com/1Panel-dev/1Panel/agent/buserr"
-	"github.com/1Panel-dev/1Panel/agent/cmd/server/nginx_conf"
-	"github.com/1Panel-dev/1Panel/agent/constant"
-	"github.com/1Panel-dev/1Panel/agent/global"
-	"github.com/1Panel-dev/1Panel/agent/utils/compose"
-	"github.com/1Panel-dev/1Panel/agent/utils/docker"
-	"github.com/1Panel-dev/1Panel/agent/utils/files"
+	"github.com/avaargsh/GPUPanel/agent/app/dto"
+	"github.com/avaargsh/GPUPanel/agent/app/dto/request"
+	"github.com/avaargsh/GPUPanel/agent/app/dto/response"
+	"github.com/avaargsh/GPUPanel/agent/app/model"
+	"github.com/avaargsh/GPUPanel/agent/app/repo"
+	"github.com/avaargsh/GPUPanel/agent/buserr"
+	"github.com/avaargsh/GPUPanel/agent/cmd/server/nginx_conf"
+	"github.com/avaargsh/GPUPanel/agent/constant"
+	"github.com/avaargsh/GPUPanel/agent/global"
+	"github.com/avaargsh/GPUPanel/agent/utils/compose"
+	"github.com/avaargsh/GPUPanel/agent/utils/docker"
+	"github.com/avaargsh/GPUPanel/agent/utils/files"
 	"github.com/pkg/errors"
 	"github.com/subosito/gotenv"
 	"gopkg.in/yaml.v3"
@@ -503,7 +503,7 @@ func handleParams(create request.RuntimeCreate, projectDir string) (composeConte
 		create.Params["CONTAINER_PACKAGE_URL"] = create.Source
 		siteDir, _ := settingRepo.Get(settingRepo.WithByKey("WEBSITE_DIR"))
 		if siteDir.Value == "" {
-			siteDir.Value = path.Join(global.Dir.BaseDir, "1panel", "www")
+			siteDir.Value = path.Join(global.Dir.BaseDir, "gpupanel", "www")
 		}
 		create.Params["PANEL_WEBSITE_DIR"] = siteDir.Value
 		composeContent, err = handleEnvironments(composeContent, create, projectDir)

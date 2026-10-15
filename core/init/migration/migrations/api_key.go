@@ -1,7 +1,7 @@
 package migrations
 
 import (
-	"github.com/1Panel-dev/1Panel/core/app/model"
+	"github.com/avaargsh/GPUPanel/core/app/model"
 	"github.com/go-gormigrate/gormigrate/v2"
 	"gorm.io/gorm"
 )

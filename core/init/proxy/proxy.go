@@ -9,11 +9,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/1Panel-dev/1Panel/core/utils/clientip"
-	"github.com/1Panel-dev/1Panel/core/utils/publicshare"
+	"github.com/avaargsh/GPUPanel/core/utils/clientip"
+	"github.com/avaargsh/GPUPanel/core/utils/publicshare"
 )
 
-const SockPath = "/etc/1panel/agent.sock"
+const SockPath = "/etc/gpupanel/agent.sock"
 
 var (
 	LocalAgentProxy *httputil.ReverseProxy

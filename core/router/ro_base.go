@@ -1,8 +1,8 @@
 package router
 
 import (
-	v2 "github.com/1Panel-dev/1Panel/core/app/api/v2"
-	"github.com/1Panel-dev/1Panel/core/middleware"
+	v1 "github.com/avaargsh/GPUPanel/core/app/api/v1"
+	"github.com/avaargsh/GPUPanel/core/middleware"
 	"github.com/gin-gonic/gin"
 )
 
@@ -13,7 +13,7 @@ func (s *BaseRouter) InitRouter(Router *gin.RouterGroup) {
 	authRouter := Router.Group("auth").
 		Use(middleware.SessionAuth()).
 		Use(middleware.PasswordExpired())
-	baseApi := v2.ApiGroupApp.BaseApi
+	baseApi := v1.ApiGroupApp.BaseApi
 	{
 		baseRouter.GET("/captcha", baseApi.Captcha)
 		baseRouter.POST("/passkey/begin", baseApi.PasskeyBeginLogin)

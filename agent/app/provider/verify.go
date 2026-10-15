@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/1Panel-dev/1Panel/agent/buserr"
+	"github.com/avaargsh/GPUPanel/agent/buserr"
 )
 
 type VerifyRequest struct {

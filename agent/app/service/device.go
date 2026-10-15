@@ -10,17 +10,17 @@ import (
 	"strings"
 	"time"
 
-	"github.com/1Panel-dev/1Panel/agent/app/dto"
-	"github.com/1Panel-dev/1Panel/agent/app/task"
-	"github.com/1Panel-dev/1Panel/agent/buserr"
-	"github.com/1Panel-dev/1Panel/agent/constant"
-	"github.com/1Panel-dev/1Panel/agent/global"
-	"github.com/1Panel-dev/1Panel/agent/i18n"
-	"github.com/1Panel-dev/1Panel/agent/utils/cmd"
-	"github.com/1Panel-dev/1Panel/agent/utils/common"
-	"github.com/1Panel-dev/1Panel/agent/utils/controller"
-	"github.com/1Panel-dev/1Panel/agent/utils/ntp"
-	"github.com/1Panel-dev/1Panel/agent/utils/psutil"
+	"github.com/avaargsh/GPUPanel/agent/app/dto"
+	"github.com/avaargsh/GPUPanel/agent/app/task"
+	"github.com/avaargsh/GPUPanel/agent/buserr"
+	"github.com/avaargsh/GPUPanel/agent/constant"
+	"github.com/avaargsh/GPUPanel/agent/global"
+	"github.com/avaargsh/GPUPanel/agent/i18n"
+	"github.com/avaargsh/GPUPanel/agent/utils/cmd"
+	"github.com/avaargsh/GPUPanel/agent/utils/common"
+	"github.com/avaargsh/GPUPanel/agent/utils/controller"
+	"github.com/avaargsh/GPUPanel/agent/utils/ntp"
+	"github.com/avaargsh/GPUPanel/agent/utils/psutil"
 	"github.com/shirou/gopsutil/v4/mem"
 )
 
@@ -252,8 +252,8 @@ func (u *DeviceService) UpdateSwap(req dto.SwapHelper) error {
 			}
 		}
 		if req.Size == 0 {
-			if req.Path == path.Join(global.Dir.BaseDir, ".1panel_swap") {
-				_ = os.Remove(path.Join(global.Dir.BaseDir, ".1panel_swap"))
+			if req.Path == path.Join(global.Dir.BaseDir, ".gpupanel_swap") {
+				_ = os.Remove(path.Join(global.Dir.BaseDir, ".gpupanel_swap"))
 			}
 			return operateSwapWithFile(true, req)
 		}

@@ -111,7 +111,7 @@ ErrLicenseBindCount: "Yeni lisansın ücretsiz düğüm sayısı mevcut bağlı 
 ErrNoSuchNode: "Düğüm bilgisi bulunamadı, lütfen kontrol edip tekrar deneyin"
 ErrNodeUnbind: "Bu düğüm lisans bağlama aralığında değil, lütfen kontrol edip tekrar deneyin"
 ErrNodeBind: "Bu düğüm zaten bir lisansa bağlı, lütfen kontrol edip tekrar deneyin"
-ErrNodeLocalRollback: "Ana düğüm doğrudan rollback'i desteklemez. Rollback için '1pctl restore' komutunu manuel çalıştırın"
+ErrNodeLocalRollback: "Ana düğüm doğrudan rollback'i desteklemez. Rollback için 'pctl restore' komutunu manuel çalıştırın"
 ErrIntlLicense: "Mevcut sürüm uluslararası sürüm lisansının içe aktarılmasını henüz desteklemiyor. Yakında"
 InvalidRequestBodyType: "Geçersiz istek gövdesi formatı, lütfen içeriğin format gereksinimlerine uygun olduğunu kontrol edip tekrar deneyin"
 InvalidLicenseCodeType: "Sağlanan lisans kodu formatı geçersiz, lütfen kontrol edip tekrar deneyin"

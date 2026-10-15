@@ -11,21 +11,21 @@ import (
 	"strings"
 	"time"
 
-	"github.com/1Panel-dev/1Panel/agent/app/dto"
-	"github.com/1Panel-dev/1Panel/agent/app/dto/request"
-	"github.com/1Panel-dev/1Panel/agent/app/model"
-	providercatalog "github.com/1Panel-dev/1Panel/agent/app/provider"
-	"github.com/1Panel-dev/1Panel/agent/app/service"
-	"github.com/1Panel-dev/1Panel/agent/constant"
-	"github.com/1Panel-dev/1Panel/agent/global"
-	migrationutils "github.com/1Panel-dev/1Panel/agent/init/migration/migrations/utils"
-	alertwebhook "github.com/1Panel-dev/1Panel/agent/utils/alert_webhook"
-	"github.com/1Panel-dev/1Panel/agent/utils/common"
-	"github.com/1Panel-dev/1Panel/agent/utils/copier"
-	"github.com/1Panel-dev/1Panel/agent/utils/encrypt"
-	"github.com/1Panel-dev/1Panel/agent/utils/firewall"
-	"github.com/1Panel-dev/1Panel/agent/utils/ssh"
-	"github.com/1Panel-dev/1Panel/agent/utils/xpack"
+	"github.com/avaargsh/GPUPanel/agent/app/dto"
+	"github.com/avaargsh/GPUPanel/agent/app/dto/request"
+	"github.com/avaargsh/GPUPanel/agent/app/model"
+	providercatalog "github.com/avaargsh/GPUPanel/agent/app/provider"
+	"github.com/avaargsh/GPUPanel/agent/app/service"
+	"github.com/avaargsh/GPUPanel/agent/constant"
+	"github.com/avaargsh/GPUPanel/agent/global"
+	migrationutils "github.com/avaargsh/GPUPanel/agent/init/migration/migrations/utils"
+	alertwebhook "github.com/avaargsh/GPUPanel/agent/utils/alert_webhook"
+	"github.com/avaargsh/GPUPanel/agent/utils/common"
+	"github.com/avaargsh/GPUPanel/agent/utils/copier"
+	"github.com/avaargsh/GPUPanel/agent/utils/encrypt"
+	"github.com/avaargsh/GPUPanel/agent/utils/firewall"
+	"github.com/avaargsh/GPUPanel/agent/utils/ssh"
+	"github.com/avaargsh/GPUPanel/agent/utils/xpack"
 
 	"github.com/go-gormigrate/gormigrate/v2"
 	"github.com/google/uuid"
@@ -811,12 +811,12 @@ var InitLocalSSHConn = &gormigrate.Migration{
 		itemPath := ""
 		currentInfo, _ := user.Current()
 		if len(currentInfo.HomeDir) == 0 {
-			itemPath = "/root/.ssh/id_ed25519_1panel"
+			itemPath = "/root/.ssh/id_ed25519_gpupanel"
 		} else {
-			itemPath = path.Join(currentInfo.HomeDir, ".ssh/id_ed25519_1panel")
+			itemPath = path.Join(currentInfo.HomeDir, ".ssh/id_ed25519_gpupanel")
 		}
 		if _, err := os.Stat(itemPath); err != nil {
-			_ = service.NewISSHService().CreateRootCert(dto.RootCertOperate{EncryptionMode: "ed25519", Name: "id_ed25519_1panel", Description: "1Panel Terminal"})
+			_ = service.NewISSHService().CreateRootCert(dto.RootCertOperate{EncryptionMode: "ed25519", Name: "id_ed25519_gpupanel", Description: "1Panel Terminal"})
 		}
 		privateKey, _ := os.ReadFile(itemPath)
 		connWithKey := ssh.ConnInfo{

@@ -12,27 +12,27 @@ import (
 	"strings"
 	"time"
 
-	"github.com/1Panel-dev/1Panel/core/app/service"
-	"github.com/1Panel-dev/1Panel/core/init/auth"
-	"github.com/1Panel-dev/1Panel/core/init/db"
-	"github.com/1Panel-dev/1Panel/core/init/geo"
-	"github.com/1Panel-dev/1Panel/core/init/log"
-	"github.com/1Panel-dev/1Panel/core/init/migration"
-	"github.com/1Panel-dev/1Panel/core/init/proxy"
+	"github.com/avaargsh/GPUPanel/core/app/service"
+	"github.com/avaargsh/GPUPanel/core/init/auth"
+	"github.com/avaargsh/GPUPanel/core/init/db"
+	"github.com/avaargsh/GPUPanel/core/init/geo"
+	"github.com/avaargsh/GPUPanel/core/init/log"
+	"github.com/avaargsh/GPUPanel/core/init/migration"
+	"github.com/avaargsh/GPUPanel/core/init/proxy"
 	"github.com/gin-gonic/gin"
 	"github.com/soheilhy/cmux"
 
-	"github.com/1Panel-dev/1Panel/core/constant"
-	"github.com/1Panel-dev/1Panel/core/global"
-	"github.com/1Panel-dev/1Panel/core/i18n"
-	"github.com/1Panel-dev/1Panel/core/init/cron"
-	"github.com/1Panel-dev/1Panel/core/init/hook"
-	"github.com/1Panel-dev/1Panel/core/init/router"
-	"github.com/1Panel-dev/1Panel/core/init/session"
-	"github.com/1Panel-dev/1Panel/core/init/session/psession"
-	"github.com/1Panel-dev/1Panel/core/init/validator"
-	"github.com/1Panel-dev/1Panel/core/init/viper"
-	"github.com/1Panel-dev/1Panel/core/utils/re"
+	"github.com/avaargsh/GPUPanel/core/constant"
+	"github.com/avaargsh/GPUPanel/core/global"
+	"github.com/avaargsh/GPUPanel/core/i18n"
+	"github.com/avaargsh/GPUPanel/core/init/cron"
+	"github.com/avaargsh/GPUPanel/core/init/hook"
+	"github.com/avaargsh/GPUPanel/core/init/router"
+	"github.com/avaargsh/GPUPanel/core/init/session"
+	"github.com/avaargsh/GPUPanel/core/init/session/psession"
+	"github.com/avaargsh/GPUPanel/core/init/validator"
+	"github.com/avaargsh/GPUPanel/core/init/viper"
+	"github.com/avaargsh/GPUPanel/core/utils/re"
 )
 
 func Start() {
@@ -155,8 +155,8 @@ func Start() {
 }
 
 func loadCert() *tls.Certificate {
-	certPath := path.Join(global.CONF.Base.InstallDir, "1panel/secret/server.crt")
-	keyPath := path.Join(global.CONF.Base.InstallDir, "1panel/secret/server.key")
+	certPath := path.Join(global.CONF.Base.InstallDir, "gpupanel/secret/server.crt")
+	keyPath := path.Join(global.CONF.Base.InstallDir, "gpupanel/secret/server.key")
 	certificate, err := os.ReadFile(certPath)
 	if err != nil {
 		panic(err)

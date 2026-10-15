@@ -14,9 +14,9 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/1Panel-dev/1Panel/core/app/task"
-	"github.com/1Panel-dev/1Panel/core/buserr"
-	"github.com/1Panel-dev/1Panel/core/constant"
+	"github.com/avaargsh/GPUPanel/core/app/task"
+	"github.com/avaargsh/GPUPanel/core/buserr"
+	"github.com/avaargsh/GPUPanel/core/constant"
 )
 
 const maxStreamOutputCapture = 64 * 1024

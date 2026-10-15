@@ -8,9 +8,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/1Panel-dev/1Panel/agent/utils/cmd"
-	"github.com/1Panel-dev/1Panel/agent/utils/firewall/filter"
-	"github.com/1Panel-dev/1Panel/agent/utils/firewall/nftables_helper"
+	"github.com/avaargsh/GPUPanel/agent/utils/cmd"
+	"github.com/avaargsh/GPUPanel/agent/utils/firewall/filter"
+	"github.com/avaargsh/GPUPanel/agent/utils/firewall/nftables_helper"
 	"github.com/mattn/go-shellwords"
 )
 
@@ -250,7 +250,7 @@ func compileCreateBatch(snapshot filter.RuleSet, changes []filter.RuleChange) (f
 		if rule.Scope.Key() != snapshot.Scope.Key() || rule.UUID == "" {
 			return filter.CommandBatch{}, fmt.Errorf("%w: invalid nftables creation rule", filter.ErrInvalidRule)
 		}
-		marker := "1panel-rule:" + rule.UUID
+		marker := "gpupanel-rule:" + rule.UUID
 		verb := "add"
 		if !change.Append {
 			if rule.OrderIndex == nil || *rule.OrderIndex != 1 {
@@ -397,7 +397,7 @@ func compileChange(snapshot filter.RuleSet, change filter.RuleChange) (filter.Ob
 	if target < 1 || target > len(snapshot.Rules) {
 		return filter.ObservedRule{}, nil, fmt.Errorf("%w: target position is out of range", filter.ErrInvalidRule)
 	}
-	marker := "1panel-rule:" + normalized.UUID
+	marker := "gpupanel-rule:" + normalized.UUID
 	expected := observedRule(normalized, marker, target, strings.Join(compileExpressionArgs(normalized, marker), " "))
 	return expected, &previous, nil
 }
@@ -574,7 +574,7 @@ func parseRule(scope filter.Scope, raw, handle string, position int) filter.Obse
 			if index+1 >= len(tokens) {
 				return opaque()
 			}
-			if strings.HasPrefix(tokens[index+1], "1panel-rule:") {
+			if strings.HasPrefix(tokens[index+1], "gpupanel-rule:") {
 				marker = tokens[index+1]
 			} else {
 				rule.Description = tokens[index+1]

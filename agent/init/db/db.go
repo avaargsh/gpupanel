@@ -4,8 +4,8 @@ import (
 	"os"
 	"path"
 
-	"github.com/1Panel-dev/1Panel/agent/global"
-	"github.com/1Panel-dev/1Panel/agent/utils/common"
+	"github.com/avaargsh/GPUPanel/agent/global"
+	"github.com/avaargsh/GPUPanel/agent/utils/common"
 )
 
 func Init() {

@@ -12,20 +12,20 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/1Panel-dev/1Panel/core/app/dto"
-	"github.com/1Panel-dev/1Panel/core/app/model"
-	"github.com/1Panel-dev/1Panel/core/app/repo"
-	"github.com/1Panel-dev/1Panel/core/buserr"
-	"github.com/1Panel-dev/1Panel/core/constant"
-	"github.com/1Panel-dev/1Panel/core/global"
-	"github.com/1Panel-dev/1Panel/core/utils/cmd"
-	"github.com/1Panel-dev/1Panel/core/utils/common"
-	"github.com/1Panel-dev/1Panel/core/utils/controller"
-	"github.com/1Panel-dev/1Panel/core/utils/ctl_conf"
-	"github.com/1Panel-dev/1Panel/core/utils/files"
-	"github.com/1Panel-dev/1Panel/core/utils/req_helper"
-	upgradeUtil "github.com/1Panel-dev/1Panel/core/utils/upgrade"
-	"github.com/1Panel-dev/1Panel/core/utils/xpack"
+	"github.com/avaargsh/GPUPanel/core/app/dto"
+	"github.com/avaargsh/GPUPanel/core/app/model"
+	"github.com/avaargsh/GPUPanel/core/app/repo"
+	"github.com/avaargsh/GPUPanel/core/buserr"
+	"github.com/avaargsh/GPUPanel/core/constant"
+	"github.com/avaargsh/GPUPanel/core/global"
+	"github.com/avaargsh/GPUPanel/core/utils/cmd"
+	"github.com/avaargsh/GPUPanel/core/utils/common"
+	"github.com/avaargsh/GPUPanel/core/utils/controller"
+	"github.com/avaargsh/GPUPanel/core/utils/ctl_conf"
+	"github.com/avaargsh/GPUPanel/core/utils/files"
+	"github.com/avaargsh/GPUPanel/core/utils/req_helper"
+	upgradeUtil "github.com/avaargsh/GPUPanel/core/utils/upgrade"
+	"github.com/avaargsh/GPUPanel/core/utils/xpack"
 	"golang.org/x/net/html"
 )
 
@@ -45,22 +45,22 @@ func loadServiceInfo() (serviceInfo, error) {
 		global.LOG.Errorf("get service path failed: %v", err)
 		return serviceInfo{}, err
 	}
-	coreName, err := controller.LoadServiceName("1panel-core")
+	coreName, err := controller.LoadServiceName("gpupanel-core")
 	if err != nil {
 		global.LOG.Errorf("load core service name failed: %v", err)
 		return serviceInfo{}, err
 	}
-	agentName, err := controller.LoadServiceName("1panel-agent")
+	agentName, err := controller.LoadServiceName("gpupanel-agent")
 	if err != nil {
 		global.LOG.Errorf("load agent service name failed: %v", err)
 		return serviceInfo{}, err
 	}
-	selCoreName, err := controller.SelectInitScript("1panel-core")
+	selCoreName, err := controller.SelectInitScript("gpupanel-core")
 	if err != nil {
 		global.LOG.Errorf("select core init script failed: %v", err)
 		return serviceInfo{}, err
 	}
-	selAgentName, err := controller.SelectInitScript("1panel-agent")
+	selAgentName, err := controller.SelectInitScript("gpupanel-agent")
 	if err != nil {
 		global.LOG.Errorf("select agent init script failed: %v", err)
 		return serviceInfo{}, err
@@ -123,7 +123,7 @@ func (u *UpgradeService) SearchUpgrade() (*dto.UpgradeInfo, error) {
 	if strings.HasPrefix(upgrade.TestVersion, upgrade.LatestVersion+"-beta") {
 		upgrade.TestVersion = ""
 	}
-	notes, err := u.loadReleaseNotes(fmt.Sprintf("%s/%s/%s/release/1panel-%s-release-notes", global.RepoURL(), mode, itemVersion, itemVersion))
+	notes, err := u.loadReleaseNotes(fmt.Sprintf("%s/%s/%s/release/gpupanel-%s-release-notes", global.RepoURL(), mode, itemVersion, itemVersion))
 	if err != nil {
 		return nil, fmt.Errorf("load releases-notes of version %s failed, err: %v", itemVersion, err)
 	}
@@ -136,7 +136,7 @@ func (u *UpgradeService) LoadNotes(req dto.Upgrade) (string, error) {
 	if strings.Contains(req.Version, "beta") {
 		mode = "beta"
 	}
-	notes, err := u.loadReleaseNotes(fmt.Sprintf("%s/%s/%s/release/1panel-%s-release-notes", global.RepoURL(), mode, req.Version, req.Version))
+	notes, err := u.loadReleaseNotes(fmt.Sprintf("%s/%s/%s/release/gpupanel-%s-release-notes", global.RepoURL(), mode, req.Version, req.Version))
 	if err != nil {
 		return "", fmt.Errorf("load releases-notes of version %s failed, err: %v", req.Version, err)
 	}
@@ -157,7 +157,7 @@ func (u *UpgradeService) Upgrade(req dto.Upgrade) error {
 		return err
 	}
 
-	baseDir := path.Join(global.CONF.Base.InstallDir, fmt.Sprintf("1panel/tmp/upgrade/%s", req.Version))
+	baseDir := path.Join(global.CONF.Base.InstallDir, fmt.Sprintf("gpupanel/tmp/upgrade/%s", req.Version))
 	downloadDir := path.Join(baseDir, "downloads")
 	_ = os.RemoveAll(baseDir)
 	originalDir := path.Join(baseDir, "original")
@@ -173,7 +173,7 @@ func (u *UpgradeService) Upgrade(req dto.Upgrade) error {
 		mode = "beta"
 	}
 	downloadPath := fmt.Sprintf("%s/%s/%s/release", global.RepoURL(), mode, req.Version)
-	fileName := fmt.Sprintf("1panel-%s-%s-%s.tar.gz", req.Version, "linux", itemArch)
+	fileName := fmt.Sprintf("gpupanel-%s-%s-%s.tar.gz", req.Version, "linux", itemArch)
 	_ = settingRepo.Update("SystemStatus", "Upgrading")
 	go func() {
 		oldLang := ctl_conf.Load("LANGUAGE")
@@ -203,32 +203,32 @@ func (u *UpgradeService) Upgrade(req dto.Upgrade) error {
 
 		global.LOG.Info("backup original data successful, now start to upgrade!")
 
-		if err := files.CopyFileWithRename(path.Join(tmpDir, "1panel-core"), "/usr/local/bin/1panel-core"); err != nil {
-			global.LOG.Errorf("upgrade 1panel-core failed, err: %v", err)
+		if err := files.CopyFileWithRename(path.Join(tmpDir, "gpupanel-core"), "/usr/local/bin/gpupanel-core"); err != nil {
+			global.LOG.Errorf("upgrade gpupanel-core failed, err: %v", err)
 			_ = settingRepo.Update("SystemStatus", "Free")
 			u.handleRollback(originalDir, 1, svcInfo)
 			return
 		}
-		if err := files.CopyFileWithRename(path.Join(tmpDir, "1panel-agent"), "/usr/local/bin/1panel-agent"); err != nil {
-			global.LOG.Errorf("upgrade 1panel-agent failed, err: %v", err)
+		if err := files.CopyFileWithRename(path.Join(tmpDir, "gpupanel-agent"), "/usr/local/bin/gpupanel-agent"); err != nil {
+			global.LOG.Errorf("upgrade gpupanel-agent failed, err: %v", err)
 			_ = settingRepo.Update("SystemStatus", "Free")
 			u.handleRollback(originalDir, 1, svcInfo)
 			return
 		}
 
-		if err := files.CopyFileWithRename(path.Join(tmpDir, "1pctl"), "/usr/local/bin/1pctl"); err != nil {
-			global.LOG.Errorf("upgrade 1pctl failed, err: %v", err)
+		if err := files.CopyFileWithRename(path.Join(tmpDir, "pctl"), "/usr/local/bin/pctl"); err != nil {
+			global.LOG.Errorf("upgrade pctl failed, err: %v", err)
 			_ = settingRepo.Update("SystemStatus", "Free")
 			u.handleRollback(originalDir, 2, svcInfo)
 			return
 		}
-		if err := ctl_conf.UpdateInFile("/usr/local/bin/1pctl", "BASE_DIR", global.CONF.Base.InstallDir); err != nil {
-			global.LOG.Errorf("upgrade basedir in 1pctl failed, err: %v", err)
+		if err := ctl_conf.UpdateInFile("/usr/local/bin/pctl", "BASE_DIR", global.CONF.Base.InstallDir); err != nil {
+			global.LOG.Errorf("upgrade basedir in pctl failed, err: %v", err)
 			u.handleRollback(originalDir, 2, svcInfo)
 			return
 		}
-		if err := ctl_conf.UpdateInFile("/usr/local/bin/1pctl", "LANGUAGE", oldLang); err != nil {
-			global.LOG.Errorf("upgrade basedir in 1pctl failed, err: %v", err)
+		if err := ctl_conf.UpdateInFile("/usr/local/bin/pctl", "LANGUAGE", oldLang); err != nil {
+			global.LOG.Errorf("upgrade basedir in pctl failed, err: %v", err)
 			u.handleRollback(originalDir, 2, svcInfo)
 			return
 		}
@@ -253,7 +253,7 @@ func (u *UpgradeService) Upgrade(req dto.Upgrade) error {
 			u.handleRollback(originalDir, 4, svcInfo)
 			return
 		}
-		if err := files.CopyFileWithRename(path.Join(tmpDir, "GeoIP.mmdb"), path.Join(global.CONF.Base.InstallDir, "1panel/geo/GeoIP.mmdb")); err != nil {
+		if err := files.CopyFileWithRename(path.Join(tmpDir, "GeoIP.mmdb"), path.Join(global.CONF.Base.InstallDir, "gpupanel/geo/GeoIP.mmdb")); err != nil {
 			global.LOG.Warnf("Update GeoIP database failed: %v", err)
 			_ = settingRepo.Update("SystemStatus", "Free")
 			u.handleRollback(originalDir, 4, svcInfo)
@@ -464,13 +464,13 @@ func checkUpgradeSpace() error {
 }
 
 func (u *UpgradeService) handleBackup(originalDir string, svcInfo serviceInfo) error {
-	if err := files.CopyItem(false, true, "/usr/local/bin/1panel-core", originalDir); err != nil {
+	if err := files.CopyItem(false, true, "/usr/local/bin/gpupanel-core", originalDir); err != nil {
 		return err
 	}
-	if err := files.CopyItem(false, true, "/usr/local/bin/1panel-agent", originalDir); err != nil {
+	if err := files.CopyItem(false, true, "/usr/local/bin/gpupanel-agent", originalDir); err != nil {
 		return err
 	}
-	if err := files.CopyItem(false, true, "/usr/local/bin/1pctl", originalDir); err != nil {
+	if err := files.CopyItem(false, true, "/usr/local/bin/pctl", originalDir); err != nil {
 		return err
 	}
 	if err := files.CopyItem(true, true, "/usr/local/bin/lang", originalDir); err != nil {
@@ -482,10 +482,10 @@ func (u *UpgradeService) handleBackup(originalDir string, svcInfo serviceInfo) e
 	if err := files.CopyItem(false, true, path.Join(svcInfo.basePath, svcInfo.agentName), originalDir); err != nil {
 		return err
 	}
-	if err := files.CopyItem(true, true, path.Join(global.CONF.Base.InstallDir, "1panel/db"), originalDir); err != nil {
+	if err := files.CopyItem(true, true, path.Join(global.CONF.Base.InstallDir, "gpupanel/db"), originalDir); err != nil {
 		return err
 	}
-	if err := files.CopyItem(false, true, path.Join(global.CONF.Base.InstallDir, "1panel/geo/GeoIP.mmdb"), originalDir); err != nil {
+	if err := files.CopyItem(false, true, path.Join(global.CONF.Base.InstallDir, "gpupanel/geo/GeoIP.mmdb"), originalDir); err != nil {
 		return err
 	}
 	return nil
@@ -493,25 +493,25 @@ func (u *UpgradeService) handleBackup(originalDir string, svcInfo serviceInfo) e
 
 func (u *UpgradeService) handleRollback(originalDir string, errStep int, svcInfo serviceInfo) {
 	_ = settingRepo.Update("SystemStatus", "Free")
-	dbPath := path.Join(global.CONF.Base.InstallDir, "1panel")
+	dbPath := path.Join(global.CONF.Base.InstallDir, "gpupanel")
 	if _, err := os.Stat(path.Join(originalDir, "db")); err == nil {
 		if err := os.Chmod(path.Join(originalDir, "db"), 0700); err != nil {
 			global.LOG.Errorf("set rollback db dir permissions failed, err: %v", err)
 		} else if err := files.CopyItem(true, true, path.Join(originalDir, "db"), dbPath); err != nil {
-			global.LOG.Errorf("rollback 1panel db failed, err: %v", err)
+			global.LOG.Errorf("rollback gpupanel db failed, err: %v", err)
 		}
 	}
-	if err := files.CopyFileWithRename(path.Join(originalDir, "1panel-core"), "/usr/local/bin/1panel-core"); err != nil {
-		global.LOG.Errorf("rollback 1panel-core failed, err: %v", err)
+	if err := files.CopyFileWithRename(path.Join(originalDir, "gpupanel-core"), "/usr/local/bin/gpupanel-core"); err != nil {
+		global.LOG.Errorf("rollback gpupanel-core failed, err: %v", err)
 	}
-	if err := files.CopyFileWithRename(path.Join(originalDir, "1panel-agent"), "/usr/local/bin/1panel-agent"); err != nil {
-		global.LOG.Errorf("rollback 1panel-agent failed, err: %v", err)
+	if err := files.CopyFileWithRename(path.Join(originalDir, "gpupanel-agent"), "/usr/local/bin/gpupanel-agent"); err != nil {
+		global.LOG.Errorf("rollback gpupanel-agent failed, err: %v", err)
 	}
 	if errStep == 1 {
 		return
 	}
-	if err := files.CopyFileWithRename(path.Join(originalDir, "1pctl"), "/usr/local/bin/1pctl"); err != nil {
-		global.LOG.Errorf("rollback 1pctl failed, err: %v", err)
+	if err := files.CopyFileWithRename(path.Join(originalDir, "pctl"), "/usr/local/bin/pctl"); err != nil {
+		global.LOG.Errorf("rollback pctl failed, err: %v", err)
 	}
 	if errStep == 2 {
 		return
@@ -528,7 +528,7 @@ func (u *UpgradeService) handleRollback(originalDir string, errStep int, svcInfo
 	if err := files.CopyItem(true, true, path.Join(originalDir, "lang"), "/usr/local/bin"); err != nil {
 		global.LOG.Errorf("rollback language files failed, err: %v", err)
 	}
-	if err := files.CopyFileWithRename(path.Join(originalDir, "GeoIP.mmdb"), path.Join(global.CONF.Base.InstallDir, "1panel/geo/GeoIP.mmdb")); err != nil {
+	if err := files.CopyFileWithRename(path.Join(originalDir, "GeoIP.mmdb"), path.Join(global.CONF.Base.InstallDir, "gpupanel/geo/GeoIP.mmdb")); err != nil {
 		global.LOG.Errorf("rollback GeoIP database failed, err: %v", err)
 	}
 }

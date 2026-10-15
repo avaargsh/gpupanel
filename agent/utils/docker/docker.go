@@ -10,9 +10,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/1Panel-dev/1Panel/agent/app/model"
-	"github.com/1Panel-dev/1Panel/agent/app/task"
-	"github.com/1Panel-dev/1Panel/agent/global"
+	"github.com/avaargsh/GPUPanel/agent/app/model"
+	"github.com/avaargsh/GPUPanel/agent/app/task"
+	"github.com/avaargsh/GPUPanel/agent/global"
 	"github.com/docker/cli/cli/config"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
@@ -173,8 +173,8 @@ func CreateDefaultDockerNetwork() error {
 	}
 
 	defer cli.Close()
-	if !cli.NetworkExist("1panel-network") {
-		if err := cli.CreateNetwork("1panel-network"); err != nil {
+	if !cli.NetworkExist("gpupanel-network") {
+		if err := cli.CreateNetwork("gpupanel-network"); err != nil {
 			global.LOG.Warnf("create default docker network  error %s", err.Error())
 			return err
 		}

@@ -6,18 +6,18 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/1Panel-dev/1Panel/core/buserr"
-	"github.com/1Panel-dev/1Panel/core/constant"
-	"github.com/1Panel-dev/1Panel/core/utils/cmd"
-	"github.com/1Panel-dev/1Panel/core/utils/common"
-	geo2 "github.com/1Panel-dev/1Panel/core/utils/geo"
-	"github.com/1Panel-dev/1Panel/core/utils/req_helper"
+	"github.com/avaargsh/GPUPanel/core/buserr"
+	"github.com/avaargsh/GPUPanel/core/constant"
+	"github.com/avaargsh/GPUPanel/core/utils/cmd"
+	"github.com/avaargsh/GPUPanel/core/utils/common"
+	geo2 "github.com/avaargsh/GPUPanel/core/utils/geo"
+	"github.com/avaargsh/GPUPanel/core/utils/req_helper"
 	"github.com/gin-gonic/gin"
 
-	"github.com/1Panel-dev/1Panel/core/app/dto"
-	"github.com/1Panel-dev/1Panel/core/app/model"
-	"github.com/1Panel-dev/1Panel/core/app/repo"
-	"github.com/1Panel-dev/1Panel/core/global"
+	"github.com/avaargsh/GPUPanel/core/app/dto"
+	"github.com/avaargsh/GPUPanel/core/app/model"
+	"github.com/avaargsh/GPUPanel/core/app/repo"
+	"github.com/avaargsh/GPUPanel/core/global"
 	"github.com/jinzhu/copier"
 )
 
@@ -63,6 +63,9 @@ func (u *LogService) PageLoginLog(ctx *gin.Context, req dto.SearchLgLogWithPage)
 	)
 	var dtoOps []dto.LoginLog
 	geoDB, _ := geo2.NewGeo()
+	if geoDB != nil {
+		defer geoDB.Close()
+	}
 	for _, op := range ops {
 		var item dto.LoginLog
 		if err := copier.Copy(&item, &op); err != nil {

@@ -8,7 +8,7 @@ import unittest
 ROOT = Path(__file__).resolve().parents[2]
 SOURCE = ROOT / "agent/app/service/app.go"
 LOCK = ROOT / "agent/app/service/app_install_prepare_lock.go"
-ROUTE = ROOT / "agent/app/api/v2/app.go"
+ROUTE = ROOT / "agent/app/api/v1/app.go"
 
 
 class AppInstallPreparationContract(unittest.TestCase):

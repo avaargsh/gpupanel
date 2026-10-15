@@ -14,20 +14,20 @@ import (
 	"strings"
 	"time"
 
-	"github.com/1Panel-dev/1Panel/agent/buserr"
-	"github.com/1Panel-dev/1Panel/agent/utils/alert_push"
+	"github.com/avaargsh/GPUPanel/agent/buserr"
+	"github.com/avaargsh/GPUPanel/agent/utils/alert_push"
 
-	"github.com/1Panel-dev/1Panel/agent/app/dto"
-	"github.com/1Panel-dev/1Panel/agent/app/model"
-	"github.com/1Panel-dev/1Panel/agent/app/repo"
-	"github.com/1Panel-dev/1Panel/agent/app/task"
-	"github.com/1Panel-dev/1Panel/agent/constant"
-	"github.com/1Panel-dev/1Panel/agent/global"
-	"github.com/1Panel-dev/1Panel/agent/i18n"
-	alertUtil "github.com/1Panel-dev/1Panel/agent/utils/alert"
-	"github.com/1Panel-dev/1Panel/agent/utils/cmd"
-	"github.com/1Panel-dev/1Panel/agent/utils/files"
-	"github.com/1Panel-dev/1Panel/agent/utils/ntp"
+	"github.com/avaargsh/GPUPanel/agent/app/dto"
+	"github.com/avaargsh/GPUPanel/agent/app/model"
+	"github.com/avaargsh/GPUPanel/agent/app/repo"
+	"github.com/avaargsh/GPUPanel/agent/app/task"
+	"github.com/avaargsh/GPUPanel/agent/constant"
+	"github.com/avaargsh/GPUPanel/agent/global"
+	"github.com/avaargsh/GPUPanel/agent/i18n"
+	alertUtil "github.com/avaargsh/GPUPanel/agent/utils/alert"
+	"github.com/avaargsh/GPUPanel/agent/utils/cmd"
+	"github.com/avaargsh/GPUPanel/agent/utils/files"
+	"github.com/avaargsh/GPUPanel/agent/utils/ntp"
 )
 
 func (u *CronjobService) HandleJob(cronjob *model.Cronjob) {
@@ -478,7 +478,7 @@ func (u *CronjobService) removeExpiredLog(cronjob model.Cronjob) {
 		}
 		_ = cronjobRepo.DeleteRecord(repo.WithByID(records[i].ID))
 		_ = taskRepo.Delete(taskRepo.WithByID(records[i].TaskID))
-		_ = os.Remove(pathUtils.Join(global.CONF.Base.InstallDir, "1panel/log/task/Cronjob", records[i].TaskID+".log"))
+		_ = os.Remove(pathUtils.Join(global.CONF.Base.InstallDir, "gpupanel/log/task/Cronjob", records[i].TaskID+".log"))
 	}
 }
 

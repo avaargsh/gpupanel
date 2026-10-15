@@ -9,17 +9,17 @@ import (
 	"path/filepath"
 	"strings"
 
-	appauth "github.com/1Panel-dev/1Panel/core/app/auth"
-	"github.com/1Panel-dev/1Panel/core/app/service"
-	"github.com/1Panel-dev/1Panel/core/cmd/server/docs"
-	"github.com/1Panel-dev/1Panel/core/cmd/server/web"
-	"github.com/1Panel-dev/1Panel/core/global"
-	"github.com/1Panel-dev/1Panel/core/i18n"
-	"github.com/1Panel-dev/1Panel/core/init/swagger"
-	"github.com/1Panel-dev/1Panel/core/middleware"
-	rou "github.com/1Panel-dev/1Panel/core/router"
-	"github.com/1Panel-dev/1Panel/core/utils/security"
-	"github.com/1Panel-dev/1Panel/core/utils/xpack"
+	appauth "github.com/avaargsh/GPUPanel/core/app/auth"
+	"github.com/avaargsh/GPUPanel/core/app/service"
+	"github.com/avaargsh/GPUPanel/core/cmd/server/docs"
+	"github.com/avaargsh/GPUPanel/core/cmd/server/web"
+	"github.com/avaargsh/GPUPanel/core/global"
+	"github.com/avaargsh/GPUPanel/core/i18n"
+	"github.com/avaargsh/GPUPanel/core/init/swagger"
+	"github.com/avaargsh/GPUPanel/core/middleware"
+	rou "github.com/avaargsh/GPUPanel/core/router"
+	"github.com/avaargsh/GPUPanel/core/utils/security"
+	"github.com/avaargsh/GPUPanel/core/utils/xpack"
 	"github.com/gin-contrib/gzip"
 	"github.com/gin-gonic/gin"
 )
@@ -51,7 +51,10 @@ func setWebStatic(rootRouter *gin.RouterGroup) {
 				security.HandleNotSecurity(c, "")
 				return
 			}
-			security.ToIndexHtml(c)
+			// The verified dynamic entry is not a React route. Bind it server-side
+			// with an HttpOnly hint, then hand off to the real login page.
+			appauth.SetSecurityEntranceCookie(c, entrance)
+			c.Redirect(http.StatusFound, "/login")
 		})
 	}
 	rootRouter.GET("/", func(c *gin.Context) {
@@ -73,8 +76,8 @@ func Routers() *gin.Engine {
 	Router.Use(middleware.WhiteAllow())
 	Router.Use(middleware.BindDomain())
 
-	swaggerRouter := Router.Group("1panel")
-	docs.SwaggerInfo.BasePath = "/api/v2"
+	swaggerRouter := Router.Group("gpupanel")
+	docs.SwaggerInfo.BasePath = "/api/v1"
 	swaggerRouter.Use(middleware.SessionAuth()).GET("/swagger/*any", swagger.SwaggerHandler())
 
 	PublicGroup := Router.Group("")
@@ -96,7 +99,7 @@ func Routers() *gin.Engine {
 	Router.Use(xpack.AuthProvider.CoreRBACMiddlewares()...)
 	Router.Use(Proxy())
 
-	PrivateGroup := Router.Group("/api/v2/core")
+	PrivateGroup := Router.Group("/api/v1/core")
 	PrivateGroup.Use(middleware.SetPasswordPublicKey())
 	for _, router := range rou.RouterGroupApp {
 		router.InitRouter(PrivateGroup)
@@ -113,8 +116,8 @@ func Routers() *gin.Engine {
 }
 
 func RegisterImages(rootRouter *gin.RouterGroup) {
-	staticDir := filepath.Join(global.CONF.Base.InstallDir, "1panel/uploads/theme")
-	rootRouter.GET("/api/v2/images/*filename", func(c *gin.Context) {
+	staticDir := filepath.Join(global.CONF.Base.InstallDir, "gpupanel/uploads/theme")
+	rootRouter.GET("/api/v1/images/*filename", func(c *gin.Context) {
 		fileName := filepath.Base(c.Param("filename"))
 		filePath := filepath.Join(staticDir, fileName)
 		if !strings.HasPrefix(filePath, staticDir) {
@@ -141,7 +144,7 @@ func RegisterImages(rootRouter *gin.RouterGroup) {
 }
 
 func setStaticResource(rootRouter *gin.RouterGroup) {
-	rootRouter.GET("/api/v2/static/*filename", func(c *gin.Context) {
+	rootRouter.GET("/api/v1/static/*filename", func(c *gin.Context) {
 		c.Writer.Header().Set("Cache-Control", "private, max-age=2628000")
 		filename := c.Param("filename")
 		filePath := "static" + filename

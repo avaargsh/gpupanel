@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/1Panel-dev/1Panel/agent/cmd/server/nginx_conf"
+	"github.com/avaargsh/GPUPanel/agent/cmd/server/nginx_conf"
 )
 
 const stockNginxConf = `user  root;

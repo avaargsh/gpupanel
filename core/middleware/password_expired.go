@@ -6,20 +6,20 @@ import (
 	"strings"
 	"time"
 
-	"github.com/1Panel-dev/1Panel/core/app/api/v2/helper"
-	baseRepo "github.com/1Panel-dev/1Panel/core/app/repo"
-	"github.com/1Panel-dev/1Panel/core/buserr"
-	"github.com/1Panel-dev/1Panel/core/constant"
-	"github.com/1Panel-dev/1Panel/core/global"
-	psessionUtils "github.com/1Panel-dev/1Panel/core/init/session/psession"
-	"github.com/1Panel-dev/1Panel/core/utils/common"
-	"github.com/1Panel-dev/1Panel/core/utils/xpack"
+	"github.com/avaargsh/GPUPanel/core/app/api/v1/helper"
+	baseRepo "github.com/avaargsh/GPUPanel/core/app/repo"
+	"github.com/avaargsh/GPUPanel/core/buserr"
+	"github.com/avaargsh/GPUPanel/core/constant"
+	"github.com/avaargsh/GPUPanel/core/global"
+	psessionUtils "github.com/avaargsh/GPUPanel/core/init/session/psession"
+	"github.com/avaargsh/GPUPanel/core/utils/common"
+	"github.com/avaargsh/GPUPanel/core/utils/xpack"
 	"github.com/gin-gonic/gin"
 )
 
 func PasswordExpired() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		if !strings.HasPrefix(c.Request.URL.Path, "/api/v2/") {
+		if !strings.HasPrefix(c.Request.URL.Path, "/api/v1/") {
 			c.Next()
 			return
 		}
@@ -31,15 +31,15 @@ func PasswordExpired() gin.HandlerFunc {
 			c.Next()
 			return
 		}
-		if strings.HasPrefix(c.Request.URL.Path, "/api/v2/core/auth") ||
-			c.Request.URL.Path == "/api/v2/core/settings/search" ||
-			c.Request.URL.Path == "/api/v2/core/settings/search/base" ||
-			c.Request.URL.Path == "/api/v2/core/xpack/settings/search" ||
-			c.Request.URL.Path == "/api/v2/core/xapp/verifyQRCode" ||
-			c.Request.URL.Path == "/api/v2/core/enterprise/users/info" ||
-			c.Request.URL.Path == "/api/v2/core/enterprise/licenses/info" ||
-			c.Request.URL.Path == "/api/v2/core/enterprise/licenses/status" ||
-			c.Request.URL.Path == "/api/v2/core/enterprise/licenses/upload" {
+		if strings.HasPrefix(c.Request.URL.Path, "/api/v1/core/auth") ||
+			c.Request.URL.Path == "/api/v1/core/settings/search" ||
+			c.Request.URL.Path == "/api/v1/core/settings/search/base" ||
+			c.Request.URL.Path == "/api/v1/core/xpack/settings/search" ||
+			c.Request.URL.Path == "/api/v1/core/xapp/verifyQRCode" ||
+			c.Request.URL.Path == "/api/v1/core/enterprise/users/info" ||
+			c.Request.URL.Path == "/api/v1/core/enterprise/licenses/info" ||
+			c.Request.URL.Path == "/api/v1/core/enterprise/licenses/status" ||
+			c.Request.URL.Path == "/api/v1/core/enterprise/licenses/upload" {
 			c.Next()
 			return
 		}

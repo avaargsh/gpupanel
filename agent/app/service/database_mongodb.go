@@ -8,14 +8,14 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/1Panel-dev/1Panel/agent/app/dto"
-	"github.com/1Panel-dev/1Panel/agent/app/model"
-	"github.com/1Panel-dev/1Panel/agent/app/repo"
-	"github.com/1Panel-dev/1Panel/agent/buserr"
-	"github.com/1Panel-dev/1Panel/agent/constant"
-	"github.com/1Panel-dev/1Panel/agent/global"
-	"github.com/1Panel-dev/1Panel/agent/utils/cmd"
-	"github.com/1Panel-dev/1Panel/agent/utils/encrypt"
+	"github.com/avaargsh/GPUPanel/agent/app/dto"
+	"github.com/avaargsh/GPUPanel/agent/app/model"
+	"github.com/avaargsh/GPUPanel/agent/app/repo"
+	"github.com/avaargsh/GPUPanel/agent/buserr"
+	"github.com/avaargsh/GPUPanel/agent/constant"
+	"github.com/avaargsh/GPUPanel/agent/global"
+	"github.com/avaargsh/GPUPanel/agent/utils/cmd"
+	"github.com/avaargsh/GPUPanel/agent/utils/encrypt"
 	"github.com/jinzhu/copier"
 	"go.mongodb.org/mongo-driver/v2/bson"
 )
@@ -544,9 +544,9 @@ if (!result || result.ok !== 1) {
 const items = result.databases
   .filter(item => !systemDbs.has(item.name))
   .map(item => ({ name: item.name, username: "" }));
-print("__1panel_json_begin__");
+print("__gpupanel_json_begin__");
 print(JSON.stringify(items));
-print("__1panel_json_end__");
+print("__gpupanel_json_end__");
 `)
 	stdout, err := runMongodbAdminScriptWithStdout(database, script)
 	if err != nil {
@@ -746,9 +746,9 @@ if (!result || result.ok !== 1) {
 }
 const roles = Array.isArray(result.users) && result.users.length > 0 ? result.users[0].roles || [] : [];
 const permissions = roles.filter(role => role.db === dbName).map(role => role.role);
-print("__1panel_json_begin__");
+print("__gpupanel_json_begin__");
 print(JSON.stringify(permissions));
-print("__1panel_json_end__");
+print("__gpupanel_json_end__");
 `, databaseJSON, usernameJSON))
 	stdout, err := runMongodbAdminScriptWithStdout(connectionName, script)
 	if err != nil {
@@ -918,8 +918,8 @@ func isSupportedMongodbPrivilege(permission string) bool {
 
 func extractMongodbJSONOutput(stdout string) ([]byte, error) {
 	const (
-		beginMark = "__1panel_json_begin__"
-		endMark   = "__1panel_json_end__"
+		beginMark = "__gpupanel_json_begin__"
+		endMark   = "__gpupanel_json_end__"
 	)
 
 	output := strings.TrimSpace(stdout)

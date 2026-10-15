@@ -1,0 +1,58 @@
+Scope: all 2 workspace projects
+✓ Lockfile passes supply-chain policies (verified 3d ago)
+Lockfile is up to date, resolution step is skipped
+Done in 15ms using pnpm v12.8.1
+$ pnpm --filter @gpupanel/panel build
+$ tsc --noEmit && vite build
+vite v6.4.4 building for production...
+transforming...
+✓ 3861 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                             2.20 kB │ gzip:   0.78 kB
+dist/assets/index-B5AgKoRq.css              8.64 kB │ gzip:   3.10 kB
+dist/assets/vendor-semi-B_lONrxj.css      660.20 kB │ gzip:  75.49 kB
+dist/assets/vendor-redux-lxbizdaU.js       47.04 kB │ gzip:  17.44 kB
+dist/assets/vendor-react-Cv0qMTf6.js       92.45 kB │ gzip:  31.35 kB
+dist/assets/vendor-xterm-ChHEYabQ.js      290.57 kB │ gzip:  72.32 kB
+dist/assets/index-BzpQiZ80.js             948.64 kB │ gzip: 270.16 kB
+dist/assets/vendor-echarts-CkutTTYC.js  1,036.33 kB │ gzip: 343.42 kB
+dist/assets/vendor-semi-B6jUiXhA.js     1,269.52 kB │ gzip: 351.23 kB
+✓ built in 6.83s
+$ pnpm --filter @gpupanel/panel typecheck
+$ tsc --noEmit
+{
+  "archive": "/home/avaarg/GPUPanel/dist/gpupanel-preview.tar.gz",
+  "sha256": "e9d401062ef2a52569eb03c05a4c7035840e6c8620dcae246d9c169998a636f9",
+  "manifest": {
+    "format_version": 1,
+    "product": "GPUPanel",
+    "version": "local-integration-20261015",
+    "status": "source-preview-not-installable",
+    "web": {
+      "index_sha256": "0f3226e8dfa6e7328e92b335acc9e2d192c61c132c8368b185737de38e5f3083",
+      "asset_files": "8"
+    },
+    "source_commit": "unknown",
+    "offline_dependencies": true,
+    "production_install_ready": false,
+    "files": {
+      "bin/gpupanel-core": {
+        "sha256": "0cee458089858ac566b5ae39bba4a73f19e53872d7b6fedac67c7efb7d668cf2",
+        "size": 70687604
+      },
+      "bin/gpupanel-agent": {
+        "sha256": "363ef0f393262c01b80238edc313125a0d19592d7c2976bec5e9de9fbf799a32",
+        "size": 111504628
+      },
+      "LICENSE": {
+        "sha256": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986",
+        "size": 35149
+      },
+      "NOTICE.md": {
+        "sha256": "b9d4117370709d003f2f19ff8480e889f3f4fb00cc5c31020df4534600907ceb",
+        "size": 1276
+      }
+    }
+  }
+}

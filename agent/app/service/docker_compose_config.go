@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/1Panel-dev/1Panel/agent/app/dto/request"
+	"github.com/avaargsh/GPUPanel/agent/app/dto/request"
 )
 
 func composePortEnvKeys(index int) (containerPort, hostPort, hostIP, protocol string) {

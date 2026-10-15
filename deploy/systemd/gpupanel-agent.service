@@ -1,0 +1,15 @@
+[Unit]
+Description=GPUPanel Agent Service
+After=network-online.target gpupanel-core.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/gpupanel
+ExecStart=/opt/gpupanel/gpupanel-agent
+Restart=on-failure
+RestartSec=5
+LimitNOFILE=1048576
+
+[Install]
+WantedBy=multi-user.target

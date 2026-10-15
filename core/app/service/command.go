@@ -6,12 +6,12 @@ import (
 	"path"
 	"time"
 
-	"github.com/1Panel-dev/1Panel/core/app/dto"
-	"github.com/1Panel-dev/1Panel/core/app/repo"
-	"github.com/1Panel-dev/1Panel/core/buserr"
-	"github.com/1Panel-dev/1Panel/core/constant"
-	"github.com/1Panel-dev/1Panel/core/global"
-	"github.com/1Panel-dev/1Panel/core/utils/csv"
+	"github.com/avaargsh/GPUPanel/core/app/dto"
+	"github.com/avaargsh/GPUPanel/core/app/repo"
+	"github.com/avaargsh/GPUPanel/core/buserr"
+	"github.com/avaargsh/GPUPanel/core/constant"
+	"github.com/avaargsh/GPUPanel/core/global"
+	"github.com/avaargsh/GPUPanel/core/utils/csv"
 	"github.com/jinzhu/copier"
 )
 
@@ -119,7 +119,7 @@ func (u *CommandService) Export() (string, error) {
 			Command: item.Command,
 		})
 	}
-	tmpFileName := path.Join(global.CONF.Base.InstallDir, "1panel/tmp/export/commands", fmt.Sprintf("1panel-commands-%s.csv", time.Now().Format(constant.DateTimeSlimLayout)))
+	tmpFileName := path.Join(global.CONF.Base.InstallDir, "gpupanel/tmp/export/commands", fmt.Sprintf("gpupanel-commands-%s.csv", time.Now().Format(constant.DateTimeSlimLayout)))
 	if _, err := os.Stat(path.Dir(tmpFileName)); err != nil {
 		_ = os.MkdirAll(path.Dir(tmpFileName), constant.DirPerm)
 	}

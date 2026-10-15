@@ -7,10 +7,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/1Panel-dev/1Panel/agent/app/api/v2/helper"
-	"github.com/1Panel-dev/1Panel/agent/global"
-	"github.com/1Panel-dev/1Panel/agent/utils/cmd"
-	"github.com/1Panel-dev/1Panel/agent/utils/xpack"
+	"github.com/avaargsh/GPUPanel/agent/app/api/v1/helper"
+	"github.com/avaargsh/GPUPanel/agent/global"
+	"github.com/avaargsh/GPUPanel/agent/utils/cmd"
+	"github.com/avaargsh/GPUPanel/agent/utils/xpack"
 	"github.com/gin-gonic/gin"
 )
 
@@ -30,7 +30,7 @@ func Certificate() gin.HandlerFunc {
 			return
 		}
 		masterProxyID := c.Request.Header.Get("Proxy-Id")
-		proxyID, err := cmd.NewCommandMgr(cmd.WithTimeout(20*time.Second)).RunWithStdout("cat", "/etc/1panel/.nodeProxyID")
+		proxyID, err := cmd.NewCommandMgr(cmd.WithTimeout(20*time.Second)).RunWithStdout("cat", "/etc/gpupanel/.nodeProxyID")
 		if err == nil && len(proxyID) != 0 && strings.TrimSpace(proxyID) != strings.TrimSpace(masterProxyID) {
 			helper.InternalServer(c, fmt.Errorf("err proxy id"))
 			return

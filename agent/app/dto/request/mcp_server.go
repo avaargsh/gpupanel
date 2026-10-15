@@ -1,6 +1,6 @@
 package request
 
-import "github.com/1Panel-dev/1Panel/agent/app/dto"
+import "github.com/avaargsh/GPUPanel/agent/app/dto"
 
 type McpServerSearch struct {
 	dto.PageInfo

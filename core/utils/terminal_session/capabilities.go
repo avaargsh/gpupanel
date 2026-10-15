@@ -7,14 +7,14 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-const CapabilityPath = "/api/v2/internal/terminal/capabilities"
+const CapabilityPath = "/api/v1/internal/terminal/capabilities"
 
 func RequiresLeaseCapability(c *gin.Context) bool {
 	if c == nil || c.Request == nil || !c.GetBool("API_AUTH") || c.GetString("API_AUTH_KEY_KIND") != "apiKey" {
 		return false
 	}
 	switch c.Request.URL.Path {
-	case "/api/v2/hosts/terminal/local", "/api/v2/hosts/terminal/ssh", "/api/v2/hosts/terminal/container":
+	case "/api/v1/hosts/terminal/local", "/api/v1/hosts/terminal/ssh", "/api/v1/hosts/terminal/container":
 		return true
 	default:
 		return false

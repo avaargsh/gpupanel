@@ -15,7 +15,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/1Panel-dev/1Panel/agent/app/dto"
+	"github.com/avaargsh/GPUPanel/agent/app/dto"
 	profile "github.com/google/pprof/profile"
 	"github.com/shirou/gopsutil/v4/process"
 )
@@ -145,7 +145,7 @@ func captureRuntimeProfile(req dto.RuntimeProfileCreate) (result RuntimeProfileR
 	}
 
 	name := fmt.Sprintf("%s-%s-%ds.pb.gz", req.Type, newRuntimeEventID(), duration)
-	file, err := os.CreateTemp("", "1panel-runtime-profile-*.tmp")
+	file, err := os.CreateTemp("", "gpupanel-runtime-profile-*.tmp")
 	if err != nil {
 		return result, err
 	}

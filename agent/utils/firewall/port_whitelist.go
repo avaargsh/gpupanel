@@ -7,8 +7,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/1Panel-dev/1Panel/agent/constant"
-	"github.com/1Panel-dev/1Panel/agent/utils/firewall/filter"
+	"github.com/avaargsh/GPUPanel/agent/constant"
+	"github.com/avaargsh/GPUPanel/agent/utils/firewall/filter"
 )
 
 type PortWhitelist = filter.PortWhitelist

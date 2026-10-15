@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/1Panel-dev/1Panel/agent/constant"
+	"github.com/avaargsh/GPUPanel/agent/constant"
 )
 
 func NormalizeToText(s string) string {
@@ -56,7 +56,7 @@ func BuildWebhookPayload(method string, title string, text string) (any, error) 
 		return map[string]any{
 			"title":   title,
 			"message": text,
-			"type":    "1panel_alert",
+			"type":    "gpupanel_alert",
 			"ts":      time.Now().Unix(),
 		}, nil
 	default:

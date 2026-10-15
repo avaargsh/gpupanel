@@ -11,12 +11,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/1Panel-dev/1Panel/core/app/api/v2/helper"
-	"github.com/1Panel-dev/1Panel/core/app/repo"
-	"github.com/1Panel-dev/1Panel/core/buserr"
-	"github.com/1Panel-dev/1Panel/core/constant"
-	"github.com/1Panel-dev/1Panel/core/global"
-	"github.com/1Panel-dev/1Panel/core/utils/common"
+	"github.com/avaargsh/GPUPanel/core/app/api/v1/helper"
+	"github.com/avaargsh/GPUPanel/core/app/repo"
+	"github.com/avaargsh/GPUPanel/core/buserr"
+	"github.com/avaargsh/GPUPanel/core/constant"
+	"github.com/avaargsh/GPUPanel/core/global"
+	"github.com/avaargsh/GPUPanel/core/utils/common"
 	"github.com/gin-gonic/gin"
 )
 
@@ -42,7 +42,7 @@ func APIAuthMiddleware(loadConfig APIAuthConfigLoader, onSuccess APIAuthSuccessH
 		ownerProvider = ownerProviders[0]
 	}
 	return func(c *gin.Context) {
-		if strings.HasPrefix(c.Request.URL.Path, "/api/v2/core/auth") {
+		if strings.HasPrefix(c.Request.URL.Path, "/api/v1/core/auth") {
 			c.Next()
 			return
 		}
@@ -174,11 +174,11 @@ func IsValid1PanelTokenWithVersion(panelToken string, panelTimestamp string, api
 }
 
 func isValidMD5Token(panelToken string, panelTimestamp string, apiKey string) bool {
-	return panelToken == GenerateMD5("1panel"+apiKey+panelTimestamp)
+	return panelToken == GenerateMD5("gpupanel"+apiKey+panelTimestamp)
 }
 
 func isValidHMACSHA256Token(panelToken string, panelTimestamp string, apiKey string) bool {
-	return panelToken == GenerateHMACSHA256(apiKey, "1panel:"+panelTimestamp)
+	return panelToken == GenerateHMACSHA256(apiKey, "gpupanel:"+panelTimestamp)
 }
 
 func IsIPInWhiteList(clientIP string, ipWhiteString string) bool {

@@ -2,7 +2,7 @@
 
 package xpack
 
-import "github.com/1Panel-dev/1Panel/agent/utils/xpack/helper"
+import "github.com/avaargsh/GPUPanel/agent/utils/xpack/helper"
 
 var AlertProvider = helper.NewIAlertProvider()
 

@@ -1,0 +1,7 @@
+packages:
+  - 'apps/*'
+  - 'packages/*'
+
+# https://pnpm.io/settings#allowbuilds
+allowBuilds:
+  esbuild: true

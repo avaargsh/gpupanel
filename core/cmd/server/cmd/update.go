@@ -10,15 +10,15 @@ import (
 	"time"
 	"unicode"
 
-	"github.com/1Panel-dev/1Panel/core/cmd/server/conf"
-	"github.com/1Panel-dev/1Panel/core/constant"
-	"github.com/1Panel-dev/1Panel/core/global"
-	"github.com/1Panel-dev/1Panel/core/i18n"
-	"github.com/1Panel-dev/1Panel/core/utils/cmd"
-	"github.com/1Panel-dev/1Panel/core/utils/common"
-	"github.com/1Panel-dev/1Panel/core/utils/encrypt"
-	"github.com/1Panel-dev/1Panel/core/utils/req_helper/proxy_local"
-	upgradeUtil "github.com/1Panel-dev/1Panel/core/utils/upgrade"
+	"github.com/avaargsh/GPUPanel/core/cmd/server/conf"
+	"github.com/avaargsh/GPUPanel/core/constant"
+	"github.com/avaargsh/GPUPanel/core/global"
+	"github.com/avaargsh/GPUPanel/core/i18n"
+	"github.com/avaargsh/GPUPanel/core/utils/cmd"
+	"github.com/avaargsh/GPUPanel/core/utils/common"
+	"github.com/avaargsh/GPUPanel/core/utils/encrypt"
+	"github.com/avaargsh/GPUPanel/core/utils/req_helper/proxy_local"
+	upgradeUtil "github.com/avaargsh/GPUPanel/core/utils/upgrade"
 	"github.com/spf13/cobra"
 	"golang.org/x/term"
 	"gopkg.in/yaml.v3"
@@ -59,7 +59,7 @@ var updateUserName = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		i18n.UseI18nForCmd(language)
 		if !isRoot() {
-			fmt.Println(i18n.GetMsgWithMapForCmd("SudoHelper", map[string]interface{}{"cmd": "sudo 1pctl update username"}))
+			fmt.Println(i18n.GetMsgWithMapForCmd("SudoHelper", map[string]interface{}{"cmd": "sudo pctl update username"}))
 			return nil
 		}
 		if isEnterprise() && len(strings.TrimSpace(updateUserNameFlag)) == 0 {
@@ -76,7 +76,7 @@ var updatePassword = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		i18n.UseI18nForCmd(language)
 		if !isRoot() {
-			fmt.Println(i18n.GetMsgWithMapForCmd("SudoHelper", map[string]interface{}{"cmd": "sudo 1pctl update password"}))
+			fmt.Println(i18n.GetMsgWithMapForCmd("SudoHelper", map[string]interface{}{"cmd": "sudo pctl update password"}))
 			return nil
 		}
 		if isEnterprise() && len(strings.TrimSpace(updatePasswordUserName)) == 0 {
@@ -137,7 +137,7 @@ var updatePort = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		i18n.UseI18nForCmd(language)
 		if !isRoot() {
-			fmt.Println(i18n.GetMsgWithMapForCmd("SudoHelper", map[string]interface{}{"cmd": "sudo 1pctl update port"}))
+			fmt.Println(i18n.GetMsgWithMapForCmd("SudoHelper", map[string]interface{}{"cmd": "sudo pctl update port"}))
 			return nil
 		}
 		port()
@@ -150,7 +150,7 @@ var updateVersion = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		i18n.UseI18nForCmd(language)
 		if !isRoot() {
-			fmt.Println(i18n.GetMsgWithMapForCmd("SudoHelper", map[string]interface{}{"cmd": "sudo 1pctl update version"}))
+			fmt.Println(i18n.GetMsgWithMapForCmd("SudoHelper", map[string]interface{}{"cmd": "sudo pctl update version"}))
 			return nil
 		}
 		version := args[0]
@@ -372,7 +372,7 @@ func port() {
 	fmt.Println("\n" + i18n.GetMsgByKeyForCmd("UpdateSuccessful"))
 	fmt.Println(i18n.GetMsgWithMapForCmd("UpdatePortResult", map[string]interface{}{"name": newPortStr}))
 
-	std, err := cmd.NewCommandMgr().RunWithStdout("1pctl", "restart", "core")
+	std, err := cmd.NewCommandMgr().RunWithStdout("pctl", "restart", "core")
 	if err != nil {
 		fmt.Println(std)
 	}
@@ -418,10 +418,10 @@ func contains(specialChars string, char rune) bool {
 
 func loadUpdateHelper() {
 	fmt.Println(i18n.GetMsgByKeyForCmd("UpdateCommands"))
-	fmt.Println("\nUsage:\n  1panel update [command]\n\nAvailable Commands:")
+	fmt.Println("\nUsage:\n  gpupanel update [command]\n\nAvailable Commands:")
 	fmt.Println("\n  password    " + i18n.GetMsgByKeyForCmd("UpdatePassword"))
 	fmt.Println("  port        " + i18n.GetMsgByKeyForCmd("UpdatePort"))
 	fmt.Println("  username    " + i18n.GetMsgByKeyForCmd("UpdateUser"))
 	fmt.Println("\nFlags:\n  -h, --help   help for update")
-	fmt.Println("\nUse \"1panel update [command] --help\" for more information about a command.")
+	fmt.Println("\nUse \"gpupanel update [command] --help\" for more information about a command.")
 }

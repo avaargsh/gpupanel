@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="zh">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="robots" content="noindex,nofollow" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>GPUPanel</title>
+        <style>
+            html,
+            body,
+            #root {
+                width: 100%;
+                height: 100%;
+                margin: 0;
+                padding: 0;
+            }
+            .boot-splash {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                width: 100%;
+                height: 100%;
+                font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+                color: #66707a;
+                gap: 10px;
+            }
+            .boot-splash .dot {
+                width: 10px;
+                height: 10px;
+                border-radius: 50%;
+                background: #357d73;
+                animation: boot-pulse 1s infinite ease-in-out;
+            }
+            @keyframes boot-pulse {
+                0%,
+                100% {
+                    transform: scale(0.6);
+                    opacity: 0.4;
+                }
+                50% {
+                    transform: scale(1);
+                    opacity: 1;
+                }
+            }
+        </style>
+    </head>
+    <body>
+        <div id="root">
+            <div class="boot-splash"><span class="dot"></span> GPUPanel 正在启动…</div>
+        </div>
+        <script type="module" src="/src/main.tsx"></script>
+    </body>
+</html>

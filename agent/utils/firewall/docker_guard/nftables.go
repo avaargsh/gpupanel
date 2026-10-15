@@ -4,17 +4,17 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/1Panel-dev/1Panel/agent/buserr"
+	"github.com/avaargsh/GPUPanel/agent/buserr"
 	"slices"
 	"strconv"
 	"strings"
 
-	"github.com/1Panel-dev/1Panel/agent/utils/firewall/filter"
-	"github.com/1Panel-dev/1Panel/agent/utils/firewall/nftables_helper"
+	"github.com/avaargsh/GPUPanel/agent/utils/firewall/filter"
+	"github.com/avaargsh/GPUPanel/agent/utils/firewall/nftables_helper"
 )
 
 const (
-	NftTable     = "nft_1panel_docker"
+	NftTable     = "nft_gpupanel_docker"
 	NftBaseChain = "NFT_1PANEL_DOCKER_FORWARD"
 	NftChain     = "NFT_1PANEL_DOCKER"
 
@@ -370,7 +370,7 @@ func compileNftPolicy(policy Policy) [][]string {
 		base = append(base, "ct", "original", addressKeyword, "daddr", policy.HostIP)
 	}
 	base = append(base, "ct", "original", "proto-dst", strconv.Itoa(int(policy.HostPort)))
-	marker := "1panel-docker:" + policy.UUID
+	marker := "gpupanel-docker:" + policy.UUID
 	comment := strconv.Quote(marker)
 	if policy.Mode == ModeAll || policy.Mode == ModeAcceptAll {
 		target := "drop"

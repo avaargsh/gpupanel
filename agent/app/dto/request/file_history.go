@@ -3,7 +3,7 @@ package request
 import (
 	"encoding/json"
 
-	"github.com/1Panel-dev/1Panel/agent/app/dto"
+	"github.com/avaargsh/GPUPanel/agent/app/dto"
 )
 
 type FileHistorySearchReq struct {

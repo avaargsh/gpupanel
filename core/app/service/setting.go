@@ -23,21 +23,21 @@ import (
 	"sync"
 	"time"
 
-	"github.com/1Panel-dev/1Panel/core/app/auth"
-	"github.com/1Panel-dev/1Panel/core/app/dto"
-	"github.com/1Panel-dev/1Panel/core/app/model"
-	"github.com/1Panel-dev/1Panel/core/app/repo"
-	"github.com/1Panel-dev/1Panel/core/buserr"
-	"github.com/1Panel-dev/1Panel/core/constant"
-	"github.com/1Panel-dev/1Panel/core/global"
-	"github.com/1Panel-dev/1Panel/core/i18n"
-	"github.com/1Panel-dev/1Panel/core/utils/common"
-	"github.com/1Panel-dev/1Panel/core/utils/controller"
-	"github.com/1Panel-dev/1Panel/core/utils/encrypt"
-	"github.com/1Panel-dev/1Panel/core/utils/menutree"
-	"github.com/1Panel-dev/1Panel/core/utils/passkey"
-	"github.com/1Panel-dev/1Panel/core/utils/req_helper/proxy_local"
-	"github.com/1Panel-dev/1Panel/core/utils/xpack"
+	"github.com/avaargsh/GPUPanel/core/app/auth"
+	"github.com/avaargsh/GPUPanel/core/app/dto"
+	"github.com/avaargsh/GPUPanel/core/app/model"
+	"github.com/avaargsh/GPUPanel/core/app/repo"
+	"github.com/avaargsh/GPUPanel/core/buserr"
+	"github.com/avaargsh/GPUPanel/core/constant"
+	"github.com/avaargsh/GPUPanel/core/global"
+	"github.com/avaargsh/GPUPanel/core/i18n"
+	"github.com/avaargsh/GPUPanel/core/utils/common"
+	"github.com/avaargsh/GPUPanel/core/utils/controller"
+	"github.com/avaargsh/GPUPanel/core/utils/encrypt"
+	"github.com/avaargsh/GPUPanel/core/utils/menutree"
+	"github.com/avaargsh/GPUPanel/core/utils/passkey"
+	"github.com/avaargsh/GPUPanel/core/utils/req_helper/proxy_local"
+	"github.com/avaargsh/GPUPanel/core/utils/xpack"
 	"github.com/gin-gonic/gin"
 	"golang.org/x/net/proxy"
 	"gorm.io/gorm"
@@ -419,7 +419,7 @@ func (u *SettingService) UpdatePort(port uint) error {
 }
 
 func (u *SettingService) UpdateSSL(c *gin.Context, req dto.SSLUpdate) error {
-	secretDir := path.Join(global.CONF.Base.InstallDir, "1panel/secret")
+	secretDir := path.Join(global.CONF.Base.InstallDir, "gpupanel/secret")
 	if req.SSL == constant.StatusDisable {
 		c.SetCookie(constant.SessionName, "", -1, "/", "", false, true)
 		c.SetCookie(constant.CSRFTokenName, "", -1, "/", "", false, false)
@@ -490,7 +490,7 @@ func (u *SettingService) UpdateSSL(c *gin.Context, req dto.SSLUpdate) error {
 		if err != nil {
 			return err
 		}
-		res, err := proxy_local.NewLocalClient("/api/v2/websites/ca/obtain", http.MethodPost, bytes.NewReader(jsonData), nil)
+		res, err := proxy_local.NewLocalClient("/api/v1/websites/ca/obtain", http.MethodPost, bytes.NewReader(jsonData), nil)
 		if err != nil {
 			return err
 		}
@@ -562,16 +562,16 @@ func (u *SettingService) LoadFromCert() (*dto.SSLInfo, error) {
 		if err != nil {
 			return nil, err
 		}
-		if _, err := os.Stat(path.Join(global.CONF.Base.InstallDir, "1panel/secret/server.crt")); err != nil {
+		if _, err := os.Stat(path.Join(global.CONF.Base.InstallDir, "gpupanel/secret/server.crt")); err != nil {
 			return nil, fmt.Errorf("load server.crt file failed, err: %v", err)
 		}
-		certFile, _ := os.ReadFile(path.Join(global.CONF.Base.InstallDir, "1panel/secret/server.crt"))
+		certFile, _ := os.ReadFile(path.Join(global.CONF.Base.InstallDir, "gpupanel/secret/server.crt"))
 		data.Cert = string(certFile)
 
-		if _, err := os.Stat(path.Join(global.CONF.Base.InstallDir, "1panel/secret/server.key")); err != nil {
+		if _, err := os.Stat(path.Join(global.CONF.Base.InstallDir, "gpupanel/secret/server.key")); err != nil {
 			return nil, fmt.Errorf("load server.key file failed, err: %v", err)
 		}
-		keyFile, _ := os.ReadFile(path.Join(global.CONF.Base.InstallDir, "1panel/secret/server.key"))
+		keyFile, _ := os.ReadFile(path.Join(global.CONF.Base.InstallDir, "gpupanel/secret/server.key"))
 		data.Key = string(keyFile)
 	case "select":
 		sslID, err := settingRepo.Get(repo.WithByKey("SSLID"))
@@ -660,8 +660,8 @@ func (u *SettingService) clearPasskeySettings() error {
 }
 
 func (u *SettingService) UpdateSystemSSL() error {
-	certPath := path.Join(global.CONF.Base.InstallDir, "1panel/secret/server.crt")
-	keyPath := path.Join(global.CONF.Base.InstallDir, "1panel/secret/server.key")
+	certPath := path.Join(global.CONF.Base.InstallDir, "gpupanel/secret/server.crt")
+	keyPath := path.Join(global.CONF.Base.InstallDir, "gpupanel/secret/server.key")
 	certificate, err := os.ReadFile(certPath)
 	if err != nil {
 		return err
@@ -680,7 +680,7 @@ func (u *SettingService) UpdateSystemSSL() error {
 
 func loadInfoFromCert() (dto.SSLInfo, error) {
 	var info dto.SSLInfo
-	certFile := path.Join(global.CONF.Base.InstallDir, "1panel/secret/server.crt")
+	certFile := path.Join(global.CONF.Base.InstallDir, "gpupanel/secret/server.crt")
 	if _, err := os.Stat(certFile); err != nil {
 		return info, err
 	}
@@ -708,16 +708,16 @@ func loadInfoFromCert() (dto.SSLInfo, error) {
 	return dto.SSLInfo{
 		Domain:   strings.Join(domains, ","),
 		Timeout:  certObj.NotAfter.Format(constant.DateTimeLayout),
-		RootPath: path.Join(global.CONF.Base.InstallDir, "1panel/secret/server.crt"),
+		RootPath: path.Join(global.CONF.Base.InstallDir, "gpupanel/secret/server.crt"),
 	}, nil
 }
 
 func checkCertValid() error {
-	certificate, err := os.ReadFile(path.Join(global.CONF.Base.InstallDir, "1panel/secret/server.crt.tmp"))
+	certificate, err := os.ReadFile(path.Join(global.CONF.Base.InstallDir, "gpupanel/secret/server.crt.tmp"))
 	if err != nil {
 		return err
 	}
-	key, err := os.ReadFile(path.Join(global.CONF.Base.InstallDir, "1panel/secret/server.key.tmp"))
+	key, err := os.ReadFile(path.Join(global.CONF.Base.InstallDir, "gpupanel/secret/server.key.tmp"))
 	if err != nil {
 		return err
 	}

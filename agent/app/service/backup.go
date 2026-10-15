@@ -12,18 +12,18 @@ import (
 	"strings"
 	"time"
 
-	"github.com/1Panel-dev/1Panel/agent/app/dto"
-	"github.com/1Panel-dev/1Panel/agent/app/model"
-	"github.com/1Panel-dev/1Panel/agent/app/repo"
-	"github.com/1Panel-dev/1Panel/agent/app/task"
-	"github.com/1Panel-dev/1Panel/agent/buserr"
-	"github.com/1Panel-dev/1Panel/agent/constant"
-	"github.com/1Panel-dev/1Panel/agent/global"
-	"github.com/1Panel-dev/1Panel/agent/i18n"
-	"github.com/1Panel-dev/1Panel/agent/utils/cloud_storage"
-	"github.com/1Panel-dev/1Panel/agent/utils/cloud_storage/client"
-	"github.com/1Panel-dev/1Panel/agent/utils/encrypt"
-	"github.com/1Panel-dev/1Panel/agent/utils/files"
+	"github.com/avaargsh/GPUPanel/agent/app/dto"
+	"github.com/avaargsh/GPUPanel/agent/app/model"
+	"github.com/avaargsh/GPUPanel/agent/app/repo"
+	"github.com/avaargsh/GPUPanel/agent/app/task"
+	"github.com/avaargsh/GPUPanel/agent/buserr"
+	"github.com/avaargsh/GPUPanel/agent/constant"
+	"github.com/avaargsh/GPUPanel/agent/global"
+	"github.com/avaargsh/GPUPanel/agent/i18n"
+	"github.com/avaargsh/GPUPanel/agent/utils/cloud_storage"
+	"github.com/avaargsh/GPUPanel/agent/utils/cloud_storage/client"
+	"github.com/avaargsh/GPUPanel/agent/utils/encrypt"
+	"github.com/avaargsh/GPUPanel/agent/utils/files"
 	"github.com/jinzhu/copier"
 )
 
@@ -350,7 +350,7 @@ func (u *BackupService) checkBackupConn(backup *model.BackupAccount) (bool, erro
 	if err != nil {
 		return false, err
 	}
-	fileItem := path.Join(global.Dir.BaseDir, "1panel/tmp/test/1panel")
+	fileItem := path.Join(global.Dir.BaseDir, "gpupanel/tmp/test/gpupanel")
 	if _, err := os.Stat(path.Dir(fileItem)); err != nil && os.IsNotExist(err) {
 		if err = os.MkdirAll(path.Dir(fileItem), os.ModePerm); err != nil {
 			return false, err
@@ -368,7 +368,7 @@ func (u *BackupService) checkBackupConn(backup *model.BackupAccount) (bool, erro
 	_, _ = write.WriteString("1Panelアカウントのテストファイルをバックアップします。\n")
 	write.Flush()
 
-	targetPath := path.Join(backup.BackupPath, "test/1panel")
+	targetPath := path.Join(backup.BackupPath, "test/gpupanel")
 	if backup.Type != constant.Sftp && backup.Type != constant.Local && targetPath != "/" {
 		targetPath = strings.TrimPrefix(targetPath, "/")
 	}
@@ -376,7 +376,7 @@ func (u *BackupService) checkBackupConn(backup *model.BackupAccount) (bool, erro
 	if _, err := client.Upload(context.Background(), fileItem, targetPath); err != nil {
 		return false, err
 	}
-	_, _ = client.Delete(path.Join(backup.BackupPath, "test/1panel"))
+	_, _ = client.Delete(path.Join(backup.BackupPath, "test/gpupanel"))
 	return true, nil
 }
 

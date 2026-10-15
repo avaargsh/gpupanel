@@ -6,7 +6,7 @@ import (
 	"io"
 	"strings"
 
-	"github.com/1Panel-dev/1Panel/agent/utils/nginx/parser/flag"
+	"github.com/avaargsh/GPUPanel/agent/utils/nginx/parser/flag"
 )
 
 type lexer struct {

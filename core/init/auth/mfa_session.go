@@ -5,7 +5,7 @@ import (
 	"encoding/base64"
 	"time"
 
-	"github.com/1Panel-dev/1Panel/core/utils/ttlstore"
+	"github.com/avaargsh/GPUPanel/core/utils/ttlstore"
 )
 
 const (

@@ -5,10 +5,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/1Panel-dev/1Panel/agent/app/model"
-	"github.com/1Panel-dev/1Panel/agent/constant"
-	"github.com/1Panel-dev/1Panel/agent/global"
-	"github.com/1Panel-dev/1Panel/agent/utils/docker"
+	"github.com/avaargsh/GPUPanel/agent/app/model"
+	"github.com/avaargsh/GPUPanel/agent/constant"
+	"github.com/avaargsh/GPUPanel/agent/global"
+	"github.com/avaargsh/GPUPanel/agent/utils/docker"
 	"github.com/docker/docker/api/types/container"
 	"gorm.io/gorm"
 )
@@ -86,8 +86,8 @@ func appEvidenceObservationsByRequestedName(names []string, containers []contain
 				continue
 			}
 			result = append(result, appContainerObservation{
-				Name: strings.TrimPrefix(dockerName, "/"),
-				State: con.State,
+				Name:   strings.TrimPrefix(dockerName, "/"),
+				State:  con.State,
 				Labels: con.Labels, // internal classification only, never JSON
 			})
 			break

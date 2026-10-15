@@ -1,8 +1,8 @@
 package migrations
 
 import (
-	"github.com/1Panel-dev/1Panel/core/app/dto"
-	"github.com/1Panel-dev/1Panel/core/init/migration/helper"
+	"github.com/avaargsh/GPUPanel/core/app/dto"
+	"github.com/avaargsh/GPUPanel/core/init/migration/helper"
 	"github.com/go-gormigrate/gormigrate/v2"
 	"gorm.io/gorm"
 )

@@ -1,76 +1,77 @@
-<p align="center"><img src="frontend/src/assets/images/gpupanel-logo.svg" width="260" alt="GPUPanel logo" /></p>
-
 # GPUPanel
 
-**Host first. AI ready.** An independent GPL-3.0 fork of [1Panel](https://github.com/1Panel-dev/1Panel) for Linux host operations today and GPU/AI platform integrations later.
+基于 1Panel 开源实现演进的 Linux/GPU 工作站管理面板。当前工程使用独立 Go Core、
+Agent 和内嵌 React 19 前端；保留 Host、Docker、本地应用等现有能力，并加入安装
+回执、`UNKNOWN` 状态保护和只读资源证据。
 
-> Status: **Brand foundation / non-production preview**. This repository retains the upstream Core + Agent + Vue 3 structure. GPU scheduling, training workspaces, multi-node control and production Agent Ops are **roadmap items**, not delivered features.
+当前是开发版本。源码测试、模拟浏览器、真实本地 VM 安装分别记录，不能互相替代；
+**GPUPanel system installation 的完整发布验收仍为 BLOCKED / M0 NO-GO**。单次本地
+安装不等于升级回滚、完整应用生命周期或生产多租户已通过。
 
-## What exists now
+- [文档入口](docs/README.md)
+- [工程目录](docs/engineering/project-structure.md) · [开发指南](docs/engineering/development.md)
+- [本机 VM 安装测试](docs/operations/local-install-test.md) · [当前执行结果](docs/evidence/2026-10-16/local-install/RESULTS.md)
+- [远程 1Panel 优化整合](docs/gpupanel/LOCAL_REMOTE_INTEGRATION.md)
 
-- **Host**: reuse upstream host, disk, files, network, security and terminal management.
-- **Containers**: reuse upstream Docker, Compose, images and application lifecycle.
-- **Portal**: GPUPanel brand entry points, with Host management as the first product focus (live standalone deployment is not yet accepted).
-- **Integrations (planned)**: optional Kubernetes provider; GPU Compute Platform for compute queues and workloads; Agent Control Plane for authorized operations.
+## 开发与验证
 
-## Architecture and boundaries
-
-| Layer | Responsibility | Source |
-| --- | --- | --- |
-| Portal | Navigation, design system, workspace and project entry points | `frontend/` |
-| Control API | Identity, policy, cross-resource inventory, operations | `core/` |
-| Linux Host | System, disk, network, Docker, terminal, backup, recovery | `agent/` |
-| Kubernetes Provider (future) | Workloads, GPU pools, scheduling observation; Kueue remains the admission path | Separate adapter, **not** a replacement for Linux Host |
-| AI Applications (future) | Workspaces, model serving, MLflow links, RAG integrations | External products/adapters, not duplicated engines |
-| Audit (future) | Authorization, CAS, independent observation, operation evidence | Adapter to agent-control-plane |
-
-See [architecture](docs/gpupanel/ARCHITECTURE.md), [product organization](docs/gpupanel/PRODUCT.md) and [roadmap](docs/gpupanel/ROADMAP.md).
-
-## Quick start (Ubuntu 24.04)
-
-A new contributor can check their environment **without root access or downloads**:
+环境：Go 按 `core/go.mod` / `agent/go.mod`，Node 24，pnpm 按
+`frontend/package.json`。前端 API 前缀为 `/api/v1`。
 
 ```bash
-python3 scripts/gpupanel-bootstrap.py doctor --human
-python3 scripts/gpupanel-bootstrap.py plan --human
-python3 scripts/gpupanel-bootstrap.py self-test --human
+cd frontend
+pnpm install --frozen-lockfile
 ```
 
-This does not install GPUPanel. An offline Python starter can create user-local project files; a separately verified Core/Agent source bundle can be staged for inspection, **not** installed as a service. See [preview staging](docs/gpupanel/PREVIEW_STAGING.md) and [中文上手指南](docs/gpupanel/GETTING_STARTED.zh-CN.md) or [English quick start](docs/gpupanel/GETTING_STARTED.md) for the currently supported entry points and limits.
-
-## Development
-
-The current upstream baseline is **1Panel dev-v2 @ d9dc5d7aa981c3b04ad284e93420aca9888f7e5a** (2026-10-15). The upstream runtime identifiers, Go module paths, settings keys, on-disk paths and API routes remain unchanged until a migration plan and compatibility tests exist.
+只启动前端；后端地址应指向已经验证过的测试实例：
 
 ```bash
-git remote add upstream https://github.com/1Panel-dev/1Panel.git
-npm --prefix frontend ci
-npm --prefix frontend run build:pro
-npm --prefix frontend run type-check
-node scripts/verify-brand.mjs
+make dev-web DEV_WEB_HOST=127.0.0.1 PANEL_PORT=19998
 ```
 
-The Go modules currently request Go **1.26.6**. Do not claim a full build succeeded without that toolchain and resolved dependencies. Development builds need the supported 1Panel system services; installing the frontend alone does not provision a host agent.
+编译 React、更新 Go embed，再编译 Core/Agent：
 
-**Do not use 1Panel's official one-click install script as a GPUPanel installer.** A dedicated GPUPanel build, upgrade, and rollback path must be verified before distribution.
+```bash
+make build_all
+```
 
-## What “install” means today
+测试入口与前置条件见 [测试指南](docs/engineering/testing.md)：
 
-| Operation | Verified boundary |
-| --- | --- |
-| Ubuntu diagnostics | Read-only, no software changes |
-| Python stdlib starter | Local CLI creates, verifies and removes **project files**, not Python itself |
-| Source build | Compiles a checksummed **non-installable** preview archive |
-| Preview staging | Explicit approval copies inspected files under `~/GPUPanel/previews/` without starting services |
-| GPUPanel system installation | **BLOCKED:** Core/Agent still depend on inherited 1Panel paths and lack independently accepted systemd/first-admin/rollback |
-| Standalone browser/API Host + Docker | **NOT ACCEPTED** on a disposable Ubuntu VM |
+```bash
+make test-frontend
+make test-python
+make test-core
+make test-agent
+```
 
-Archive SHA-256 is an internal consistency check, not publisher signature verification. Never overwrite an existing 1Panel installation to test this fork. Refer to [installation constraints](docs/gpupanel/RUNTIME_ISOLATION.md).
+`make help` 列出构建、验证和 VM 生命周期命令。不要在有旧面板或用户数据的机器
+上直接运行 `sudo make install`。本地真实安装在本任务拥有的一次性 VM 中进行：
 
-## Attribution and licensing
+```bash
+make install-test-vm
+```
 
-GPUPanel is an independent derivative, **not an official 1Panel release or endorsed by the original project**. The original 1Panel copyright notices and `LICENSE` (GPL-3.0) are retained. This fork's new brand assets are identified separately; the upstream 1Panel name must remain in attribution, license notices, and compatibility context rather than being indiscriminately erased. See [NOTICE.md](NOTICE.md). A narrowly scoped set of independently authored audit scripts/tests is also offered under file-level Apache-2.0 terms; see [scope](docs/gpupanel/APACHE_FILE_SCOPE.md) and [license text](LICENSES/Apache-2.0.txt). **The 1Panel-based GPUPanel distribution remains GPL-3.0.**
+## 运行架构
 
-## Scope of first round
+```text
+浏览器 React -> Core 认证/会话/CSRF/代理 -> Agent 私有 Unix socket -> Linux/Docker
+```
 
-Brand assets, portal fallbacks, architecture boundaries and verification script. No existing user data, production cluster, Git history, binary names, on-disk data directories or upstream-specific integration endpoints are migrated by this change.
+- Core 处理 `/api/v1/core/*`，其他主机请求经认证边界代理给 Agent。
+- 默认面板端口 `9999`，安全入口由安装器生成；验证入口后以 HttpOnly Cookie
+  交接到 `/login`。初始密码随机生成，不进入安装日志。
+- 本地 Agent socket 为 `/etc/gpupanel/agent.sock`，目录 0700、socket 0600；
+  重复实例不能摘除活跃 socket。
+- 远程应用源停用。本地应用可发现与提交，已安装资源保留管理；结果不明时禁止
+  自动重试。只读证据的一致性不是安装成功或恢复授权。
+- AI 草稿入口不连接聊天/执行服务。GPU 硬件和模型服务需对应设备与独立实际验证。
+
+目录中 `build/`、`dist/` 为可再生产物，`.local/` 为本机 VM、凭据与原始日志，均不
+入库；源码、锁文件、模板与脱敏证据保留。不要将 `.env.local` 中的秘密放进 `VITE_*`。
+
+## 贡献与来源
+
+遵守 [AGENTS.md](AGENTS.md)、[CONTRIBUTING.md](CONTRIBUTING.md) 和
+[SECURITY.md](SECURITY.md)。保留根 GPL-3.0 与 [NOTICE.md](NOTICE.md)，独立文件
+Apache-2.0 范围由对应清单限定，不代表整个 1Panel 衍生工程重新许可。
+

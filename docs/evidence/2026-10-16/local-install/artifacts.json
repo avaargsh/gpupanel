@@ -1,0 +1,18 @@
+{
+  "version": "local-20261016-r2",
+  "source_commit": null,
+  "artifacts": {
+    "gpupanel-local-20261016-r2-linux-amd64.tar.gz": {
+      "sha256": "94e994f6a67f810f1862e1634a1943632a85abf1f4d890013c9d1a0d71070f2e",
+      "size": 45915788
+    },
+    "gpupanel-core": {
+      "sha256": "4138440d34cb8ba2e7d7b9f53e162380db9ba00ccc0c3b9ef52ea11f02b24a07",
+      "size": 53960864
+    },
+    "gpupanel-agent": {
+      "sha256": "1393df7b88c05d30d13dffdaafdfd35600d9703e28e4cccad0809f284b90fb7b",
+      "size": 78307488
+    }
+  }
+}

@@ -7,8 +7,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/1Panel-dev/1Panel/agent/app/api/v2/helper"
-	"github.com/1Panel-dev/1Panel/agent/buserr"
+	"github.com/avaargsh/GPUPanel/agent/app/api/v1/helper"
+	"github.com/avaargsh/GPUPanel/agent/buserr"
 	"github.com/gin-gonic/gin"
 	"golang.org/x/time/rate"
 )

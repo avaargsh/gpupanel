@@ -11,17 +11,17 @@ import (
 	"strings"
 	"time"
 
-	"github.com/1Panel-dev/1Panel/agent/app/repo"
-	"github.com/1Panel-dev/1Panel/agent/app/task"
-	"github.com/1Panel-dev/1Panel/agent/buserr"
-	"github.com/1Panel-dev/1Panel/agent/i18n"
+	"github.com/avaargsh/GPUPanel/agent/app/repo"
+	"github.com/avaargsh/GPUPanel/agent/app/task"
+	"github.com/avaargsh/GPUPanel/agent/buserr"
+	"github.com/avaargsh/GPUPanel/agent/i18n"
 
-	"github.com/1Panel-dev/1Panel/agent/app/dto"
-	"github.com/1Panel-dev/1Panel/agent/app/model"
-	"github.com/1Panel-dev/1Panel/agent/constant"
-	"github.com/1Panel-dev/1Panel/agent/global"
-	"github.com/1Panel-dev/1Panel/agent/utils/common"
-	"github.com/1Panel-dev/1Panel/agent/utils/files"
+	"github.com/avaargsh/GPUPanel/agent/app/dto"
+	"github.com/avaargsh/GPUPanel/agent/app/model"
+	"github.com/avaargsh/GPUPanel/agent/constant"
+	"github.com/avaargsh/GPUPanel/agent/global"
+	"github.com/avaargsh/GPUPanel/agent/utils/common"
+	"github.com/avaargsh/GPUPanel/agent/utils/files"
 )
 
 func (u *CronjobService) handleApp(cronjob model.Cronjob, startTime time.Time, taskItem *task.Task) error {
@@ -350,7 +350,7 @@ func (u *CronjobService) handleSnapshot(cronjob model.Cronjob, jobRecord model.J
 		return err
 	}
 	req := dto.SnapshotCreate{
-		Name:    fmt.Sprintf("snapshot-1panel-%s-%s-linux-%s-%s", scope, versionItem.Value, loadOs(), jobRecord.StartTime.Format(constant.DateTimeSlimLayout)+common.RandStrAndNum(5)),
+		Name:    fmt.Sprintf("snapshot-gpupanel-%s-%s-linux-%s-%s", scope, versionItem.Value, loadOs(), jobRecord.StartTime.Format(constant.DateTimeSlimLayout)+common.RandStrAndNum(5)),
 		Secret:  cronjob.Secret,
 		TaskID:  jobRecord.TaskID,
 		Timeout: cronjob.Timeout,

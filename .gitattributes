@@ -1,5 +1,9 @@
-*.ts linguist-language=Go
-*.js linguist-language=Go
-*.css linguist-language=Go
-*.scss linguist-language=Go
-*.html linguist-language=Go
+* text=auto eol=lf
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary
+*.gz binary
+*.zip binary

@@ -7,13 +7,13 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/1Panel-dev/1Panel/core/app/dto"
-	"github.com/1Panel-dev/1Panel/core/app/model"
-	"github.com/1Panel-dev/1Panel/core/app/repo"
-	"github.com/1Panel-dev/1Panel/core/buserr"
-	"github.com/1Panel-dev/1Panel/core/global"
-	"github.com/1Panel-dev/1Panel/core/utils/req_helper/proxy_local"
-	"github.com/1Panel-dev/1Panel/core/utils/xpack"
+	"github.com/avaargsh/GPUPanel/core/app/dto"
+	"github.com/avaargsh/GPUPanel/core/app/model"
+	"github.com/avaargsh/GPUPanel/core/app/repo"
+	"github.com/avaargsh/GPUPanel/core/buserr"
+	"github.com/avaargsh/GPUPanel/core/global"
+	"github.com/avaargsh/GPUPanel/core/utils/req_helper/proxy_local"
+	"github.com/avaargsh/GPUPanel/core/utils/xpack"
 	"github.com/jinzhu/copier"
 )
 
@@ -108,7 +108,7 @@ func (u *GroupService) Delete(id uint) error {
 		err = xpack.MultiNodeProvider.UpdateGroup("node", id, defaultGroup.ID)
 	case "website":
 		bodyItem := []byte(fmt.Sprintf(`{"Group":%v, "NewGroup":%v}`, id, defaultGroup.ID))
-		if _, err := proxy_local.NewLocalClient("/api/v2/websites/group/change", http.MethodPost, bytes.NewReader(bodyItem), nil); err != nil {
+		if _, err := proxy_local.NewLocalClient("/api/v1/websites/group/change", http.MethodPost, bytes.NewReader(bodyItem), nil); err != nil {
 			return err
 		}
 		if err := xpack.MultiNodeProvider.UpdateGroup("node", id, defaultGroup.ID); err != nil {

@@ -8,8 +8,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/1Panel-dev/1Panel/core/global"
-	"github.com/1Panel-dev/1Panel/core/log"
+	"github.com/avaargsh/GPUPanel/core/global"
+	"github.com/avaargsh/GPUPanel/core/log"
 
 	"github.com/sirupsen/logrus"
 )
@@ -29,7 +29,7 @@ func Init() {
 
 func setOutput(logger *logrus.Logger, config global.LogConfig) {
 	writer, err := log.NewWriterFromConfig(&log.Config{
-		LogPath:            path.Join(global.CONF.Base.InstallDir, "1panel/log"),
+		LogPath:            path.Join(global.CONF.Base.InstallDir, "gpupanel/log"),
 		FileName:           config.LogName,
 		TimeTagFormat:      FileTImeFormat,
 		MaxRemain:          config.MaxBackup,
@@ -55,7 +55,7 @@ type MineFormatter struct{}
 func (s *MineFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 	detailInfo := ""
 	if entry.Caller != nil {
-		function := strings.ReplaceAll(entry.Caller.Function, "github.com/1Panel-dev/1Panel/core/", "")
+		function := strings.ReplaceAll(entry.Caller.Function, "github.com/avaargsh/GPUPanel/core/", "")
 		detailInfo = fmt.Sprintf("(%s: %d)", function, entry.Caller.Line)
 	}
 	if len(entry.Data) == 0 {

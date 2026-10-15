@@ -2,10 +2,10 @@ package i18n
 
 import (
 	"embed"
-	"github.com/1Panel-dev/1Panel/agent/app/repo"
+	"github.com/avaargsh/GPUPanel/agent/app/repo"
 	"strings"
 
-	"github.com/1Panel-dev/1Panel/agent/global"
+	"github.com/avaargsh/GPUPanel/agent/global"
 
 	"github.com/gin-gonic/gin"
 	"github.com/nicksnyder/go-i18n/v2/i18n"

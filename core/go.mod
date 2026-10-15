@@ -1,4 +1,4 @@
-module github.com/1Panel-dev/1Panel/core
+module github.com/avaargsh/GPUPanel/core
 
 go 1.26.6
 

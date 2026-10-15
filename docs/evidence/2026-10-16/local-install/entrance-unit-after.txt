@@ -1,0 +1,2 @@
+ok  	github.com/avaargsh/GPUPanel/core/init/router	0.010s
+?   	github.com/avaargsh/GPUPanel/core/app/api/v1	[no test files]

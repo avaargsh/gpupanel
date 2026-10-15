@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/1Panel-dev/1Panel/core/utils/common"
+	"github.com/avaargsh/GPUPanel/core/utils/common"
 )
 
 func DropBackupCopies(installDir, backupCopies string) error {
@@ -15,7 +15,7 @@ func DropBackupCopies(installDir, backupCopies string) error {
 	if copies == 0 {
 		return nil
 	}
-	backupDir := path.Join(installDir, "1panel/tmp/upgrade")
+	backupDir := path.Join(installDir, "gpupanel/tmp/upgrade")
 	upgradeDir, err := os.ReadDir(backupDir)
 	if err != nil {
 		return err

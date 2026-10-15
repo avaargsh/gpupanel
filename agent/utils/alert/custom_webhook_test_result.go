@@ -1,9 +1,9 @@
 package alert
 
 import (
-	"github.com/1Panel-dev/1Panel/agent/app/dto"
-	"github.com/1Panel-dev/1Panel/agent/global"
-	"github.com/1Panel-dev/1Panel/agent/utils/webhook_sender"
+	"github.com/avaargsh/GPUPanel/agent/app/dto"
+	"github.com/avaargsh/GPUPanel/agent/global"
+	"github.com/avaargsh/GPUPanel/agent/utils/webhook_sender"
 )
 
 func CustomWebhookTestResult(request webhook_sender.Request, result webhook_sender.Result, executeErr error) dto.AlertConfigTestResult {

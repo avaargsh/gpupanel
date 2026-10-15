@@ -6,14 +6,14 @@ import (
 	"path"
 	"strings"
 
-	"github.com/1Panel-dev/1Panel/agent/app/repo"
+	"github.com/avaargsh/GPUPanel/agent/app/repo"
 
-	"github.com/1Panel-dev/1Panel/agent/app/dto"
-	"github.com/1Panel-dev/1Panel/agent/app/task"
-	"github.com/1Panel-dev/1Panel/agent/constant"
-	"github.com/1Panel-dev/1Panel/agent/global"
-	"github.com/1Panel-dev/1Panel/agent/i18n"
-	"github.com/1Panel-dev/1Panel/agent/utils/files"
+	"github.com/avaargsh/GPUPanel/agent/app/dto"
+	"github.com/avaargsh/GPUPanel/agent/app/task"
+	"github.com/avaargsh/GPUPanel/agent/constant"
+	"github.com/avaargsh/GPUPanel/agent/global"
+	"github.com/avaargsh/GPUPanel/agent/i18n"
+	"github.com/avaargsh/GPUPanel/agent/utils/files"
 )
 
 func (u *SnapshotService) SnapshotRollback(req dto.SnapshotRecover) error {
@@ -33,30 +33,30 @@ func (u *SnapshotService) SnapshotRollback(req dto.SnapshotRecover) error {
 		return err
 	}
 	go func() {
-		rootDir := fmt.Sprintf("%s/1panel_original/original_%s", global.Dir.BaseDir, snap.Name)
+		rootDir := fmt.Sprintf("%s/gpupanel_original/original_%s", global.Dir.BaseDir, snap.Name)
 		baseDir := path.Join(rootDir, "base")
 
 		FileOp := files.NewFileOp()
 		taskItem.AddSubTask(
-			i18n.GetWithName("SnapCopy", "/usr/local/bin/1pctl"),
+			i18n.GetWithName("SnapCopy", "/usr/local/bin/pctl"),
 			func(t *task.Task) error {
-				return FileOp.CopyFile(path.Join(baseDir, "1pctl"), "/usr/local/bin")
+				return FileOp.CopyFile(path.Join(baseDir, "pctl"), "/usr/local/bin")
 			},
 			nil,
 		)
 		if global.IsMaster {
 			taskItem.AddSubTask(
-				i18n.GetWithName("SnapCopy", "/usr/local/bin/1panel-core"),
+				i18n.GetWithName("SnapCopy", "/usr/local/bin/gpupanel-core"),
 				func(t *task.Task) error {
-					return FileOp.CopyFile(path.Join(baseDir, "1panel"), "/usr/local/bin")
+					return FileOp.CopyFile(path.Join(baseDir, "gpupanel"), "/usr/local/bin")
 				},
 				nil,
 			)
 		}
 		taskItem.AddSubTask(
-			i18n.GetWithName("SnapCopy", "/usr/local/bin/1panel-agent"),
+			i18n.GetWithName("SnapCopy", "/usr/local/bin/gpupanel-agent"),
 			func(t *task.Task) error {
-				return FileOp.CopyFile(path.Join(baseDir, "1panel-agent"), "/usr/local/bin")
+				return FileOp.CopyFile(path.Join(baseDir, "gpupanel-agent"), "/usr/local/bin")
 			},
 			nil,
 		)
@@ -106,10 +106,10 @@ func (u *SnapshotService) SnapshotRollback(req dto.SnapshotRecover) error {
 		taskItem.AddSubTask(
 			i18n.GetWithName("SnapCopy", global.Dir.BaseDir),
 			func(t *task.Task) error {
-				if err := os.Chmod(path.Join(rootDir, "1panel/db"), 0700); err != nil {
+				if err := os.Chmod(path.Join(rootDir, "gpupanel/db"), 0700); err != nil {
 					return err
 				}
-				return FileOp.CopyDir(path.Join(rootDir, "1panel"), global.Dir.BaseDir)
+				return FileOp.CopyDir(path.Join(rootDir, "gpupanel"), global.Dir.BaseDir)
 			},
 			nil,
 		)

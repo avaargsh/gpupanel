@@ -6,9 +6,9 @@ import (
 	"path"
 	"time"
 
-	"github.com/1Panel-dev/1Panel/core/server"
-	"github.com/1Panel-dev/1Panel/core/utils/common"
-	"github.com/1Panel-dev/1Panel/core/utils/ctl_conf"
+	"github.com/avaargsh/GPUPanel/core/server"
+	"github.com/avaargsh/GPUPanel/core/utils/common"
+	"github.com/avaargsh/GPUPanel/core/utils/ctl_conf"
 	"github.com/spf13/cobra"
 	"gorm.io/gorm"
 )
@@ -20,7 +20,7 @@ func init() {
 }
 
 var RootCmd = &cobra.Command{
-	Use: "1panel",
+	Use: "gpupanel",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		server.Start()
 		return nil
@@ -42,7 +42,7 @@ func loadDBConn(dbName string) (*gorm.DB, error) {
 		return nil, err
 	}
 
-	db, err := common.GetDBWithPath(path.Join(baseDir, "1panel/db", dbName))
+	db, err := common.GetDBWithPath(path.Join(baseDir, "gpupanel/db", dbName))
 	if err != nil {
 		return nil, fmt.Errorf("init my db conn failed, err: %v", err)
 	}
@@ -50,12 +50,12 @@ func loadDBConn(dbName string) (*gorm.DB, error) {
 }
 
 func loadBaseDir() (string, error) {
-	baseDir, err := ctl_conf.LoadFromFile("/usr/local/bin/1pctl", "BASE_DIR")
+	baseDir, err := ctl_conf.LoadFromFile("/usr/local/bin/pctl", "BASE_DIR")
 	if err != nil {
 		return "", fmt.Errorf("handle load `BASE_DIR` failed, err: %v", err)
 	}
 	if len(baseDir) == 0 {
-		return "", fmt.Errorf("error `BASE_DIR` find in /usr/local/bin/1pctl")
+		return "", fmt.Errorf("error `BASE_DIR` find in /usr/local/bin/pctl")
 	}
 	return baseDir, nil
 }

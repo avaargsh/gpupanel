@@ -15,8 +15,8 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/1Panel-dev/1Panel/agent/app/repo"
-	"github.com/1Panel-dev/1Panel/agent/buserr"
+	"github.com/avaargsh/GPUPanel/agent/app/repo"
+	"github.com/avaargsh/GPUPanel/agent/buserr"
 
 	"github.com/spf13/afero"
 )

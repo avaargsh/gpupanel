@@ -1,8 +1,8 @@
 package router
 
 import (
-	v2 "github.com/1Panel-dev/1Panel/agent/app/api/v2"
-	"github.com/1Panel-dev/1Panel/agent/middleware"
+	v1 "github.com/avaargsh/GPUPanel/agent/app/api/v1"
+	"github.com/avaargsh/GPUPanel/agent/middleware"
 	"github.com/gin-gonic/gin"
 )
 
@@ -11,7 +11,7 @@ type FileRouter struct {
 
 func (f *FileRouter) InitRouter(Router *gin.RouterGroup) {
 	fileRouter := Router.Group("files")
-	baseApi := v2.ApiGroupApp.BaseApi
+	baseApi := v1.ApiGroupApp.BaseApi
 	{
 		fileRouter.POST("/search", baseApi.ListFiles)
 		fileRouter.POST("/ai-search", baseApi.FileAISearch)

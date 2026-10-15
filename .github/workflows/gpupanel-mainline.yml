@@ -28,18 +28,30 @@ jobs:
     timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: '12.8.1'
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
-          cache: npm
-          cache-dependency-path: frontend/package-lock.json
-      - run: npm ci
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
         working-directory: frontend
-      # Vite generates ignored auto-imports.d.ts required by vue-tsc.
-      - run: npm run build:pro
+      # React workspace: compile, validate recovery helpers, then simulated browser flows.
+      - run: pnpm build
         working-directory: frontend
-      - run: npm run type-check
+      - run: pnpm typecheck
         working-directory: frontend
+      - run: pnpm test
+        working-directory: frontend
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install playwright==1.63.0
+      - run: python -m playwright install --with-deps chromium
+      - name: Simulated API browser negative controls (not live Host acceptance)
+        run: python scripts/browser/run-react-tests.py
   backend-safety:
     runs-on: ubuntu-24.04
     timeout-minutes: 25
@@ -56,21 +68,12 @@ jobs:
           mkdir -p core/cmd/server/web/assets
           printf '<html>CI test fixture</html>\n' > core/cmd/server/web/index.html
           printf 'CI test fixture\n' > core/cmd/server/web/assets/fixture.txt
-      - name: Core real session and HTTP forwarding denial tests
+      - name: Core package tests, including session and real HTTP denial
         working-directory: core
-        run: go test ./init/router -count=1 -v
-      - name: Agent socket safety
+        run: go test ./... -count=1 -timeout=120s
+      - name: Agent package tests, including admission, UNKNOWN, socket, migration and exact-name matching
         working-directory: agent
-        run: go test ./server -run 'Test(EnsureMasterSocketVacant|PrepareMasterSocketDir)' -count=1 -v
-      - name: Agent concurrent admission and UNKNOWN controls
-        working-directory: agent
-        run: go test ./app/service -run '^(TestAppInstallTaskAdmission|TestAppInstallPreparation|TestInterruptedAppInstallationUnknown|TestUnknownAppInstallation|TestAppInstallAdmissionReceipt)' -count=1 -v
-      - name: Agent restart receipt
-        working-directory: agent
-        run: go test ./app/repo -run '^TestInterruptedAppInstallTask' -count=1 -v
-      - name: Docker exact-name matching (no daemon mutation)
-        working-directory: agent
-        run: go test ./utils/docker -run TestFilterContainersByExactName -count=1 -v
+        run: go test ./... -count=1 -timeout=120s
       - run: go build -o /tmp/gpupanel-core ./cmd/server
         working-directory: core
       - run: go build -o /tmp/gpupanel-agent ./cmd/server

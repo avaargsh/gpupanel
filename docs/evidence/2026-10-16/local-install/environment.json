@@ -1,0 +1,9 @@
+{
+  "go": "go version go1.27.1 linux/amd64",
+  "node": "v24.21.0",
+  "pnpm": "12.8.1",
+  "qemu": "QEMU emulator version 10.2.1 (Debian 1:10.2.1+ds-1ubuntu3.2)",
+  "host_os": "Ubuntu 26.04.1",
+  "guest_os": "Ubuntu 24.04.5",
+  "native_host_install": false
+}

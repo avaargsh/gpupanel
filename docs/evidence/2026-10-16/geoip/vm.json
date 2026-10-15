@@ -1,0 +1,17 @@
+{
+  "kind": "LIVE disposable VM binary repair, not an installer upgrade gate",
+  "database_source": "https://resource.fit2cloud.com/1panel/package/v2/geo/GeoIP.mmdb",
+  "database_sha256": "fcad15e747a1fc3091ff69c36609fa1bf0721f453ea3f019d03bf7002976c80b",
+  "lookup": {
+    "database_type": "GeoLite2-City",
+    "en": "United States ",
+    "node_count": 2294729,
+    "zh": "\u7f8e\u56fd "
+  },
+  "restart_retains_lookup": true,
+  "binary_sha256": {
+    "core": "5cc1dabe2b659867f6b15f968e212ec0ae97c214438a97e9a117eb372c8989df",
+    "agent": "89ecc83d2ec171b3a25c080b88812c00582468a6657c71fd69530e3547abd3f1"
+  },
+  "core_database_present": true
+}

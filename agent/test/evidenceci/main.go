@@ -15,10 +15,10 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/1Panel-dev/1Panel/agent/app/model"
-	"github.com/1Panel-dev/1Panel/agent/constant"
-	"github.com/1Panel-dev/1Panel/agent/global"
-	agentrouter "github.com/1Panel-dev/1Panel/agent/router"
+	"github.com/avaargsh/GPUPanel/agent/app/model"
+	"github.com/avaargsh/GPUPanel/agent/constant"
+	"github.com/avaargsh/GPUPanel/agent/global"
+	agentrouter "github.com/avaargsh/GPUPanel/agent/router"
 	"github.com/gin-gonic/gin"
 	"github.com/glebarez/sqlite"
 	"github.com/sirupsen/logrus"
@@ -60,14 +60,22 @@ func run() error {
 		db, err := gorm.Open(sqlite.Open(filepath.Join(parent, file)), &gorm.Config{
 			Logger: logger.Default.LogMode(logger.Silent),
 		})
-		if err != nil { return nil, err }
-		if err := db.AutoMigrate(schemas...); err != nil { return nil, err }
+		if err != nil {
+			return nil, err
+		}
+		if err := db.AutoMigrate(schemas...); err != nil {
+			return nil, err
+		}
 		return db, nil
 	}
 	global.DB, err = open("apps.sqlite", &model.AppInstall{}, &model.Setting{})
-	if err != nil { return err }
+	if err != nil {
+		return err
+	}
 	global.TaskDB, err = open("tasks.sqlite", &model.Task{})
-	if err != nil { return err }
+	if err != nil {
+		return err
+	}
 	global.IsMaster = true
 	global.LOG = logrus.New()
 	install := model.AppInstall{
@@ -75,21 +83,29 @@ func run() error {
 		Status: constant.StatusRunning, ContainerName: name,
 		ServiceName: "evidence", Env: "DO_NOT_RETURN_CI_SECRET",
 	}
-	if err := global.DB.Omit(clause.Associations).Create(&install).Error; err != nil { return err }
+	if err := global.DB.Omit(clause.Associations).Create(&install).Error; err != nil {
+		return err
+	}
 	task := model.Task{
-		ID: "e1111111-1111-4111-8111-111111111111",
+		ID:   "e1111111-1111-4111-8111-111111111111",
 		Type: "App", Operate: "TaskInstall", ResourceID: install.ID,
 		Status: constant.StatusSuccess,
 	}
-	if err := global.TaskDB.Create(&task).Error; err != nil { return err }
+	if err := global.TaskDB.Create(&task).Error; err != nil {
+		return err
+	}
 	gin.SetMode(gin.ReleaseMode)
 	engine := gin.New()
-	(&agentrouter.AppRouter{}).InitRouter(engine.Group("/api/v2"))
+	(&agentrouter.AppRouter{}).InitRouter(engine.Group("/api/v1"))
 	listener, err := net.Listen("unix", socket)
-	if err != nil { return err }
+	if err != nil {
+		return err
+	}
 	defer listener.Close()
 	defer os.Remove(socket)
-	if err := os.Chmod(socket, 0o600); err != nil { return err }
+	if err := os.Chmod(socket, 0o600); err != nil {
+		return err
+	}
 	info, err := os.Stat(socket)
 	if err != nil || info.Mode().Perm() != 0o600 {
 		return errors.New("temporary Agent socket is not owner-only")
@@ -103,6 +119,8 @@ func run() error {
 		_ = server.Close()
 	}()
 	err = server.Serve(listener)
-	if err != nil && !errors.Is(err, http.ErrServerClosed) { return err }
+	if err != nil && !errors.Is(err, http.ErrServerClosed) {
+		return err
+	}
 	return nil
 }

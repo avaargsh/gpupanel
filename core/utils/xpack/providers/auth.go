@@ -1,8 +1,8 @@
 package providers
 
 import (
-	"github.com/1Panel-dev/1Panel/core/app/dto"
-	"github.com/1Panel-dev/1Panel/core/utils/mfa"
+	"github.com/avaargsh/GPUPanel/core/app/dto"
+	"github.com/avaargsh/GPUPanel/core/utils/mfa"
 	"github.com/gin-gonic/gin"
 )
 

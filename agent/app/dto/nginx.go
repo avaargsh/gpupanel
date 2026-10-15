@@ -3,8 +3,8 @@ package dto
 import (
 	"time"
 
-	"github.com/1Panel-dev/1Panel/agent/app/model"
-	"github.com/1Panel-dev/1Panel/agent/utils/nginx/components"
+	"github.com/avaargsh/GPUPanel/agent/app/model"
+	"github.com/avaargsh/GPUPanel/agent/utils/nginx/components"
 )
 
 type NginxFull struct {

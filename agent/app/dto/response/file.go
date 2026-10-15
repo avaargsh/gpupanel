@@ -3,7 +3,7 @@ package response
 import (
 	"time"
 
-	"github.com/1Panel-dev/1Panel/agent/utils/files"
+	"github.com/avaargsh/GPUPanel/agent/utils/files"
 )
 
 type FileInfo struct {

@@ -8,9 +8,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/1Panel-dev/1Panel/agent/utils/ai_tools/gpu"
-	"github.com/1Panel-dev/1Panel/agent/utils/ai_tools/npu"
-	"github.com/1Panel-dev/1Panel/agent/utils/ai_tools/xpu"
+	"github.com/avaargsh/GPUPanel/agent/utils/ai_tools/gpu"
+	"github.com/avaargsh/GPUPanel/agent/utils/ai_tools/npu"
+	"github.com/avaargsh/GPUPanel/agent/utils/ai_tools/xpu"
 )
 
 type Client struct {

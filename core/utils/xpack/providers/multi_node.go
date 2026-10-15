@@ -3,7 +3,7 @@ package providers
 import (
 	"net/http"
 
-	"github.com/1Panel-dev/1Panel/core/utils/ssh"
+	"github.com/avaargsh/GPUPanel/core/utils/ssh"
 	"github.com/gin-gonic/gin"
 )
 

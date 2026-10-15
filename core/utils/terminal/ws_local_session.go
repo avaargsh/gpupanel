@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"sync"
 
-	"github.com/1Panel-dev/1Panel/core/global"
+	"github.com/avaargsh/GPUPanel/core/global"
 	"github.com/gorilla/websocket"
 	"github.com/pkg/errors"
 )

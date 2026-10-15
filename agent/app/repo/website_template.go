@@ -1,7 +1,7 @@
 package repo
 
 import (
-	"github.com/1Panel-dev/1Panel/agent/app/model"
+	"github.com/avaargsh/GPUPanel/agent/app/model"
 	"gorm.io/gorm"
 )
 

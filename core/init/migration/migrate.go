@@ -1,8 +1,8 @@
 package migration
 
 import (
-	"github.com/1Panel-dev/1Panel/core/global"
-	"github.com/1Panel-dev/1Panel/core/init/migration/migrations"
+	"github.com/avaargsh/GPUPanel/core/global"
+	"github.com/avaargsh/GPUPanel/core/init/migration/migrations"
 
 	"github.com/go-gormigrate/gormigrate/v2"
 )

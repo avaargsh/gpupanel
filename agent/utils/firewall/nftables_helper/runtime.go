@@ -9,13 +9,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/1Panel-dev/1Panel/agent/utils/cmd"
-	firewallutil "github.com/1Panel-dev/1Panel/agent/utils/firewall"
-	"github.com/1Panel-dev/1Panel/agent/utils/firewall/filter"
+	"github.com/avaargsh/GPUPanel/agent/utils/cmd"
+	firewallutil "github.com/avaargsh/GPUPanel/agent/utils/firewall"
+	"github.com/avaargsh/GPUPanel/agent/utils/firewall/filter"
 )
 
 const (
-	TableName        = "nft_1panel_filter"
+	TableName        = "nft_gpupanel_filter"
 	InputChain       = "NFT_1PANEL_INPUT"
 	BasicBeforeChain = "NFT_1PANEL_BASIC_BEFORE"
 	BasicChain       = "NFT_1PANEL_BASIC"
@@ -88,7 +88,7 @@ func RunScriptContext(ctx context.Context, script string) error {
 }
 
 func runScriptFile(script string, run func(string) error) error {
-	file, err := os.CreateTemp("", "1panel-nft-*.nft")
+	file, err := os.CreateTemp("", "gpupanel-nft-*.nft")
 	if err != nil {
 		return err
 	}

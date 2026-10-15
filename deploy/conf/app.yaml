@@ -1,0 +1,31 @@
+# GPUPanel configuration template, installed to <install_dir>/gpupanel/conf/app.yaml.
+#
+# In `release` mode (the default, and what install.sh writes) the panel reads its
+# settings from the KEY=VALUE header of /usr/local/bin/pctl plus the app.yaml
+# embedded in the binary -- this file is inert. It is kept as a record of the
+# install and as the dev-mode override: set `mode: dev` to make the panel read
+# this file instead. Note that the dev path is hardcoded to /opt/gpupanel in
+# core/init/viper, so it only works for a default-base-dir install.
+base:
+  install_dir: /opt
+  mode: release
+  is_demo: false
+  is_fxplay: false
+  is_offline: false
+  is_enterprise: false
+  port: 9999
+  username: admin
+  password: admin123
+  version: v0.1.0
+
+conn:
+  port: "9999"
+  bind_address: "0.0.0.0"
+  entrance: ""
+
+log:
+  level: debug
+  time_zone: Asia/Shanghai
+  log_name: GPUPanel-Core
+  log_suffix: .log
+  max_backup: 10

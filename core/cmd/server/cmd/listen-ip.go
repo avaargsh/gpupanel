@@ -3,8 +3,8 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/1Panel-dev/1Panel/core/constant"
-	"github.com/1Panel-dev/1Panel/core/i18n"
+	"github.com/avaargsh/GPUPanel/core/constant"
+	"github.com/avaargsh/GPUPanel/core/i18n"
 	"github.com/spf13/cobra"
 )
 
@@ -45,7 +45,7 @@ var listenIpv6Cmd = &cobra.Command{
 
 func updateBindInfo(protocol string) error {
 	if !isRoot() {
-		fmt.Println(i18n.GetMsgWithMapForCmd("SudoHelper", map[string]interface{}{"cmd": "sudo 1pctl listen-ip ipv6"}))
+		fmt.Println(i18n.GetMsgWithMapForCmd("SudoHelper", map[string]interface{}{"cmd": "sudo pctl listen-ip ipv6"}))
 		return nil
 	}
 	db, err := loadDBConn("core.db")
@@ -72,9 +72,9 @@ func updateBindInfo(protocol string) error {
 
 func loadListenIPHelper() {
 	fmt.Println(i18n.GetMsgByKeyForCmd("UpdateCommands"))
-	fmt.Println("\nUsage:\n  1panel listen-ip [command]\n\nAvailable Commands:")
+	fmt.Println("\nUsage:\n  gpupanel listen-ip [command]\n\nAvailable Commands:")
 	fmt.Println("\n  ipv4        " + i18n.GetMsgByKeyForCmd("ListenIPv4"))
 	fmt.Println("  ipv6        " + i18n.GetMsgByKeyForCmd("ListenIPv6"))
 	fmt.Println("\nFlags:\n  -h, --help   help for listen-ip")
-	fmt.Println("\nUse \"1panel listen-ip [command] --help\" for more information about a command.")
+	fmt.Println("\nUse \"gpupanel listen-ip [command] --help\" for more information about a command.")
 }

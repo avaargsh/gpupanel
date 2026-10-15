@@ -1,0 +1,23 @@
+{
+  "changed_inventory_paths": [
+    {
+      "path": "/opt/1panel",
+      "before": {
+        "exists": true,
+        "mode": 16877,
+        "uid": 0,
+        "gid": 0,
+        "inode": 10418440,
+        "mtime_ns": 1791804810192010580,
+        "link": null
+      },
+      "after": {
+        "exists": false
+      }
+    }
+  ],
+  "preexisting_test_processes_present": 5,
+  "host_installer_or_uninstaller_executed_by_this_task": false,
+  "shared_host_filesystem_in_vm": false,
+  "attribution_of_external_changes": "not established"
+}

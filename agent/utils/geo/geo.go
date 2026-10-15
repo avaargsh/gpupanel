@@ -4,7 +4,7 @@ import (
 	"net"
 	"path"
 
-	"github.com/1Panel-dev/1Panel/agent/global"
+	"github.com/avaargsh/GPUPanel/agent/global"
 	"github.com/oschwald/maxminddb-golang"
 )
 
@@ -35,6 +35,7 @@ func GetIPLocation(reader *maxminddb.Reader, ip, lang string) (string, error) {
 		if err != nil {
 			return "", err
 		}
+		defer reader.Close()
 	}
 	ipNet := net.ParseIP(ip)
 	err = reader.Lookup(ipNet, &geoLocation)

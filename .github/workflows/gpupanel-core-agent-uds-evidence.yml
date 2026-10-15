@@ -85,7 +85,7 @@ jobs:
           ready=0
           for attempt in $(seq 1 30); do
             if [[ -S "$socket" ]] && curl --silent --show-error --fail --unix-socket "$socket" \
-                "http://unix/api/v2/apps/installed/evidence/1" -o /dev/null 2>/dev/null; then
+                "http://unix/api/v1/apps/installed/evidence/1" -o /dev/null 2>/dev/null; then
               ready=1
               break
             fi

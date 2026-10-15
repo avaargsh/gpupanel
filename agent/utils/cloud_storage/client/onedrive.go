@@ -15,7 +15,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/1Panel-dev/1Panel/agent/utils/files"
+	"github.com/avaargsh/GPUPanel/agent/utils/files"
 )
 
 const oneDriveGlobalBaseURL = "https://graph.microsoft.com/v1.0/"

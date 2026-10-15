@@ -4,10 +4,10 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/1Panel-dev/1Panel/core/app/dto"
-	"github.com/1Panel-dev/1Panel/core/constant"
-	"github.com/1Panel-dev/1Panel/core/global"
-	"github.com/1Panel-dev/1Panel/core/i18n"
+	"github.com/avaargsh/GPUPanel/core/app/dto"
+	"github.com/avaargsh/GPUPanel/core/constant"
+	"github.com/avaargsh/GPUPanel/core/global"
+	"github.com/avaargsh/GPUPanel/core/i18n"
 	"github.com/gin-gonic/gin"
 )
 
@@ -43,21 +43,21 @@ func requiresCSRFTokenCheck(c *gin.Context) bool {
 	if !unsafeMethod {
 		return false
 	}
-	if !strings.HasPrefix(c.Request.URL.Path, "/api/v2/") {
+	if !strings.HasPrefix(c.Request.URL.Path, "/api/v1/") {
 		return false
 	}
 	switch c.Request.URL.Path {
-	case "/api/v2/core/auth/login",
-		"/api/v2/core/auth/mfalogin",
-		"/api/v2/core/auth/passkey/begin",
-		"/api/v2/core/auth/passkey/finish",
-		"/api/v2/core/auth/oidc/begin",
-		"/api/v2/core/auth/oidc/finish":
+	case "/api/v1/core/auth/login",
+		"/api/v1/core/auth/mfalogin",
+		"/api/v1/core/auth/passkey/begin",
+		"/api/v1/core/auth/passkey/finish",
+		"/api/v1/core/auth/oidc/begin",
+		"/api/v1/core/auth/oidc/finish":
 		return false
-	case "/api/v2/core/auth/saml2/begin",
-		"/api/v2/core/auth/saml2/acs",
-		"/api/v2/core/auth/saml2/finish",
-		"/api/v2/core/auth/saml2/logout":
+	case "/api/v1/core/auth/saml2/begin",
+		"/api/v1/core/auth/saml2/acs",
+		"/api/v1/core/auth/saml2/finish",
+		"/api/v1/core/auth/saml2/logout":
 		return false
 	}
 	if c.GetBool("API_AUTH") {

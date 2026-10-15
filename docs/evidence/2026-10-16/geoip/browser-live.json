@@ -1,0 +1,21 @@
+{
+  "kind": "LIVE local VM; no intercepted APIs",
+  "target": "http://127.0.0.1:19998",
+  "anonymous_core_host_evidence_denied": true,
+  "live_login_and_httponly_entrance": true,
+  "live_core_agent_host_api": true,
+  "live_docker_daemon_status": {
+    "isActive": true,
+    "isExist": true
+  },
+  "authenticated_installed_list_read": true,
+  "installed_list_contract": {
+    "status": 200,
+    "code": 200,
+    "itemsType": "null",
+    "total": 0
+  },
+  "invalid_csrf_denied": true,
+  "invalid_csrf_http_status": 403,
+  "browser_page_errors": []
+}

@@ -1,7 +1,7 @@
 package router
 
 import (
-	v2 "github.com/1Panel-dev/1Panel/agent/app/api/v2"
+	v1 "github.com/avaargsh/GPUPanel/agent/app/api/v1"
 	"github.com/gin-gonic/gin"
 )
 
@@ -9,7 +9,7 @@ type DatabaseRouter struct{}
 
 func (s *DatabaseRouter) InitRouter(Router *gin.RouterGroup) {
 	cmdRouter := Router.Group("databases")
-	baseApi := v2.ApiGroupApp.BaseApi
+	baseApi := v1.ApiGroupApp.BaseApi
 	{
 		cmdRouter.POST("/common/info", baseApi.LoadDBBaseInfo)
 		cmdRouter.POST("/common/load/file", baseApi.LoadDBFile)

@@ -1,6 +1,6 @@
 package service
 
-import "github.com/1Panel-dev/1Panel/agent/app/repo"
+import "github.com/avaargsh/GPUPanel/agent/app/repo"
 
 var (
 	appRepo                = repo.NewIAppRepo()

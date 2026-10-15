@@ -10,19 +10,19 @@ import (
 	"strings"
 	"time"
 
-	"github.com/1Panel-dev/1Panel/agent/app/dto"
-	"github.com/1Panel-dev/1Panel/agent/app/model"
-	"github.com/1Panel-dev/1Panel/agent/app/repo"
-	"github.com/1Panel-dev/1Panel/agent/app/task"
-	"github.com/1Panel-dev/1Panel/agent/buserr"
-	"github.com/1Panel-dev/1Panel/agent/constant"
-	"github.com/1Panel-dev/1Panel/agent/global"
-	"github.com/1Panel-dev/1Panel/agent/utils/alert_push"
-	"github.com/1Panel-dev/1Panel/agent/utils/clam"
-	"github.com/1Panel-dev/1Panel/agent/utils/cmd"
-	"github.com/1Panel-dev/1Panel/agent/utils/common"
-	"github.com/1Panel-dev/1Panel/agent/utils/controller"
-	"github.com/1Panel-dev/1Panel/agent/utils/xpack"
+	"github.com/avaargsh/GPUPanel/agent/app/dto"
+	"github.com/avaargsh/GPUPanel/agent/app/model"
+	"github.com/avaargsh/GPUPanel/agent/app/repo"
+	"github.com/avaargsh/GPUPanel/agent/app/task"
+	"github.com/avaargsh/GPUPanel/agent/buserr"
+	"github.com/avaargsh/GPUPanel/agent/constant"
+	"github.com/avaargsh/GPUPanel/agent/global"
+	"github.com/avaargsh/GPUPanel/agent/utils/alert_push"
+	"github.com/avaargsh/GPUPanel/agent/utils/clam"
+	"github.com/avaargsh/GPUPanel/agent/utils/cmd"
+	"github.com/avaargsh/GPUPanel/agent/utils/common"
+	"github.com/avaargsh/GPUPanel/agent/utils/controller"
+	"github.com/avaargsh/GPUPanel/agent/utils/xpack"
 	"github.com/jinzhu/copier"
 	"github.com/robfig/cron/v3"
 )
@@ -300,7 +300,7 @@ func (c *ClamService) Delete(req dto.ClamDelete) error {
 		}
 		_ = c.CleanRecord(clam.ID)
 		if req.RemoveInfected {
-			_ = os.RemoveAll(path.Join(clam.InfectedDir, "1panel-infected", clam.Name))
+			_ = os.RemoveAll(path.Join(clam.InfectedDir, "gpupanel-infected", clam.Name))
 		}
 		if err := clamRepo.Delete(repo.WithByID(id)); err != nil {
 			return err

@@ -15,8 +15,8 @@ class RuntimeNamespaceAudit(unittest.TestCase):
         self.assertFalse(report["installable"])
         self.assertFalse(report["readyForProduction"])
         self.assertFalse(report["mutationPerformed"])
-        self.assertGreaterEqual(report["blocked"], 7)
-        self.assertEqual(report["unknown"], 0)
+        self.assertEqual(report["blocked"] + report["unknown"], len(audit.RISKS))
+        self.assertGreater(report["unknown"], 0)  # Renaming is not installation proof.
         self.assertEqual(len(report["issues"]), len(audit.RISKS))
 
     def test_missing_signature_is_unknown_not_pass(self):

@@ -1,12 +1,12 @@
 # GPUPanel Engineering Contract (for humans and coding agents)
 
-This contract applies to this fork. Read it before implementation, review, migrations or releases. Product priorities are in `docs/gpupanel/ROADMAP.md`; the fork-first decision is in `docs/gpupanel/ADR-0001-FORK-FIRST.md`. Repository evidence overrides assumptions about upstream 1Panel.
+This contract applies to this fork. Current engineering and operations entrypoint: `docs/README.md`. Read it before implementation, review, migrations or releases. Product priorities are in `docs/gpupanel/ROADMAP.md`; the fork-first decision is in `docs/gpupanel/ADR-0001-FORK-FIRST.md`. Repository evidence overrides assumptions about upstream 1Panel.
 
 ## 0. Product, domains and dependency direction
 
 - **Current customer outcome**: a usable single-Ubuntu GPU/developer workstation with conventional Host, Files, Terminal, Docker/Compose, App Store/Catalog, GPU observation and model-related UI. Optional bottom-right AI entry must not block ordinary operations or pretend an unimplemented chat service exists.
 - **Domain ownership**: `frontend/` owns presentation/state and API view adapters; `core/` owns authenticated entry, user/project resource scope, orchestration and operation receipts; `agent/` owns Linux host execution, Docker and independently observable local effects. `catalog/` holds reviewed software definitions, not executable authority; `scripts/` holds developer/release utilities.
-- **Flow**: Browser -> authenticated Core API -> scoped application operation -> Agent/host provider -> actual outcome observation -> Core response/audit -> view. Separate request DTO, domain command, storage record and view DTO. Never have Vue submit a privileged shell command directly to Agent/Docker.
+- **Flow**: Browser (React) -> authenticated Core API -> scoped application operation -> Agent/host provider -> actual outcome observation -> Core response/audit -> view. Separate request DTO, domain command, storage record and view DTO. Never have the frontend submit a privileged shell command directly to Agent/Docker.
 - **Optional later boundaries**: Kubernetes scheduling stays in the separate gpu-compute-platform (Kueue as admission authority); controlled external remediation can integrate agent-control-plane. Neither may be silently introduced as a dependency of a single-host workflow.
 - In design, specify goal, actors, bounded context, owners, trust boundaries, allowed dependency direction, state machine, data flow and failure/recovery. Design completely; implement only the vertical slice supported by a real user case. Do not create abstraction before a second materially different usage exists.
 
@@ -32,12 +32,12 @@ This contract applies to this fork. Read it before implementation, review, migra
 
 ## 3. Actual repository gates (do not invent Bun commands)
 
-Verified manifests: `frontend/package-lock.json` + `frontend/package.json` (npm), and separate `core/go.mod` / `agent/go.mod` (Go 1.26.6 declared in both). There is **no established root Bun workspace or Bun precheck/db migration task** at this revision. Never report `bun run precheck`, `bun run build:web`, `bun run db:generate`, `bun run db:migrate` or `bun run run-data-migrations` as completed unless the actual project has gained those scripts and they were executed.
+Verified manifests: `frontend/pnpm-lock.yaml` + `frontend/package.json` (pnpm React workspace), and separate `core/go.mod` / `agent/go.mod` (Go 1.26.6 declared in both). There is **no established root Bun workspace or Bun precheck/db migration task** at this revision. Never report `bun run precheck`, `bun run build:web`, `bun run db:generate`, `bun run db:migrate` or `bun run run-data-migrations` as completed unless the actual project has gained those scripts and they were executed.
 
 For every change:
 - Check existing tests and affected API contract; run the smallest focused suite, then any relevant CI workflow.
 - Python tooling change: `python3 -m unittest discover -s scripts/tests -p 'test_gpupanel_*.py' -v` (or more specific focused pattern).
-- Frontend change: `cd frontend && npm ci && npm run type-check && npm run build:pro`. Run visual/keyboard/API-negative checks for UI behavior.
+- Frontend change: `cd frontend && pnpm install --frozen-lockfile && pnpm typecheck && pnpm build`. Run visual/keyboard/API-negative checks for UI behavior.
 - Core change: `cd core && go test ./<affected-package>`, followed by broader `go test ./...` as feasible; Agent change: same in `agent/`. Record dependency/environment failures rather than pretending a passing build.
 - Release packaging change: `python3 scripts/gpupanel-release.py build --version dev` then `python3 scripts/gpupanel-release.py verify dist/gpupanel-preview.tar.gz`; this remains **a non-installable preview** until VM gates pass.
 - Schema change: identify the **actual Go/GORM migration owner and storage type**, apply forward migration in a disposable database, test old/new data and rollback/recovery. If data must move/backfill, separately run and record bounded idempotent migration evidence. Do not imply a Bun migration utility exists.
@@ -53,3 +53,12 @@ A PR must include:
 - known limitations, linked issue/ADR for intentional debt, and exact criterion for later deletion.
 
 **Do not mark G3-G6, real AI chat, production multi-tenancy or installation as delivered on the strength of docs-only, mocks-only or source-build evidence.**
+
+## Local integration contract (2026-10-15)
+
+The owner explicitly requested retaining the local React 19/Semi Design frontend,
+`github.com/avaargsh/GPUPanel/{core,agent}` modules, `/api/v1` and GPUPanel runtime
+namespace while integrating remote main optimizations. Historical Vue/npm/API-v2
+references in archived evidence are not current commands or acceptance proof.
+See `docs/gpupanel/LOCAL_REMOTE_INTEGRATION.md`. No compatibility API alias or
+second frontend is required. Existing installed data migration remains unverified.

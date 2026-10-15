@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/1Panel-dev/1Panel/core/constant"
-	"github.com/1Panel-dev/1Panel/core/i18n"
-	"github.com/1Panel-dev/1Panel/core/utils/passkey"
+	"github.com/avaargsh/GPUPanel/core/constant"
+	"github.com/avaargsh/GPUPanel/core/i18n"
+	"github.com/avaargsh/GPUPanel/core/utils/passkey"
 	"github.com/spf13/cobra"
 )
 
@@ -42,7 +42,7 @@ var resetMFACmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		i18n.UseI18nForCmd(language)
 		if !isRoot() {
-			fmt.Println(i18n.GetMsgWithMapForCmd("SudoHelper", map[string]interface{}{"cmd": "sudo 1pctl reset mfa"}))
+			fmt.Println(i18n.GetMsgWithMapForCmd("SudoHelper", map[string]interface{}{"cmd": "sudo pctl reset mfa"}))
 			return nil
 		}
 		if isEnterprise() && len(strings.TrimSpace(resetMFAUserNameFlag)) == 0 {
@@ -81,7 +81,7 @@ var resetSSLCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		i18n.UseI18nForCmd(language)
 		if !isRoot() {
-			fmt.Println(i18n.GetMsgWithMapForCmd("SudoHelper", map[string]interface{}{"cmd": "sudo 1pctl reset https"}))
+			fmt.Println(i18n.GetMsgWithMapForCmd("SudoHelper", map[string]interface{}{"cmd": "sudo pctl reset https"}))
 			return nil
 		}
 		db, err := loadDBConn("core.db")
@@ -100,7 +100,7 @@ var resetEntranceCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		i18n.UseI18nForCmd(language)
 		if !isRoot() {
-			fmt.Println(i18n.GetMsgWithMapForCmd("SudoHelper", map[string]interface{}{"cmd": "sudo 1pctl reset entrance"}))
+			fmt.Println(i18n.GetMsgWithMapForCmd("SudoHelper", map[string]interface{}{"cmd": "sudo pctl reset entrance"}))
 			return nil
 		}
 		db, err := loadDBConn("core.db")
@@ -116,7 +116,7 @@ var resetBindIpsCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		i18n.UseI18nForCmd(language)
 		if !isRoot() {
-			fmt.Println(i18n.GetMsgWithMapForCmd("SudoHelper", map[string]interface{}{"cmd": "sudo 1pctl reset ips"}))
+			fmt.Println(i18n.GetMsgWithMapForCmd("SudoHelper", map[string]interface{}{"cmd": "sudo pctl reset ips"}))
 			return nil
 		}
 		db, err := loadDBConn("core.db")
@@ -135,7 +135,7 @@ var resetDomainCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		i18n.UseI18nForCmd(language)
 		if !isRoot() {
-			fmt.Println(i18n.GetMsgWithMapForCmd("SudoHelper", map[string]interface{}{"cmd": "sudo 1pctl reset domain"}))
+			fmt.Println(i18n.GetMsgWithMapForCmd("SudoHelper", map[string]interface{}{"cmd": "sudo pctl reset domain"}))
 			return nil
 		}
 		db, err := loadDBConn("core.db")
@@ -155,7 +155,7 @@ var resetPasskeyCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		i18n.UseI18nForCmd(language)
 		if !isRoot() {
-			fmt.Println(i18n.GetMsgWithMapForCmd("SudoHelper", map[string]interface{}{"cmd": "sudo 1pctl reset passkey"}))
+			fmt.Println(i18n.GetMsgWithMapForCmd("SudoHelper", map[string]interface{}{"cmd": "sudo pctl reset passkey"}))
 			return nil
 		}
 		db, err := loadDBConn("core.db")
@@ -171,7 +171,7 @@ var resetPasskeyCmd = &cobra.Command{
 
 func loadResetHelper() {
 	fmt.Println(i18n.GetMsgByKeyForCmd("ResetCommands"))
-	fmt.Println("\nUsage:\n  1panel reset [command]\n\nAvailable Commands:")
+	fmt.Println("\nUsage:\n  gpupanel reset [command]\n\nAvailable Commands:")
 	fmt.Println("\n  domain      " + i18n.GetMsgByKeyForCmd("ResetDomain"))
 	fmt.Println("  entrance    " + i18n.GetMsgByKeyForCmd("ResetEntrance"))
 	fmt.Println("  https       " + i18n.GetMsgByKeyForCmd("ResetHttps"))
@@ -179,5 +179,5 @@ func loadResetHelper() {
 	fmt.Println("  mfa         " + i18n.GetMsgByKeyForCmd("ResetMFA"))
 	fmt.Println("  passkey     " + i18n.GetMsgByKeyForCmd("ResetPasskey"))
 	fmt.Println("\nFlags:\n  -h, --help   help for reset")
-	fmt.Println("\nUse \"1panel reset [command] --help\" for more information about a command.")
+	fmt.Println("\nUse \"gpupanel reset [command] --help\" for more information about a command.")
 }

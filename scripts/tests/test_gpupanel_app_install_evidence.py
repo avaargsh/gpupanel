@@ -10,7 +10,7 @@ def source(name: str) -> str:
 class ReadOnlyInstallEvidenceContract(unittest.TestCase):
     def test_endpoint_uses_existing_app_router(self):
         route = source("agent/router/ro_app.go")
-        api = source("agent/app/api/v2/app_install.go")
+        api = source("agent/app/api/v1/app_install.go")
         self.assertIn('appRouter.GET("/installed/evidence/:appInstallId", localMasterAppEvidenceOnly, baseApi.GetAppInstallEvidence)', route)
         self.assertIn('if !global.IsMaster {', route)
         self.assertIn('c.AbortWithStatus(403)', route)

@@ -8,11 +8,11 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/1Panel-dev/1Panel/agent/app/model"
-	"github.com/1Panel-dev/1Panel/agent/constant"
-	"github.com/1Panel-dev/1Panel/agent/utils/firewall/filter"
-	filterfirewalld "github.com/1Panel-dev/1Panel/agent/utils/firewall/filter/providers/firewalld"
-	filterufw "github.com/1Panel-dev/1Panel/agent/utils/firewall/filter/providers/ufw"
+	"github.com/avaargsh/GPUPanel/agent/app/model"
+	"github.com/avaargsh/GPUPanel/agent/constant"
+	"github.com/avaargsh/GPUPanel/agent/utils/firewall/filter"
+	filterfirewalld "github.com/avaargsh/GPUPanel/agent/utils/firewall/filter/providers/firewalld"
+	filterufw "github.com/avaargsh/GPUPanel/agent/utils/firewall/filter/providers/ufw"
 	"gorm.io/gorm"
 )
 

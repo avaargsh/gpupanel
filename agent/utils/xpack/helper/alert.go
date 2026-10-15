@@ -3,11 +3,11 @@ package helper
 import (
 	"net/http"
 
-	"github.com/1Panel-dev/1Panel/agent/app/dto"
-	"github.com/1Panel-dev/1Panel/agent/app/model"
-	"github.com/1Panel-dev/1Panel/agent/constant"
-	alertUtil "github.com/1Panel-dev/1Panel/agent/utils/alert"
-	"github.com/1Panel-dev/1Panel/agent/utils/xpack/providers"
+	"github.com/avaargsh/GPUPanel/agent/app/dto"
+	"github.com/avaargsh/GPUPanel/agent/app/model"
+	"github.com/avaargsh/GPUPanel/agent/constant"
+	alertUtil "github.com/avaargsh/GPUPanel/agent/utils/alert"
+	"github.com/avaargsh/GPUPanel/agent/utils/xpack/providers"
 )
 
 type alertHelper struct{}

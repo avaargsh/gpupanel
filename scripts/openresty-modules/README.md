@@ -1,6 +1,6 @@
 # OpenResty Dynamic Module Diagnostics
 
-This script collects diagnostics from an installed 1Panel OpenResty instance.
+This script collects diagnostics from an installed GPUPanel OpenResty instance.
 
 ## Requirements
 
@@ -26,22 +26,22 @@ chmod +x scripts/openresty-modules/*.sh
 Find the OpenResty installation directory first. A common path is similar to:
 
 ```text
-/opt/1panel/apps/openresty/openresty
+/opt/gpupanel/apps/openresty/openresty
 ```
 
 Run the diagnostic collector:
 
 ```bash
 ./scripts/openresty-modules/diagnose-install.sh \
-  /opt/1panel/apps/openresty/openresty
+  /opt/gpupanel/apps/openresty/openresty
 ```
 
 Override container discovery when needed:
 
 ```bash
 ./scripts/openresty-modules/diagnose-install.sh \
-  /opt/1panel/apps/openresty/openresty \
-  --container 1Panel-openresty
+  /opt/gpupanel/apps/openresty/openresty \
+  --container GPUPanel-openresty
 ```
 
 The collector checks:
@@ -61,5 +61,5 @@ Module scripts are redacted from the copied state files by default. Container
 logs and error strings can still contain site names, URLs, or command output;
 review an archive before sharing it outside your team.
 
-Do not edit generated module state or managed config files while a 1Panel app
+Do not edit generated module state or managed config files while a GPUPanel app
 task is running. Review the diagnostic archive before sharing it.

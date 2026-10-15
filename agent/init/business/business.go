@@ -1,12 +1,12 @@
 package business
 
 import (
-	"github.com/1Panel-dev/1Panel/agent/app/dto"
-	"github.com/1Panel-dev/1Panel/agent/app/dto/request"
-	"github.com/1Panel-dev/1Panel/agent/app/service"
-	"github.com/1Panel-dev/1Panel/agent/constant"
-	"github.com/1Panel-dev/1Panel/agent/global"
-	"github.com/1Panel-dev/1Panel/agent/utils/common"
+	"github.com/avaargsh/GPUPanel/agent/app/dto"
+	"github.com/avaargsh/GPUPanel/agent/app/dto/request"
+	"github.com/avaargsh/GPUPanel/agent/app/service"
+	"github.com/avaargsh/GPUPanel/agent/constant"
+	"github.com/avaargsh/GPUPanel/agent/global"
+	"github.com/avaargsh/GPUPanel/agent/utils/common"
 )
 
 func Init() {
@@ -66,7 +66,7 @@ func initAcmeAccount() {
 	count, _, _ := acmeAccountService.Page(search)
 	if count == 0 {
 		createAcmeAccount := request.WebsiteAcmeAccountCreate{
-			Email:   "acme@1paneldev.com",
+			Email:   "acme@gpupaneldev.com",
 			Type:    "letsencrypt",
 			KeyType: "RSA2048",
 		}

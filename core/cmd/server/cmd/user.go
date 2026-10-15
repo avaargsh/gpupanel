@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/1Panel-dev/1Panel/core/i18n"
+	"github.com/avaargsh/GPUPanel/core/i18n"
 	"github.com/spf13/cobra"
 	"gorm.io/gorm"
 )
@@ -19,7 +19,7 @@ var userListCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		i18n.UseI18nForCmd(language)
 		if !isRoot() {
-			fmt.Println(i18n.GetMsgWithMapForCmd("SudoHelper", map[string]interface{}{"cmd": "sudo 1pctl user-list"}))
+			fmt.Println(i18n.GetMsgWithMapForCmd("SudoHelper", map[string]interface{}{"cmd": "sudo pctl user-list"}))
 			return nil
 		}
 		if isEnterprise() {

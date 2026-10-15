@@ -7,8 +7,8 @@ import (
 	"os/exec"
 	"strings"
 
-	"github.com/1Panel-dev/1Panel/agent/global"
-	"github.com/1Panel-dev/1Panel/agent/utils/controller/manager"
+	"github.com/avaargsh/GPUPanel/agent/global"
+	"github.com/avaargsh/GPUPanel/agent/utils/controller/manager"
 )
 
 type Controller interface {
@@ -125,19 +125,19 @@ func RestartPanel(core, agent, reload bool) {
 	}
 	if reload {
 		if err := client.Reload(); err != nil {
-			global.LOG.Errorf("restart 1panel service failed, err: %v", err)
+			global.LOG.Errorf("restart gpupanel service failed, err: %v", err)
 			return
 		}
 	}
 	if core {
-		if err := client.Operate("restart", "1panel-core"); err != nil {
-			global.LOG.Errorf("restart 1panel core service failed, err: %v", err)
+		if err := client.Operate("restart", "gpupanel-core"); err != nil {
+			global.LOG.Errorf("restart gpupanel core service failed, err: %v", err)
 			return
 		}
 	}
 	if agent {
-		if err := client.Operate("restart", "1panel-agent"); err != nil {
-			global.LOG.Errorf("restart 1panel agent service failed, err: %v", err)
+		if err := client.Operate("restart", "gpupanel-agent"); err != nil {
+			global.LOG.Errorf("restart gpupanel agent service failed, err: %v", err)
 			return
 		}
 	}
@@ -183,9 +183,9 @@ func loadFromPredefined(mgr Controller, keyword string) string {
 		"fail2ban":        {"fail2ban.service", "fail2ban"},
 		"supervisor":      {"supervisord.service", "supervisor.service", "supervisord", "supervisor"},
 		"ssh":             {"sshd.service", "ssh.service", "sshd", "ssh"},
-		"1panel-core":     {"1panel-core.service"},
-		"1panel-agent":    {"1panel-agent.service"},
-		"1panel-ai-proxy": {"1panel-ai-proxy.service"},
+		"gpupanel-core":     {"gpupanel-core.service"},
+		"gpupanel-agent":    {"gpupanel-agent.service"},
+		"gpupanel-ai-proxy": {"gpupanel-ai-proxy.service"},
 		"docker":          {"docker.service", "dockerd"},
 		"iptables":        {"iptables", "iptables-services"},
 	}

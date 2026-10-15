@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/1Panel-dev/1Panel/core/global"
+	"github.com/avaargsh/GPUPanel/core/global"
 	"github.com/gorilla/websocket"
 	"golang.org/x/crypto/ssh"
 )

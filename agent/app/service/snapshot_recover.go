@@ -9,28 +9,28 @@ import (
 	"strings"
 	"time"
 
-	"github.com/1Panel-dev/1Panel/agent/app/repo"
+	"github.com/avaargsh/GPUPanel/agent/app/repo"
 
-	"github.com/1Panel-dev/1Panel/agent/app/dto"
-	"github.com/1Panel-dev/1Panel/agent/app/model"
-	"github.com/1Panel-dev/1Panel/agent/app/task"
-	"github.com/1Panel-dev/1Panel/agent/constant"
-	"github.com/1Panel-dev/1Panel/agent/global"
-	"github.com/1Panel-dev/1Panel/agent/i18n"
-	"github.com/1Panel-dev/1Panel/agent/utils/cmd"
-	"github.com/1Panel-dev/1Panel/agent/utils/controller"
-	"github.com/1Panel-dev/1Panel/agent/utils/files"
+	"github.com/avaargsh/GPUPanel/agent/app/dto"
+	"github.com/avaargsh/GPUPanel/agent/app/model"
+	"github.com/avaargsh/GPUPanel/agent/app/task"
+	"github.com/avaargsh/GPUPanel/agent/constant"
+	"github.com/avaargsh/GPUPanel/agent/global"
+	"github.com/avaargsh/GPUPanel/agent/i18n"
+	"github.com/avaargsh/GPUPanel/agent/utils/cmd"
+	"github.com/avaargsh/GPUPanel/agent/utils/controller"
+	"github.com/avaargsh/GPUPanel/agent/utils/files"
 	"github.com/pkg/errors"
 )
 
 var (
 	svcBasePath, _     = controller.GetServicePath("")
-	svcCoreName, _     = controller.LoadServiceName("1panel-core")
-	selCoreName, _     = controller.SelectInitScript("1panel-core")
-	scriptCoreName, _  = controller.GetScriptName("1panel-core")
-	svcAgentName, _    = controller.LoadServiceName("1panel-agent")
-	selAgentName, _    = controller.SelectInitScript("1panel-agent")
-	scriptAgentName, _ = controller.GetScriptName("1panel-agent")
+	svcCoreName, _     = controller.LoadServiceName("gpupanel-core")
+	selCoreName, _     = controller.SelectInitScript("gpupanel-core")
+	scriptCoreName, _  = controller.GetScriptName("gpupanel-core")
+	svcAgentName, _    = controller.LoadServiceName("gpupanel-agent")
+	selAgentName, _    = controller.SelectInitScript("gpupanel-agent")
+	scriptAgentName, _ = controller.GetScriptName("gpupanel-agent")
 )
 
 type snapRecoverHelper struct {
@@ -163,7 +163,7 @@ func (u *SnapshotService) SnapshotRecover(req dto.SnapshotRecover) error {
 				func(t *task.Task) error {
 					itemHelper.Task.Log("---------------------- 8 / 11 ----------------------")
 					itemHelper.Task.LogStart(i18n.GetWithName("RecoverBackups", snap.Name))
-					err := itemHelper.FileOp.TarGzExtractPro(path.Join(rootDir, snap.Name, "/1panel_backup.tar.gz"), snapJson.BackupDataDir, "")
+					err := itemHelper.FileOp.TarGzExtractPro(path.Join(rootDir, snap.Name, "/gpupanel_backup.tar.gz"), snapJson.BackupDataDir, "")
 					itemHelper.Task.LogWithStatus(i18n.GetMsgByKey("Decompress"), err)
 					return err
 				},
@@ -196,7 +196,7 @@ func (u *SnapshotService) SnapshotRecover(req dto.SnapshotRecover) error {
 				func(t *task.Task) error {
 					itemHelper.Task.Log("---------------------- 10 / 11 ----------------------")
 					itemHelper.Task.LogStart(i18n.GetWithName("RecoverPanelData", snap.Name))
-					err := itemHelper.FileOp.TarGzExtractPro(path.Join(rootDir, snap.Name, "/1panel_data.tar.gz"), path.Join(snapJson.BaseDir, "1panel"), "")
+					err := itemHelper.FileOp.TarGzExtractPro(path.Join(rootDir, snap.Name, "/gpupanel_data.tar.gz"), path.Join(snapJson.BaseDir, "gpupanel"), "")
 					itemHelper.Task.LogWithStatus(i18n.GetMsgByKey("Decompress"), err)
 					if err != nil {
 						return err
@@ -219,7 +219,7 @@ func (u *SnapshotService) SnapshotRecover(req dto.SnapshotRecover) error {
 			taskItem.AddSubTaskWithAliasAndOps(
 				"RecoverCompose",
 				func(t *task.Task) error {
-					return restartCompose(path.Join(snapJson.BaseDir, "1panel/docker/compose"), &itemHelper)
+					return restartCompose(path.Join(snapJson.BaseDir, "gpupanel/docker/compose"), &itemHelper)
 				},
 				nil, 0, 90*time.Minute,
 			)
@@ -284,7 +284,7 @@ func backupBeforeRecover(name string, itemHelper *snapRecoverHelper) error {
 	itemHelper.Task.Log("---------------------- 3 / 11 ----------------------")
 	itemHelper.Task.LogStart(i18n.GetMsgByKey("BackupBeforeRecover"))
 
-	rootDir := fmt.Sprintf("%s/1panel_original/original_%s", global.Dir.BaseDir, name)
+	rootDir := fmt.Sprintf("%s/gpupanel_original/original_%s", global.Dir.BaseDir, name)
 	baseDir := path.Join(rootDir, "base")
 	if _, err := os.Stat(baseDir); err != nil {
 		_ = os.MkdirAll(baseDir, os.ModePerm)
@@ -323,29 +323,29 @@ func backupBeforeRecover(name string, itemHelper *snapRecoverHelper) error {
 	}
 
 	if global.IsMaster {
-		err = itemHelper.FileOp.CopyFile("/usr/local/bin/1pctl", baseDir)
-		itemHelper.Task.LogWithStatus(i18n.GetWithName("SnapCopy", "/usr/local/bin/1pctl"), err)
+		err = itemHelper.FileOp.CopyFile("/usr/local/bin/pctl", baseDir)
+		itemHelper.Task.LogWithStatus(i18n.GetWithName("SnapCopy", "/usr/local/bin/pctl"), err)
 		if err != nil {
 			return err
 		}
-		err = itemHelper.FileOp.CopyFile("/usr/local/bin/1panel-core", baseDir)
-		itemHelper.Task.LogWithStatus(i18n.GetWithName("SnapCopy", "/usr/local/bin/1panel-core"), err)
+		err = itemHelper.FileOp.CopyFile("/usr/local/bin/gpupanel-core", baseDir)
+		itemHelper.Task.LogWithStatus(i18n.GetWithName("SnapCopy", "/usr/local/bin/gpupanel-core"), err)
 		if err != nil {
 			return err
 		}
-		svcCorePath, _ := controller.GetServicePath("1panel-core")
+		svcCorePath, _ := controller.GetServicePath("gpupanel-core")
 		err = itemHelper.FileOp.CopyFile(svcCorePath, baseDir)
 		itemHelper.Task.LogWithStatus(i18n.GetWithName("SnapCopy", svcCorePath), err)
 		if err != nil {
 			return err
 		}
 	}
-	err = itemHelper.FileOp.CopyFile("/usr/local/bin/1panel-agent", baseDir)
-	itemHelper.Task.LogWithStatus(i18n.GetWithName("SnapCopy", "/usr/local/bin/1panel-agent"), err)
+	err = itemHelper.FileOp.CopyFile("/usr/local/bin/gpupanel-agent", baseDir)
+	itemHelper.Task.LogWithStatus(i18n.GetWithName("SnapCopy", "/usr/local/bin/gpupanel-agent"), err)
 	if err != nil {
 		return err
 	}
-	svcAgentPath, _ := controller.GetServicePath("1panel-agent")
+	svcAgentPath, _ := controller.GetServicePath("gpupanel-agent")
 	err = itemHelper.FileOp.CopyFile(svcAgentPath, baseDir)
 	itemHelper.Task.LogWithStatus(i18n.GetWithName("SnapCopy", svcAgentPath), err)
 	if err != nil {
@@ -413,17 +413,17 @@ func recoverBaseData(src string, itemHelper *snapRecoverHelper) error {
 	itemHelper.Task.Log("---------------------- 6 / 11 ----------------------")
 	itemHelper.Task.LogStart(i18n.GetMsgByKey("SnapBaseInfo"))
 	if global.IsMaster {
-		err := itemHelper.FileOp.CopyFile(path.Join(src, "1pctl"), "/usr/local/bin")
-		itemHelper.Task.LogWithStatus(i18n.GetWithName("SnapCopy", "/usr/local/bin/1pctl"), err)
+		err := itemHelper.FileOp.CopyFile(path.Join(src, "pctl"), "/usr/local/bin")
+		itemHelper.Task.LogWithStatus(i18n.GetWithName("SnapCopy", "/usr/local/bin/pctl"), err)
 		if err != nil {
 			return err
 		}
-		err = itemHelper.FileOp.CopyFile(path.Join(src, "1panel-core"), "/usr/local/bin")
-		itemHelper.Task.LogWithStatus(i18n.GetWithName("SnapCopy", "/usr/local/bin/1panel-core"), err)
+		err = itemHelper.FileOp.CopyFile(path.Join(src, "gpupanel-core"), "/usr/local/bin")
+		itemHelper.Task.LogWithStatus(i18n.GetWithName("SnapCopy", "/usr/local/bin/gpupanel-core"), err)
 		if err != nil {
 			return err
 		}
-		svcCoreName, _ := controller.LoadServiceName("1panel-core")
+		svcCoreName, _ := controller.LoadServiceName("gpupanel-core")
 		err = itemHelper.FileOp.CopyFile(path.Join(src, svcCoreName), svcBasePath)
 		itemHelper.Task.LogWithStatus(i18n.GetWithName("SnapCopy", path.Join(svcBasePath, svcCoreName)), err)
 		if err != nil {
@@ -434,12 +434,12 @@ func recoverBaseData(src string, itemHelper *snapRecoverHelper) error {
 			}
 		}
 	}
-	err := itemHelper.FileOp.CopyFile(path.Join(src, "1panel-agent"), "/usr/local/bin")
-	itemHelper.Task.LogWithStatus(i18n.GetWithName("SnapCopy", "/usr/local/bin/1panel-agent"), err)
+	err := itemHelper.FileOp.CopyFile(path.Join(src, "gpupanel-agent"), "/usr/local/bin")
+	itemHelper.Task.LogWithStatus(i18n.GetWithName("SnapCopy", "/usr/local/bin/gpupanel-agent"), err)
 	if err != nil {
 		return err
 	}
-	svcAgentName, _ := controller.LoadServiceName("1panel-agent")
+	svcAgentName, _ := controller.LoadServiceName("gpupanel-agent")
 	err = itemHelper.FileOp.CopyFile(path.Join(src, svcAgentName), svcBasePath)
 	itemHelper.Task.LogWithStatus(i18n.GetWithName("SnapCopy", path.Join(svcBasePath, svcAgentName)), err)
 	if err != nil {

@@ -6,7 +6,7 @@ import (
 	"strings"
 )
 
-const defaultFile = "/usr/local/bin/1pctl"
+const defaultFile = "/usr/local/bin/pctl"
 
 func Load(key string) string {
 	info, err := LoadFromFile(defaultFile, key)

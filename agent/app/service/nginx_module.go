@@ -15,17 +15,17 @@ import (
 	"strings"
 	"time"
 
-	"github.com/1Panel-dev/1Panel/agent/app/dto"
-	"github.com/1Panel-dev/1Panel/agent/app/model"
-	"github.com/1Panel-dev/1Panel/agent/app/task"
-	"github.com/1Panel-dev/1Panel/agent/buserr"
-	"github.com/1Panel-dev/1Panel/agent/constant"
-	"github.com/1Panel-dev/1Panel/agent/global"
-	"github.com/1Panel-dev/1Panel/agent/utils/cmd"
-	"github.com/1Panel-dev/1Panel/agent/utils/compose"
-	dockerUtils "github.com/1Panel-dev/1Panel/agent/utils/docker"
-	"github.com/1Panel-dev/1Panel/agent/utils/files"
-	"github.com/1Panel-dev/1Panel/agent/utils/re"
+	"github.com/avaargsh/GPUPanel/agent/app/dto"
+	"github.com/avaargsh/GPUPanel/agent/app/model"
+	"github.com/avaargsh/GPUPanel/agent/app/task"
+	"github.com/avaargsh/GPUPanel/agent/buserr"
+	"github.com/avaargsh/GPUPanel/agent/constant"
+	"github.com/avaargsh/GPUPanel/agent/global"
+	"github.com/avaargsh/GPUPanel/agent/utils/cmd"
+	"github.com/avaargsh/GPUPanel/agent/utils/compose"
+	dockerUtils "github.com/avaargsh/GPUPanel/agent/utils/docker"
+	"github.com/avaargsh/GPUPanel/agent/utils/files"
+	"github.com/avaargsh/GPUPanel/agent/utils/re"
 	"github.com/mattn/go-shellwords"
 	"github.com/subosito/gotenv"
 )
@@ -63,8 +63,8 @@ const (
 	nginxModuleStaticPreScript    = "pre.sh"
 	nginxModuleManifestFile       = "manifest.json"
 
-	nginxModuleContainerRoot = "/usr/local/openresty/nginx/modules/1panel"
-	nginxModuleConfigPrefix  = "1panel-module-"
+	nginxModuleContainerRoot = "/usr/local/openresty/nginx/modules/gpupanel"
+	nginxModuleConfigPrefix  = "gpupanel-module-"
 
 	nginxModuleStaticBuildHint = "; switch the module to static build mode to compile it with the full image"
 )
@@ -367,8 +367,8 @@ func (localNginxModuleProvider) Resolve(spec nginxModuleBuildSpec) (dto.NginxMod
 	if len(taskSuffix) > 8 {
 		taskSuffix = taskSuffix[:8]
 	}
-	tempImage := fmt.Sprintf("1panel/openresty-module-builder:%s-%s-%s", modulePathName, shortHash, taskSuffix)
-	tempContainer := fmt.Sprintf("1panel-module-%s-%s-%s", modulePathName, shortHash, taskSuffix)
+	tempImage := fmt.Sprintf("gpupanel/openresty-module-builder:%s-%s-%s", modulePathName, shortHash, taskSuffix)
+	tempContainer := fmt.Sprintf("gpupanel-module-%s-%s-%s", modulePathName, shortHash, taskSuffix)
 	commandMgr := cmd.NewCommandMgr(cmd.WithTask(*spec.Task), cmd.WithTimeout(120*time.Minute))
 	buildArgs := []string{
 		"build", "--target", "module-output",
@@ -544,9 +544,9 @@ func validateNginxModuleLoadConfig(install model.AppInstall, target dto.NginxMod
 	args := []string{
 		"run", "--rm", "--network", "none",
 		"-v", modulesRoot + ":" + nginxModuleContainerRoot + ":ro",
-		"-v", testConfig + ":/tmp/1panel-module-test.conf:ro",
+		"-v", testConfig + ":/tmp/gpupanel-module-test.conf:ro",
 		"--entrypoint", "/usr/local/openresty/nginx/sbin/nginx",
-		target.Image, "-t", "-c", "/tmp/1panel-module-test.conf",
+		target.Image, "-t", "-c", "/tmp/gpupanel-module-test.conf",
 	}
 	return cmd.NewCommandMgr(cmd.WithTimeout(5*time.Minute)).Run("docker", args...)
 }
@@ -570,7 +570,7 @@ var openrestyUpgradeSnapshotPaths = []string{
 }
 
 func createOpenrestyUpgradeSnapshot(installPath string) (*openrestyUpgradeSnapshot, error) {
-	backupPath, err := os.MkdirTemp("", "1panel-openresty-upgrade-*")
+	backupPath, err := os.MkdirTemp("", "gpupanel-openresty-upgrade-*")
 	if err != nil {
 		return nil, err
 	}

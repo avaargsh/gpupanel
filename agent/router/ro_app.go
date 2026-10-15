@@ -1,8 +1,8 @@
 package router
 
 import (
-	v2 "github.com/1Panel-dev/1Panel/agent/app/api/v2"
-	"github.com/1Panel-dev/1Panel/agent/global"
+	v1 "github.com/avaargsh/GPUPanel/agent/app/api/v1"
+	"github.com/avaargsh/GPUPanel/agent/global"
 	"github.com/gin-gonic/gin"
 )
 
@@ -24,7 +24,7 @@ func localMasterAppEvidenceOnly(c *gin.Context) {
 func (a *AppRouter) InitRouter(Router *gin.RouterGroup) {
 	appRouter := Router.Group("apps")
 
-	baseApi := v2.ApiGroupApp.BaseApi
+	baseApi := v1.ApiGroupApp.BaseApi
 	{
 		appRouter.POST("/sync/remote", baseApi.SyncApp)
 		appRouter.POST("/sync/local", baseApi.SyncLocalApp)

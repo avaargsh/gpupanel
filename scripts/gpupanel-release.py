@@ -2,7 +2,7 @@
 """GPUPanel source release: build/pack/verify without installing host services.
 
 The output is a development artifact, NOT an installable or supported release.
-Keeps inherited 1Panel runtime paths and API/module contracts unchanged.
+Preserves the reviewed local GPUPanel runtime namespace and React frontend.
 """
 from __future__ import annotations
 
@@ -28,7 +28,7 @@ MAX_TEXT_BYTES = 8 * 1024 ** 2
 MAX_MANIFEST_BYTES = 64 * 1024
 MAX_MEMBER_TOTAL_BYTES = 600 * 1024 ** 2
 MAX_RAW_TAR_BYTES = MAX_MEMBER_TOTAL_BYTES + 4 * 1024 ** 2
-REQUIRED = ("bin/1panel-core", "bin/1panel-agent", "LICENSE", "NOTICE.md")
+REQUIRED = ("bin/gpupanel-core", "bin/gpupanel-agent", "LICENSE", "NOTICE.md")
 WEB_REQUIRED = ("index.html", "assets")
 
 
@@ -65,7 +65,7 @@ def validate_web(root: Path) -> dict[str, str]:
     html = web / "index.html"
     assets = web / "assets"
     if not html.is_file() or not assets.is_dir():
-        raise ReleaseError("frontend assets missing: run npm ci and npm run build:pro before Go build")
+        raise ReleaseError("frontend assets missing: run pnpm install and pnpm build before Go build")
     if html.stat().st_size < 100:
         raise ReleaseError("frontend index.html is unexpectedly small")
     if not any(p.is_file() for p in assets.rglob("*")):
@@ -88,13 +88,21 @@ def build(root: Path, staging: Path, offline: bool) -> dict:
     env = dict(os.environ)
     if offline:
         env["GOPROXY"] = "off"
-    command = ["npm", "ci", "--offline"] if offline else ["npm", "ci"]
+    command = ["pnpm", "install", "--frozen-lockfile", "--offline"] if offline else ["pnpm", "install", "--frozen-lockfile"]
     checked_run(command, root / "frontend", env=env)
-    checked_run(["npm", "run", "build:pro"], root / "frontend", env=env)
-    checked_run(["npm", "run", "type-check"], root / "frontend", env=env)
+    checked_run(["pnpm", "build"], root / "frontend", env=env)
+    checked_run(["pnpm", "typecheck"], root / "frontend", env=env)
+    dist = root / "frontend/apps/panel/dist"
+    web = root / "core/cmd/server/web"
+    if not (dist / "index.html").is_file() or not (dist / "assets").is_dir():
+        raise ReleaseError("fresh React build output missing")
+    if (web / "assets").exists():
+        shutil.rmtree(web / "assets")
+    shutil.copytree(dist / "assets", web / "assets")
+    shutil.copyfile(dist / "index.html", web / "index.html")
     web_meta = validate_web(root)
     (staging / "bin").mkdir(parents=True, exist_ok=True)
-    for module, executable in (("core", "1panel-core"), ("agent", "1panel-agent")):
+    for module, executable in (("core", "gpupanel-core"), ("agent", "gpupanel-agent")):
         args = ["go", "build", "-trimpath", "-o", str((staging / "bin" / executable).resolve()), "./cmd/server"]
         go_env = {**env, "CGO_ENABLED": "0", "GOOS": "linux", "GOARCH": "amd64"}
         checked_run(args, root / module, env=go_env)
@@ -110,7 +118,7 @@ def build(root: Path, staging: Path, offline: bool) -> dict:
 def member_limit(name: str) -> int:
     if name == "gpupanel/manifest.json":
         return MAX_MANIFEST_BYTES
-    if name in ("gpupanel/bin/1panel-core", "gpupanel/bin/1panel-agent"):
+    if name in ("gpupanel/bin/gpupanel-core", "gpupanel/bin/gpupanel-agent"):
         return MAX_BINARY_BYTES
     if name in ("gpupanel/LICENSE", "gpupanel/NOTICE.md"):
         return MAX_TEXT_BYTES

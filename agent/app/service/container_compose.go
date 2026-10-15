@@ -13,18 +13,18 @@ import (
 	"strings"
 	"time"
 
-	"github.com/1Panel-dev/1Panel/agent/app/dto"
-	"github.com/1Panel-dev/1Panel/agent/app/model"
-	"github.com/1Panel-dev/1Panel/agent/app/repo"
-	"github.com/1Panel-dev/1Panel/agent/app/task"
-	"github.com/1Panel-dev/1Panel/agent/buserr"
-	"github.com/1Panel-dev/1Panel/agent/constant"
-	"github.com/1Panel-dev/1Panel/agent/global"
-	"github.com/1Panel-dev/1Panel/agent/i18n"
-	"github.com/1Panel-dev/1Panel/agent/utils/cmd"
-	"github.com/1Panel-dev/1Panel/agent/utils/compose"
-	"github.com/1Panel-dev/1Panel/agent/utils/docker"
-	"github.com/1Panel-dev/1Panel/agent/utils/re"
+	"github.com/avaargsh/GPUPanel/agent/app/dto"
+	"github.com/avaargsh/GPUPanel/agent/app/model"
+	"github.com/avaargsh/GPUPanel/agent/app/repo"
+	"github.com/avaargsh/GPUPanel/agent/app/task"
+	"github.com/avaargsh/GPUPanel/agent/buserr"
+	"github.com/avaargsh/GPUPanel/agent/constant"
+	"github.com/avaargsh/GPUPanel/agent/global"
+	"github.com/avaargsh/GPUPanel/agent/i18n"
+	"github.com/avaargsh/GPUPanel/agent/utils/cmd"
+	"github.com/avaargsh/GPUPanel/agent/utils/compose"
+	"github.com/avaargsh/GPUPanel/agent/utils/docker"
+	"github.com/avaargsh/GPUPanel/agent/utils/re"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/filters"
 	"gopkg.in/yaml.v3"
@@ -318,7 +318,7 @@ func resolveComposeCreateProjectName(req dto.ComposeCreate) (string, error) {
 	if req.From == "path" {
 		envPath, err := createComposeTempFile(
 			filepath.Dir(primaryComposePath(req.Path)),
-			".1panel-compose-*.env",
+			".gpupanel-compose-*.env",
 			req.Env,
 		)
 		if err != nil {
@@ -335,13 +335,13 @@ func resolveComposeCreateProjectName(req dto.ComposeCreate) (string, error) {
 	}
 	defer cleanupDir()
 
-	composePath, err := createComposeTempFile(dir, ".1panel-compose-*.yml", req.File)
+	composePath, err := createComposeTempFile(dir, ".gpupanel-compose-*.yml", req.File)
 	if err != nil {
 		return "", err
 	}
 	defer os.Remove(composePath)
 
-	envPath, err := createComposeTempFile(dir, ".1panel-compose-*.env", req.Env)
+	envPath, err := createComposeTempFile(dir, ".gpupanel-compose-*.env", req.Env)
 	if err != nil {
 		return "", err
 	}

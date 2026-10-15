@@ -1,8 +1,8 @@
 package response
 
 import (
-	"github.com/1Panel-dev/1Panel/agent/app/dto/request"
-	"github.com/1Panel-dev/1Panel/agent/app/model"
+	"github.com/avaargsh/GPUPanel/agent/app/dto/request"
+	"github.com/avaargsh/GPUPanel/agent/app/model"
 )
 
 type TensorRTLLMsRes struct {

@@ -3,8 +3,8 @@ package files
 import (
 	"context"
 
-	"github.com/1Panel-dev/1Panel/agent/buserr"
-	"github.com/1Panel-dev/1Panel/agent/utils/cmd"
+	"github.com/avaargsh/GPUPanel/agent/buserr"
+	"github.com/avaargsh/GPUPanel/agent/utils/cmd"
 )
 
 type ShellArchiver interface {

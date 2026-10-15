@@ -7,16 +7,16 @@ import (
 	"path"
 	"strings"
 
-	"github.com/1Panel-dev/1Panel/agent/app/repo"
-	"github.com/1Panel-dev/1Panel/agent/app/task"
-	"github.com/1Panel-dev/1Panel/agent/buserr"
+	"github.com/avaargsh/GPUPanel/agent/app/repo"
+	"github.com/avaargsh/GPUPanel/agent/app/task"
+	"github.com/avaargsh/GPUPanel/agent/buserr"
 
-	"github.com/1Panel-dev/1Panel/agent/app/dto"
-	"github.com/1Panel-dev/1Panel/agent/app/model"
-	"github.com/1Panel-dev/1Panel/agent/constant"
-	"github.com/1Panel-dev/1Panel/agent/global"
-	"github.com/1Panel-dev/1Panel/agent/utils/docker"
-	fileUtils "github.com/1Panel-dev/1Panel/agent/utils/files"
+	"github.com/avaargsh/GPUPanel/agent/app/dto"
+	"github.com/avaargsh/GPUPanel/agent/app/model"
+	"github.com/avaargsh/GPUPanel/agent/constant"
+	"github.com/avaargsh/GPUPanel/agent/global"
+	"github.com/avaargsh/GPUPanel/agent/utils/docker"
+	fileUtils "github.com/avaargsh/GPUPanel/agent/utils/files"
 	"github.com/docker/docker/api/types/image"
 	"github.com/google/uuid"
 	"github.com/jinzhu/copier"
@@ -77,7 +77,7 @@ func (u *SnapshotService) SnapshotImport(req dto.SnapshotImport) error {
 	}
 	for _, snap := range req.Names {
 		shortName := strings.ReplaceAll(snap, "snapshot-", "")
-		shortName = strings.ReplaceAll(shortName, "1panel-", "")
+		shortName = strings.ReplaceAll(shortName, "gpupanel-", "")
 		shortName = strings.ReplaceAll(shortName, "core-", "")
 		shortName = strings.ReplaceAll(shortName, "agent-", "")
 		nameItems := strings.Split(shortName, "-linux")
@@ -439,7 +439,7 @@ func loadFile(pathItem string, index int, fileOp fileUtils.FileOp) ([]dto.DataTr
 }
 
 func checkSnapshotIsOk(name string) bool {
-	names := []string{"1panel-core-v2.", "1panel-agent-v2.", "1panel-v2.", "snapshot-1panel-core-v2.", "snapshot-1panel-agent-v2."}
+	names := []string{"gpupanel-core-v2.", "gpupanel-agent-v2.", "gpupanel-v2.", "snapshot-gpupanel-core-v2.", "snapshot-gpupanel-agent-v2."}
 	for _, item := range names {
 		if strings.HasPrefix(name, item) {
 			return true

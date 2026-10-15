@@ -7,8 +7,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/1Panel-dev/1Panel/agent/app/model"
-	"github.com/1Panel-dev/1Panel/agent/constant"
+	"github.com/avaargsh/GPUPanel/agent/app/model"
+	"github.com/avaargsh/GPUPanel/agent/constant"
 	"github.com/docker/docker/api/types/container"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
@@ -48,12 +48,16 @@ func appRunningObserver(project string) appDockerObserver {
 func TestAppInstallEvidenceConsistentIsStillUnverified(t *testing.T) {
 	appDB, taskDB, install := appEvidenceFixture(t, constant.StatusRunning, constant.StatusSuccess)
 	result, err := inspectAppInstallEvidence(appDB, taskDB, install.ID, appRunningObserver(install.Name))
-	if err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
 	if result.Classification != appEvidenceConsistent || result.Verified || len(result.Containers) != 1 {
 		t.Fatalf("unexpected evidence classification: %+v", result)
 	}
 	raw, err := json.Marshal(result)
-	if err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
 	if strings.Contains(string(raw), "do-not-return") || strings.Contains(string(raw), "secret") ||
 		strings.Contains(string(raw), "PRIVATE_KEY") || strings.Contains(string(raw), "composePath") {
 		t.Fatalf("sensitive data leaked: %s", raw)
@@ -68,12 +72,16 @@ func TestAppInstallEvidencePartialAndNoAutoReconciliation(t *testing.T) {
 	result, err := inspectAppInstallEvidence(appDB, taskDB, install.ID, func([]string) ([]appContainerObservation, error) {
 		return nil, nil
 	})
-	if err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
 	if result.Classification != appEvidencePartial || result.Reasons[0] != "EXPECTED_CONTAINER_MISSING" {
 		t.Fatalf("missing Docker resource classified incorrectly: %+v", result)
 	}
 	var original model.AppInstall
-	if err := appDB.First(&original, install.ID).Error; err != nil { t.Fatal(err) }
+	if err := appDB.First(&original, install.ID).Error; err != nil {
+		t.Fatal(err)
+	}
 	if original.Status != constant.StatusRunning || original.Env != install.Env {
 		t.Fatal("read-only snapshot unexpectedly mutated AppInstall DB")
 	}
@@ -82,7 +90,9 @@ func TestAppInstallEvidencePartialAndNoAutoReconciliation(t *testing.T) {
 func TestAppInstallEvidenceUnknownDoesNotBecomeSuccess(t *testing.T) {
 	appDB, taskDB, install := appEvidenceFixture(t, constant.StatusUnknown, constant.StatusUnknown)
 	result, err := inspectAppInstallEvidence(appDB, taskDB, install.ID, appRunningObserver(install.Name))
-	if err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
 	if result.Classification != appEvidenceUnknown || result.Verified {
 		t.Fatalf("UNKNOWN was silently resolved: %+v", result)
 	}
@@ -91,7 +101,9 @@ func TestAppInstallEvidenceUnknownDoesNotBecomeSuccess(t *testing.T) {
 func TestAppInstallEvidenceConflictForWrongComposeOwnership(t *testing.T) {
 	appDB, taskDB, install := appEvidenceFixture(t, constant.StatusRunning, constant.StatusSuccess)
 	result, err := inspectAppInstallEvidence(appDB, taskDB, install.ID, appRunningObserver("different-app"))
-	if err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
 	if result.Classification != appEvidenceConflict || len(result.Reasons) != 1 ||
 		result.Reasons[0] != "CONTAINER_OWNERSHIP_CONFLICT" {
 		t.Fatalf("wrong project owner incorrectly accepted: %+v", result)
@@ -104,9 +116,13 @@ func TestAppInstallEvidenceConflictForCompetingAppRecord(t *testing.T) {
 		Name: "other-app", AppId: 2, AppDetailId: 2, Version: "1",
 		Status: constant.StatusStopped, ContainerName: "evidence-container", ServiceName: "other",
 	}
-	if err := appDB.Omit(clause.Associations).Create(&other).Error; err != nil { t.Fatal(err) }
+	if err := appDB.Omit(clause.Associations).Create(&other).Error; err != nil {
+		t.Fatal(err)
+	}
 	result, err := inspectAppInstallEvidence(appDB, taskDB, install.ID, appRunningObserver(install.Name))
-	if err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
 	if result.Classification != appEvidenceConflict {
 		t.Fatalf("competing app claim incorrectly accepted: %+v", result)
 	}
@@ -115,23 +131,35 @@ func TestAppInstallEvidenceConflictForCompetingAppRecord(t *testing.T) {
 func TestAppInstallEvidenceUnknownWhenTaskOrDockerUnavailable(t *testing.T) {
 	appDB, taskDB, install := appEvidenceFixture(t, constant.StatusRunning, "")
 	result, err := inspectAppInstallEvidence(appDB, taskDB, install.ID, appRunningObserver(install.Name))
-	if err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
 	if result.Classification != appEvidenceUnknown {
 		t.Fatalf("missing task accepted as verified installation: %+v", result)
 	}
 	result, err = inspectAppInstallEvidence(appDB, taskDB, install.ID, func([]string) ([]appContainerObservation, error) {
 		return nil, errors.New("connection string and secret should never be returned")
 	})
-	if err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
 	if result.Classification != appEvidenceUnknown || strings.Contains(strings.Join(result.Reasons, ","), "secret") {
 		t.Fatalf("Docker error was exposed or falsely classified: %+v", result)
 	}
 	result, err = inspectAppInstallEvidence(appDB, nil, install.ID, appRunningObserver(install.Name))
-	if err != nil { t.Fatal(err) }
-	if result.Classification != appEvidenceUnknown { t.Fatalf("TaskDB absence misclassified: %+v", result) }
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Classification != appEvidenceUnknown {
+		t.Fatalf("TaskDB absence misclassified: %+v", result)
+	}
 	result, err = inspectAppInstallEvidence(nil, taskDB, install.ID, appRunningObserver(install.Name))
-	if err != nil { t.Fatal(err) }
-	if result.Classification != appEvidenceUnknown { t.Fatalf("AppDB absence misclassified: %+v", result) }
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Classification != appEvidenceUnknown {
+		t.Fatalf("AppDB absence misclassified: %+v", result)
+	}
 }
 
 func TestAppInstallEvidenceBoundedOwnershipScan(t *testing.T) {
@@ -141,11 +169,11 @@ func TestAppInstallEvidenceBoundedOwnershipScan(t *testing.T) {
 	others := make([]model.AppInstall, 0, 1023)
 	for i := 0; i < 1023; i++ {
 		others = append(others, model.AppInstall{
-			Name: fmt.Sprintf("independent-app-%04d", i),
+			Name:  fmt.Sprintf("independent-app-%04d", i),
 			AppId: 2, AppDetailId: 2, Version: "1",
-			Status: constant.StatusStopped,
+			Status:        constant.StatusStopped,
 			ContainerName: fmt.Sprintf("unrelated-container-%04d", i),
-			ServiceName: "unrelated",
+			ServiceName:   "unrelated",
 		})
 	}
 	if err := appDB.Omit(clause.Associations).CreateInBatches(&others, 64).Error; err != nil {
@@ -156,7 +184,9 @@ func TestAppInstallEvidenceBoundedOwnershipScan(t *testing.T) {
 		observerCalled = true
 		return nil, nil
 	})
-	if err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
 	if observerCalled || result.Classification != appEvidenceUnknown || result.Verified ||
 		len(result.Reasons) != 1 || result.Reasons[0] != "OWNERSHIP_SCAN_LIMIT" {
 		t.Fatalf("saturated owner lookup did not fail closed: %+v (called=%v)", result, observerCalled)
@@ -193,7 +223,9 @@ func TestAppInstallEvidenceMultipleAliasesNeverCreateExtraContainers(t *testing.
 	out, err := inspectAppInstallEvidence(appDB, taskDB, install.ID, func([]string) ([]appContainerObservation, error) {
 		return got, nil
 	})
-	if err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
 	if out.Verified || out.Classification != appEvidencePartial || len(out.Containers) != 2 ||
 		out.Containers[1].State != "missing" {
 		t.Fatalf("aliases incorrectly proved two containers: %+v", out)

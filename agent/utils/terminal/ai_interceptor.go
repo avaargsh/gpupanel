@@ -9,9 +9,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/1Panel-dev/1Panel/agent/global"
-	"github.com/1Panel-dev/1Panel/agent/i18n"
-	terminalai "github.com/1Panel-dev/1Panel/agent/utils/terminal/ai"
+	"github.com/avaargsh/GPUPanel/agent/global"
+	"github.com/avaargsh/GPUPanel/agent/i18n"
+	terminalai "github.com/avaargsh/GPUPanel/agent/utils/terminal/ai"
 )
 
 const lineClearControl = 21

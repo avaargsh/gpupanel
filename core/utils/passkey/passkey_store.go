@@ -5,8 +5,8 @@ import (
 	"encoding/base64"
 	"time"
 
-	"github.com/1Panel-dev/1Panel/core/utils/common"
-	"github.com/1Panel-dev/1Panel/core/utils/ttlstore"
+	"github.com/avaargsh/GPUPanel/core/utils/common"
+	"github.com/avaargsh/GPUPanel/core/utils/ttlstore"
 	"github.com/go-webauthn/webauthn/webauthn"
 )
 

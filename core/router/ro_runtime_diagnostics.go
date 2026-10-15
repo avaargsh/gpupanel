@@ -1,8 +1,8 @@
 package router
 
 import (
-	v2 "github.com/1Panel-dev/1Panel/core/app/api/v2"
-	"github.com/1Panel-dev/1Panel/core/middleware"
+	v1 "github.com/avaargsh/GPUPanel/core/app/api/v1"
+	"github.com/avaargsh/GPUPanel/core/middleware"
 	"github.com/gin-gonic/gin"
 )
 
@@ -12,7 +12,7 @@ func (s *RuntimeDiagnosticsRouter) InitRouter(Router *gin.RouterGroup) {
 	diagnosticsRouter := Router.Group("hosts/diagnostics").
 		Use(middleware.SessionAuth()).
 		Use(middleware.PasswordExpired())
-	baseApi := v2.ApiGroupApp.BaseApi
+	baseApi := v1.ApiGroupApp.BaseApi
 	{
 		diagnosticsRouter.GET("/summary", baseApi.LoadRuntimeDiagnosticsSummary)
 		diagnosticsRouter.GET("/goroutines", baseApi.LoadRuntimeGoroutines)

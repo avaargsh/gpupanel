@@ -13,11 +13,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/1Panel-dev/1Panel/agent/app/dto"
-	"github.com/1Panel-dev/1Panel/agent/app/model"
-	"github.com/1Panel-dev/1Panel/agent/constant"
-	"github.com/1Panel-dev/1Panel/agent/global"
-	"github.com/1Panel-dev/1Panel/agent/utils/common"
+	"github.com/avaargsh/GPUPanel/agent/app/dto"
+	"github.com/avaargsh/GPUPanel/agent/app/model"
+	"github.com/avaargsh/GPUPanel/agent/constant"
+	"github.com/avaargsh/GPUPanel/agent/global"
+	"github.com/avaargsh/GPUPanel/agent/utils/common"
 )
 
 func GetUpgradeVersionInfo() (*dto.UpgradeInfo, error) {
@@ -51,7 +51,7 @@ func GetUpgradeVersionInfo() (*dto.UpgradeInfo, error) {
 	if strings.Contains(itemVersion, "beta") {
 		mode = "beta"
 	}
-	notes, err := loadReleaseNotes(fmt.Sprintf("%s/%s/%s/release/1panel-%s-release-notes", global.RepoURL(), mode, itemVersion, itemVersion))
+	notes, err := loadReleaseNotes(fmt.Sprintf("%s/%s/%s/release/gpupanel-%s-release-notes", global.RepoURL(), mode, itemVersion, itemVersion))
 	if err != nil {
 		return nil, fmt.Errorf("load releases-notes of version %s failed, err: %v", itemVersion, err)
 	}

@@ -11,22 +11,22 @@ import (
 	"sync"
 	"time"
 
-	"github.com/1Panel-dev/1Panel/agent/app/repo"
-	"github.com/1Panel-dev/1Panel/agent/buserr"
+	"github.com/avaargsh/GPUPanel/agent/app/repo"
+	"github.com/avaargsh/GPUPanel/agent/buserr"
 	"github.com/docker/docker/api/types/image"
 
-	"github.com/1Panel-dev/1Panel/agent/app/dto"
-	"github.com/1Panel-dev/1Panel/agent/app/model"
-	"github.com/1Panel-dev/1Panel/agent/app/task"
-	"github.com/1Panel-dev/1Panel/agent/constant"
-	"github.com/1Panel-dev/1Panel/agent/global"
-	"github.com/1Panel-dev/1Panel/agent/i18n"
-	"github.com/1Panel-dev/1Panel/agent/utils/cmd"
-	"github.com/1Panel-dev/1Panel/agent/utils/common"
-	"github.com/1Panel-dev/1Panel/agent/utils/controller"
-	"github.com/1Panel-dev/1Panel/agent/utils/copier"
-	"github.com/1Panel-dev/1Panel/agent/utils/docker"
-	"github.com/1Panel-dev/1Panel/agent/utils/files"
+	"github.com/avaargsh/GPUPanel/agent/app/dto"
+	"github.com/avaargsh/GPUPanel/agent/app/model"
+	"github.com/avaargsh/GPUPanel/agent/app/task"
+	"github.com/avaargsh/GPUPanel/agent/constant"
+	"github.com/avaargsh/GPUPanel/agent/global"
+	"github.com/avaargsh/GPUPanel/agent/i18n"
+	"github.com/avaargsh/GPUPanel/agent/utils/cmd"
+	"github.com/avaargsh/GPUPanel/agent/utils/common"
+	"github.com/avaargsh/GPUPanel/agent/utils/controller"
+	"github.com/avaargsh/GPUPanel/agent/utils/copier"
+	"github.com/avaargsh/GPUPanel/agent/utils/docker"
+	"github.com/avaargsh/GPUPanel/agent/utils/files"
 	"gorm.io/gorm"
 )
 
@@ -38,7 +38,7 @@ func (u *SnapshotService) SnapshotCreate(parentTask *task.Task, req dto.Snapshot
 		scope = "agent"
 	}
 	if jobID == 0 {
-		req.Name = fmt.Sprintf("1panel-%s-%s-linux-%s-%s", scope, versionItem.Value, loadOs(), time.Now().Format(constant.DateTimeSlimLayout))
+		req.Name = fmt.Sprintf("gpupanel-%s-%s-linux-%s-%s", scope, versionItem.Value, loadOs(), time.Now().Format(constant.DateTimeSlimLayout))
 	}
 	appItem, _ := json.Marshal(req.AppData)
 	panelItem, _ := json.Marshal(req.PanelData)
@@ -319,33 +319,33 @@ func snapBaseData(snap snapHelper, targetDir string, withDockerConf bool) error 
 	snap.Task.LogStart(i18n.GetMsgByKey("SnapBaseInfo"))
 
 	if global.IsMaster {
-		err := snap.FileOp.CopyFile("/usr/local/bin/1panel-core", targetDir)
-		snap.Task.LogWithStatus(i18n.GetWithName("SnapCopy", "/usr/local/bin/1panel-core"), err)
+		err := snap.FileOp.CopyFile("/usr/local/bin/gpupanel-core", targetDir)
+		snap.Task.LogWithStatus(i18n.GetWithName("SnapCopy", "/usr/local/bin/gpupanel-core"), err)
 		if err != nil {
 			return err
 		}
-		err = snap.FileOp.CopyFile("/usr/local/bin/1pctl", targetDir)
-		snap.Task.LogWithStatus(i18n.GetWithName("SnapCopy", "/usr/local/bin/1pctl"), err)
+		err = snap.FileOp.CopyFile("/usr/local/bin/pctl", targetDir)
+		snap.Task.LogWithStatus(i18n.GetWithName("SnapCopy", "/usr/local/bin/pctl"), err)
 		if err != nil {
 			return err
 		}
 	}
 
-	err := snap.FileOp.CopyFile("/usr/local/bin/1panel-agent", targetDir)
-	snap.Task.LogWithStatus(i18n.GetWithName("SnapCopy", "/usr/local/bin/1panel-agent"), err)
+	err := snap.FileOp.CopyFile("/usr/local/bin/gpupanel-agent", targetDir)
+	snap.Task.LogWithStatus(i18n.GetWithName("SnapCopy", "/usr/local/bin/gpupanel-agent"), err)
 	if err != nil {
 		return err
 	}
 
 	if global.IsMaster {
-		svcCorePath, _ := controller.GetServicePath("1panel-core")
+		svcCorePath, _ := controller.GetServicePath("gpupanel-core")
 		err = snap.FileOp.CopyFile(svcCorePath, targetDir)
 		snap.Task.LogWithStatus(i18n.GetWithName("SnapCopy", svcCorePath), err)
 		if err != nil {
 			return err
 		}
 	}
-	svcAgentName, _ := controller.GetServicePath("1panel-agent")
+	svcAgentName, _ := controller.GetServicePath("gpupanel-agent")
 	err = snap.FileOp.CopyFile(svcAgentName, targetDir)
 	snap.Task.LogWithStatus(i18n.GetWithName("SnapCopy", svcAgentName), err)
 	if err != nil {
@@ -464,7 +464,7 @@ func snapBackupData(snap snapHelper, req dto.SnapshotCreate, targetDir string) e
 			}
 		}
 	}
-	err := snap.FileOp.TarGzCompressPro(false, global.Dir.LocalBackupDir, path.Join(targetDir, "1panel_backup.tar.gz"), "", strings.Join(excludes, ","))
+	err := snap.FileOp.TarGzCompressPro(false, global.Dir.LocalBackupDir, path.Join(targetDir, "gpupanel_backup.tar.gz"), "", strings.Join(excludes, ","))
 	snap.Task.LogWithStatus(i18n.GetMsgByKey("SnapCompressBackup"), err)
 
 	return err
@@ -534,7 +534,7 @@ func snapPanelData(snap snapHelper, req dto.SnapshotCreate, targetDir string) er
 		excludes = append(excludes, itemDir)
 	}
 	excludes = append(excludes, req.IgnoreFiles...)
-	err := snap.FileOp.TarGzCompressPro(false, rootDir, path.Join(targetDir, "1panel_data.tar.gz"), "", strings.Join(excludes, ","))
+	err := snap.FileOp.TarGzCompressPro(false, rootDir, path.Join(targetDir, "gpupanel_data.tar.gz"), "", strings.Join(excludes, ","))
 	snap.Task.LogWithStatus(i18n.GetMsgByKey("SnapCompressPanel"), err)
 	if err != nil {
 		return err
@@ -554,7 +554,7 @@ func loadPanelExcludes(req []dto.DataTree) []string {
 	for _, item := range req {
 		if len(item.Children) == 0 {
 			if !item.IsCheck {
-				itemDir, _ := filepath.Rel(path.Join(global.Dir.BaseDir, "1panel"), item.Path)
+				itemDir, _ := filepath.Rel(path.Join(global.Dir.BaseDir, "gpupanel"), item.Path)
 				excludes = append(excludes, itemDir)
 			}
 		} else {
