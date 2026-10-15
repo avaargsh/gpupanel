@@ -145,7 +145,7 @@ def create(target: Path, home: Path, approved: bool, *, uv_path: str | None = No
     with tempfile.TemporaryDirectory(dir=dst.parent, prefix=".gpupanel-uv-stage-") as temporary:
         staged = Path(temporary) / "env"
         command = [current["uv"], "venv", "--no-project", "--no-config",
-                   "--offline", "--no-python-downloads", "--no-managed-python",
+                   "--offline", "--no-python-downloads", "--no-managed-python", "--relocatable",
                    "--python", current["interpreter"], str(staged)]
         try:
             run = runner(command, capture_output=True, text=True, check=False,
