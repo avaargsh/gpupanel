@@ -67,3 +67,7 @@
 .workbench-empty > a { margin-top: 12px; }
 .workbench .workbench-readiness-actions a { color: var(--semi-color-text-1); }
 .workbench .workbench-readiness-actions a:hover { color: var(--semi-color-primary); }
+
+/* Avoid covering contextual readiness links with the persistent assistant launcher. */
+.workbench-readiness-actions { padding-right: 64px; }
+@media (max-width: 640px) { .workbench-readiness-actions { padding-right: 52px; } }
