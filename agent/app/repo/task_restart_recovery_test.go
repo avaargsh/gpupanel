@@ -5,7 +5,6 @@ import (
     "testing"
 
     "github.com/1Panel-dev/1Panel/agent/app/model"
-    "github.com/1Panel-dev/1Panel/agent/app/task"
     "github.com/1Panel-dev/1Panel/agent/constant"
     "github.com/glebarez/sqlite"
     "gorm.io/gorm"
@@ -19,14 +18,14 @@ func TestInterruptedAppInstallTaskRemainsUnknownAfterRestart(t *testing.T) {
     if err := db.AutoMigrate(&model.Task{}); err != nil { t.Fatal(err) }
 
     cases := []model.Task{
-        {ID:"pre-side-effect", Name:"jupyter", Type:task.TaskScopeApp, Operate:task.TaskInstall, Status:constant.StatusExecuting, ResourceID:0},
-        {ID:"after-insert", Name:"maxkb", Type:task.TaskScopeApp, Operate:task.TaskInstall, Status:constant.StatusExecuting, ResourceID:29},
-        {ID:"unrelated", Name:"other-task", Type:task.TaskScopeContainer, Operate:task.TaskUpdate, Status:constant.StatusExecuting},
-        {ID:"already-done", Name:"done", Type:task.TaskScopeApp, Operate:task.TaskInstall, Status:constant.StatusSuccess},
+        {ID:"pre-side-effect", Name:"jupyter", Type:"App", Operate:"TaskInstall", Status:constant.StatusExecuting, ResourceID:0},
+        {ID:"after-insert", Name:"maxkb", Type:"App", Operate:"TaskInstall", Status:constant.StatusExecuting, ResourceID:29},
+        {ID:"unrelated", Name:"other-task", Type:"Container", Operate:"TaskUpdate", Status:constant.StatusExecuting},
+        {ID:"already-done", Name:"done", Type:"App", Operate:"TaskInstall", Status:constant.StatusSuccess},
     }
     // Use a known Task operation for the unrelated record; no operation
     // semantics are executed by this task DB test.
-    cases[2].Operate = task.TaskUpdate
+    cases[2].Operate = "TaskUpdate"
     for i := range cases {
         if err := db.Create(&cases[i]).Error; err != nil { t.Fatal(err) }
     }
