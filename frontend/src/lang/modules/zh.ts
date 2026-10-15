@@ -42,8 +42,8 @@ const message = {
         dockerRestricted: '当前账户没有容器查看权限',
         checkAgain: '重新检查',
         firstRunNotice: '引导卡只展示已验证的入口；不会自动安装 Docker 或执行高风险操作。',
-        quickStart: '当前主机 · 常用操作',
-        quickStartDescription: '先管理 Ubuntu Host、容器和终端；Kubernetes 与 AI 工作区作为后续可选集成。',
+        quickStart: '个人 GPU 开发工作站 · 常用操作',
+        quickStartDescription: '快速进入现有 GPU 监控、Docker、文件、终端和模型服务。软件目录按当前可用状态展示；AI 助手入口位于右下角。',
         openModule: '打开',
     },
     apiKeyManagement: {
