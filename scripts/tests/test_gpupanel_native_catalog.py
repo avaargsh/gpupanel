@@ -24,9 +24,10 @@ class CatalogPortalTest(unittest.TestCase):
     def test_definition_count_matches_single_source(self):
         doc = json.loads((ROOT / "catalog/index.json").read_text())
         self.assertGreater(len(doc["definitions"]), 0)
-        self.assertEqual(doc["revisions"], [])
+        self.assertEqual(len(doc["revisions"]), 1)
         for item in doc["definitions"]:
-            self.assertEqual(item["status"], "planned")
+            self.assertIn(item["status"], ("planned", "experimental"))
+        self.assertEqual(doc["revisions"][0]["definitionId"], "gpupanel.dev.python-stdlib")
     def test_locales_announce_non_installable_state(self):
         for language in ("zh","en"):
             s=(ROOT / f"frontend/src/lang/modules/{language}.ts").read_text()
