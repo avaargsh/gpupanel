@@ -3,15 +3,31 @@ name: GPUPanel owner-authorized merged branch prune
 on:
   issue_comment:
     types: [created]
+  pull_request:
+    paths:
+      - '.github/workflows/gpupanel-prune-owner-command.yml'
 
 permissions:
-  contents: write
-  issues: read
-  pull-requests: read
+  contents: read
 
 jobs:
+  verify:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check pruning negative controls
+        run: python3 -m unittest discover -s scripts/tests -p 'test_gpupanel_prune_merged_branches.py' -v
+
   prune:
+    permissions:
+      contents: write
+      issues: read
+      pull-requests: read
     if: >-
+      github.event_name == 'issue_comment' &&
       github.repository == 'avaargsh/gpupanel' &&
       github.event.issue.number == 73 &&
       !github.event.issue.pull_request &&
