@@ -24,6 +24,25 @@ This creates a genuine virtual environment using the already installed **uv**, n
 
 It uses `uv venv --no-project --no-config --offline --no-python-downloads --no-managed-python --relocatable --python <current-interpreter>` on a private staging path, verifies the new Python process, then atomically renames into the chosen location with no-replace behavior. This is intentionally **not an automatic Python installer**, so Python and uv must already be present. The installed environment contains **no PyTorch, CUDA Toolkit, or Jupyter** unless the user adds them later using a separately reviewed dependency lock and uv workflow.
 
+## A runnable offline uv Python project
+
+After creating or inspecting your standalone uv environment, you can now create a **real, independently runnable project** from uv's own generator:
+
+```bash
+python3 scripts/gpupanel-uv-project.py plan
+python3 scripts/gpupanel-uv-project.py create --approve
+python3 scripts/gpupanel-uv-project.py status
+
+cd ~/GPUPanel/projects/uv-python-starter
+uv run --locked --offline python main.py
+```
+
+The script uses `uv init --app` and `uv lock --offline` with the already installed Python, then checks the exact generated `pyproject.toml`, `uv.lock`, `main.py` and `README.md` before publishing atomically into a **new** directory. This is a project, not a second Python package manager. The starter contains **no third-party dependencies** yet; after the user edits or installs packages, `status` reports `MODIFIED` (not corruption), and GPUPanel never overwrites or uninstalls those files.
+
+Defaults to `~/GPUPanel/projects/uv-python-starter`. To select another destination use `--target` after the command. `--json` selects machine output; otherwise users see the next action immediately.
+
+The source contract does not include a trusted locked **PyTorch/Jupyter** dependency profile, pre-populated wheel cache or local mirror. `uv run --offline` may fail for projects that subsequently add dependencies unless they are already available from a trusted local cache. That absence must not be concealed as success. A future template step should add curated version-specific locks and verified offline artifacts without creating another installer.
+
 ## CLI output for people and tools
 
 All primary diagnostics are now readable without a special flag. For scripts, choose `--json` explicitly:
