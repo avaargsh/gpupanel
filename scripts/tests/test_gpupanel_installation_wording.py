@@ -26,7 +26,7 @@ class InstallationCopySafety(unittest.TestCase):
         self.assertIn("BLOCKED", readme)
         preview = (ROOT / "docs/gpupanel/PREVIEW_STAGING.md").read_text(encoding="utf-8")
         self.assertIn("not a system installation", preview.lower())
-        self.assertIn("publisher signature", preview.lower())
+        self.assertIn("does not authenticate the publisher", preview.lower())
 
 
 if __name__ == "__main__":
