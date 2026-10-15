@@ -36,6 +36,11 @@ class LocalAppPortalTest(unittest.TestCase):
         self.assertIn("installRef.value?.acceptParams({ app: response.data })", src)
         self.assertIn("syncLocalApp({ taskID })", src)
 
+    def test_install_deep_link_does_not_bypass_route_authorization(self):
+        source = (ROOT / "frontend/src/routers/index.ts").read_text()
+        self.assertIn("if (!hasRouteAccess(to))", source)
+        self.assertNotIn("to.path === '/apps/all' && to.query.install", source)
+
     def test_installed_management_and_cli_scaffold_are_retained(self):
         index = (ROOT / "frontend/src/views/app-store/index.vue").read_text()
         self.assertIn("'/apps/installed'", index)
