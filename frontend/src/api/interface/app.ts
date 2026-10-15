@@ -175,6 +175,20 @@ export namespace App {
         version?: string;
     }
 
+    // Read-only local-admin Agent snapshot. CONSISTENT is not installation proof.
+    export interface AppInstallEvidence {
+        installId: number;
+        name?: string;
+        appStatus?: string;
+        taskId?: string;
+        taskStatus?: string;
+        classification: 'CONSISTENT' | 'PARTIAL' | 'CONFLICT' | 'UNKNOWN';
+        reasons: string[];
+        containers: Array<{ name: string; state: string }>;
+        observedAt: string;
+        verified: false;
+    }
+
     export interface AppInstalledInfo {
         id: number;
         name: string;
