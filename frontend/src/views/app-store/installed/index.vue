@@ -4,7 +4,7 @@
             <Tags @change="changeTag" hideKey="Runtime" />
         </template>
         <template #leftToolBar>
-            <el-button @click="sync" type="primary" plain v-if="mode === 'installed' && !sortMode && data != null">
+            <el-button @click="sync" type="primary" plain v-if="mode === 'installed' && !sortMode && data != null && !loadError">
                 {{ $t('commons.button.refresh') }}
             </el-button>
             <el-button
@@ -12,7 +12,7 @@
                 v-permission
                 type="primary"
                 plain
-                v-if="mode === 'installed' && !sortMode && data != null"
+                v-if="mode === 'installed' && !sortMode && data != null && !loadError"
             >
                 {{ $t('app.sortMode') }}
             </el-button>
@@ -31,6 +31,10 @@
         </template>
         <template #main>
             <div>
+                <el-alert v-if="loadError" type="error" :closable="false" class="mb-3">
+                    <template #title>{{ $t('gpupanel.installedLoadFailed') }}</template>
+                    <el-button type="primary" plain @click="search">{{ $t('gpupanel.catalogRetry') }}</el-button>
+                </el-alert>
                 <MainDiv :heightDiff="mode === 'upgrade' ? 280 : 300">
                     <el-alert
                         class="app-install-alert"
@@ -52,13 +56,13 @@
                             </span>
                         </template>
                     </el-alert>
-                    <div class="update-prompt" v-if="data === null">
+                    <div class="update-prompt" v-if="!loading && !loadError && data !== null && data.length === 0">
                         <span>{{ mode === 'upgrade' ? $t('app.updatePrompt') : $t('app.installPrompt') }}</span>
                         <div>
                             <img src="@/assets/images/no_update_app.svg" />
                         </div>
                     </div>
-                    <el-row :gutter="5" ref="sortContainer">
+                    <el-row v-if="!loading && !loadError && data !== null" :gutter="5" ref="sortContainer">
                         <el-col
                             v-for="(installed, index) in data"
                             :key="installed.id"
@@ -157,7 +161,7 @@ import IgnoreApp from '@/views/app-store/installed/ignore/create/index.vue';
 import TerminalDialog from '@/views/container/container/terminal/index.vue';
 
 import { searchAppInstalled, installedOp, appInstalledDeleteCheck, updateAppInstallSort } from '@/api/modules/app';
-import { toRef, onMounted, onUnmounted, reactive, ref, nextTick } from 'vue';
+import { toRef, onMounted, onUnmounted, reactive, ref, nextTick, watch } from 'vue';
 import Sortable from 'sortablejs';
 import i18n from '@/lang';
 import { ElMessageBox } from 'element-plus';
@@ -169,17 +173,21 @@ import { getAgentSettingInfo } from '@/api/modules/setting';
 import { routerToFileWithPath, routerToNameWithQuery } from '@/utils/router';
 import { useGlobalStore } from '@/composables/useGlobalStore';
 import { useOperateNodeContext } from '@/composables/useOperateNodeContext';
+import { InstalledListRevision, parseInstalledAppPage } from './installed-page';
 
 const { currentNode, isMaster, currentNodeAddr, isIntl } = useGlobalStore();
 useOperateNodeContext(currentNode);
 
-const data = ref<any>();
+const data = ref<App.AppInstalled[] | null>(null);
 const loading = ref(false);
+const loadError = ref(false);
+const listRevision = new InstalledListRevision();
 const syncLoading = ref(false);
 const sortMode = ref(false);
 const sortContainer = ref();
 let sortableInstance: Sortable | null = null;
-let timer: NodeJS.Timer | null = null;
+let timer: ReturnType<typeof setInterval> | null = null;
+let startupTimer: ReturnType<typeof setTimeout> | null = null;
 const paginationConfig = reactive({
     cacheSizeKey: 'app-installed-page-size',
     currentPage: 1,
@@ -234,32 +242,39 @@ const changeTag = (key: string) => {
     search();
 };
 
-const search = async () => {
-    searchReq.page = paginationConfig.currentPage;
-    searchReq.pageSize = paginationConfig.pageSize;
-
-    localStorage.setItem('app-installed-page-size', String(searchReq.pageSize));
-
-    const res = await searchAppInstalled(searchReq);
-    data.value = res.data.items;
-    paginationConfig.total = res.data.total;
-};
-
-const sync = async () => {
-    loading.value = true;
-    const searchItem = {
-        page: paginationConfig.currentPage,
-        pageSize: paginationConfig.pageSize,
-        name: searchReq.name,
-        tags: searchReq.tags,
-        update: false,
-        sync: true,
+const readList = async (requestSync = false, sortAll = false): Promise<boolean> => {
+    if (sortMode.value && !sortAll) return false;
+    const ticket = listRevision.next(currentNode.value);
+    const req: App.AppInstallSearch = {
+        page: sortAll ? 1 : paginationConfig.currentPage,
+        pageSize: sortAll ? 10000 : paginationConfig.pageSize,
+        name: sortAll ? '' : searchReq.name.trim(),
+        tags: sortAll ? [] : [...searchReq.tags],
+        update: sortAll ? false : searchReq.update,
+        sync: requestSync,
     };
-    const res = await searchAppInstalled(searchItem);
-    loading.value = false;
-    data.value = res.data.items;
-    paginationConfig.total = res.data.total;
+    if (!sortAll) localStorage.setItem('app-installed-page-size', String(req.pageSize));
+    loading.value = true;
+    loadError.value = false;
+    try {
+        const response = await searchAppInstalled(req, ticket.node || undefined);
+        if (!listRevision.active(ticket, currentNode.value)) return false;
+        const page = parseInstalledAppPage(response.data);
+        data.value = page.items;
+        if (!sortAll) paginationConfig.total = page.total;
+        return true;
+    } catch {
+        if (!listRevision.active(ticket, currentNode.value)) return false;
+        data.value = [];
+        paginationConfig.total = 0;
+        loadError.value = true;
+        return false;
+    } finally {
+        if (listRevision.active(ticket, currentNode.value)) loading.value = false;
+    }
 };
+const search = async () => { await readList(); };
+const sync = async () => { await readList(true); };
 
 const openOperate = (row: any, op: string) => {
     operateReq.installId = row.id;
@@ -297,8 +312,7 @@ const operate = async () => {
     await installedOp(operateReq)
         .then(() => {
             MsgSuccess(i18n.global.t('commons.msg.operationSuccess'));
-            searchReq.sync = true;
-            search();
+            void sync();
             setTimeout(() => {
                 search();
             }, 3000);
@@ -470,12 +484,20 @@ const openTerminal = (row: any) => {
 };
 
 const enterSortMode = async () => {
+    if (sortMode.value) return;
     sortMode.value = true;
-    clearInterval(Number(timer));
+    if (timer !== null) clearInterval(timer);
     timer = null;
-    const res = await searchAppInstalled({ page: 1, pageSize: 10000, name: '', tags: [], update: false, sync: false });
-    data.value = res.data.items;
+    const loaded = await readList(false, true);
+    if (!loaded || !sortMode.value) {
+        if (sortMode.value) {
+            sortMode.value = false;
+            startPolling();
+        }
+        return;
+    }
     await nextTick();
+    if (!sortMode.value) return;
     const el = sortContainer.value?.$el;
     if (el) {
         const favCount = data.value.filter((i: any) => i.favorite).length;
@@ -516,16 +538,21 @@ const saveSortOrder = async () => {
     exitSortMode();
 };
 
+const startPolling = () => {
+    if (timer !== null) clearInterval(timer);
+    timer = setInterval(() => { void search(); }, 1000 * 30);
+};
 const exitSortMode = () => {
     if (sortableInstance) {
         sortableInstance.destroy();
         sortableInstance = null;
     }
+    listRevision.invalidate();
     sortMode.value = false;
-    search();
-    timer = setInterval(() => {
-        search();
-    }, 1000 * 30);
+    loading.value = false;
+    data.value = null;
+    void search();
+    startPolling();
 };
 
 const getConfig = async () => {
@@ -542,28 +569,47 @@ const getConfig = async () => {
 };
 
 onMounted(() => {
-    getConfig();
+    void getConfig();
     const path = router.currentRoute.value.path;
-    if (path == '/apps/upgrade') {
+    if (path === '/apps/upgrade') {
         activeName.value = i18n.global.t('app.canUpgrade');
         mode.value = 'upgrade';
         searchReq.update = true;
     }
-    loading.value = true;
-    search();
+    void search();
+    // A single explicit sync on initial entry, not every background poll.
+    startupTimer = setTimeout(() => { void sync(); }, 1000);
+    startPolling();
+});
+
+watch(currentNode, () => {
+    listRevision.invalidate();
+    if (sortableInstance) {
+        sortableInstance.destroy();
+        sortableInstance = null;
+    }
+    if (sortMode.value) {
+        sortMode.value = false;
+        startPolling();
+    }
     loading.value = false;
-    setTimeout(() => {
-        searchReq.sync = true;
-        search();
-    }, 1000);
-    timer = setInterval(() => {
-        search();
-    }, 1000 * 30);
+    loadError.value = false;
+    data.value = null;
+    paginationConfig.total = 0;
+    paginationConfig.currentPage = 1;
+    defaultLink.value = '';
+    void getConfig();
+    void search();
 });
 
 onUnmounted(() => {
-    clearInterval(Number(timer));
+    listRevision.invalidate();
+    if (timer !== null) clearInterval(timer);
+    if (startupTimer !== null) clearTimeout(startupTimer);
+    sortableInstance?.destroy();
+    sortableInstance = null;
     timer = null;
+    startupTimer = null;
 });
 </script>
 
