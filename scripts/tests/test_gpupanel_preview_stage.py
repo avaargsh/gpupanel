@@ -58,6 +58,23 @@ class PreviewStagingContract(unittest.TestCase):
             self.assertEqual(stage.inspect("fixture-1", self.home)["status"], "ABSENT")
             self.assertTrue(target.parent.is_dir())
 
+    def test_changed_executable_bit_is_drift_and_blocks_removal(self):
+        with patch.object(stage.os, "geteuid", return_value=1000):
+            stage.stage(self.archive, self.home, True)
+            target = stage.target_for("fixture-1", self.home)
+            executable = target / "bin/1panel-agent"
+            executable.chmod(0o700)
+            self.assertEqual(stage.inspect("fixture-1", self.home)["status"], "DRIFT")
+            with self.assertRaises(stage.PreviewError):
+                stage.remove("fixture-1", self.home, True)
+            executable.chmod(0o600)
+            receipt = target / stage.RECEIPT
+            receipt.chmod(0o644)
+            self.assertEqual(stage.inspect("fixture-1", self.home)["status"], "DRIFT")
+            receipt.chmod(0o600)
+            self.assertEqual(stage.inspect("fixture-1", self.home)["status"], "STAGED")
+            self.assertEqual(stage.remove("fixture-1", self.home, True)["status"], "ABSENT")
+
     def test_mutated_archive_between_preflight_and_copy_is_refused(self):
         actual_plan = stage.preview_plan
 

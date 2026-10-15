@@ -74,6 +74,8 @@ def inspect(version: str, home: Path) -> dict:
     if receipt_file.is_symlink() or not receipt_file.is_file():
         return {**base, "status": "UNMANAGED", "reason": "missing owned receipt"}
     try:
+        if receipt_file.stat().st_mode & 0o777 != 0o600:
+            return {**base, "status": "DRIFT", "reason": "receipt permission changed"}
         record = json.loads(receipt_file.read_text(encoding="utf-8"))
         expected = record["files"]
         if (record.get("formatVersion") != 1 or record.get("version") != version
@@ -88,7 +90,11 @@ def inspect(version: str, home: Path) -> dict:
             return {**base, "status": "DRIFT", "reason": "unexpected or missing files"}
         for name in MEMBERS:
             path = target / name
-            if path.is_symlink() or not path.is_file() or digest(path.read_bytes()) != expected[name]:
+            if path.is_symlink() or not path.is_file():
+                return {**base, "status": "DRIFT", "reason": "file changed: " + name}
+            if path.stat().st_mode & 0o777 != 0o600:
+                return {**base, "status": "DRIFT", "reason": "unsafe file permission: " + name}
+            if digest(path.read_bytes()) != expected[name]:
                 return {**base, "status": "DRIFT", "reason": "file changed: " + name}
         manifest = json.loads((target / "manifest.json").read_bytes())
         if (manifest.get("product") != "GPUPanel"
@@ -157,7 +163,9 @@ def stage(archive: Path, home: Path, approved: bool) -> dict:
             record = {"formatVersion": 1, "version": plan["version"],
                       "archiveSha256": plan["archiveSha256"], "serviceInstalled": False,
                       "files": {name: digest(data) for name, data in contents.items()}}
-            (pending / RECEIPT).write_text(json.dumps(record, sort_keys=True, indent=2) + "\n", encoding="utf-8")
+            receipt_path = pending / RECEIPT
+            receipt_path.write_text(json.dumps(record, sort_keys=True, indent=2) + "\n", encoding="utf-8")
+            receipt_path.chmod(0o600)
             workspace.rename_exclusive(pending, dst)
     except (workspace.WorkspaceError, OSError, tarfile.TarError) as exc:
         raise PreviewError("preview staging failed without overwriting existing installation: " + str(exc)) from exc
