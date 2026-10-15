@@ -33,7 +33,11 @@
                             {{ target }}
                         </el-tag>
                     </div>
-                    <el-button disabled class="gpupanel-catalog__install">
+                    <el-button v-if="item.id === 'gpupanel.dev.python-stdlib'"
+                        type="primary" plain class="gpupanel-catalog__install" @click="showStarterGuide = true">
+                        {{ $t('gpupanel.catalogCliGuide') }}
+                    </el-button>
+                    <el-button v-else disabled class="gpupanel-catalog__install">
                         {{ $t('gpupanel.catalogUnavailable') }}
                     </el-button>
                 </el-card>
@@ -41,6 +45,13 @@
             <el-empty v-else :description="$t('gpupanel.catalogNoMatch')" />
         </template>
     </LayoutContent>
+    <el-dialog v-model="showStarterGuide" :title="$t('gpupanel.catalogCliTitle')" width="90%" destroy-on-close>
+        <p>{{ $t('gpupanel.catalogCliWarning') }}</p>
+        <pre class="gpupanel-catalog__commands"><code>{{ pythonStarterCommands }}</code></pre>
+        <el-button type="primary" plain @click="copyStarterCommands">{{ $t('gpupanel.catalogCopy') }}</el-button>
+        <p v-if="clipboardStatus === 'copied'" role="status">{{ $t('gpupanel.catalogCopied') }}</p>
+        <p v-else-if="clipboardStatus === 'manual'" role="status">{{ $t('gpupanel.catalogCopyManual') }}</p>
+    </el-dialog>
 </template>
 
 <script lang="ts" setup>
@@ -54,6 +65,29 @@ import catalogIndex from '../../../../../catalog/index.json';
 const router = useRouter();
 const route = useRoute();
 const keyword = ref('');
+const showStarterGuide = ref(false);
+const clipboardStatus = ref<'idle' | 'copied' | 'manual'>('idle');
+// Display instructions only: the web UI does not execute these privileged or local commands.
+const pythonStarterCommands = [
+    '# Run from a GPUPanel git checkout, as a normal Ubuntu user',
+    'mkdir -p ~/GPUPanel/projects',
+    'python3 scripts/gpupanel-catalog.py verify',
+    'python3 scripts/gpupanel-catalog-workspace.py install --approve',
+    'python3 scripts/gpupanel-catalog-workspace.py status',
+    'python3 ~/GPUPanel/projects/python-stdlib-starter/main.py',
+    '# Optional removal (refuses modified files):',
+    'python3 scripts/gpupanel-catalog-workspace.py uninstall --approve',
+].join('\n');
+const copyStarterCommands = async () => {
+    try {
+        await navigator.clipboard.writeText(pythonStarterCommands);
+        clipboardStatus.value = 'copied';
+    } catch {
+        // Insecure browser contexts can deny clipboard access. The visible text
+        // is still selectable, so provide explicit manual-copy guidance.
+        clipboardStatus.value = 'manual';
+    }
+};
 const legacyInstallRequested = computed(() => typeof route.query.install === 'string');
 const visibleDefinitions = computed(() => {
     const needle = keyword.value.trim().toLocaleLowerCase();
@@ -81,6 +115,15 @@ const navigate = async (path: string) => {
     &__grid p { font-size: 13px; color: var(--el-text-color-secondary); min-height: 48px; }
     &__metadata { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font-size: 12px; color: var(--el-text-color-secondary); }
     &__install { margin-top: 16px; width: 100%; }
+    &__commands {
+        padding: 12px;
+        white-space: pre-wrap;
+        overflow-wrap: anywhere;
+        overflow-x: auto;
+        background: var(--el-fill-color-light);
+        border-radius: 8px;
+        font-size: 12px;
+    }
     @media (max-width: 1024px) { &__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
     @media (max-width: 680px) { &__grid { grid-template-columns: 1fr; } }
 }
