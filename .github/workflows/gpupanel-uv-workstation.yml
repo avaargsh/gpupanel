@@ -3,6 +3,8 @@ on:
   pull_request:
     paths:
       - 'scripts/gpupanel-env.py'
+      - 'scripts/gpupanel-uv-project.py'
+      - 'scripts/tests/test_gpupanel_uv_project.py'
       - 'scripts/tests/test_gpupanel_env.py'
       - 'scripts/gpupanel-catalog-workspace.py'
       - '.github/workflows/gpupanel-uv-workstation.yml'
@@ -25,3 +27,7 @@ jobs:
       - run: python3 -m unittest discover -s scripts/tests -p 'test_gpupanel_env.py' -v
       - run: python3 scripts/gpupanel-env.py plan
       - run: python3 scripts/gpupanel-env.py plan --json
+      - run: python3 -m py_compile scripts/gpupanel-uv-project.py scripts/tests/test_gpupanel_uv_project.py
+      - run: python3 -m unittest discover -s scripts/tests -p 'test_gpupanel_uv_project.py' -v
+      - run: python3 scripts/gpupanel-uv-project.py plan
+      - run: python3 scripts/gpupanel-uv-project.py plan --json
