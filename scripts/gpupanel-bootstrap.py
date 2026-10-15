@@ -115,6 +115,10 @@ def get_artifact(artifact: dict, cache: Path, timeout: float, offline: bool) -> 
                 length = 0
                 digest = hashlib.sha256()
                 with urllib.request.urlopen(urllib.request.Request(url, headers={"User-Agent": "GPUPanel-bootstrap/1"}), timeout=timeout) as response:
+                    # urllib follows redirects; never allow a signed HTTPS URL to downgrade to plaintext.
+                    final_url = getattr(response, "geturl", lambda: url)()
+                    if urlsplit(final_url).scheme != "https":
+                        raise BootstrapError("HTTPS redirect downgrade rejected")
                     while True:
                         chunk = response.read(1024 * 1024)
                         if not chunk:
