@@ -30,6 +30,8 @@ const message = {
         catalogLocalSync: '同步本地应用',
         appInstallLoadFailed: '无法加载安装配置。请检查当前主机、应用定义与权限。',
         appInstallUncertain: '安装请求结果尚不确定。请先核对任务日志和已安装应用，不要直接重试。',
+        appInstallSwitchNode: '该请求属于另一台节点。请先切回对应节点，再检查任务并确认是否可重试。',
+        appInstallStorageUnavailable: '无法保存安装任务回执；为防止刷新后重复安装，本次未提交。请检查浏览器会话存储权限。',
         appInstallTaskHint: '本次提交的任务标识（不是安装完成证明）：',
         appInstallInspectTask: '检查任务日志',
         appInstallReviewDone: '已核对状态，允许重新提交',
