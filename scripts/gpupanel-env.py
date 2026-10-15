@@ -206,6 +206,8 @@ def main(argv: list[str] | None = None) -> int:
     for name in ("plan", "create", "status"):
         item = sub.add_parser(name)
         item.add_argument("--json", action="store_true", help="machine-readable JSON")
+        item.add_argument("--target", type=Path, default=argparse.SUPPRESS,
+                          help="destination under your home directory")
         if name == "create":
             item.add_argument("--approve", action="store_true", help="explicitly allow new files")
     args = parser.parse_args(argv)
