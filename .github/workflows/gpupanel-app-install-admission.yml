@@ -1,0 +1,29 @@
+name: GPUPanel agent app install admission
+on:
+  pull_request:
+    paths:
+      - 'agent/app/api/v2/app.go'
+      - 'agent/app/service/app_install_admission*.go'
+      - 'scripts/tests/test_gpupanel_app_install_admission.py'
+      - '.github/workflows/gpupanel-app-install-admission.yml'
+  workflow_dispatch:
+jobs:
+  app-install-admission:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Check before-side-effect API contract
+        run: python3 -m unittest discover -s scripts/tests -p 'test_gpupanel_app_install_admission.py' -v
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: agent/go.mod
+          cache-dependency-path: agent/go.sum
+      - name: Concurrent SQLite task admission tests
+        working-directory: agent
+        run: go test ./app/service -run '^TestAppInstallTaskAdmission' -count=1

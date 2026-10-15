@@ -30,3 +30,14 @@ Current scope: one authenticated Ubuntu Host operator opens `/apps/all`, lists l
 4. **Rollback**: revert the UI/router/localization/test patch only. No DB migration or on-host mutation is performed by the code patch; live installs, once a user has authorized them, are managed by the existing Installed Apps lifecycle rather than by reverting frontend code.
 
 The release gates G3 (system installer), G4 (authenticated Host E2E), G5 (Docker+app E2E) and G6 (recovery) are **not** passed by this feature alone.
+
+
+## Durable install task-ID admission (2026-10-15)
+
+The authenticated Agent `POST /apps/install` now makes a **single atomic TaskDB primary-key claim** before calling the existing installation service. The task ID is required to be a canonical UUID if supplied; legacy clients without a task ID receive a generated UUID internally. A reused ID is rejected, including after Agent restart, even if its previous task failed. This guards against two requests with the **same task ID** performing duplicate Docker/DB work or truncating the same log file.
+
+The persisted receipt begins as `App / TaskInstall / Executing` with `resource_id=0`. The existing task runner owns progression once the installation service creates an AppInstall and links that ID to the task. If the synchronous admission fails, a constrained update marks only an unlinked receipt Failed; it **never releases** the ID and cannot overwrite a linked task. A previously rejected, interrupted, or unlinked record is evidence of attempted admission, **not proof of installed resources**.
+
+Non-goals and remaining gaps: this does not deduplicate **different task IDs** racing for the same application name, prevent an internal/non-HTTP caller from bypassing the API guard, guarantee atomicity between the separate TaskDB and application DB, or solve a crash between an AppInstall insert and Task.Execute. The existing runner still uses `Save` on the claimed row; fault injection and crash recovery are required to validate its lifecycle. The TaskDB receipt is inspectable by existing task list APIs but may not yet have a task log file if synchronous setup failed. Per-name serialization and backend outcome contract remain unverified for G5.
+
+Test evidence required: `cd agent && go test ./app/service -run '^TestAppInstallTaskAdmission' -count=1` (concurrent same-ID claims, open another SQLite connection, failure persistence, and started-task protection), plus API route-order static contract. Real host restart/crash, different-ID collisions and installed-state reconciliation remain **NOT RUN**.
