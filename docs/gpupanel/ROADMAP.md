@@ -37,6 +37,15 @@ Only **G3–G6 passing** authorizes a release candidate advertised as installabl
 
 Build only after non-Kubernetes Host workflow works reliably; multi-host identity, audit, secrets and permissions before adding workloads. Kubernetes remains optional and should reuse the user's external compute/control-plane projects.
 
+## Agentic Ops integration plan (design only, blocked by Host gates)
+
+The screenshot-inspired Agentic Ops control center is a **future, feature-gated external integration**, not a second Agent framework or a claim of an installed product. Research and interface contracts are documented in:
+
+- [Agentic Ops competitor + portal benchmark](./AGENTIC_OPS_PRODUCT_BENCHMARK.md)
+- [Agentic Ops vertical slice and negative acceptance matrix](./AGENTIC_OPS_VERTICAL_SLICE.md)
+
+Current progress is **A0: design/contract drafted**, with no production routes or adapters implemented. No Agentic Ops runtime feature should appear in navigation until actual auth, backend capability probing, provider integration and E2E evidence are accepted. Host G3–G6 have priority. The target execution authority remains external `agent-control-plane`; Kubernetes/GPU workloads remain external `gpu-compute-platform` with Kueue admission.
+
 ## Quality rules
 
 1. Never globally rename 1Panel binary paths, Go import modules, config keys and data directories without a proven migration.
