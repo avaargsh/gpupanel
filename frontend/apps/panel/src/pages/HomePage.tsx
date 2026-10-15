@@ -53,8 +53,8 @@ export default function HomePage() {
         </section>
         <div className="workbench-columns">
             <section className="workbench-panel" aria-labelledby="recent-projects-title">
-                <div className="workbench-panel-heading"><h2 id="recent-projects-title">{t('workbench.recent')}</h2><span className="workbench-neutral-tag">{t('workbench.notConnected')}</span></div>
-                <div className="workbench-empty"><IconFolder size="extra-large" /><h3>{t('workbench.noProjects')}</h3><p>{t('workbench.noProjectsHint')}</p><Link to="/apps?tab=installed">{t('workbench.installed')}</Link></div>
+                <div className="workbench-panel-heading"><h2 id="recent-projects-title">{t('workbench.recent')}</h2></div>
+                <div className="workbench-empty"><IconFolder size="large" /><h3>{t('workbench.noProjects')}</h3><p>{t('workbench.noProjectsHint')}</p><Link to="/apps?tab=installed">{t('workbench.installed')}</Link></div>
             </section>
             <section className="workbench-panel" aria-labelledby="workbench-tools-title">
                 <div className="workbench-panel-heading"><h2 id="workbench-tools-title">{t('workbench.tools')}</h2></div>
