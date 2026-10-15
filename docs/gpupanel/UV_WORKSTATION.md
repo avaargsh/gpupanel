@@ -54,6 +54,27 @@ Defaults to `~/GPUPanel/projects/uv-python-starter`. To select another destinati
 
 The source contract does not include a trusted locked **PyTorch/Jupyter** dependency profile, pre-populated wheel cache or local mirror. `uv run --offline` may fail for projects that subsequently add dependencies unless they are already available from a trusted local cache. That absence must not be concealed as success. A future template step should add curated version-specific locks and verified offline artifacts without creating another installer.
 
+## Check locked dependencies before offline setup
+
+GPUPanel adds **two distinct operations** for a Python uv project that contains `pyproject.toml` and `uv.lock`. These do not install anything into the original project:
+
+```bash
+# Read only: parse/validate the lock and review package sources.
+python3 scripts/gpupanel-uv-lock-check.py check
+
+# Explicit opt-in: try a REAL offline uv sync in a disposable directory.
+python3 scripts/gpupanel-uv-lock-check.py probe-offline --approve
+
+# Alternate project under your own home; structured output for automation.
+python3 scripts/gpupanel-uv-lock-check.py check --project ~/GPUPanel/projects/my-project --json
+```
+
+The **check** reports `REVIEWED_LOCK` if the TOML structure, source boundaries and wheel hashes meet the initial policy. Crucially, this status says **nothing about whether an offline wheel cache exists**, nor does it verify the `uv.lock` is fresh with respect to `pyproject.toml`. It is not an install approval.
+
+The **probe-offline** action copies only those two regular metadata files to an isolated temporary directory, then runs `uv sync --locked --offline --no-build --no-install-project --no-default-groups` through installed uv, with config/Python downloads disabled and a timeout. A success `OFFLINE_SYNC_VERIFIED` demonstrates that the currently selected Python/platform can use the *current uv cache* to synchronize these dependencies. It does **not** import third-party packages, validate PyTorch GPU kernels, certify the lock's provenance or make any claim about future cache retention. A failed result (`OFFLINE_SYNC_FAILED`, `TIMEOUT`, etc.) remains a failure; private uv stderr is not returned. The original project's `.venv`, sources, lockfile and any user files are never modified.
+
+For this early slice, local/git/direct-URL sources, arbitrary build systems and uv-specific project overrides are refused with `UNREVIEWED_SOURCE`. Registry entries must have HTTPS URLs and SHA-256-pinned wheel candidates. Source-only packages are blocked to avoid executing unreviewed builds. A vetted PyTorch/Jupyter lock and regional/offline mirror provisioning are **not** delivered by these checks; do not confuse a syntactically acceptable lock with a secure, approved software supply chain. Approved installation into a user-selected project will be a later, separate workflow.
+
 ## CLI output for people and tools
 
 All primary diagnostics are now readable without a special flag. For scripts, choose `--json` explicitly:

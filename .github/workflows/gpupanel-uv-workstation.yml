@@ -4,6 +4,8 @@ on:
     paths:
       - 'scripts/gpupanel-env.py'
       - 'scripts/gpupanel-uv-project.py'
+      - 'scripts/gpupanel-uv-lock-check.py'
+      - 'scripts/tests/test_gpupanel_uv_lock_check.py'
       - 'scripts/tests/test_gpupanel_uv_project.py'
       - 'scripts/gpupanel-env-packages.py'
       - 'scripts/tests/test_gpupanel_env_packages.py'
@@ -34,3 +36,5 @@ jobs:
       - run: python3 -m unittest discover -s scripts/tests -p 'test_gpupanel_uv_project.py' -v
       - run: python3 scripts/gpupanel-uv-project.py plan
       - run: python3 scripts/gpupanel-uv-project.py plan --json
+      - run: python3 -m py_compile scripts/gpupanel-uv-lock-check.py scripts/tests/test_gpupanel_uv_lock_check.py
+      - run: python3 -m unittest discover -s scripts/tests -p 'test_gpupanel_uv_lock_check.py' -v
