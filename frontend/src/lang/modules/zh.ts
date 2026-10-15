@@ -16,6 +16,8 @@ const message = {
         appsStepDesc: '通过现有应用商店或 Compose 交付',
         dockerChecking: '正在检查 Docker…',
         dockerReady: 'Docker 可访问，运行中的容器：{count}',
+        dockerNotInstalled: '此节点未检测到 Docker 命令；请先完成受控安装',
+        dockerNotRunning: 'Docker 已安装，但引擎没有正常响应；请检查守护进程',
         dockerUnavailable: '无法读取 Docker 状态，请检查服务、节点与权限',
         dockerRestricted: '当前账户没有容器查看权限',
         checkAgain: '重新检查',
