@@ -2,6 +2,10 @@ import { getFuLocaleMessage } from '@/lang/fu';
 
 const message = {
     gpupanel: {
+        catalogLoadFailed: 'Unable to load the application catalog. Check network, permissions or sync status.',
+        catalogRetry: 'Retry',
+        catalogEmpty: 'No applications match the current filters. Clear filters or sync the catalog.',
+        catalogClearFilters: 'Clear filters',
         firstRunTitle: 'Get started with this host',
         firstRunDescription: 'Inspect the host, verify Docker, then deliver an application. Backend status is live; these steps do not imply installation is complete.',
         hostStep: 'Inspect Host',

@@ -16,7 +16,7 @@
                 </el-button>
             </template>
             <template #rightToolBar>
-                <el-checkbox class="!mr-2.5" v-model="req.showCurrentArch" @change="search(req)">
+                <el-checkbox class="!mr-2.5" v-model="req.showCurrentArch" @change="searchFromFilters()">
                     {{ $t('app.showCurrentArch') }}
                 </el-checkbox>
                 <el-checkbox
@@ -24,7 +24,7 @@
                     v-model="req.resource"
                     true-value="all"
                     false-value="remote"
-                    @change="search(req)"
+                    @change="searchFromFilters()"
                 >
                     {{ $t('app.showLocal') }}
                 </el-checkbox>
@@ -48,7 +48,14 @@
                                 <AppCard :app="app" @open-install="openInstall" @open-detail="openDetail" />
                             </el-col>
                         </el-row>
-                        <NoApp v-if="noApp" />
+                        <div v-if="catalogError && !loading" role="alert" class="gpupanel-catalog-feedback">
+                            <p>{{ $t('gpupanel.catalogLoadFailed') }}</p>
+                            <el-button type="primary" plain @click="search(req)">{{ $t('gpupanel.catalogRetry') }}</el-button>
+                        </div>
+                        <div v-else-if="noApp && !loading" class="gpupanel-catalog-feedback">
+                            <p>{{ $t('gpupanel.catalogEmpty') }}</p>
+                            <el-button type="primary" plain @click="resetCatalogFilters">{{ $t('gpupanel.catalogClearFilters') }}</el-button>
+                        </div>
                     </MainDiv>
                     <div class="page-button">
                         <fu-table-pagination
@@ -83,7 +90,6 @@ import TaskLog from '@/components/log/task/index.vue';
 import bus from '@/global/bus';
 import Tags from '@/views/app-store/components/tag.vue';
 import DockerStatus from '@/views/container/docker-status/index.vue';
-import NoApp from '@/views/app-store/apps/no-app/index.vue';
 import AppCard from '@/views/app-store/apps/app/index.vue';
 import MainDiv from '@/components/main-div/index.vue';
 import { jumpToInstall } from '@/utils/app';
@@ -124,39 +130,68 @@ const customAppStoreEnabled = ref(false);
 const isActive = ref(false);
 const isExist = ref(false);
 const noApp = ref(false);
+const catalogError = ref(false);
+let latestCatalogRequest = 0;
 
 const refresh = () => {
     search(req);
 };
 
 const search = async (req: App.AppReq) => {
+    const requestId = ++latestCatalogRequest;
     loading.value = true;
+    catalogError.value = false;
+    noApp.value = false;
     req.pageSize = paginationConfig.pageSize;
     req.page = paginationConfig.currentPage;
     localStorage.setItem('app-page-size', req.pageSize + '');
 
+    // Snapshot the filters: a later user edit must never mutate an in-flight query.
     const customReq = {
         page: req.page,
         pageSize: req.pageSize,
-        tags: req.tags,
-        name: req.name,
+        tags: [...(req.tags || [])],
+        name: req.name?.trim() || '',
         resource: req.resource,
         showCurrentArch: req.showCurrentArch,
     };
     if (syncCustomAppstore.value && req.resource === 'remote') {
         customReq.resource = 'custom';
     }
-    await searchApp(customReq)
-        .then((res) => {
-            apps.value = res.data.items;
-            paginationConfig.total = res.data.total;
-            if (noApp.value && apps.value.length > 0) {
-                noApp.value = false;
-            }
-        })
-        .finally(() => {
-            loading.value = false;
-        });
+    try {
+        const response = await searchApp(customReq);
+        // Older responses must not override the result for the most recent filters.
+        if (requestId !== latestCatalogRequest) return;
+        const items = response.data?.items;
+        const total = response.data?.total;
+        if (!Array.isArray(items) || !Number.isFinite(total) || total < 0) {
+            throw new Error('Invalid application catalog response');
+        }
+        apps.value = items;
+        paginationConfig.total = total;
+        noApp.value = items.length === 0;
+    } catch {
+        if (requestId !== latestCatalogRequest) return;
+        apps.value = [];
+        paginationConfig.total = 0;
+        catalogError.value = true;
+    } finally {
+        if (requestId === latestCatalogRequest) loading.value = false;
+    }
+};
+
+const searchFromFilters = () => {
+    paginationConfig.currentPage = 1;
+    void search(req);
+};
+
+const resetCatalogFilters = () => {
+    req.name = '';
+    req.tags = [];
+    req.resource = 'all';
+    req.showCurrentArch = false;
+    paginationConfig.currentPage = 1;
+    void search(req);
 };
 
 const openInstall = (app: App.App) => {
@@ -219,6 +254,7 @@ const syncLocal = () => {
 };
 
 const changeTag = (key: string) => {
+    paginationConfig.currentPage = 1;
     req.tags = [];
     if (key !== 'all') {
         req.tags = [key];
@@ -227,7 +263,8 @@ const changeTag = (key: string) => {
 };
 
 const searchByName = () => {
-    search(req);
+    paginationConfig.currentPage = 1;
+    void search(req);
 };
 
 onMounted(async () => {
@@ -278,5 +315,16 @@ onMounted(async () => {
     float: right;
     margin-bottom: 10px;
     margin-top: 10px;
+}
+
+.gpupanel-catalog-feedback {
+    min-height: 190px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    color: var(--el-text-color-secondary);
+    text-align: center;
 }
 </style>
