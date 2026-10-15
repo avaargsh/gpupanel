@@ -1,0 +1,24 @@
+name: GPUPanel merged-branch cleanup contract
+on:
+  pull_request:
+    paths:
+      - 'scripts/gpupanel-prune-merged-branches.py'
+      - 'scripts/tests/test_gpupanel_prune_merged_branches.py'
+      - '.github/workflows/gpupanel-branch-prune.yml'
+  workflow_dispatch:
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Static Python compilation
+        run: python3 -m py_compile scripts/gpupanel-prune-merged-branches.py
+      - name: Run negative deletion-safety tests
+        run: python3 -m unittest discover -s scripts/tests -p 'test_gpupanel_prune_merged_branches.py' -v
+      - name: Confirm CLI help is nonmutating
+        run: python3 scripts/gpupanel-prune-merged-branches.py --help
