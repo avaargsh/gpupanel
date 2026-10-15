@@ -58,6 +58,21 @@ class PreviewStagingContract(unittest.TestCase):
             self.assertEqual(stage.inspect("fixture-1", self.home)["status"], "ABSENT")
             self.assertTrue(target.parent.is_dir())
 
+    def test_mutated_archive_between_preflight_and_copy_is_refused(self):
+        actual_plan = stage.preview_plan
+
+        def mutate_after_plan(archive, home):
+            plan = actual_plan(archive, home)
+            with archive.open("ab") as f:
+                f.write(b"changed after successful verification")
+            return plan
+
+        with patch.object(stage, "preview_plan", side_effect=mutate_after_plan), \
+             patch.object(stage.os, "geteuid", return_value=1000):
+            with self.assertRaisesRegex(stage.PreviewError, "changed between plan"):
+                stage.stage(self.archive, self.home, True)
+        self.assertEqual(stage.inspect("fixture-1", self.home)["status"], "ABSENT")
+
     def test_unmanaged_target_preserved(self):
         target = stage.target_for("fixture-1", self.home)
         target.mkdir(parents=True)
