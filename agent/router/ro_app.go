@@ -2,10 +2,23 @@ package router
 
 import (
 	v2 "github.com/1Panel-dev/1Panel/agent/app/api/v2"
+	"github.com/1Panel-dev/1Panel/agent/global"
 	"github.com/gin-gonic/gin"
 )
 
 type AppRouter struct {
+}
+
+// A node Agent can be reached with infrastructure mTLS, not an end-user
+// identity. Evidence is initially a single-host privileged Core-only feature;
+// deny it on all non-master Agents even with a valid node transport cert.
+func localMasterAppEvidenceOnly(c *gin.Context) {
+	if !global.IsMaster {
+		c.Header("Cache-Control", "no-store")
+		c.AbortWithStatus(403)
+		return
+	}
+	c.Next()
 }
 
 func (a *AppRouter) InitRouter(Router *gin.RouterGroup) {
@@ -42,7 +55,7 @@ func (a *AppRouter) InitRouter(Router *gin.RouterGroup) {
 		appRouter.POST("/installed/config/update", baseApi.UpdateAppConfig)
 		appRouter.POST("/installed/sort/update", baseApi.UpdateAppInstallSort)
 		appRouter.GET("/installed/info/:appInstallId", baseApi.GetAppInstallInfo)
-		appRouter.GET("/installed/evidence/:appInstallId", baseApi.GetAppInstallEvidence)
+		appRouter.GET("/installed/evidence/:appInstallId", localMasterAppEvidenceOnly, baseApi.GetAppInstallEvidence)
 
 		appRouter.POST("/installed/ignore", baseApi.IgnoreAppUpgrade)
 		appRouter.GET("/ignored/detail", baseApi.ListAppIgnored)
