@@ -244,6 +244,8 @@ const changeTag = (key: string) => {
 
 const readList = async (requestSync = false, sortAll = false, background = false): Promise<boolean> => {
     if (sortMode.value && !sortAll) return false;
+    // A background read cannot displace a user's explicit sync/retry or hide an error.
+    if (background && (loading.value || loadError.value)) return false;
     const ticket = listRevision.next(currentNode.value);
     const req: App.AppInstallSearch = {
         page: sortAll ? 1 : paginationConfig.currentPage,
