@@ -22,6 +22,7 @@ jobs:
         with:
           python-version: '3.12'
       - run: python3 -m unittest discover -s scripts/tests -p 'test_gpupanel_portal.py' -v
+      - run: python3 -m unittest discover -s scripts/tests -p 'test_gpupanel_workstation_shell.py' -v
       - run: npm ci
         working-directory: frontend
       - run: npm run build:pro

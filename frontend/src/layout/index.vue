@@ -50,6 +50,7 @@
         <TaskList ref="taskListRef" />
         <TerminalHost />
         <TerminalDock />
+        <GPUPanelAssistantDock v-if="!isFullScreen" />
     </div>
 </template>
 
@@ -58,6 +59,7 @@ import { onMounted, computed, ref, watch, onBeforeUnmount } from 'vue';
 import { Sidebar, Footer, AppMain, MobileHeader, Tabs } from './components';
 import TerminalHost from '@/components/terminal/host.vue';
 import TerminalDock from '@/components/terminal/dock/index.vue';
+import GPUPanelAssistantDock from '@/components/gpupanel-assistant/assistant-dock.vue';
 import useResize from './hooks/useResize';
 import { MenuStore, TabsStore } from '@/store';
 import { getSystemAvailable } from '@/api/modules/setting';
