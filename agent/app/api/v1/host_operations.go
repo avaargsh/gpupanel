@@ -57,7 +57,7 @@ func (b *BaseApi) PlanHostOperation(c *gin.Context) {
 		return
 	}
 	data, err := operationEngine().Plan(c.Request.Context(), owner, req)
-	operationResponse(c, data, err)
+	operationResponse(c, operationView(data), err)
 }
 func (b *BaseApi) ConfirmHostOperation(c *gin.Context) {
 	owner, ok := operationOwner(c)
@@ -69,7 +69,7 @@ func (b *BaseApi) ConfirmHostOperation(c *gin.Context) {
 		return
 	}
 	data, err := operationEngine().Execute(c.Request.Context(), owner, c.Param("operationId"), req)
-	operationResponse(c, data, err)
+	operationResponse(c, operationView(data), err)
 }
 func (b *BaseApi) GetHostOperation(c *gin.Context) {
 	owner, ok := operationOwner(c)
@@ -77,7 +77,7 @@ func (b *BaseApi) GetHostOperation(c *gin.Context) {
 		return
 	}
 	data, err := operationEngine().Get(owner, c.Param("operationId"))
-	operationResponse(c, data, err)
+	operationResponse(c, operationView(data), err)
 }
 func (b *BaseApi) ListHostOperations(c *gin.Context) {
 	owner, ok := operationOwner(c)
@@ -85,5 +85,9 @@ func (b *BaseApi) ListHostOperations(c *gin.Context) {
 		return
 	}
 	data, err := operationEngine().List(owner)
-	operationResponse(c, data, err)
+	views := make([]hostOperationView, 0, len(data))
+	for _, row := range data {
+		views = append(views, operationView(row))
+	}
+	operationResponse(c, views, err)
 }
