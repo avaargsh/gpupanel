@@ -19,7 +19,13 @@ Diff layers are explicit and never conflated:
 ``--base`` is mandatory; an unresolvable baseline is a hard error (exit 2) and
 never falls back to an empty tree. All git usage is read-only (rev-parse,
 diff, ls-tree, ls-files, cat-file). Exclusions are a narrow explicit contract
-(lock/vendor/generated); test sources are deliberately *not* exempt.
+(exact lock filenames, vendor-style directories, and explicit generated
+filename suffixes such as ``*.pb.go`` / ``*_pb2*.py``); test sources are
+deliberately *not* exempt, and content-based ``@generated`` / ``DO NOT EDIT``
+tags are not an exemption: arbitrary tagged source is still gated.
+Working-tree reads reject paths that resolve outside the repository (for
+example symlinks into a sibling directory) and reject non-regular files
+(directories, FIFOs) instead of opening them.
 
 Exit codes: 0 pass, 1 policy violation, 2 operational/baseline error.
 """
@@ -48,7 +54,6 @@ LOCKED_FILENAMES = frozenset(
     }
 )
 GENERATED_NAME_SUFFIXES = (".pb.go", "_pb2.py", "_pb2_grpc.py")
-GENERATED_HEADER_LINES = 10
 ZERO_SHA = "0" * 40
 
 
@@ -174,16 +179,6 @@ def exclusion_reason(path: str) -> str | None:
     return None
 
 
-def looks_generated(header: bytes) -> bool:
-    for line in header.splitlines()[:GENERATED_HEADER_LINES]:
-        text = line.decode("utf-8", "replace").lower()
-        if "@generated" in text:
-            return True
-        if "generated" in text and "do not edit" in text:
-            return True
-    return False
-
-
 def blob_bytes(repo: Path, spec: str, label: str) -> bytes:
     proc = subprocess.run(
         ["git", "-C", str(repo), "cat-file", "blob", spec],
@@ -198,9 +193,18 @@ def blob_bytes(repo: Path, spec: str, label: str) -> bytes:
 
 
 def worktree_bytes(repo: Path, path: str) -> bytes:
+    """Read working-tree content with real-path containment checks.
+
+    Rejects targets that resolve outside the repository (for example a symlink
+    into a sibling directory) and non-regular files such as directories or
+    FIFOs, so a hostile path cannot block or read outside the worktree.
+    """
+    repo_root = repo.resolve()
     target = (repo / path).resolve()
-    if not str(target).startswith(str(repo.resolve())):
+    if not target.is_relative_to(repo_root):
         raise PolicyError(f"path escapes repository working tree: {path}")
+    if not target.is_file():
+        raise PolicyError(f"not a regular file in working tree: {path}")
     try:
         return target.read_bytes()
     except OSError as exc:
@@ -233,8 +237,6 @@ def check_added(
     if not is_source_path(path):
         return False
     reason = exclusion_reason(path)
-    if reason is None and looks_generated(content):
-        reason = "generated-header"
     if reason is not None:
         findings.append(
             Finding("info", path, layer, f"excluded by narrow contract ({reason})")

@@ -81,8 +81,14 @@ jobs:
             echo "::error::baseline ${base} does not resolve to a commit; refusing to compare against an empty tree"
             exit 2
           fi
-          echo "ref=$(git rev-parse "${base}^{commit}")" >> "$GITHUB_OUTPUT"
-          echo "resolved baseline: $(git rev-parse "${base}^{commit}")"
+          resolved="$(git rev-parse "${base}^{commit}")"
+          head_sha="$(git rev-parse HEAD)"
+          if [ "$resolved" = "$head_sha" ]; then
+            echo "::error::no meaningful baseline: resolved baseline equals HEAD (${resolved}); the check would compare nothing. Initial push to ${DEFAULT_BRANCH} (zero before SHA) must supply an explicit base input via workflow_dispatch instead of silently passing."
+            exit 2
+          fi
+          echo "ref=${resolved}" >> "$GITHUB_OUTPUT"
+          echo "resolved baseline: ${resolved}"
       - name: Source policy on explicit baseline (read-only)
         run: >-
           python3 scripts/gpupanel-source-policy.py
