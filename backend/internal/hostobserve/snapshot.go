@@ -6,6 +6,12 @@
 // malformed sources explicitly instead of returning zero values that look
 // like successful data.
 //
+// Only regular files are accepted: symbolic links are followed, but FIFO,
+// device, socket and directory sources are rejected so a misconfigured path
+// cannot block Collect indefinitely on a non-cancellable read. For regular
+// files the bounded read is fast and complete, so checking the context before
+// each read provides effective cancellation for the default system paths.
+//
 // The package never executes shell commands, never reads environment
 // variables, process tables, credentials or user configuration, and never
 // writes system state.

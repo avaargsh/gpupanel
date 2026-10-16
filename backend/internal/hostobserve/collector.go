@@ -93,12 +93,15 @@ func (c *Collector) Collect(ctx context.Context) (Snapshot, error) {
 
 // readBounded opens path and reads at most limit bytes.
 //
-// The allocation is exactly limit+1 bytes and is derived from a compile-time
-// constant before the file is opened, so the hard bound applies before
-// allocation: a file of size > limit is rejected with ErrTooLarge and its
-// content is never buffered beyond that bound. A file of size <= limit (even
-// empty) is returned for parsing.
+// The read buffer (limit+1 bytes, a compile-time constant) is allocated
+// before any I/O happens, so an oversized file can never drive an unbounded
+// allocation. Only regular files are accepted: symbolic links are followed
+// by os.Open/f.Stat, but FIFO, device, socket and directory sources are
+// rejected so a misconfigured path cannot block Collect indefinitely on a
+// non-cancellable read.
 func readBounded(path string, limit int) ([]byte, error) {
+	buf := make([]byte, limit+1)
+
 	f, err := os.Open(path)
 	if err != nil {
 		if errors.Is(err, fs.ErrNotExist) {
@@ -108,7 +111,14 @@ func readBounded(path string, limit int) ([]byte, error) {
 	}
 	defer f.Close()
 
-	buf := make([]byte, limit+1)
+	fi, err := f.Stat()
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w: %v", path, ErrUnavailable, err)
+	}
+	if !fi.Mode().IsRegular() {
+		return nil, fmt.Errorf("%s: %w: source is not a regular file", path, ErrUnavailable)
+	}
+
 	n, err := io.ReadFull(&io.LimitedReader{R: f, N: int64(limit + 1)}, buf)
 	switch {
 	case err == nil:
