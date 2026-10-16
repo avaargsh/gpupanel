@@ -1,4 +1,5 @@
 import { baseApi } from './baseApi';
+import { installedSearchRequest, parseInstalledPage, type ScopedInstalledSearch } from '@/utils/installed-list';
 
 /**
  * 应用商店接口（对齐旧版 `frontend/src/api/modules/app.ts`）。
@@ -288,8 +289,9 @@ export const appApi = baseApi.injectEndpoints({
             invalidatesTags: ['App'],
         }),
 
-        searchInstalled: build.query<PageResult<AppInstallDto>, AppInstalledSearchInput>({
-            query: (body) => ({ url: '/apps/installed/search', method: 'POST', body }),
+        searchInstalled: build.query<PageResult<AppInstallDto>, ScopedInstalledSearch>({
+            query: installedSearchRequest,
+            transformResponse: (response: unknown) => parseInstalledPage(response),
             providesTags: ['App'],
         }),
         getInstalledInfo: build.query<AppInstalledInfo, number>({
