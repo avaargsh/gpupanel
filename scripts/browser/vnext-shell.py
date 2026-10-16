@@ -9,7 +9,7 @@ URL = 'http://127.0.0.1:4189'
 ROOT = Path(__file__).resolve().parents[2]
 OUTPUT = ROOT / '.local/install-test/vnext'
 OUTPUT.mkdir(parents=True, exist_ok=True)
-state = {'fail': False, 'requests': [], 'sockets': []}
+state = {'fail': False, 'requests': [], 'sockets': [], 'projects': []}
 
 
 def api(route):
@@ -20,6 +20,25 @@ def api(route):
     data = {'items': [], 'total': 0}
     if path.endswith('/core/auth/current'):
         data = {'name': 'fixture', 'role': 'ADMIN'}
+    elif path == '/core/projects':
+        if route.request.method == 'POST':
+            body = json.loads(route.request.post_data or '{}')
+            existing = next((entry for entry in state['projects'] if entry['name'] == body.get('name')), None)
+            if existing:
+                route.fulfill(status=409, content_type='application/json',
+                              body=json.dumps({'code': 409, 'message': 'ProjectRegistrationConflict'}))
+                return
+            project_id = 'simulated-project-' + str(len(state['projects']) + 1)
+            data = {
+                'id': project_id, 'name': body['name'], 'sourceHint': body['sourceHint'],
+                'state': 'Registered', 'createdAt': 1, 'updatedAt': 1,
+                'workspaces': [{'id': 'simulated-workspace-' + project_id,
+                                'projectId': project_id, 'name': 'default',
+                                'state': 'NotProvisioned', 'createdAt': 1, 'updatedAt': 1}],
+            }
+            state['projects'].append(data)
+        else:
+            data = list(state['projects'])
     elif path == '/dashboard/base/os':
         data = {'os': 'linux', 'prettyDistro': 'Ubuntu fixture', 'kernelArch': 'amd64'}
     elif path.startswith('/dashboard/base/'):
@@ -50,13 +69,13 @@ with sync_playwright() as p:
     page.goto(URL)
     page.wait_for_load_state('networkidle')
     expect(page.get_by_role('heading', name='Workbench', exact=True)).to_be_visible()
-    expect(page.get_by_role('button', name='New project', exact=True)).to_be_disabled()
-    expect(page.get_by_text('Project records are not connected', exact=True)).to_be_visible()
+    expect(page.get_by_role('link', name='New project', exact=True).first).to_be_visible()
+    expect(page.get_by_text('No registered projects', exact=True)).to_be_visible()
     expect(page.get_by_text('24.0%', exact=True)).to_be_visible()
     expect(page.locator('.workspace-sidebar')).to_have_css('width', '240px')
     expect(page.locator('.workspace-header')).to_have_css('height', '56px')
     # Visual structure invariants: aligned chrome, real primary actions,
-    # resources above the empty project state and no fabricated project route.
+    # resources above the empty metadata registry and no fabricated sessions.
     brand_box = page.locator('.workspace-brand').bounding_box()
     header_box = page.locator('.workspace-header').bounding_box()
     assert brand_box and header_box and round(brand_box['height']) == round(header_box['height']) == 56
@@ -72,7 +91,8 @@ with sync_playwright() as p:
     assert not page.locator('.workspace-sidebar .workspace-nav-link.unavailable').count()
     assert page.evaluate('document.documentElement.scrollWidth <= innerWidth')
     assert page.get_by_role('dialog').count() == 0
-    assert not any(path.startswith(('/projects', '/workspaces', '/sessions')) for path, _, _ in state['requests'])
+    assert any(path == '/core/projects' for path, _, _ in state['requests'])
+    assert not any(path.startswith(('/workspaces', '/sessions')) for path, _, _ in state['requests'])
     assert page.get_by_role('link', name='Advanced AI settings', exact=True).count() == 1
     assert page.locator('.workspace-sidebar').get_by_role('link', name='GPU & accelerators', exact=True).get_attribute('href') == '/gpu'
     assert page.locator('.workbench-tool-links a').filter(has_text='View background tasks').get_attribute('href') == '/logs?tab=task'
@@ -157,7 +177,27 @@ with sync_playwright() as p:
     page.goto(URL + '/apps?tab=installed')
     page.wait_for_load_state('networkidle')
     expect(page.get_by_role('tab', name='Installed', exact=True)).to_have_attribute('aria-selected', 'true')
+
+    # SIMULATED Core metadata flow only: register, reload the list, then
+    # find the durable-looking fixture row on the home workbench. This does
+    # NOT prove actual Core auth, disk persistence, or Workspace provisioning.
+    page.goto(URL + '/projects')
+    page.wait_for_load_state('networkidle')
+    expect(page.get_by_role('heading', name='My projects', exact=True)).to_be_visible()
+    expect(page.get_by_text('No registered project records.', exact=True)).to_be_visible()
+    page.get_by_role('textbox', name='Project name').fill('GPU research')
+    page.get_by_role('button', name='Register project', exact=True).click()
+    expect(page.get_by_text('GPU research', exact=True)).to_be_visible()
+    expect(page.get_by_text('default · Not provisioned', exact=False)).to_be_visible()
+    assert len(state['projects']) == 1
+    assert len([entry for entry in state['requests'] if entry[0] == '/core/projects']) >= 3
+    page.reload()
+    page.wait_for_load_state('networkidle')
+    expect(page.get_by_text('GPU research', exact=True)).to_be_visible()
     page.goto(URL)
+    page.wait_for_load_state('networkidle')
+    expect(page.get_by_text('GPU research · Not provisioned', exact=False)).to_be_visible()
+
     page.wait_for_load_state('networkidle')
     page.get_by_role('button', name='Language', exact=True).click()
     page.get_by_text('简体中文', exact=True).click()
@@ -188,7 +228,7 @@ with sync_playwright() as p:
     assert not errors, errors
     result = {'kind': 'SIMULATED API; not real device or deployment acceptance', 'page_errors': errors,
               'checks': ['light/dark', '1440/1280/1024/640 layout', 'Chinese/English', 'collapse persistence', 'keyboard skip/search/escape',
-                         'unavailable project state', 'failed refresh clears metrics', 'scope resets draft',
+                         'registered project metadata (simulated)', 'failed refresh clears metrics', 'scope resets draft',
                          'terminal HTTP and WebSocket select remote scope', 'installed deep link'],
               'terminal_scope_requests': len(terminal_requests)}
     (OUTPUT / 'browser.json').write_text(json.dumps(result, indent=2) + '\n')
