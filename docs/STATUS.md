@@ -130,3 +130,16 @@ root/suid、目录链接、覆盖已存在项目和下载网络依赖。
 **哈希不等于签名，操作者可伪造。** 无 Agent/OS 身份证明，任何
 报告都维持 `attested=false` 与 `NotProvisioned`。
 不存在控制面自动执行、GPU/Notebook 授权或 M0 G3–G6 生产验收。
+
+## 非 root 用户态 Unix Worker（受限的一次性执行）
+
+新增 `gpupanel-uv-user-worker.py`（非自动 Core/Agent 入口）：
+普通 Linux 用户显式启动、双摘要确认、只允许同 UID Unix Socket
+连接且必须持有一次性随机 Token；仅支持固定的离线 uv 创建流程。
+执行前在用户 Home 下独占创建并 fsync 不可重放的 Attempt Marker，
+崩溃/丢 ACK 返回 UNKNOWN 并拒绝重复执行。重用既有 uv 脚本、
+原子不覆盖目录发布及本机回执验证；没有自动 sudo、root 代理、
+远程任意命令、Core 认证授权或 Workspace 状态提升。
+见 [用户态 Worker 操作与故障恢复](gpupanel/WORKSPACE_LOCAL_RUNNER.md)。
+离真正的 Core→Agent→OS Principal 委托仍差身份映射与独立认证，
+M0 G3–G6 均不受此源码切片替代。
