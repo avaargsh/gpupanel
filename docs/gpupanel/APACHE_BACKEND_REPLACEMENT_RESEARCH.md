@@ -31,7 +31,7 @@ Apache 转换的证明。本轮不改根 LICENSE、NOTICE 或现有服务；本�
 ## 2. Apache 转换范围
 
 GPUPanel 根 [LICENSE](../../LICENSE)、[NOTICE](../../NOTICE.md) 仍声明 GPL-3.0 1Panel
-fork；已有 [转换计划](LICENSE_MIGRATION.md) 和 [四个文件的 Apache 例外](APACHE_FILE_SCOPE.md)，
+fork；已有 [转换计划](LICENSE_MIGRATION.md) 和 [文件级 Apache 例外](APACHE_FILE_SCOPE.md)，
 后者不覆盖应用后端或 React 前端。
 
 `scripts/gpupanel-license-audit.py` 的 `inventory(Path.cwd())` 对上述 HEAD 与固定基线
@@ -94,7 +94,7 @@ GPU provider、用户/项目后台、持久操作账本与已有数据迁移的�
 依赖方向、禁止方向与 API 输入权限边界以[复用边界 §3](BACKEND_REUSE_BOUNDARIES.md) 的图
 为唯一表述：React/shadcn → 应用后端（身份、授权、DTO、业务规则、持久 operation 账本）→
 受限本地执行器 → 独立观测回执；Holmes 仅只读建议，重新走后端授权与同一受控执行路径。
-operation 状态机 `planned -> running -> completed/verified/failed/unknown`：确认绑定 owner、
+operation 状态机 `planned -> running -> completed/failed/unknown`（verification 独立记录）：确认绑定 owner、
 资源、参数摘要、过期时间与 operation ID；持久幂等与原子 claim；退出码 receipt 与业务
 verified 分开；审计保存失败不得报告已核验成功。AI 不可绕过后端执行。
 

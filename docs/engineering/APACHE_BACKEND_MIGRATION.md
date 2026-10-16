@@ -17,7 +17,7 @@
 - 不读取凭据、运行库、个人配置；不访问模型端点或云平台，不操作现有容器、systemd、安装
   路径、数据库；不部署、不推送、不合并、不清理其他任务。
 
-## 本批任务与独占所有权
+## 首批任务范围（历史基线）
 
 | 任务 | 独占文件 | 交付 |
 | --- | --- | --- |
@@ -26,7 +26,7 @@
 | host-observer | `backend/` | 独立 Go module，只读 OS/内存/uptime 采集与 fixture/取消/真实只读测试；不提供 HTTP 或登录，不调用 shell |
 | 协调者 | 本契约、调研报告、文档入口、任务调度与集成记录 | 检查边界，独立复验，决定接收或返工 |
 
-后端 module 为 `github.com/avaargsh/GPUPanel/backend`，Go 1.26.6，优先标准库。Host 采集
+后端 module 为 `github.com/avaargsh/GPUPanel/backend`，Go 1.26.6，优先标准库。首批 Host 采集
 只读 `/etc/os-release`、`/proc/meminfo`、`/proc/uptime`；禁止读取环境变量、进程命令行或
 任意用户路径。受控 fixture 路径仅由内部构造参数指定，不可成为外部请求参数。设置读取上限
 与 context 检查；缺失、格式坏、超限、取消返回可观察错误/不可用状态，不用零值冒充成功。
