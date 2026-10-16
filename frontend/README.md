@@ -1,6 +1,8 @@
 # React 前端
 
-`apps/panel/` 是唯一手写前端，使用 React 19、Semi Design、Redux Toolkit / RTK Query。
+`apps/panel/` 是唯一手写前端，使用 React 19、Redux Toolkit / RTK Query。
+当前正迁移至 shadcn/ui + Tailwind，分工和验收见
+[迁移契约](../docs/engineering/SHADCN_MIGRATION.md)。
 依赖由 pnpm workspace 和根 `pnpm-lock.yaml` 管理；没有 npm/Bun 锁文件。
 
 ```bash

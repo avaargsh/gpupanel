@@ -70,3 +70,22 @@ pnpm build
 
 参考：[shadcn Vite](https://ui.shadcn.com/docs/installation/vite)、
 [Tailwind Vite](https://tailwindcss.com/docs/installation/using-vite)。
+
+## 当前执行状态
+
+四个真实 OpenCode CLI 任务已启动，使用独立 worktree 与以下分支：
+
+- `ui/shadcn-worker-shell-20261016`
+- `ui/shadcn-worker-workstation-20261016`
+- `ui/shadcn-worker-infrastructure-20261016`
+- `ui/shadcn-worker-administration-20261016`
+
+集成分支：`ui/shadcn-tailwind-20261016`。运行 PID、OpenCode 会话与交接位置
+保存在已忽略的 `.local/shadcn-migration/jobs.json`；完整日志不进入仓库。
+每个任务最终应输出自己 worktree 的 `.local/shadcn-task/handoff.json`。
+
+目前仅共享基础与验收门禁已提交，业务替换仍在各工作区进行；尚未合并或部署
+本轮迁移。新增的“无 Semi”检查在替换完成前应保持不通过，不能冒充验收通过。
+预审已发现确认框异步等待/重复提交、分页状态和标签关联问题，记录在私有
+`infrastructure-review-notes.txt`，必须在该任务提交后修正复核。禁止仅按代理
+交接中的 PASS 自动合并；需核对文件范围、编译、业务负向检查与实际差异。
