@@ -181,6 +181,15 @@ class LocalRunnerTest(unittest.TestCase):
                                preview["uvPlanDigest"])
         self.assertEqual(done["status"], "LOCAL_UV_VERIFIED_NOT_CORE_PROVISIONED", done)
         self.assertEqual(done["coreWorkspaceState"], "NotProvisioned")
+        claim = done["localEvidence"]
+        self.assertEqual(done["trustState"], "OperatorReported")
+        self.assertEqual(claim["intentId"], bound["intentId"])
+        self.assertEqual(claim["planDigest"], bound["planDigest"])
+        self.assertEqual(len(claim["receiptDigest"]), 64)
+        digest = hashlib.sha256(("GPUPanel-local-evidence-v1\\n" +
+            claim["intentId"] + "\\n" + claim["planDigest"] + "\\n" +
+            claim["receiptDigest"] + "\\n").encode()).hexdigest()
+        self.assertEqual(claim["evidenceDigest"], digest)
         target = local.workspace_target(self.home, bound["workspaceId"])
         self.assertEqual(local.uv.status(target, self.home)["status"], "VERIFIED")
         replay = local.inspect(bound, self.home)
@@ -188,6 +197,8 @@ class LocalRunnerTest(unittest.TestCase):
         self.assertEqual(replay["localUvState"], "VERIFIED")
         (target / "main.py").write_text("print('my actual project')\n")
         self.assertEqual(local.inspect(bound, self.home)["localUvState"], "MODIFIED")
+        with self.assertRaises(local.IntentError):
+            local.operator_observation(bound, self.home)
 
 
 if __name__ == "__main__":
