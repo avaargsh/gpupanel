@@ -59,3 +59,16 @@ operation `96442b68fe48` 的独立审查回执已生成（本地 reviewer worktr
 原作者继续在同一 worktree 修订包内契约/设计记录、Reconcile owner 输入界限、
 unknown 观测语义及其回归测试。另须检查超时 unknown 超过旧 TTL 后是否仍可查询。
 新提交尚未返回；旧提交不予集成。monitor 最终源码审查回执尚未返回，不记为通过。
+
+## Host metrics 已接收至隔离集成分支
+
+monitor `1acab29ad169` 已收到独立源码审查 ACCEPT（无 BLOCKER/MAJOR）。
+已串行集成至 `integration/agent-go-20261016` 的 `c69d036d0455`；协调者在此
+提交独立运行 `cd backend && go test -race -count=1 ./... && go vet ./...`，退出 0。
+只证明 Host 只读包与现有 hostobserve 测试通过，不证明 API/UI 或安装接线。
+
+审查保留三项非阻断边界：内部自定义路径的 stat/open FIFO 替换窗口、逐数据源
+Status 必须映射到未来 API 的可用状态、CRLF 空白被容忍。接线必须使用固定系统
+路径，不能传入请求路径；context 不能中断已经阻塞的 open。进一步硬化另行验收。
+源码来源/文件级 Apache 范围补充只读审查已下发；这不代表全模块核权已完成。
+operation 返工继续，主分支及运行服务未变。
