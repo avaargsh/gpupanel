@@ -11,6 +11,7 @@
 | 回归测试与证据分类 | [测试指南](engineering/testing.md) |
 | 本地真机安装 | [安装边界与操作说明](operations/host-install.md) |
 | 本机隔离安装与停止 | [本地 VM 安装测试](operations/local-install-test.md) |
+| Intel GPU 识别 | [探测方式与能力边界](operations/intel-gpu.md) |
 | GeoIP 获取与恢复 | [操作说明](operations/geoip.md) |
 | 当前真机安装结果 | [真实主机/终端/Docker链路](evidence/2026-10-16/host-install/RESULTS.md) |
 | 上一轮 VM 安装结果 | [本轮证据](evidence/2026-10-16/local-install/RESULTS.md) |

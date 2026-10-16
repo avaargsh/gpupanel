@@ -1030,6 +1030,7 @@ const zh = {
             pid: 'PID',
             processName: '进程名',
             usedMemory: '占用显存',
+            processUnavailable: '进程信息不可用',
             noProcess: '无进程',
             aggregation: '聚合方式',
             avg: '平均',

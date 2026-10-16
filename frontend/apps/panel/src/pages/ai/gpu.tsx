@@ -38,7 +38,7 @@ function DeviceCard({ device }: { device: GpuDevice }) {
             {processes.length > 0 ? (
                 <Table rowKey="pid" columns={columns} dataSource={processes} pagination={false} size="small" />
             ) : (
-                <Text type="tertiary" size="small">{t('ai.gpu.noProcess')}</Text>
+                <Text type="tertiary" size="small">{t(device.processStatus === 'unavailable' ? 'ai.gpu.processUnavailable' : 'ai.gpu.noProcess')}</Text>
             )}
         </Card>
     );
@@ -151,6 +151,7 @@ export default function GpuTab() {
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            {data?.warnings?.map((warning) => <Text key={warning} type="warning">{warning}</Text>)}
             <Card title={t('ai.gpu.current')} loading={isLoading}>
                 {devices.length === 0 ? (
                     <Empty description={t('ai.gpu.empty')} />

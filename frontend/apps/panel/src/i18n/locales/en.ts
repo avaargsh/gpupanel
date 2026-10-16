@@ -1032,6 +1032,7 @@ const en: LocaleResource = {
             pid: 'PID',
             processName: 'Process',
             usedMemory: 'Used memory',
+            processUnavailable: 'Process observation unavailable',
             noProcess: 'No process',
             aggregation: 'Aggregation',
             avg: 'Average',

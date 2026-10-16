@@ -19,14 +19,15 @@ const xpuSMICommand = "xpu-smi"
 type Client struct{}
 
 func New() (bool, Client) {
-	return cmd.Which(xpuSMICommand), Client{}
+	devices, _ := discoverIntelDRM("/sys/class/drm", intelPCIName)
+	return cmd.Which(xpuSMICommand) || len(devices) > 0, Client{}
 }
 
 func (c Client) LoadInfo() (*Info, error) {
 	return c.LoadInfoContext(context.Background())
 }
 
-func (c Client) LoadInfoContext(ctx context.Context) (*Info, error) {
+func (c Client) loadSMI(ctx context.Context) (*Info, error) {
 	cmdMgr := cmd.NewCommandMgr(cmd.WithContext(ctx), cmd.WithTimeout(5*time.Second))
 	data, err := cmdMgr.RunWithStdout(xpuSMICommand, "discovery", "-j")
 	if err != nil {
