@@ -10,12 +10,27 @@
 | React 生产构建 | `cd frontend && pnpm build` |
 | Core 包 | `cd core && go test ./... -count=1 -timeout=120s` |
 | Agent 包/临时 SQLite | `cd agent && go test ./... -count=1 -timeout=120s` |
+| backend 实验模块（hostobserve/hostmetrics） | `cd backend && go test -race -count=1 ./...` 与 `go vet ./...` |
 | 模拟浏览器 | `python3 scripts/browser/run-react-tests.py` |
 | 真实本地安装 | [操作手册](../operations/local-install-test.md) |
 
 浏览器脚本需要 Python Playwright 和 Chromium。`scripts/browser` 中的 API 拦截测试
 覆盖验证码/MFA、回执恢复、重复提交拒绝、只读证据界面，以及 vNext 布局、键盘和作用域负向检查，**不能证明真实后端可登录**。
 真实安装测试不使用这些 API 拦截。
+
+CI 实际覆盖（`.github/workflows/gpupanel-mainline.yml`）：
+
+| job | 内容 | 边界 |
+| --- | --- | --- |
+| `python-contracts` | `python3 -m unittest discover -s scripts/tests -p 'test_gpupanel_*.py'` | 只读 Python 契约 |
+| `frontend-baseline` | `pnpm install --frozen-lockfile` → `pnpm build` → `pnpm typecheck` → `pnpm test`，随后 `python scripts/browser/run-react-tests.py`（Playwright Chromium） | 模拟 API 拦截，非真实登录/设备 |
+| `backend-safety` | 在 `core/`、`agent/` 跑 `go test ./... -count=1 -timeout=120s` 并 `go build`；先放 CI-only embed fixture | **不跑 `backend/` 实验模块，也不跑 `-race`** |
+
+即：`backend/` 目前**没有 CI 门禁**；补 `backend` `go test -race` / `go vet` 与新增源码
+≤500 行检查归 `quality-gates` 任务（`scripts/gpupanel-source-policy.py`、
+`scripts/tests/test_gpupanel_source_policy.py`、`.github/workflows/gpupanel-source-policy.yml`），
+在该产物可用前一律标记 **pending**，不得假定已生效。当前状态与实际观察基线见
+[GOVERNANCE_STATUS](../STATUS.md)。
 
 Go 测试中需要专用 Docker 或 Agent socket 的用例由环境变量门槛控制；缺失时会
 跳过。普通 `go test` exit 0 不能把这些跳过项变成 live Docker 通过。

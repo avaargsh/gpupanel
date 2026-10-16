@@ -1,6 +1,6 @@
 # GPUPanel 当前工程状态
 
-> 快照：2026-10-16，治理前主线 `main @ 33d6176a51dfb3dccdae1a688ebe645a4f6972d2`。**这是唯一默认状态入口**，变更后须核对最新 SHA/Actions/实际二进制再更新。本页不宣称后续提交自动通过旧验收。
+> 更新：2026-10-17；本轮合并以远端 `main @ 79be44b85e80` 为基线。**这是唯一默认状态入口**，变更后须核对最新 SHA/Actions/实际二进制再更新。本页不宣称后续提交自动通过旧验收。
 
 ## 产品与发布：M0 NO-GO
 
@@ -37,3 +37,19 @@
 ## 证据与下一步
 
 历史摘要保留 exact SHA 和 PASS/FAIL/NOT RUN；只维护本页“当前状态”。同主题新证据替换旧摘要，旧附件靠 Git history / Actions 恢复，不改写历史、不删除运行数据或系统备份。下一优先级：Project→持久 Workspace→Session、AppInstall UNKNOWN 受控恢复、Ubuntu 24.04 一致版本 G3–G6 验收。
+
+## 本轮合并范围
+
+| 项目 | 接收状态 |
+| --- | --- |
+| Host metrics、operation | 独立功能审查通过；仅模块内候选，未接运行路由；operation 变更用途仍受 D1/D2 门槛限制 |
+| requestguard | `b92b5fbd9d56` 独立复审 ACCEPT；认证/CSRF 为注入接口，真实登录等价性未证明 |
+| Core 本地 token | `83160c916923` 独立安全审查 ACCEPT；现有 daily token 协议不变，重放与文件加固仍为债务 |
+| 源码门禁 | `e689facdc406` 已接收；限制新增源码 500 行，补 backend race/vet CI |
+| 文档/证据 | 删除重复契约和回执、压缩过程叙述；保留来源、关键指纹与恢复依据 |
+| hostdiagnosis | `073925202b9a` 复审 REQUEST_CHANGES，Phase/Outcome 长度校验未闭合；不合入，保留分支 |
+| MySQL argv 凭据 | 未提交整改保留，未验收、不合入 |
+
+本次只合并已接受源码。API 路由、存储模式和运行服务不切换；全产物许可核权、
+真实认证接线、7 库迁移和同版本 VM 门槛仍未完成。合并验收的命令与精确 SHA 见本次交接，
+旧测试不自动覆盖新提交。接口与迁移表见 [Core/Agent 重写契约](engineering/CORE_AGENT_REWRITE.md)。
