@@ -100,3 +100,19 @@ Core 新增 `GET /api/v1/core/projects/:id`，仅接受真实 Session 超级管�
 Host 执行器，**不会调用 uv、写项目目录、启动容器或 GPU**。提交意图
 不代表计划可执行，也不代表资源配额、磁盘路径和宿主身份已经审核。
 UI 明示阻断原因与操作未知状态；M0 G3–G6 仍为 NO-GO。
+
+## 本地非 root uv 执行器（手动预发布切片）
+
+新增 `scripts/gpupanel-uv-intent-runner.py`：只能由普通 Ubuntu
+用户在其真实 Home 中手工运行，读取已存在的 Workspace
+`AwaitingHostBinding` 计划 JSON，核对固定服务端 digest 和
+离线 uv 本地预览 digest，双摘要显式确认后调用成熟
+`gpupanel-uv-project.py`。写入目标严格固定为
+`~/GPUPanel/projects/workspace-<UUID>`；禁止自定义目标、
+root/suid、目录链接、覆盖已存在项目和下载网络依赖。
+真实生成后独立校验 uv 回执，输出
+`LOCAL_UV_VERIFIED_NOT_CORE_PROVISIONED`；并**不**更新 Core
+或授权远程 Agent。JSON 文件可伪造，必须依赖本机用户交互审批，
+不能当成远程执行凭据。详情见
+[本机安全手工交接](gpupanel/WORKSPACE_LOCAL_RUNNER.md)。
+这不代表持久 Session / GPU 资源调度已实现，M0 G3–G6 NO-GO。
