@@ -28,7 +28,7 @@
 
 继承自 1Panel 的组合工作仍受 **GPL-3.0** 及 `NOTICE.md` 原有归因要求约束；只有 [六个独立审计脚本/测试](gpupanel/APACHE_FILE_SCOPE.md) 有明确的文件级 Apache-2.0。整体 Apache-only **BLOCKED**。删除旧文档、改名或 AI 改写不能清除其余派生代码的许可义务。
 
-这轮删除 `.skills/semi-ui-skills/` 旧前端代理指导及不带当前提交验收的旧远程源码整合资料。**未删除任何无法证明安全的继承 GPL 运行时文件。** 旧 Catalog 禁用门槛、API 兼容锁、Host/备份/已安装应用仍需调用方/构建产物/数据库迁移及回滚证据。见 [许可现状](gpupanel/APACHE_MIGRATION_PROGRESS.md)。
+这轮删除 `.skills/semi-ui-skills/` 旧前端代理指导及不带当前提交验收的旧远程源码整合资料。**仅删除四个不参与 Linux 构建的 Darwin/Windows 日志平台文件，其他继承 GPL 运行时仍保留。** 文件移除不代表 Apache 重新许可。 旧 Catalog 禁用门槛、API 兼容锁、Host/备份/已安装应用仍需调用方/构建产物/数据库迁移及回滚证据。见 [许可现状](gpupanel/APACHE_MIGRATION_PROGRESS.md)。
 
 ## 证据与下一步
 

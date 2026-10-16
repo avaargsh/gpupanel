@@ -20,6 +20,13 @@ class RepositoryHygiene(unittest.TestCase):
         self.assertFalse((ROOT / "docs/evidence/2026-10-15/remote-integration").exists())
         self.assertTrue((ROOT / "docs/evidence/2026-10-16/local-install/RESULTS.md").is_file())
 
+    def test_linux_log_source_remains_and_unused_os_files_are_absent(self):
+        for component in ("core", "agent"):
+            folder = ROOT / component / "log"
+            self.assertTrue((folder / "dup_write_linux.go").is_file())
+            self.assertFalse((folder / "dup_write_darwin.go").exists())
+            self.assertFalse((folder / "dup_write_windows.go").exists())
+
     def test_legal_attribution_and_runtime_guards_remain(self):
         self.assertIn("GNU GENERAL PUBLIC LICENSE", (ROOT / "LICENSE").read_text(encoding="utf-8"))
         self.assertIn("1Panel", (ROOT / "NOTICE.md").read_text(encoding="utf-8"))

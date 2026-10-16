@@ -7,7 +7,7 @@
 | L0 | 根 `LICENSE` 保持 GPL-3.0；`NOTICE.md` 保留 1Panel 归因 |
 | L1 | 部分源码/依赖 provenance 已有；完整分发包来源、权利未审核完 |
 | L2 | 仅六个 [文件级 Apache](APACHE_FILE_SCOPE.md) 审计工具/测试 |
-| L3 | **BLOCKED**，无继承 GPL 运行时代码删除放行 |
+| L3 | **PARTIAL / BLOCKED**，只有四个不参与 Linux 构建的平台日志文件可删，其余运行时代码与权利未闭环 |
 | L4 | 安装发行工件的全量 SBOM/NOTICE 仍未通过 |
 | L5 | **BLOCKED**，不能发布 Apache-only GPUPanel |
 
@@ -20,6 +20,7 @@
 | `agent/app/service/legacy_catalog.go` | 保留 | 阻止远端 Catalog 被重新启用；已装 App 仍可能依赖数据 |
 | `core/app/auth/api_key_legacy_lock.go` | 保留待审 | 认证锁与客户端兼容不能靠文件名推断无消费者 |
 | Core/Agent Host、Docker、App、备份 | 保留 GPL | 是当前运行能力，删除须证明调用方、数据、外部合同与回滚 |
+| `core/log/dup_write_{darwin,windows}.go`、`agent/log/dup_write_{darwin,windows}.go` | **删除 4 个非 Linux 文件** | 仅 Ubuntu/Linux 发行范围；Linux 实现保留，跨 OS 编译不承诺；GPL 主许可不变 |
 | 旧 Vue/Semi 应用源 | 已不在当前前端树 | 不能推导其余代码已经取得 Apache 许可 |
 
 删除继承运行时前需要 Git/call-site、二进制/依赖、HTTP/DB 合同和负向恢复测试，再单独 PR；改名、删版权头和 AI 重写均不能当作重新许可。
