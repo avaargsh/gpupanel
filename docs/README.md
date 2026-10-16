@@ -1,7 +1,7 @@
 # GPUPanel 文档入口
 
 当前工程使用 React 19 / pnpm，以及独立 Go Core、Agent 模块。
-前端正在按 [shadcn/ui + Tailwind 迁移契约](engineering/SHADCN_MIGRATION.md) 分区替换 Semi。
+前端已完成 [shadcn/ui + Tailwind 迁移](engineering/SHADCN_MIGRATION.md)，不再依赖 Semi Design。
 日常开发从下表进入；验收结论以对应日期、文件指纹或产物摘要为准。
 
 | 用途 | 文档 |
