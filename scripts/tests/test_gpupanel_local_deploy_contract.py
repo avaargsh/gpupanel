@@ -22,6 +22,11 @@ class LocalDeployContract(unittest.TestCase):
         self.assertNotIn('log "  password     : $PASSWORD"', src)
         self.assertIn('install -m 0700 "$PCTL_SRC"', src)
 
+    def test_install_script_bash_syntax(self):
+        result = subprocess.run(["bash", "-n", str(INSTALLER)],
+                                capture_output=True, text=True, check=False)
+        self.assertEqual(result.returncode, 0, result.stderr)
+
     def test_help_and_invalid_options_never_create_or_chmod_an_install_log(self):
         # Execute only early, unprivileged parsing paths in an isolated copy.
         with tempfile.TemporaryDirectory() as td:
