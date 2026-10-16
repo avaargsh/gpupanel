@@ -38,7 +38,6 @@ export default defineConfig(({ mode }) => ({
             output: {
                 manualChunks: {
                     'vendor-react': ['react', 'react-dom', 'react-router-dom'],
-                    'vendor-semi': ['@douyinfe/semi-ui', '@douyinfe/semi-icons'],
                     'vendor-redux': ['@reduxjs/toolkit', 'react-redux'],
                     'vendor-echarts': ['echarts'],
                     'vendor-xterm': ['@xterm/xterm', '@xterm/addon-fit'],
