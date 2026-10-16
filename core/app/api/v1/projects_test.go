@@ -176,3 +176,63 @@ func TestProjectDetailHTTPNoCrossOwnerOrUnauthenticatedReads(t *testing.T) {
 		}
 	}
 }
+
+func TestWorkspaceProvisionAPISessionCSRFForeignAndLostACKReplay(t *testing.T) {
+	router, cookies, csrf, db := projectRegistryHarness(t)
+	ctx := context.Background()
+	p, err := workspace.New(db).Create(ctx, psession.SuperAdminSessionUserID, "notebooks", "uv")
+	if err != nil { t.Fatal(err) }
+	other, err := workspace.New(db).Create(ctx, "other-owner", "private", "manual")
+	if err != nil { t.Fatal(err) }
+	prefix := "/api/v1/core/projects/" + p.ID + "/workspaces/" + p.Workspaces[0].ID
+	preview := prefix + "/provision-plan"
+	intent := prefix + "/provision-intent"
+	if code, _ := projectRequestAt(t, router, http.MethodGet, preview, "", nil, ""); code != http.StatusForbidden {
+		t.Fatalf("anonymous preview leaked intent: %d", code)
+	}
+	if code, _ := projectRequestAt(t, router, http.MethodPost, intent, `{"planDigest":"x"}`, cookies, ""); code != http.StatusForbidden {
+		t.Fatalf("write without CSRF accepted: %d", code)
+	}
+	code, result := projectRequestAt(t, router, http.MethodGet, preview, "", cookies, "")
+	if code != http.StatusOK { t.Fatalf("authorized plan failed: %d %#v", code, result) }
+	plan := result["data"].(map[string]interface{})
+	if plan["executionAvailable"] != false || plan["workspaceState"] != workspace.NotProvisioned ||
+		plan["blocker"] != workspace.HostRunnerUnbound || plan["intent"] != nil {
+		t.Fatalf("preview claimed environment already available: %#v", plan)
+	}
+	digest := plan["planDigest"].(string)
+	if code, _ := projectRequestAt(t, router, http.MethodPost, intent, `{"planDigest":"`+digest+`"}`, cookies, ""); code != http.StatusForbidden {
+		t.Fatalf("client with missing CSRF accepted: %d", code)
+	}
+	code, approved := projectRequestAt(t, router, http.MethodPost, intent, `{"planDigest":"`+digest+`"}`, cookies, csrf)
+	if code != http.StatusOK { t.Fatalf("valid explicit approval failed: %d %#v", code, approved) }
+	created := approved["data"].(map[string]interface{})
+	first := created["intent"].(map[string]interface{})["id"].(string)
+	code, replayed := projectRequestAt(t, router, http.MethodPost, intent, `{"planDigest":"`+digest+`"}`, cookies, csrf)
+	if code != http.StatusOK || replayed["data"].(map[string]interface{})["intent"].(map[string]interface{})["id"] != first {
+		t.Fatalf("lost-ACK retry changed intent identity: %d %#v", code, replayed)
+	}
+	if code, res := projectRequestAt(t, router, http.MethodGet, preview, "", cookies, ""); code != http.StatusOK ||
+		res["data"].(map[string]interface{})["intent"].(map[string]interface{})["state"] != workspace.AwaitingHostBinding {
+		t.Fatalf("durable readback missing intent: %d %#v", code, res)
+	}
+	for _, path := range []string{
+		"/api/v1/core/projects/" + other.ID + "/workspaces/" + other.Workspaces[0].ID + "/provision-plan",
+		"/api/v1/core/projects/" + p.ID + "/workspaces/" + other.Workspaces[0].ID + "/provision-plan",
+		"/api/v1/core/projects/bad-id/workspaces/" + p.Workspaces[0].ID + "/provision-plan",
+	} {
+		code, res := projectRequestAt(t, router, http.MethodGet, path, "", cookies, "")
+		if code != http.StatusNotFound || res["message"] != "ProjectNotFound" {
+			t.Fatalf("foreign scope leaked: %d %#v", code, res)
+		}
+	}
+	if code, _ := projectRequestAt(t, router, http.MethodPost, intent,
+		`{"planDigest":"`+digest+`","force":true}`, cookies, csrf); code != http.StatusOK {
+		// Invalid request uses the existing API helper's 200 envelope + 400 code.
+		t.Fatalf("unexpected HTTP envelope for forbidden field: %d", code)
+	}
+	var count int64
+	if err := db.Model(&workspace.ProvisionIntent{}).Count(&count).Error; err != nil || count != 1 {
+		t.Fatalf("requests created too many rows: %d %v", count, err)
+	}
+}
