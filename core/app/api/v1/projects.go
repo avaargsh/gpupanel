@@ -152,3 +152,47 @@ func (b *BaseApi) RequestWorkspaceProvision(c *gin.Context) {
 		helper.SuccessWithData(c, result)
 	}
 }
+
+func (b *BaseApi) GetWorkspaceLocalEvidence(c *gin.Context) {
+	owner, ok := projectOwner(c)
+	if !ok { return }
+	view, err := workspace.New(global.DB).GetLocalEvidence(
+		c.Request.Context(), owner, c.Param("id"), c.Param("workspaceId"),
+	)
+	workspaceEvidenceResponse(c, view, err)
+}
+
+func (b *BaseApi) ReportWorkspaceLocalEvidence(c *gin.Context) {
+	owner, ok := projectOwner(c)
+	if !ok { return }
+	var input workspace.LocalEvidenceInput
+	dec := json.NewDecoder(http.MaxBytesReader(c.Writer, c.Request.Body, 1024))
+	dec.DisallowUnknownFields()
+	if dec.Decode(&input) != nil || dec.Decode(new(interface{})) != io.EOF {
+		helper.BadRequest(c, errors.New("invalid local evidence payload"))
+		return
+	}
+	view, err := workspace.New(global.DB).ReportLocalEvidence(
+		c.Request.Context(), owner, c.Param("id"), c.Param("workspaceId"), input,
+	)
+	workspaceEvidenceResponse(c, view, err)
+}
+
+func workspaceEvidenceResponse(c *gin.Context, view workspace.LocalEvidenceView, err error) {
+	switch {
+	case errors.Is(err, workspace.ErrNotFound):
+		c.AbortWithStatusJSON(http.StatusNotFound, dto.Response{
+			Code: http.StatusNotFound, Message: "ProjectNotFound",
+		})
+	case errors.Is(err, workspace.ErrInvalidInput):
+		helper.BadRequest(c, errors.New("invalid local evidence"))
+	case errors.Is(err, workspace.ErrConflict), errors.Is(err, workspace.ErrPlanChanged):
+		c.AbortWithStatusJSON(http.StatusConflict, dto.Response{
+			Code: http.StatusConflict, Message: "LocalEvidenceConflict",
+		})
+	case err != nil:
+		helper.InternalServer(c, errors.New("local evidence registry unavailable"))
+	default:
+		helper.SuccessWithData(c, view)
+	}
+}

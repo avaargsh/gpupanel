@@ -26,7 +26,7 @@ func projectRegistryHarness(t *testing.T) (*gin.Engine, []*http.Cookie, string, 
 	oldDB, oldSession, oldI18n := global.DB, global.SESSION, global.I18n
 	db, err := gorm.Open(sqlite.Open(filepath.Join(t.TempDir(), "core.db")), &gorm.Config{})
 	if err != nil { t.Fatal(err) }
-	if err := db.AutoMigrate(&workspace.Project{}, &workspace.Workspace{}, &workspace.ProvisionIntent{}); err != nil { t.Fatal(err) }
+	if err := db.AutoMigrate(&workspace.Project{}, &workspace.Workspace{}, &workspace.ProvisionIntent{}, &workspace.LocalEvidence{}); err != nil { t.Fatal(err) }
 	global.DB, global.SESSION = db, psession.NewPSession("")
 	// The real global CSRF guard localizes denial responses, so provide
 	// a minimal non-nil localizer in this isolated HTTP harness.
@@ -44,6 +44,8 @@ func projectRegistryHarness(t *testing.T) (*gin.Engine, []*http.Cookie, string, 
 	router.GET("/api/v1/core/projects/:id", api.GetProject)
 	router.GET("/api/v1/core/projects/:id/workspaces/:workspaceId/provision-plan", api.PreviewWorkspaceProvision)
 	router.POST("/api/v1/core/projects/:id/workspaces/:workspaceId/provision-intent", api.RequestWorkspaceProvision)
+	router.GET("/api/v1/core/projects/:id/workspaces/:workspaceId/local-evidence", api.GetWorkspaceLocalEvidence)
+	router.POST("/api/v1/core/projects/:id/workspaces/:workspaceId/local-evidence", api.ReportWorkspaceLocalEvidence)
 	router.POST("/api/v1/core/projects", api.CreateProject)
 
 	w := httptest.NewRecorder()

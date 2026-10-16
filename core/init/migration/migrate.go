@@ -71,5 +71,6 @@ func coreMigrations() []*gormigrate.Migration {
 		migrations.AddOperationLogAPIKey,
 		migrations.AddProjectWorkspaceRegistry,
 		migrations.AddWorkspaceProvisionIntent,
+		migrations.AddWorkspaceLocalEvidence,
 	}
 }
