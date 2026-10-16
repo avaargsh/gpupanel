@@ -13,13 +13,20 @@ import (
 	"time"
 )
 
-// Config declares the explicit bounds of a Store. Every bound is required:
-// a hidden default would hide the capacity decision from its owner.
+// Config declares the explicit bounds of a Store. Every bound is required and
+// operator-chosen: a hidden default would hide the capacity and retention
+// decision from its owner (see DECISIONS.md D6).
 type Config struct {
 	Capacity       int           // maximum physical records held at once
 	RecordTTL      time.Duration // lifetime measured from creation
 	RunningTimeout time.Duration // bounded Begin-to-terminal time before Reconcile forces unknown
-	Clock          Clock         // optional; nil selects the system clock
+	// ObservationWindow bounds how long a terminal outcome (completed,
+	// failed, unknown) stays queryable after it is recorded, measured from
+	// the terminal transition. It keeps an unknown outcome visible for
+	// reconciliation by its owner instead of hiding it the moment the record
+	// TTL passes. Claim replay of an unknown outcome is refused regardless.
+	ObservationWindow time.Duration
+	Clock             Clock // optional; nil selects the system clock
 }
 
 // Store is a bounded in-memory operation registry. It is not durable: every
@@ -34,6 +41,7 @@ type Store struct {
 	capacity int
 	ttl      time.Duration
 	timeout  time.Duration
+	window   time.Duration
 	clock    Clock
 
 	byID       map[string]*record
@@ -66,11 +74,23 @@ type ownerKey struct {
 	key   string
 }
 
-// dead reports whether the record has passed its retention lifetime. A running
-// record is never dead: its lifetime is governed by the bounded running
-// timeout (applied via Reconcile), not by the record TTL.
-func (r *record) dead(now time.Time) bool {
-	return r.state != StateRunning && !now.Before(r.expiresAt)
+// dead reports whether the record has passed its retention lifetime. A
+// running record is never dead: its lifetime is governed by the bounded
+// running timeout (applied via Reconcile), not by the record TTL. A terminal
+// record (completed/failed/unknown) is retained at least until
+// EndedAt+window so its outcome stays queryable for an explicit bounded
+// observation interval even when the record TTL elapsed while it ran.
+func (r *record) dead(now time.Time, window time.Duration) bool {
+	if r.state == StateRunning {
+		return false
+	}
+	retention := r.expiresAt
+	if r.state.Terminal() && !r.endedAt.IsZero() {
+		if until := r.endedAt.Add(window); until.After(retention) {
+			retention = until
+		}
+	}
+	return !now.Before(retention)
 }
 
 // New builds a Store. It fails on any missing bound rather than guessing one.
@@ -88,6 +108,9 @@ func New(cfg Config) (*Store, error) {
 		return nil, fmt.Errorf("%w: record TTL (%s) must exceed running timeout (%s) or running records expire before they can time out",
 			ErrInvalidConfig, cfg.RecordTTL, cfg.RunningTimeout)
 	}
+	if cfg.ObservationWindow <= 0 {
+		return nil, fmt.Errorf("%w: observation window must be positive, got %s", ErrInvalidConfig, cfg.ObservationWindow)
+	}
 	clk := cfg.Clock
 	if clk == nil {
 		clk = systemClock{}
@@ -96,6 +119,7 @@ func New(cfg Config) (*Store, error) {
 		capacity:   cfg.Capacity,
 		ttl:        cfg.RecordTTL,
 		timeout:    cfg.RunningTimeout,
+		window:     cfg.ObservationWindow,
 		clock:      clk,
 		byID:       make(map[string]*record),
 		byOwnerKey: make(map[ownerKey]string),
@@ -109,9 +133,17 @@ func New(cfg Config) (*Store, error) {
 // Rejection rules for an existing identity, in order: resource binding change
 // -> ErrBindingMismatch, parameter digest change -> ErrDigestMismatch,
 // expired record -> ErrExpired (the key stays reserved until Reconcile purges
-// it, which prevents a silent duplicate identity). When no identity exists the
-// claim is rejected with ErrCapacity if the physical bound is reached; live
-// records are never evicted to make room.
+// it, which prevents a silent duplicate identity), unknown outcome ->
+// ErrInvalidTransition (an uncertain outcome is never replayed; see
+// DECISIONS.md D1). When no identity exists the claim is rejected with
+// ErrCapacity if the physical bound is reached; live records are never evicted
+// to make room.
+//
+// CAUTION (DECISIONS.md D1): after Reconcile purges a record, or after a
+// process restart, an identical claim is indistinguishable from a brand-new
+// request and yields a fresh planned identity. The caller must not auto-Begin
+// or re-execute a retry of previously successful work without durable
+// outcome knowledge held outside this package.
 //
 // A cancelled context is honoured before any mutation.
 func (s *Store) Claim(ctx context.Context, req ClaimRequest) (Operation, bool, error) {
@@ -134,8 +166,11 @@ func (s *Store) Claim(ctx context.Context, req ClaimRequest) (Operation, bool, e
 		if rec.digest != digest {
 			return Operation{}, false, fmt.Errorf("%w: identity %s bound to other parameters", ErrDigestMismatch, rec.id)
 		}
-		if rec.dead(s.clock.Now()) {
+		if rec.dead(s.clock.Now(), s.window) {
 			return Operation{}, false, fmt.Errorf("%w: identity %s past %s", ErrExpired, rec.id, rec.expiresAt.Format(time.RFC3339Nano))
+		}
+		if rec.state == StateUnknown {
+			return Operation{}, false, fmt.Errorf("%w: identity %s has an unknown outcome and must not be replayed", ErrInvalidTransition, rec.id)
 		}
 		return snapshot(rec), true, nil
 	}
@@ -194,7 +229,7 @@ func (s *Store) List(ctx context.Context, owner Owner) ([]Operation, error) {
 	now := s.clock.Now()
 	owned := make([]*record, 0, len(s.byID))
 	for _, rec := range s.byID {
-		if rec.owner == owner && !rec.dead(now) {
+		if rec.owner == owner && !rec.dead(now, s.window) {
 			owned = append(owned, rec)
 		}
 	}
@@ -275,7 +310,7 @@ func (s *Store) lookupLocked(owner Owner, id string) (*record, error) {
 	if rec.owner != owner {
 		return nil, fmt.Errorf("%w: id %s", ErrOwnershipDenied, id)
 	}
-	if rec.dead(s.clock.Now()) {
+	if rec.dead(s.clock.Now(), s.window) {
 		return nil, fmt.Errorf("%w: id %s", ErrExpired, id)
 	}
 	return rec, nil

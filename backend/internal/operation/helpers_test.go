@@ -36,6 +36,7 @@ func (c *fakeClock) Advance(d time.Duration) {
 const (
 	testTTL      = time.Hour
 	testTimeout  = 30 * time.Second
+	testWindow   = 10 * time.Minute
 	testCapacity = 4
 )
 
@@ -43,10 +44,11 @@ func newTestStore(t *testing.T, capacity int) (*Store, *fakeClock) {
 	t.Helper()
 	clk := newFakeClock()
 	s, err := New(Config{
-		Capacity:       capacity,
-		RecordTTL:      testTTL,
-		RunningTimeout: testTimeout,
-		Clock:          clk,
+		Capacity:          capacity,
+		RecordTTL:         testTTL,
+		RunningTimeout:    testTimeout,
+		ObservationWindow: testWindow,
+		Clock:             clk,
 	})
 	if err != nil {
 		t.Fatalf("New: %v", err)

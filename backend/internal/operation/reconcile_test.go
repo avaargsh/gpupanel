@@ -157,13 +157,19 @@ func TestRunningRecordHeldUntilTimeoutThenPurgedNextCycle(t *testing.T) {
 	if len(report.Purged) != 0 {
 		t.Fatalf("record purged in the same cycle it became unknown: %+v", report)
 	}
+	// The unknown outcome stays queryable even though the record TTL elapsed
+	// while it was running (explicit bounded observation window).
+	if got := mustGet(t, s, "alice", op.ID); got.State != StateUnknown {
+		t.Fatalf("unknown outcome hidden after TTL: %v", got.State)
+	}
 
+	clk.Advance(testWindow + time.Second) // past the observation window
 	report, err = s.Reconcile(ctx, "alice")
 	if err != nil {
 		t.Fatalf("second Reconcile: %v", err)
 	}
 	if len(report.Purged) != 1 || report.Purged[0] != op.ID {
-		t.Fatalf("unknown record not reclaimed: %+v", report)
+		t.Fatalf("unknown record not reclaimed after window: %+v", report)
 	}
 	if _, err := s.Get(ctx, "alice", op.ID); !errors.Is(err, ErrNotFound) {
 		t.Fatalf("purged record: %v", err)

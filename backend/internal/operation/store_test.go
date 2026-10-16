@@ -217,12 +217,14 @@ func TestClaimValidationBounds(t *testing.T) {
 }
 
 func TestConfigRejectsMissingOrIncoherentBounds(t *testing.T) {
-	base := Config{Capacity: 4, RecordTTL: testTTL, RunningTimeout: testTimeout}
+	base := Config{Capacity: 4, RecordTTL: testTTL, RunningTimeout: testTimeout, ObservationWindow: testWindow}
 	cases := map[string]Config{
-		"zero capacity":     {Capacity: 0, RecordTTL: testTTL, RunningTimeout: testTimeout},
-		"negative ttl":      {Capacity: 4, RecordTTL: -time.Second, RunningTimeout: testTimeout},
-		"zero timeout":      {Capacity: 4, RecordTTL: testTTL, RunningTimeout: 0},
-		"ttl below timeout": {Capacity: 4, RecordTTL: testTimeout, RunningTimeout: testTimeout},
+		"zero capacity":     {Capacity: 0, RecordTTL: testTTL, RunningTimeout: testTimeout, ObservationWindow: testWindow},
+		"negative ttl":      {Capacity: 4, RecordTTL: -time.Second, RunningTimeout: testTimeout, ObservationWindow: testWindow},
+		"zero timeout":      {Capacity: 4, RecordTTL: testTTL, RunningTimeout: 0, ObservationWindow: testWindow},
+		"zero window":       {Capacity: 4, RecordTTL: testTTL, RunningTimeout: testTimeout, ObservationWindow: 0},
+		"negative window":   {Capacity: 4, RecordTTL: testTTL, RunningTimeout: testTimeout, ObservationWindow: -time.Second},
+		"ttl below timeout": {Capacity: 4, RecordTTL: testTimeout, RunningTimeout: testTimeout, ObservationWindow: testWindow},
 	}
 	for name, cfg := range cases {
 		if _, err := New(cfg); !errors.Is(err, ErrInvalidConfig) {
@@ -232,8 +234,8 @@ func TestConfigRejectsMissingOrIncoherentBounds(t *testing.T) {
 	if _, err := New(base); err != nil {
 		t.Fatalf("valid config rejected: %v", err)
 	}
-	// Default clock path must not panic.
-	if _, err := New(Config{Capacity: 1, RecordTTL: time.Minute, RunningTimeout: time.Second}); err != nil {
+	// Default clock path must not panic; every bound is operator-supplied.
+	if _, err := New(Config{Capacity: 1, RecordTTL: time.Minute, RunningTimeout: time.Second, ObservationWindow: time.Minute}); err != nil {
 		t.Fatalf("system-clock config: %v", err)
 	}
 }

@@ -108,6 +108,12 @@ type ClaimRequest struct {
 // Verification is an independently observed outcome recorded separately from
 // the lifecycle state. Evidence is an opaque bounded reference (for example an
 // exit-code receipt id or inspect summary); it must never contain secrets.
+//
+// Ordering caveat (DECISIONS.md D4): At is stamped from the store clock at
+// Verify time. With arbitrary injected clocks (steps backward, no monotonic
+// reading) At is not guaranteed to sort after EndedAt; timestamps are
+// informational and record order is carried by the store sequence, not by
+// comparing times.
 type Verification struct {
 	Source   string    // identity of the independent observation channel
 	Result   Result    // what the observer saw
@@ -138,6 +144,11 @@ type Operation struct {
 // (for example an operation reconciled to unknown that later shows a successful
 // observation) stays false: the state remains unknown and the disagreement is
 // preserved in Verification.
+//
+// Warning (DECISIONS.md D3): agreement includes unknown agreeing with unknown,
+// so true does NOT mean the outcome succeeded and is NOT a replay-safety gate.
+// Gate success on State == StateCompleted && Verification.Result ==
+// ResultSucceeded; an unknown state refuses replay regardless of this bool.
 func (o Operation) IndependentlyVerified() bool {
 	return o.Verification != nil && o.State.Terminal() &&
 		o.Verification.Result == o.State.Result()

@@ -13,15 +13,19 @@ import (
 // creation order:
 //
 //  1. running and past Deadline -> unknown (recorded in report.TimedOut); a
-//     late terminal report on that record is henceforth ErrInvalidTransition.
-//  2. not running and past ExpiresAt -> removed (report.Purged), which releases
-//     its (owner, key) identity.
+//     late terminal report on that record is henceforth ErrInvalidTransition,
+//     and Claim replay of it is refused (DECISIONS.md D1).
+//  2. not running and past its retention (ExpiresAt, extended for terminal
+//     outcomes by the observation window) -> removed (report.Purged), which
+//     releases its (owner, key) identity.
 //
-// A running record is never purged before step 1 can fire, so an unknown
-// outcome stays observable for at least one reconcile cycle before its record
-// becomes reclaimable. Reconcile spawns nothing: callers drive it explicitly.
-// Queries (Get/List) never reconcile, so a query can neither transition nor
-// execute anything.
+// A running record is never purged before step 1 can fire, and an unknown
+// outcome stays queryable for the bounded observation window after the
+// timeout before its record becomes reclaimable. Reconcile spawns nothing:
+// callers drive it explicitly, and the reclamation owner for each principal's
+// store is that principal's authenticated backend lifecycle (DECISIONS.md
+// D2) — no cross-owner sweep exists here. Queries (Get/List) never
+// reconcile, so a query can neither transition nor execute anything.
 func (s *Store) Reconcile(ctx context.Context, owner Owner) (ReconcileReport, error) {
 	report := ReconcileReport{TimedOut: []string{}, Purged: []string{}}
 	if err := ctx.Err(); err != nil {
@@ -29,6 +33,9 @@ func (s *Store) Reconcile(ctx context.Context, owner Owner) (ReconcileReport, er
 	}
 	if owner == "" {
 		return report, fmt.Errorf("%w: owner is required", ErrInvalidRequest)
+	}
+	if len(owner) > MaxOwnerBytes {
+		return report, fmt.Errorf("%w: owner exceeds %d bytes", ErrInvalidRequest, MaxOwnerBytes)
 	}
 
 	s.mu.Lock()
@@ -50,7 +57,7 @@ func (s *Store) Reconcile(ctx context.Context, owner Owner) (ReconcileReport, er
 			report.TimedOut = append(report.TimedOut, rec.id)
 			continue
 		}
-		if rec.dead(now) {
+		if rec.dead(now, s.window) {
 			delete(s.byID, rec.id)
 			delete(s.byOwnerKey, ownerKey{owner: rec.owner, key: rec.key})
 			report.Purged = append(report.Purged, rec.id)
