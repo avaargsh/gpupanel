@@ -15,18 +15,23 @@ import (
 	"github.com/avaargsh/GPUPanel/core/middleware"
 	"github.com/gin-gonic/gin"
 	"github.com/glebarez/sqlite"
+	goi18n "github.com/nicksnyder/go-i18n/v2/i18n"
+	"golang.org/x/text/language"
 	"gorm.io/gorm"
 )
 
 func projectRegistryHarness(t *testing.T) (*gin.Engine, []*http.Cookie, string, *gorm.DB) {
 	t.Helper()
-	oldDB, oldSession := global.DB, global.SESSION
+	oldDB, oldSession, oldI18n := global.DB, global.SESSION, global.I18n
 	db, err := gorm.Open(sqlite.Open(filepath.Join(t.TempDir(), "core.db")), &gorm.Config{})
 	if err != nil { t.Fatal(err) }
 	if err := db.AutoMigrate(&workspace.Project{}, &workspace.Workspace{}); err != nil { t.Fatal(err) }
 	global.DB, global.SESSION = db, psession.NewPSession("")
+	// The real global CSRF guard localizes denial responses, so provide
+	// a minimal non-nil localizer in this isolated HTTP harness.
+	global.I18n = goi18n.NewLocalizer(goi18n.NewBundle(language.English), "en")
 	t.Cleanup(func() {
-		global.DB, global.SESSION = oldDB, oldSession
+		global.DB, global.SESSION, global.I18n = oldDB, oldSession, oldI18n
 		d, err := db.DB()
 		if err == nil { _ = d.Close() }
 	})
