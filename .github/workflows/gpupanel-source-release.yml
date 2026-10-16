@@ -6,6 +6,9 @@ on:
       - 'scripts/tests/test_gpupanel_release.py'
       - 'scripts/gpupanel-artifact-license-audit.py'
       - 'scripts/gpupanel-binary-buildinfo.py'
+      - 'scripts/gpupanel-go-license-evidence.py'
+      - 'scripts/tests/test_gpupanel_go_license_evidence.py'
+      - 'docs/gpupanel/GO_LICENSE_EVIDENCE.md'
       - 'scripts/tests/test_gpupanel_binary_buildinfo.py'
       - 'docs/gpupanel/BINARY_BUILDINFO_AUDIT.md'
       - 'scripts/tests/test_gpupanel_artifact_license_audit.py'
@@ -27,6 +30,7 @@ jobs:
       - run: python3 -m unittest discover -s scripts/tests -p 'test_gpupanel_release.py' -v
       - run: python3 -m unittest discover -s scripts/tests -p 'test_gpupanel_artifact_license_audit.py' -v
       - run: python3 -m unittest discover -s scripts/tests -p 'test_gpupanel_binary_buildinfo.py' -v
+      - run: python3 -m unittest discover -s scripts/tests -p 'test_gpupanel_go_license_evidence.py' -v
   full-source-build:
     # Product artifact gate: exercise the real Vite -> Go embed -> Core/Agent build.
     runs-on: ubuntu-24.04
@@ -52,3 +56,26 @@ jobs:
       - run: python3 scripts/gpupanel-release.py verify dist/gpupanel-preview.tar.gz
       - run: python3 scripts/gpupanel-artifact-license-audit.py --archive dist/gpupanel-preview.tar.gz --output dist/gpupanel-preview-license-attestation.json
       - run: python3 scripts/gpupanel-binary-buildinfo.py --archive dist/gpupanel-preview.tar.gz --output dist/gpupanel-binary-buildinfo.json
+      - name: Bind effective Go module legal texts to verified preview binary dependency graph
+        run: python3 scripts/gpupanel-go-license-evidence.py --buildinfo dist/gpupanel-binary-buildinfo.json --output dist/gpupanel-go-license-evidence.json
+      - name: Summarize Go review backlog (no legal clearance)
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          report = json.loads(Path("dist/gpupanel-go-license-evidence.json").read_text())
+          for name, data in report["binaries"].items():
+              print(name, "binary Go modules:", data["dependency_count"], "source evidence:", data["counts"])
+              for item in data["modules"]:
+                  if item["state"] != "LEGAL_FILE_HASH_REVIEW" or item["replaced"]:
+                      print(" REVIEW:", name, item["module"], item["effective_source"], item["state"])
+          print("All modules remain unapproved; this is not an Apache-2.0 license claim.")
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: gpupanel-preview-go-license-evidence
+          path: |
+            dist/gpupanel-binary-buildinfo.json
+            dist/gpupanel-go-license-evidence.json
+            dist/gpupanel-preview-license-attestation.json
+          retention-days: 14
