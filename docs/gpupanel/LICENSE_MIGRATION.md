@@ -5,6 +5,8 @@
 > Repository review baseline: `dev-v2` at `c9c5cb02e286673b3d3ac3a83ac64a5312fb11d7`  
 > Upstream reference already recorded in this fork: `1Panel-dev/1Panel dev-v2 @ d9dc5d7aa981c3b04ad284e93420aca9888f7e5a`
 
+**Status reference:** [current project state](../STATUS.md). All Git baselines below are dated provenance snapshots, not a claim about the latest checked-out HEAD. Removal of four non-Linux log support files did not relicense the GPL-derived fork.
+
 ## Decision and current legal status
 
 **Long-term product preference:** GPUPanel should use the Apache License, Version 2.0 where the project has the necessary rights. Make progress incrementally, without slowing the Ubuntu Host → Docker → App Store → recovery product loop.
@@ -24,7 +26,7 @@ The scope of a derivative/combined work and any separate-process/service boundar
 | L0 | Preserve truthful licenses and upstream attribution | Root `LICENSE` stays GPLv3; `NOTICE.md` retains 1Panel credit and baseline; no claims of Apache-only project licensing | **PASS (document check only)** |
 | L1 | Establish file-level provenance | Inventory all shipped source/assets/generated files, origin SHA and copyright holder; mark copied/derived/modified/independent/third-party/unknown; audit every exception | **PARTIAL: Git provenance + Go/pnpm lock + installed pnpm license-hash evidence; rights and final artifact not cleared** |
 | L2 | Introduce clearly owned independent components | File-level Apache-2.0 declaration **only after** provenance + contributor authority + dependency review; preserve prior third-party license texts; include official Apache license copy when used | **PILOT: six independently authored audit files only; no Core/Agent/React rights grant** |
-| L3 | Remove inherited GPL implementation from intended Apache distribution | Replace or omit GPL-derived components with independently authored, reviewed code or secure explicit rights-holder permissions; review linking, packaging and process boundaries | **NOT STARTED** |
+| L3 | Remove inherited GPL implementation from intended Apache distribution | Replace or omit GPL-derived components with independently authored, reviewed code or secure explicit rights-holder permissions; review linking, packaging and process boundaries | **PARTIAL / BLOCKED**: only four non-Linux Core/Agent logging support files have been removed for the Ubuntu-only target; remaining inherited GPL runtime and redistribution rights are unresolved |
 | L4 | Scan the actual release artifact | Source + dependency/asset/SBOM inventory, license/NOTICE completeness, packaged binaries/static frontend, reproducible CI report with no unresolved restricted content | **PARTIAL: preview notice checks; actual installable bundle licenses/SBOM not accepted** |
 | L5 | Change release-wide license declarations | Written sign-off on all rights, code and artifacts; legal review; only then change root `LICENSE`, README, package metadata, badges and release claims in a dedicated PR | **BLOCKED until L1–L4** |
 
@@ -53,7 +55,7 @@ Do not assume any `added` file in `git diff upstream..HEAD` is Apache-eligible: 
 
 | Area | Immediate handling | Why |
 | --- | --- | --- |
-| `core/`, `agent/`, derived/reused frontend code | KEEP_GPL until reviewed/replaced | Current fork retains 1Panel-derived Core and Linux Agent alongside independently evolved React 19/Semi frontend; review copied/adapted API and assets per file |
+| `core/`, `agent/`, derived/reused frontend code | KEEP_GPL until reviewed/replaced | Current fork retains 1Panel-derived Core and Linux Agent alongside independently evolved React 19/shadcn + Tailwind frontend; review copied/adapted API and assets per file |
 | `frontend/src/assets/` and branding | THIRD_PARTY_REVIEW / CANDIDATE_APACHE | Confirm each image/font/logo's origin and creator; product trademarks are a separate matter |
 | `catalog/`, `profiles/`, `scripts/`, `docs/gpupanel/` | CANDIDATE_APACHE *per file only* | Newer project-specific material exists, but Git-added status does not prove all rights |
 | Future separately authored desktop tooling, SDKs, provider integrations | Prefer independent Apache-2.0 deliverables after review | Can establish clean ownership early without promising the original 1Panel-based binary is Apache-only |

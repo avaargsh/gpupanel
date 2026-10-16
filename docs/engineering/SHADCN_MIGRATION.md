@@ -66,7 +66,7 @@ pnpm build
 保留其行为断言。模拟 API 不记为真机业务闭环通过。
 
 完整日志和会话仅留 `.local/shadcn-migration`；验收只保留精简结果，不新增整树
-清单与成批截图。当前文档是执行契约，不代表迁移已完成。
+清单与成批截图。本段属于当时执行契约；迁移已经完成。请以 [当前状态](../STATUS.md) 为准。
 
 参考：[shadcn Vite](https://ui.shadcn.com/docs/installation/vite)、
 [Tailwind Vite](https://tailwindcss.com/docs/installation/using-vite)。
@@ -91,4 +91,4 @@ shadcn/ui + Tailwind 迁移全部完成，已合并到集成分支 `ui/shadcn-ta
 
 主题已从 Semi 的 `body[theme-mode]` 切换为 shadcn 的 `html.dark`（Redux 唯一模式来源）；图标统一使用 `lucide-react`；提示统一使用 Sonner；不留 Semi 类型、样式类、变量或适配层，不创建任何 Semi 兼容 facade。
 
-原 `ui/shadcn-worker-*-20261016` 及 `ui/shadcn-shell-components-20261016` 工作区任务已结束，不再作为并行写入者。后续如需动 frontend，以集成分支 `ui/shadcn-tailwind-20261016` 为基准，同一目录只有一个写入者。
+原 `ui/shadcn-worker-*-20261016` 及 `ui/shadcn-shell-components-20261016` 工作区任务已结束，不再作为并行写入者。后续 frontend 开发以最新 `main` 为基准，同一目录只允许一个写入者；旧集成分支仅供追溯。
