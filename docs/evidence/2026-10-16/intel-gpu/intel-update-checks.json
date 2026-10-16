@@ -1,0 +1,15 @@
+{
+  "kind": "LIVE read-only verification of this Intel update",
+  "credentials_unchanged_since_update": {
+    "EncryptKey": true,
+    "Password": true,
+    "SecurityEntrance": true,
+    "UserName": true
+  },
+  "installed_binary_sha256": {
+    "core": "c416fac2287088f2a32c0cbf70ef0f93903c55d7ac4ac1de7414bc483a3eca45",
+    "agent": "358ade02ae50620aff99cab757f91e115e47b8a63a47be08b7f52b370a5b2d2e"
+  },
+  "loopback_config_preserved": true,
+  "backup_restore_verified": true
+}

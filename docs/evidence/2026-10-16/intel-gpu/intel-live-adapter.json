@@ -1,0 +1,10 @@
+{
+  "kind": "Real installed Agent payload through frontend adapter; no browser authentication",
+  "checks": {
+    "oneDevice": true,
+    "model": true,
+    "pci": true,
+    "unknownMemory": true,
+    "unavailableProcesses": true
+  }
+}

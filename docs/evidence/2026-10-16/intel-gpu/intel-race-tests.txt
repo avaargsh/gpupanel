@@ -1,0 +1,2 @@
+ok  	github.com/avaargsh/GPUPanel/agent/utils/ai_tools/xpu	1.055s
+ok  	github.com/avaargsh/GPUPanel/agent/utils/ai_tools/accelerator	1.017s
