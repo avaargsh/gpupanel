@@ -17,19 +17,17 @@ Decision date: 2026-10-15. Delivery decision: **fork-first direct reuse of inher
 
 The 2026-10-16 UI/product baseline is [vNext Workbench](VNEXT_WORKBENCH.md). Deliver a unified React shell and truthful capability states first, then the persistent Project → Workspace → Session developer loop. Existing Linux management remains reachable; GPU/AI/enterprise claims require their own live gates. See [domain language](../../GLOSSARY.md).
 
-## P0 acceptance ladder — single Ubuntu 24.04 host
+## P0 — 以单一最新状态页作为裁决
 
-| Gate | User outcome | Evidence required | Current status |
-| --- | --- | --- | --- |
-| G0 Brand & frontend baseline | GPUPanel name, branding and compilable web | React build/type-check CI (historical Vue evidence remains dated) | PASS (source) |
-| G1 Read-only environment review | check local tools, collision risk and trusted cache | fixture tests + Ubuntu CI, no side-effects | PASS (diagnostics only) |
-| G2 Source build + artifact | Vite assets embedded in Go Core, agent built, verified tarball | full Ubuntu Node/Go build, archive checksum and attribution | PASS (CI source preview only, not an installer) |
-| G3 Safe installer/upgrade/rollback | fresh Ubuntu install using reviewed inherited or new paths; refuse unsafe co-install overwrite | disposable VM, systemd/service setup, data backup and rollback | BLOCKED |
-| G4 Login and Host | authenticate then observe host, file, disk, terminal | browser + API, negative auth & RBAC tests | NOT RUN |
-| G5 Docker + app | container create/start/log/stop/delete and application install/uninstall | live Docker engine and authenticated API | NOT RUN |
-| G6 Failure and recovery | stop services, malformed package, interrupted update and restore | evidence, repeatability and independent verification | NOT RUN |
+唯一当前状态： [docs/STATUS.md](../STATUS.md)。既有 Ubuntu 24.04 VM、Ubuntu 26.04 实验宿主及 CI 证据绑定不同版本，不得累加。
 
-Only **G3–G6 passing** authorizes a release candidate advertised as installable. A successful source build is not a release.
+| Gate | 发布裁决 |
+| --- | --- |
+| G0–G2 源码、前端、预览 | 旧固定版本 CI/源码证据已通过；发布候选重跑 |
+| G3 新装、升级、回滚 | PARTIAL / NO-GO |
+| G4 鉴权 Host/终端/文件 | PARTIAL / NO-GO |
+| G5 Docker + AppInstall/UNKNOWN 全链路 | PARTIAL / NO-GO |
+| G6 故障注入、数据保存与恢复 | PARTIAL / NO-GO |
 
 ## P1 — repeatable developer workstation after P0
 

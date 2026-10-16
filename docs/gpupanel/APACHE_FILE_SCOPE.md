@@ -40,4 +40,4 @@ All other files retain their existing terms unless separately and explicitly rev
 python3 -m unittest discover -s scripts/tests -p 'test_gpupanel_apache_scope.py' -v
 ```
 
-The test pins the four scoped files and verifies their explicit SPDX headers, bundled Apache terms, and continued GPL/1Panel attribution. It does **not** make a legal determination or supersede L1 provenance, dependency review or release artifact scanning.
+The test pins the six scoped files and verifies their explicit SPDX headers, bundled Apache terms, and continued GPL/1Panel attribution. It does **not** make a legal determination or supersede L1 provenance, dependency review or release artifact scanning.
