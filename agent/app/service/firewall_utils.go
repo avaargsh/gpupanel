@@ -1960,7 +1960,7 @@ func cleanupInactiveSystemBackend(backend string) error {
 	case constant.FirewallProviderNftables:
 		return nftables_helper.Cleanup()
 	default:
-		return fmt.Errorf("cleanup is only available for 1Panel-owned iptables and nftables resources")
+		return fmt.Errorf("cleanup is only available for GPUPanel-owned iptables and nftables resources")
 	}
 }
 
@@ -1975,7 +1975,7 @@ func cleanupSystemBackend(backend string) error {
 			return err
 		}
 	default:
-		return fmt.Errorf("cleanup is only available for 1Panel-owned iptables and nftables resources")
+		return fmt.Errorf("cleanup is only available for GPUPanel-owned iptables and nftables resources")
 	}
 	return settingRepo.Update("IptablesStatus", constant.StatusDisable)
 }

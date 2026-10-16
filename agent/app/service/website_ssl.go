@@ -354,15 +354,15 @@ func reloadSystemSSL(websiteSSL *model.WebsiteSSL, logger *log.Logger) {
 		keyPath := path.Join(global.Dir.DataDir, "secret/server.key")
 		printSSLLog(logger, "StartUpdateSystemSSL", nil)
 		if err := fileOp.WriteFile(certPath, strings.NewReader(websiteSSL.Pem), 0600); err != nil {
-			logger.Printf("Failed to update the SSL certificate File for 1Panel System domain [%s] , err:%s", websiteSSL.PrimaryDomain, err.Error())
+			logger.Printf("Failed to update the SSL certificate File for GPUPanel System domain [%s] , err:%s", websiteSSL.PrimaryDomain, err.Error())
 			return
 		}
 		if err := fileOp.WriteFile(keyPath, strings.NewReader(websiteSSL.PrivateKey), 0600); err != nil {
-			logger.Printf("Failed to update the SSL certificate for 1Panel System domain [%s] , err:%s", websiteSSL.PrimaryDomain, err.Error())
+			logger.Printf("Failed to update the SSL certificate for GPUPanel System domain [%s] , err:%s", websiteSSL.PrimaryDomain, err.Error())
 			return
 		}
 		if err := req_helper.PostLocalCore("/core/settings/ssl/reload"); err != nil {
-			logger.Printf("Failed to update the SSL certificate for 1Panel System domain [%s] , err:%s", websiteSSL.PrimaryDomain, err.Error())
+			logger.Printf("Failed to update the SSL certificate for GPUPanel System domain [%s] , err:%s", websiteSSL.PrimaryDomain, err.Error())
 			return
 		}
 		printSSLLog(logger, "UpdateSystemSSLSuccess", nil)
