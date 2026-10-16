@@ -53,7 +53,7 @@ type Registry struct{ db *gorm.DB }
 func New(db *gorm.DB) *Registry { return &Registry{db: db} }
 
 func validName(name string) bool {
-	if name == "" || name == "." || name == ".." ||
+	if !utf8.ValidString(name) || name == "" || name == "." || name == ".." ||
 		utf8.RuneCountInString(name) > 80 || strings.ContainsAny(name, "/\\") {
 		return false
 	}
