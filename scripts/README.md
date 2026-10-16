@@ -7,7 +7,7 @@
 | --- | --- |
 | 环境与起步 | `gpupanel-bootstrap.py`、`gpupanel-python-doctor.py`、`gpupanel-first-run-overview.py` |
 | 本地软件定义/用户工作区 | `gpupanel-catalog.py`、`gpupanel-catalog-workspace.py` |
-| uv 环境与项目 | `gpupanel-env.py`、`gpupanel-env-packages.py`、`gpupanel-uv-project.py`、`gpupanel-project-inventory.py`、`gpupanel-uv-lock-check.py` |
+| uv 环境与项目 | `gpupanel-env.py`、`gpupanel-env-packages.py`、`gpupanel-uv-project.py`、`gpupanel-uv-intent-runner.py`、`gpupanel-project-inventory.py`、`gpupanel-uv-lock-check.py` |
 | 主机/Docker 只读诊断 | `gpupanel-host-investigate.py`、`gpupanel-install-preflight.py`、`gpupanel-runtime-namespace.py` |
 | 隔离 Docker 测试 | `gpupanel-docker-smoke.py`，仍需核对目标 daemon 与精确资源所有权 |
 | 预览构建/暂存 | `gpupanel-release.py`、`gpupanel-preview-stage.py` |
