@@ -40,7 +40,7 @@ GPUPanel/
 - 不移动已安装主机数据、其他工作区或外部快照；归档和证据移动时同步相对链接。
 - `.gitignore` 忽略依赖、构建结果、VM、凭据与本机配置；保留锁文件、模板、源码、
   `.env.example` 和经脱敏证据。不要使用 `git add -f` 将安装密码加入证据目录。
-- 目录/命令/模块状态与整改所有权以 [GOVERNANCE_STATUS](GOVERNANCE_STATUS.md) 为准；
+- 目录/命令/模块状态与整改所有权以 [GOVERNANCE_STATUS](../STATUS.md) 为准；
   其中标记 pending 的文件尚不可用，不作为已交付的依据。
 
 根 `.editorconfig` 固定 UTF-8/LF 与 Go/Makefile 的 tab 规则；`.gitattributes` 将

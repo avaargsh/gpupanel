@@ -51,4 +51,4 @@ operation 的 [D1/D2](../../backend/internal/operation/DECISIONS.md) 未落地�
 命令：`cd backend && go test -race -count=1 ./... && go vet ./...`。
 
 设计随真实切片落地替换为实现契约；D1/D2 门槛以实际测试和独立审查解除。
-根许可不变，文件级 Apache 声明和来源核权见 [治理状态](GOVERNANCE_STATUS.md)。
+根许可不变，文件级 Apache 声明和来源核权见 [治理状态](../STATUS.md)。

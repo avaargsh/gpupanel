@@ -30,7 +30,7 @@ CI 实际覆盖（`.github/workflows/gpupanel-mainline.yml`）：
 ≤500 行检查归 `quality-gates` 任务（`scripts/gpupanel-source-policy.py`、
 `scripts/tests/test_gpupanel_source_policy.py`、`.github/workflows/gpupanel-source-policy.yml`），
 在该产物可用前一律标记 **pending**，不得假定已生效。当前状态与实际观察基线见
-[GOVERNANCE_STATUS](GOVERNANCE_STATUS.md)。
+[GOVERNANCE_STATUS](../STATUS.md)。
 
 Go 测试中需要专用 Docker 或 Agent socket 的用例由环境变量门槛控制；缺失时会
 跳过。普通 `go test` exit 0 不能把这些跳过项变成 live Docker 通过。

@@ -76,5 +76,5 @@ sudo/pctl 拉起已安装后端，因此不作为默认开发入口。源码改�
 
 本文件只描述**如何执行**，不代表任何命令本轮已运行。历史 VM/真机结果按
 [证据索引](../evidence/README.md) 的 historical/source/live 分级阅读，
-当前交付状态、整改所有权与 NOT RUN 清单见 [GOVERNANCE_STATUS](GOVERNANCE_STATUS.md)。
+当前交付状态、整改所有权与 NOT RUN 清单见 [GOVERNANCE_STATUS](../STATUS.md)。
 未执行的命令一律记为 NOT RUN，不改写为 PASS。

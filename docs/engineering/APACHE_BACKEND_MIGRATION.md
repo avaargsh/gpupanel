@@ -4,7 +4,7 @@
 `backend/` 模块验证替换继承 `core/`、`agent/` 的方向。候选来源与缺口见
 [复用边界](../gpupanel/BACKEND_REUSE_BOUNDARIES.md)，能力分期见
 [迁移映射](../gpupanel/AGENT_GO_MIGRATION_MAP.md)。运行中任务的进度、审查结论与候选提交
-一律以 [GOVERNANCE_STATUS](GOVERNANCE_STATUS.md) 为准；本文只保留稳定契约。
+一律以 [GOVERNANCE_STATUS](../STATUS.md) 为准；本文只保留稳定契约。
 
 ## 基线和运行边界
 

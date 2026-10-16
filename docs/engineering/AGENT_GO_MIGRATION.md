@@ -18,5 +18,5 @@ Apache 范围仍未决；根 GPL/NOTICE 保持。security 研究树中的 GPL/�
 部分不整体纳入。详情见 [复用边界](../gpupanel/BACKEND_REUSE_BOUNDARIES.md)。
 
 测试：`cd backend && go test -race -count=1 ./... && go vet ./...`。
-按 [治理状态](GOVERNANCE_STATUS.md) 的接收规则集成；任务交接保留于
+按 [治理状态](../STATUS.md) 的接收规则集成；任务交接保留于
 `.local/agent-go-migration/`。回退仅撤回相应源码提交，不影响主机数据。

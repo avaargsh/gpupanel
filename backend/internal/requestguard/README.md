@@ -41,7 +41,7 @@ set no cookies/auth headers and the package logs no headers or secrets.
 `Authenticator`/`CSRF` is nil — including a **typed-nil** pointer or nil function
 adapter (non-nil as an interface, panics when invoked). A typed-nil optional
 `Origin` is normalized to absent, so it is never invoked. A Guard cannot exist
-without working session+CSRF enforcement and never panics per request. There is
+without working session+CSRF enforcement and does not panic per request because of a typed-nil required dependency. There is
 no built-in login or default identity; `X-Panel-Local-Token`, `API_AUTH`,
 `owner`/`role`/`subject` headers and `user_approved` cookies grant no authority
 and are ignored for identity.

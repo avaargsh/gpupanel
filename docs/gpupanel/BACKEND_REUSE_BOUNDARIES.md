@@ -152,4 +152,4 @@ React(shadcn) ──/api/v1──▶ GPUPanel 应用后端（core 职责的后�
 `LICENSE`/`NOTICE`/公共 API（全部禁止）。
 
 本文件即复用边界任务唯一交付；回退方式：删除本文件。后续任务状态见
-[GOVERNANCE_STATUS](../engineering/GOVERNANCE_STATUS.md)。
+[GOVERNANCE_STATUS](../STATUS.md)。

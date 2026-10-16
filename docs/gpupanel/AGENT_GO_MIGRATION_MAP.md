@@ -27,7 +27,7 @@
 | `assist-agent/inventory/02-package-map.md` | `4d379349…260b23b3` |
 
 契约文档（复用边界、执行契约）是活引用，只按路径链接，不锚定哈希；当前任务状态见
-[治理状态](../engineering/GOVERNANCE_STATUS.md)。
+[治理状态](../STATUS.md)。
 
 ## 1. 能力分类映射（研究树行为 → 期望 Go 切片）
 
@@ -39,7 +39,7 @@
 - GPUPanel 现有覆盖：`backend/internal/hostobserve/`（os-release/meminfo/uptime 只读，已提交 `8ff4a2b5…`，独立测试通过、待审查）；legacy core/agent 监控端点未审计归属（见 BACKEND_CONTRACT_INVENTORY 线索，本任务不认定）。
 - 期望 Go 切片：**已提交候选（未集成）**——monitor worker 的 `backend/internal/hostmetrics/`（commit `1acab29ad1695c74f2716d35a1aab23f6ca26a26`：loadavg + PSI cpu/memory/io 有界只读解析，per-source 可用/缺失/畸形状态，无后台轮询）。后续按需逐文件扩展（如 `/proc/stat` CPU/内存快照），每次一个可独立测试的小切片。
 - 信任边界：包内仅接受内部受信调用者传入的构造期路径；无 HTTP 输入面、无 shell、无网络；缺失/畸形必须显式 unavailable，不得零值冒充成功。
-- 许可/来源：候选切片按独立实现申报；研究树反编译代码为 GPL-2.0 标记来源，**禁止复制/翻译**；`/proc` 公开格式为事实依据。注意：hostmetrics 与既有 hostobserve 存在注释/骨架匹配，归属**未裁定**（[治理状态](../engineering/GOVERNANCE_STATUS.md)“许可来源”项），在裁决前不得宣称“全部独立实现”，也不得据此宣称侵权。
+- 许可/来源：候选切片按独立实现申报；研究树反编译代码为 GPL-2.0 标记来源，**禁止复制/翻译**；`/proc` 公开格式为事实依据。注意：hostmetrics 与既有 hostobserve 存在注释/骨架匹配，归属**未裁定**（[治理状态](../STATUS.md)“许可来源”项），在裁决前不得宣称“全部独立实现”，也不得据此宣称侵权。
 - 真实测试：fixture（缺失/超大/畸形/取消/并发）+ Linux 只读 smoke；真实读只证明本机采集，不证明安装或 UI。
 - 阻塞依赖：协调者对 hostmetrics 与 hostobserve 的归属/去重裁决；接线（认证、API）属后续纵切片，本阶段不引入。
 
@@ -47,7 +47,7 @@
 
 - 研究树证据：上游官方 client（Apache-2.0 自述，**未随树分发**，`README.md:1–12`）覆盖任务引擎（host 命令运行/超时/取消/清理）、会话 PTY shell、文件下发、插件与自更新；`inventory/02-package-map.md` 给出实机二进制↔上游包映射；`STUDY/07` 会话与文件发放、`08` IPC 看护为行为文档。树内同时含逆向证据（`inventory/`、`symbols/`）与注释镜像（`annotated/`），来源层级不同，见 §3。
 - GPUPanel 现有覆盖：`agent/app/api/v1/terminal*.go`（终端/PTY 会话）、`process.go`（进程）、`file.go`（文件）；`agent/cron/`（定时任务）；`agent/app/hostops/`（操作引擎与回执，先例：参考设计、独立实现，`types.go:2`）；legacy 实现未迁移前不得删除（BACKEND_REUSE_BOUNDARIES §8 阻断项）。
-- 期望 Go 切片（顺序）：① **候选，未接线**——operations worker 的 `backend/internal/operation/`（planned→running→completed/failed/unknown 生命周期、原子 claim、幂等重放、超时转 unknown、强制 reconciliation、内存态有界）；协调者集成分支对返工 `6b600eaf9409` 已给功能 ACCEPT（本文基线批次早于该集成，分支限定事实见[治理状态](../engineering/GOVERNANCE_STATUS.md)）；② 任务执行切片：类型化命令 → 有界超时/取消/进程组回收 → 退出码回执（独立观测，不以 2xx 代替）；③ PTY 执行端：openpty/窗口尺寸/停止/关闭后无泄漏；WebSocket↔PTY 中继是 GPUPanel 自建面，不在执行端切片内；④ 文件切片：路径约束的有界读写/列举，不冒充完整 Files 模块。
+- 期望 Go 切片（顺序）：① **候选，未接线**——operations worker 的 `backend/internal/operation/`（planned→running→completed/failed/unknown 生命周期、原子 claim、幂等重放、超时转 unknown、强制 reconciliation、内存态有界）；协调者集成分支对返工 `6b600eaf9409` 已给功能 ACCEPT（本文基线批次早于该集成，分支限定事实见[治理状态](../STATUS.md)）；② 任务执行切片：类型化命令 → 有界超时/取消/进程组回收 → 退出码回执（独立观测，不以 2xx 代替）；③ PTY 执行端：openpty/窗口尺寸/停止/关闭后无泄漏；WebSocket↔PTY 中继是 GPUPanel 自建面，不在执行端切片内；④ 文件切片：路径约束的有界读写/列举，不冒充完整 Files 模块。
 - 信任边界：执行器只接受后端签发的类型化命令 + operation ID + 过期确认，拒绝自报 owner/uid/路径；浏览器永不直连执行器。
 - 许可/来源：研究树任何文件（含 `aliyun_assist_client@8bbe05f/` 本地快照、`annotated/`、`inventory/`）**一律不复制**；从行为规格与公开 OS 语义独立实现。上游 client 的 Apache 复用走 BACKEND_REUSE_BOUNDARIES §1-A/§7 的独立权利闸，与本映射不合并。
 - 真实测试：race 测试覆盖同时 claim、digest 变更拒绝、跨 owner 拒绝、超时→unknown→reconcile、PTY 关闭泄漏、路径穿越否定用例；legacy 行为对照仅作回归参考。
@@ -79,7 +79,7 @@
 
 | 阶段 | 内容 | 状态 / 候选 | 真实测试门槛 | 阻塞 |
 | --- | --- | --- | --- | --- |
-| 0 | 观测与账本基座：hostmetrics（A）、operation 生命周期（B①） | hostmetrics `1acab29ad169` 审查 ACCEPT、已集成；operation 返工 `6b600eaf9409` 在协调者集成分支获功能 ACCEPT、Holmes 设计 `20d9887896b8` 已纳入（改用现有 hostmetrics）——均为分支限定事实，本基线批次不含（权威状态见[治理状态](../engineering/GOVERNANCE_STATUS.md)） | race/vet 结果按各候选提交记录于治理状态 | 完成≠验收，审查通过≠集成；运行期接线仍为后续纵切片 |
+| 0 | 观测与账本基座：hostmetrics（A）、operation 生命周期（B①） | hostmetrics `1acab29ad169` 审查 ACCEPT、已集成；operation 返工 `6b600eaf9409` 在协调者集成分支获功能 ACCEPT、Holmes 设计 `20d9887896b8` 已纳入（改用现有 hostmetrics）——均为分支限定事实，本基线批次不含（权威状态见[治理状态](../STATUS.md)） | race/vet 结果按各候选提交记录于治理状态 | 完成≠验收，审查通过≠集成；运行期接线仍为后续纵切片 |
 | 1 | Host 观测扩展（A 后续切片）与 legacy 监控端点归属裁定 | 未开始 | 每切片 fixture+negative+只读 smoke | 阶段 0 验收；api-data-inventory 端点清单 |
 | 2 | 任务执行→PTY→文件切片（B②③④），接 operation 账本 | 未开始 | 取消/进程组/路径穿越/race；操作回执独立观测 | 认证纵切片；阶段 0 验收 |
 | 3 | 非特权只读审计切片（C①②③） | 未开始，待产品用例确认 | fixture 日志/白名单/哈希稳定性 | 真实用例；阶段 2 回执模型 |
