@@ -1,6 +1,17 @@
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Field, FieldLabel } from '@/components/ui/field';
+import { useConfirmAction } from '@/components/use-confirm-action';
+import { Badge } from '@/components/ui/badge';
+import { toast } from 'sonner';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Spinner } from '@/components/ui/spinner';
+import { Input } from '@/components/ui/input';
+import { Switch } from '@/components/ui/switch';
+import { Plus, RefreshCw } from 'lucide-react';
+import { Table, TableHeader, TableHead, TableRow, TableBody, TableCell } from '@/components/ui/table';
+import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
 import { useEffect, useState } from 'react';
-import { Button, Input, Modal, Space, Switch, Table, Tag, Toast, Typography } from '@douyinfe/semi-ui';
-import { IconPlus, IconRefresh, IconSearch } from '@douyinfe/semi-icons';
 import { useTranslation } from 'react-i18next';
 import {
     useCloseOllamaModelMutation,
@@ -13,112 +24,145 @@ import {
     type OllamaModelInfo,
 } from '@/api/aiApi';
 import { useDebouncedValue } from '@/pages/database/shared';
-
-const { Text } = Typography;
-const errText = (e: unknown) => (e as { data?: { message?: string } }).data?.message ?? String(e);
+const errText = (e: unknown) =>
+    (
+        e as {
+            data?: {
+                message?: string;
+            };
+        }
+    ).data?.message ?? String(e);
 const uuid = () => (globalThis.crypto?.randomUUID ? globalThis.crypto.randomUUID() : `${Date.now()}-${Math.random()}`);
-
 function statusTag(status: string) {
     const s = (status || '').toLowerCase();
-    const color = s.includes('error') || s.includes('err') ? 'red' : s.includes('stop') ? 'grey' : s.includes('download') ? 'orange' : 'green';
-    return <Tag size="small" color={color}>{status || '-'}</Tag>;
+    const color =
+        s.includes('error') || s.includes('err') ? 'red' : s.includes('stop') ? 'grey' : s.includes('download') ? 'orange' : 'green';
+    return <Badge variant={['red', 'orange'].includes(color) ? 'destructive' : 'secondary'}>{status || '-'}</Badge>;
 }
-
 function LoadModal({ onClose }: { onClose: () => void }) {
     const { t } = useTranslation();
     const [create, { isLoading }] = useCreateOllamaModelMutation();
     const [name, setName] = useState('');
-
     const submit = async () => {
-        if (!name.trim()) return Toast.warning(t('ai.local.createNameRequired'));
+        if (!name.trim()) return toast.warning(t('ai.local.createNameRequired'));
         try {
             await create({ name, taskID: uuid() }).unwrap();
-            Toast.success(t('common.confirm'));
+            toast.success(t('common.confirm'));
             onClose();
         } catch (e) {
-            Toast.error(errText(e));
+            toast.error(errText(e));
         }
     };
-
     return (
-        <Modal
-            title={t('ai.local.createTitle')}
-            visible
-            onCancel={onClose}
-            onOk={submit}
-            okText={t('common.confirm')}
-            cancelText={t('common.cancel')}
-            confirmLoading={isLoading}
-            width={440}
+        <Dialog
+            open={true}
+            onOpenChange={(open) => {
+                if (!open && !isLoading) onClose();
+            }}
         >
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                <Text size="small" type="tertiary">{t('ai.local.createName')}</Text>
-                <Input value={name} onChange={setName} placeholder={t('ai.local.createHelper')} />
-            </div>
-        </Modal>
+            <DialogContent aria-describedby={undefined} className="max-h-[90vh] overflow-y-auto" style={{ maxWidth: 440 }}>
+                <DialogHeader>
+                    <DialogTitle>{t('ai.local.createTitle')}</DialogTitle>
+                </DialogHeader>
+                <Field>
+                    <FieldLabel htmlFor="ai-local-1">{t('ai.local.createName')}</FieldLabel>
+                    <Input
+                        id="ai-local-1"
+                        value={name}
+                        placeholder={t('ai.local.createHelper')}
+                        onChange={(event) => setName(event.target.value)}
+                    />
+                </Field>
+                <DialogFooter>
+                    <Button variant="outline" disabled={isLoading} onClick={onClose}>
+                        {t('common.cancel')}
+                    </Button>
+                    <Button disabled={isLoading} onClick={submit}>
+                        {isLoading ? <Spinner data-icon="inline-start" /> : null}
+                        {t('common.confirm')}
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
     );
 }
-
 function DetailModal({ name, onClose }: { name: string; onClose: () => void }) {
     const { t } = useTranslation();
     const [load, { isLoading }] = useLoadOllamaModelMutation();
     const [detail, setDetail] = useState('');
-
     useEffect(() => {
         load({ name })
             .unwrap()
             .then((res) => setDetail(typeof res === 'string' ? res : JSON.stringify(res, null, 2)))
             .catch((e) => setDetail(errText(e)));
     }, [name, load]);
-
     return (
-        <Modal title={t('ai.local.detailTitle')} visible onCancel={onClose} footer={null} width={560}>
-            {isLoading ? (
-                <Text type="tertiary">{t('common.loading')}</Text>
-            ) : (
-                <pre style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-all', fontSize: 12, margin: 0 }}>{detail || t('ai.local.detailEmpty')}</pre>
-            )}
-        </Modal>
+        <Dialog
+            open={true}
+            onOpenChange={(open) => {
+                if (!open) onClose();
+            }}
+        >
+            <DialogContent aria-describedby={undefined} className="max-h-[90vh] overflow-y-auto" style={{ maxWidth: 560 }}>
+                <DialogHeader>
+                    <DialogTitle>{t('ai.local.detailTitle')}</DialogTitle>
+                </DialogHeader>
+                {isLoading ? (
+                    <span className="text-muted-foreground text-sm">{t('common.loading')}</span>
+                ) : (
+                    <pre style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-all', fontSize: 12, margin: 0 }}>
+                        {detail || t('ai.local.detailEmpty')}
+                    </pre>
+                )}
+            </DialogContent>
+        </Dialog>
     );
 }
-
 function DeleteModal({ row, onClose }: { row: OllamaModelInfo; onClose: () => void }) {
     const { t } = useTranslation();
     const [remove, { isLoading }] = useDeleteOllamaModelsMutation();
     const [force, setForce] = useState(false);
-
     const submit = async () => {
         try {
             await remove({ ids: [row.id], forceDelete: force }).unwrap();
-            Toast.success(t('common.confirm'));
+            toast.success(t('common.confirm'));
             onClose();
         } catch (e) {
-            Toast.error(errText(e));
+            toast.error(errText(e));
         }
     };
-
     return (
-        <Modal
-            title={t('ai.actions.delete')}
-            visible
-            onCancel={onClose}
-            onOk={submit}
-            okText={t('common.confirm')}
-            cancelText={t('common.cancel')}
-            okButtonProps={{ type: 'danger' }}
-            confirmLoading={isLoading}
-            width={440}
+        <Dialog
+            open={true}
+            onOpenChange={(open) => {
+                if (!open && !isLoading) onClose();
+            }}
         >
-            <Text>{t('ai.local.deleteConfirm', { name: row.name })}</Text>
-            <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 12, cursor: 'pointer' }}>
-                <Switch checked={force} onChange={setForce} size="small" />
-                <Text size="small">{t('ai.local.force')}</Text>
-            </label>
-        </Modal>
+            <DialogContent aria-describedby={undefined} className="max-h-[90vh] overflow-y-auto" style={{ maxWidth: 440 }}>
+                <DialogHeader>
+                    <DialogTitle>{t('ai.actions.delete')}</DialogTitle>
+                </DialogHeader>
+                <span className="text-sm">{t('ai.local.deleteConfirm', { name: row.name })}</span>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 12, cursor: 'pointer' }}>
+                    <Switch aria-label={t('ai.local.force')} checked={force} onCheckedChange={setForce} />
+                    <span className="text-sm">{t('ai.local.force')}</span>
+                </label>
+                <DialogFooter>
+                    <Button variant="outline" disabled={isLoading} onClick={onClose}>
+                        {t('common.cancel')}
+                    </Button>
+                    <Button disabled={isLoading} variant="destructive" onClick={submit}>
+                        {isLoading ? <Spinner data-icon="inline-start" /> : null}
+                        {t('common.confirm')}
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
     );
 }
-
 export default function LocalTab() {
+    const { confirm, dialog } = useConfirmAction();
+
     const { t } = useTranslation();
     const [page, setPage] = useState(1);
     const [pageSize, setPageSize] = useState(20);
@@ -127,131 +171,196 @@ export default function LocalTab() {
     const [showLoad, setShowLoad] = useState(false);
     const [detailName, setDetailName] = useState<string | null>(null);
     const [deleteRow, setDeleteRow] = useState<OllamaModelInfo | null>(null);
-
     useEffect(() => {
         setPage(1);
     }, [name]);
-
     const listQuery = useSearchOllamaModelsQuery({ page, pageSize, info: name });
     const rows = listQuery.data?.items ?? [];
     const [sync, { isLoading: syncing }] = useSyncOllamaModelsMutation();
     const [recreate] = useRecreateOllamaModelMutation();
     const [close] = useCloseOllamaModelMutation();
-
     const onSync = async () => {
         try {
             const res = await sync().unwrap();
-            Toast.success(t('ai.local.createTitle') + `: ${res?.length ?? 0}`);
+            toast.success(t('ai.local.createTitle') + `: ${res?.length ?? 0}`);
             listQuery.refetch();
         } catch (e) {
-            Toast.error(errText(e));
+            toast.error(errText(e));
         }
     };
-
     const onRecreate = (row: OllamaModelInfo) => {
-        Modal.confirm({
+        confirm({
             title: t('ai.actions.recreate'),
-            content: t('ai.local.deleteConfirm', { name: row.name }),
-            okText: t('common.confirm'),
-            cancelText: t('common.cancel'),
-            onOk: async () => {
+            description: t('ai.local.deleteConfirm', { name: row.name }),
+            run: async () => {
                 try {
                     await recreate({ name: row.name, taskID: uuid() }).unwrap();
-                    Toast.success(t('common.confirm'));
+                    toast.success(t('common.confirm'));
                 } catch (e) {
-                    Toast.error(errText(e));
+                    toast.error(errText(e));
                 }
             },
         });
     };
-
     const onCloseModel = (row: OllamaModelInfo) => {
-        Modal.confirm({
+        confirm({
             title: t('ai.actions.close'),
-            content: t('ai.local.closeConfirm', { name: row.name }),
-            okText: t('common.confirm'),
-            cancelText: t('common.cancel'),
-            onOk: async () => {
+            description: t('ai.local.closeConfirm', { name: row.name }),
+            run: async () => {
                 try {
                     await close({ name: row.name }).unwrap();
-                    Toast.success(t('common.confirm'));
+                    toast.success(t('common.confirm'));
                     listQuery.refetch();
                 } catch (e) {
-                    Toast.error(errText(e));
+                    toast.error(errText(e));
                 }
             },
         });
     };
-
-    const columns = [
-        { title: t('ai.table.name'), dataIndex: 'name', key: 'name' },
-        { title: t('ai.local.size'), dataIndex: 'size', key: 'size', width: 120, render: (v: string) => v || '-' },
-        { title: t('ai.local.source'), dataIndex: 'from', key: 'from', width: 120, render: (v: string) => v || '-' },
-        { title: t('ai.table.status'), dataIndex: 'status', key: 'status', width: 120, render: (v: string, row: OllamaModelInfo) => statusTag(row.message && !v ? row.message : v) },
-        {
-            title: t('ai.table.operate'),
-            key: 'operate',
-            width: 260,
-            render: (_: unknown, row: OllamaModelInfo) => (
-                <Space>
-                    <Button size="small" theme="borderless" onClick={() => setDetailName(row.name)}>
-                        {t('ai.actions.detail')}
-                    </Button>
-                    <Button size="small" theme="borderless" onClick={() => onRecreate(row)}>
-                        {t('ai.actions.recreate')}
-                    </Button>
-                    <Button size="small" theme="borderless" onClick={() => onCloseModel(row)}>
-                        {t('ai.actions.close')}
-                    </Button>
-                    <Button size="small" type="danger" theme="borderless" onClick={() => setDeleteRow(row)}>
-                        {t('ai.actions.delete')}
-                    </Button>
-                </Space>
-            ),
-        },
-    ];
-
     return (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            <Space wrap>
-                <Tag size="large">Ollama</Tag>
-                <Input
-                    prefix={<IconSearch />}
-                    placeholder={t('ai.local.searchPlaceholder')}
-                    value={nameInput}
-                    onChange={setNameInput}
-                    style={{ width: 220 }}
-                    showClear
-                />
-                <Button icon={<IconPlus />} theme="solid" type="primary" onClick={() => setShowLoad(true)}>
-                    {t('ai.actions.create')}
-                </Button>
-                <Button icon={<IconRefresh />} loading={syncing} onClick={onSync}>
-                    {t('ai.actions.sync')}
-                </Button>
-                <Button onClick={() => listQuery.refetch()}>{t('ai.actions.refresh')}</Button>
-                <Text type="tertiary" size="small">{t('ai.local.deferred')}</Text>
-            </Space>
+        <>
+            {' '}
+            {dialog}{' '}
+            {
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                    <div className="flex flex-row flex-wrap gap-3 items-center">
+                        <Badge variant={'secondary'}>Ollama</Badge>
+                        <Input
+                            aria-label={t('ai.local.searchPlaceholder')}
+                            value={nameInput}
+                            placeholder={t('ai.local.searchPlaceholder')}
+                            style={{ width: 220 }}
+                            onChange={(event) => setNameInput(event.target.value)}
+                        />
+                        <Button onClick={() => setShowLoad(true)} variant={'default'} type={'button'}>
+                            {<Plus />}
+                            {t('ai.actions.create')}
+                        </Button>
+                        <Button onClick={onSync} variant={'outline'} type={'button'} disabled={false || syncing}>
+                            {syncing ? <Spinner data-icon="inline-start" /> : <RefreshCw />}
+                            {t('ai.actions.sync')}
+                        </Button>
+                        <Button onClick={() => listQuery.refetch()} variant={'outline'} type={'button'}>
+                            {t('ai.actions.refresh')}
+                        </Button>
+                        <span className="text-muted-foreground text-sm">{t('ai.local.deferred')}</span>
+                    </div>
 
-            <Table
-                rowKey="id"
-                columns={columns}
-                dataSource={rows}
-                loading={listQuery.isLoading}
-                pagination={{
-                    currentPage: page,
-                    pageSize,
-                    total: listQuery.data?.total ?? 0,
-                    onPageChange: setPage,
-                    onPageSizeChange: setPageSize,
-                    pageSizeOpts: [10, 20, 50],
-                }}
-                empty={<Text type="tertiary">{t('ai.local.empty')}</Text>}
-            />
+                    {listQuery.isError && (
+                        <Alert variant="destructive">
+                            <AlertDescription>
+                                {t('hostOps.loadError')}{' '}
+                                <Button variant="outline" onClick={() => void listQuery.refetch()}>
+                                    {t('common.refresh')}
+                                </Button>
+                            </AlertDescription>
+                        </Alert>
+                    )}
+                    <div className="flex flex-col gap-3" aria-busy={listQuery.isLoading}>
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>{t('ai.table.name')}</TableHead>
+                                    <TableHead style={{ width: 120 }}>{t('ai.local.size')}</TableHead>
+                                    <TableHead style={{ width: 120 }}>{t('ai.local.source')}</TableHead>
+                                    <TableHead style={{ width: 120 }}>{t('ai.table.status')}</TableHead>
+                                    <TableHead style={{ width: 260 }}>{t('ai.table.operate')}</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {listQuery.isLoading ? (
+                                    <TableRow>
+                                        <TableCell colSpan={5}>
+                                            <Spinner role="status" aria-label="Loading" />
+                                        </TableCell>
+                                    </TableRow>
+                                ) : rows.length === 0 ? (
+                                    <TableRow>
+                                        <TableCell colSpan={5}>
+                                            {<span className="text-muted-foreground text-sm">{t('ai.local.empty')}</span>}
+                                        </TableCell>
+                                    </TableRow>
+                                ) : (
+                                    rows.map((row, rowIndex) => (
+                                        <TableRow key={row['id'] ?? rowIndex}>
+                                            <TableCell>{row['name']}</TableCell>
+                                            <TableCell>{row['size'] || '-'}</TableCell>
+                                            <TableCell>{row['from'] || '-'}</TableCell>
+                                            <TableCell>{statusTag(row.message && !row['status'] ? row.message : row['status'])}</TableCell>
+                                            <TableCell>
+                                                {
+                                                    <div className="flex flex-row  gap-3 items-center">
+                                                        <Button
+                                                            onClick={() => setDetailName(row.name)}
+                                                            variant={'ghost'}
+                                                            size="sm"
+                                                            type={'button'}
+                                                        >
+                                                            {t('ai.actions.detail')}
+                                                        </Button>
+                                                        <Button onClick={() => onRecreate(row)} variant={'ghost'} size="sm" type={'button'}>
+                                                            {t('ai.actions.recreate')}
+                                                        </Button>
+                                                        <Button
+                                                            onClick={() => onCloseModel(row)}
+                                                            variant={'ghost'}
+                                                            size="sm"
+                                                            type={'button'}
+                                                        >
+                                                            {t('ai.actions.close')}
+                                                        </Button>
+                                                        <Button
+                                                            onClick={() => setDeleteRow(row)}
+                                                            variant={'destructive'}
+                                                            size="sm"
+                                                            type={'button'}
+                                                        >
+                                                            {t('ai.actions.delete')}
+                                                        </Button>
+                                                    </div>
+                                                }
+                                            </TableCell>
+                                        </TableRow>
+                                    ))
+                                )}
+                            </TableBody>
+                        </Table>
+                        <div className="flex flex-wrap items-center justify-end gap-3">
+                            <Button variant="outline" disabled={page <= 1 || listQuery.isLoading} onClick={() => setPage(page - 1)}>
+                                ‹
+                            </Button>
+                            <span>
+                                {page} / {Math.max(1, Math.ceil((listQuery.data?.total ?? 0) / 20))}
+                            </span>
+                            <Button
+                                variant="outline"
+                                disabled={page * 20 >= (listQuery.data?.total ?? 0) || listQuery.isLoading}
+                                onClick={() => setPage(page + 1)}
+                            >
+                                ›
+                            </Button>
+                            <NativeSelect
+                                aria-label="Page size"
+                                value={20}
+                                onChange={(event) => {
+                                    setPageSize(Number(event.target.value));
+                                    setPage(1);
+                                }}
+                            >
+                                {[10, 20, 50].map((size) => (
+                                    <NativeSelectOption key={size} value={size}>
+                                        {size}
+                                    </NativeSelectOption>
+                                ))}
+                            </NativeSelect>
+                        </div>
+                    </div>
 
-            {showLoad && <LoadModal onClose={() => setShowLoad(false)} />}
-            {detailName && <DetailModal name={detailName} onClose={() => setDetailName(null)} />}
-            {deleteRow && <DeleteModal row={deleteRow} onClose={() => setDeleteRow(null)} />}
-        </div>
+                    {showLoad && <LoadModal onClose={() => setShowLoad(false)} />}
+                    {detailName && <DetailModal name={detailName} onClose={() => setDetailName(null)} />}
+                    {deleteRow && <DeleteModal row={deleteRow} onClose={() => setDeleteRow(null)} />}
+                </div>
+            }{' '}
+        </>
     );
 }
