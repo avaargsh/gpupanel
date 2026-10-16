@@ -1,34 +1,52 @@
-import { useState } from 'react';
-import { Tabs, TabPane } from '@douyinfe/semi-ui';
-import { useTranslation } from 'react-i18next';
-import DeviceTab from './device';
-import CleanTab from './clean';
-import Fail2banTab from './fail2ban';
-import FtpTab from './ftp';
-import ClamTab from './clam';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useState } from "react";
+
+import { useTranslation } from "react-i18next";
+import ClamTab from "./clam";
+import CleanTab from "./clean";
+import DeviceTab from "./device";
+import Fail2banTab from "./fail2ban";
+import FtpTab from "./ftp";
 
 export default function ToolboxPage() {
     const { t } = useTranslation();
-    const [tab, setTab] = useState('device');
+    const [tab, setTab] = useState("device");
 
     return (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            <Tabs type="line" activeKey={tab} onChange={(k) => setTab(String(k))} lazyRender>
-                <TabPane tab={t('toolbox.tabs.device')} itemKey="device">
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            <Tabs value={tab} onValueChange={(k) => setTab(String(k))}>
+                <TabsList className="flex-wrap">
+                    <TabsTrigger value={"device"} key={"device"}>
+                        {t("toolbox.tabs.device")}
+                    </TabsTrigger>
+                    <TabsTrigger value={"clean"} key={"clean"}>
+                        {t("toolbox.tabs.clean")}
+                    </TabsTrigger>
+                    <TabsTrigger value={"fail2ban"} key={"fail2ban"}>
+                        {t("toolbox.tabs.fail2ban")}
+                    </TabsTrigger>
+                    <TabsTrigger value={"ftp"} key={"ftp"}>
+                        {t("toolbox.tabs.ftp")}
+                    </TabsTrigger>
+                    <TabsTrigger value={"clam"} key={"clam"}>
+                        {t("toolbox.tabs.clam")}
+                    </TabsTrigger>
+                </TabsList>
+                <TabsContent value={"device"}>
                     <DeviceTab />
-                </TabPane>
-                <TabPane tab={t('toolbox.tabs.clean')} itemKey="clean">
+                </TabsContent>
+                <TabsContent value={"clean"}>
                     <CleanTab />
-                </TabPane>
-                <TabPane tab={t('toolbox.tabs.fail2ban')} itemKey="fail2ban">
+                </TabsContent>
+                <TabsContent value={"fail2ban"}>
                     <Fail2banTab />
-                </TabPane>
-                <TabPane tab={t('toolbox.tabs.ftp')} itemKey="ftp">
+                </TabsContent>
+                <TabsContent value={"ftp"}>
                     <FtpTab />
-                </TabPane>
-                <TabPane tab={t('toolbox.tabs.clam')} itemKey="clam">
+                </TabsContent>
+                <TabsContent value={"clam"}>
                     <ClamTab />
-                </TabPane>
+                </TabsContent>
             </Tabs>
         </div>
     );

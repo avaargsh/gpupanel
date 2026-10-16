@@ -1,13 +1,13 @@
-import { useState } from 'react';
-import { Tabs, TabPane } from '@douyinfe/semi-ui';
-import { useTranslation } from 'react-i18next';
-import PanelSettingsTab from './panel';
-import SafeSettingsTab from './safe';
-import BackupAccountSettingsTab from './backup';
-import SnapshotSettingsTab from './snapshot';
-import AlertSettingsTab from './alert';
-import APIKeysTab from './apikeys';
-import AboutTab from './about';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useState } from "react";
+import { useTranslation } from "react-i18next";
+import AboutTab from "./about";
+import AlertSettingsTab from "./alert";
+import APIKeysTab from "./apikeys";
+import BackupAccountSettingsTab from "./backup";
+import PanelSettingsTab from "./panel";
+import SafeSettingsTab from "./safe";
+import SnapshotSettingsTab from "./snapshot";
 
 /**
  * 设置模块对应旧版 `frontend/src/views/setting`：将原先「面板设置 / 安全 / 备份账号 /
@@ -17,33 +17,40 @@ import AboutTab from './about';
  */
 export default function SettingsPage() {
     const { t } = useTranslation();
-    const [tab, setTab] = useState('panel');
+    const [tab, setTab] = useState("panel");
 
     return (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            <Tabs type="line" activeKey={tab} onChange={(k) => setTab(String(k))} lazyRender>
-                <TabPane tab={t('settings.tabs.panel')} itemKey="panel">
-                    <PanelSettingsTab />
-                </TabPane>
-                <TabPane tab={t('settings.tabs.safe')} itemKey="safe">
-                    <SafeSettingsTab />
-                </TabPane>
-                <TabPane tab={t('settings.tabs.backup')} itemKey="backup">
-                    <BackupAccountSettingsTab />
-                </TabPane>
-                <TabPane tab={t('settings.tabs.snapshot')} itemKey="snapshot">
-                    <SnapshotSettingsTab />
-                </TabPane>
-                <TabPane tab={t('settings.tabs.alert')} itemKey="alert">
-                    <AlertSettingsTab />
-                </TabPane>
-                <TabPane tab={t('settings.tabs.apikeys')} itemKey="apikeys">
-                    <APIKeysTab />
-                </TabPane>
-                <TabPane tab={t('settings.tabs.about')} itemKey="about">
-                    <AboutTab />
-                </TabPane>
-            </Tabs>
-        </div>
+        <Tabs value={tab} onValueChange={setTab} className="gap-4">
+            <TabsList variant="line" className="w-full justify-start overflow-x-auto">
+                <TabsTrigger value="panel">{t("settings.tabs.panel")}</TabsTrigger>
+                <TabsTrigger value="safe">{t("settings.tabs.safe")}</TabsTrigger>
+                <TabsTrigger value="backup">{t("settings.tabs.backup")}</TabsTrigger>
+                <TabsTrigger value="snapshot">{t("settings.tabs.snapshot")}</TabsTrigger>
+                <TabsTrigger value="alert">{t("settings.tabs.alert")}</TabsTrigger>
+                <TabsTrigger value="apikeys">{t("settings.tabs.apikeys")}</TabsTrigger>
+                <TabsTrigger value="about">{t("settings.tabs.about")}</TabsTrigger>
+            </TabsList>
+            <TabsContent value="panel">
+                <PanelSettingsTab />
+            </TabsContent>
+            <TabsContent value="safe">
+                <SafeSettingsTab />
+            </TabsContent>
+            <TabsContent value="backup">
+                <BackupAccountSettingsTab />
+            </TabsContent>
+            <TabsContent value="snapshot">
+                <SnapshotSettingsTab />
+            </TabsContent>
+            <TabsContent value="alert">
+                <AlertSettingsTab />
+            </TabsContent>
+            <TabsContent value="apikeys">
+                <APIKeysTab />
+            </TabsContent>
+            <TabsContent value="about">
+                <AboutTab />
+            </TabsContent>
+        </Tabs>
     );
 }
