@@ -67,7 +67,8 @@ with sync_playwright() as p:
     assert hero_box and resource_box and project_box
     assert hero_box['y'] + hero_box['height'] <= resource_box['y']
     assert resource_box['y'] + resource_box['height'] <= project_box['y']
-    assert page.locator('.workbench-action').count() == 2
+    # Quick actions now include the dedicated GPU entry added by the workbench refresh.
+    assert page.locator('.workbench-action').count() == 3
     assert not page.locator('.workspace-sidebar .workspace-nav-link.unavailable').count()
     assert page.evaluate('document.documentElement.scrollWidth <= innerWidth')
     assert page.get_by_role('dialog').count() == 0
@@ -85,7 +86,8 @@ with sync_playwright() as p:
     page.screenshot(path=str(OUTPUT / 'home-light.png'), full_page=True)
     page.get_by_role('button', name='Switch theme', exact=True).click()
     expect(page.locator('html')).to_have_class(re.compile(r'(^|\s)dark(\s|$)'))
-    expect(page.locator('.workbench-start')).to_have_css('background-color', 'rgb(25, 29, 38)')
+    # Dark card surface was re-toned from #191d26 to #131822 in the refreshed palette.
+    expect(page.locator('.workbench-start')).to_have_css('background-color', 'rgb(19, 24, 34)')
     expect(page.locator('.workspace-brand')).to_have_css('color', 'rgb(237, 240, 247)')
     page.screenshot(path=str(OUTPUT / 'home-dark.png'), full_page=True)
     page.get_by_role('button', name='Collapse sidebar', exact=True).first.click()
@@ -131,7 +133,9 @@ with sync_playwright() as p:
         const {setCurrentNode} = await import('/src/features/ui/uiSlice.ts');
         store.dispatch(setCurrentNode('fixture-remote'));
     }""")
-    expect(page.locator('.host-scope strong')).to_have_text('fixture-remote')
+    # The node name moved from HostScope to the adjacent LocalModeChip after the
+    # header refactor; HostScope now reports observation status only.
+    expect(page.locator('.local-mode-chip .chip-label')).to_have_text('fixture-remote')
     expect(page.get_by_text('observed-fixture-remote', exact=True)).to_be_visible()
     expect(page.get_by_text('61.0%', exact=True)).to_be_visible()
     expect(page.get_by_text('24.0%', exact=True)).not_to_be_visible()
@@ -177,7 +181,9 @@ with sync_playwright() as p:
     page.evaluate('() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))')
     assert page.evaluate('document.documentElement.scrollWidth <= innerWidth')
     assert page.locator('.workspace-header').evaluate('(el) => el.scrollWidth <= el.clientWidth')
-    expect(page.locator('.host-scope')).to_be_visible()
+    # On narrow headers the observation text is hidden by design; the LocalModeChip
+    # is the surviving visible scope indicator.
+    expect(page.locator('.local-mode-chip')).to_be_visible()
     page.screenshot(path=str(OUTPUT / 'home-640.png'), full_page=True)
     assert not errors, errors
     result = {'kind': 'SIMULATED API; not real device or deployment acceptance', 'page_errors': errors,
