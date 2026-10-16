@@ -26,7 +26,8 @@ class EvidenceError(Exception):
 
 def _read_json(path: Path) -> dict:
     if path.is_symlink() or not path.is_file() or path.stat().st_size > MAX_MANIFEST:
-        raise EvidenceError("unsafe or oversized package metadata")
+        # Package paths are public dependency names, not credentials.
+        raise EvidenceError("unsafe or oversized package metadata: " + str(path))
     try:
         data = json.loads(path.read_text(encoding="utf-8"))
     except (UnicodeError, ValueError) as exc:
