@@ -1,4 +1,4 @@
-"""Fail-closed guard for four independently authored Apache-2.0 audit files."""
+"""Fail-closed guard for six independently authored Apache-2.0 audit files."""
 from pathlib import Path
 import unittest
 
@@ -8,6 +8,8 @@ APACHE_FILES = (
     "scripts/tests/test_gpupanel_license_audit.py",
     "scripts/gpupanel-dependency-audit.py",
     "scripts/tests/test_gpupanel_dependency_audit.py",
+    "scripts/gpupanel-pnpm-license-evidence.py",
+    "scripts/tests/test_gpupanel_pnpm_license_evidence.py",
 )
 
 

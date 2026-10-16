@@ -9,6 +9,8 @@ on:
       - 'docs/gpupanel/APACHE_FILE_SCOPE.md'
       - 'scripts/gpupanel-license-audit.py'
       - 'scripts/gpupanel-dependency-audit.py'
+      - 'scripts/gpupanel-pnpm-license-evidence.py'
+      - 'scripts/tests/test_gpupanel_pnpm_license_evidence.py'
       - 'scripts/tests/test_gpupanel_license_audit.py'
       - 'scripts/tests/test_gpupanel_dependency_audit.py'
       - 'scripts/tests/test_gpupanel_apache_scope.py'
@@ -27,5 +29,5 @@ jobs:
       - run: python3 -m unittest discover -s scripts/tests -p 'test_gpupanel_apache_scope.py' -v
       - name: Confirm explicit mixed-license scope
         run: |
-          echo 'Only four independently authored audit Python files have Apache-2.0 file-level headers.'
+          echo 'Only six independently authored audit Python files have Apache-2.0 file-level headers.'
           echo 'Whole GPUPanel distribution remains GPL-3.0 due to inherited 1Panel code.'

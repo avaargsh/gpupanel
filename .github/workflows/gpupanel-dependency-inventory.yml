@@ -5,8 +5,13 @@ on:
       - 'core/go.mod'
       - 'agent/go.mod'
       - 'frontend/package.json'
+      - 'frontend/apps/panel/package.json'
       - 'frontend/pnpm-lock.yaml'
       - 'scripts/gpupanel-dependency-audit.py'
+      - 'scripts/gpupanel-pnpm-inventory.py'
+      - 'scripts/gpupanel-pnpm-license-evidence.py'
+      - 'scripts/tests/test_gpupanel_pnpm_inventory.py'
+      - 'scripts/tests/test_gpupanel_pnpm_license_evidence.py'
       - 'scripts/tests/test_gpupanel_dependency_audit.py'
       - 'docs/gpupanel/DEPENDENCY_LICENSE_INVENTORY.md'
       - '.github/workflows/gpupanel-dependency-inventory.yml'
@@ -22,6 +27,8 @@ jobs:
         with:
           python-version: '3.12'
       - run: python3 -m unittest discover -s scripts/tests -p 'test_gpupanel_dependency_audit.py' -v
+      - run: python3 -m unittest discover -s scripts/tests -p 'test_gpupanel_pnpm_inventory.py' -v
+      - run: python3 -m unittest discover -s scripts/tests -p 'test_gpupanel_pnpm_license_evidence.py' -v
       - run: python3 scripts/gpupanel-dependency-audit.py --output dependency-license-inventory.json
       - name: Print review counts (not compliance results)
         run: |
@@ -36,8 +43,41 @@ jobs:
                   print('  replacement review:', entry['from'], '=>', entry['to'])
           print('No dependency licenses have been cleared by this check.')
           PY
+      - uses: pnpm/action-setup@v4
+        with:
+          version: '12.8.1'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+      - name: Install exact pnpm dependency tree (no production deploy)
+        working-directory: frontend
+        run: pnpm install --frozen-lockfile
+      - name: Read installed package license texts (never grants rights)
+        run: python3 scripts/gpupanel-pnpm-license-evidence.py --output pnpm-installed-license-evidence.json
+      - name: Summarize unresolved distribution gaps
+        run: |
+          python3 - <<'PY'
+          import json
+          with open('pnpm-installed-license-evidence.json', encoding='utf-8') as stream:
+              evidence = json.load(stream)
+          print('Locked identities:', evidence['unique_locked_identities'])
+          print('Actual installed identities:', evidence['observed_identities'])
+          print('License source evidence states:', evidence['counts'])
+          needs = [x for x in evidence['packages'] if x['state'] in
+                   ('LICENSE_TEXT_MISSING_REVIEW', 'CONFLICTING_INSTALLED_EVIDENCE')]
+          for item in needs:
+              print('MISSING OR CONFLICTING LEGAL FILE:', item['name'], item['version'], item['state'])
+          if evidence['unlocked_installed_identities']:
+              print('Unmatched installed package identities:', evidence['unlocked_installed_identities'])
+          print('Not installed in this OS is not automatically a license violation.')
+          print('File hashes and package.json license hints are NOT rights clearance or release SBOM.')
+          PY
       - uses: actions/upload-artifact@v4
         with:
           name: gpupanel-dependency-review
-          path: dependency-license-inventory.json
+          path: |
+            dependency-license-inventory.json
+            pnpm-installed-license-evidence.json
           retention-days: 14
