@@ -9,6 +9,7 @@ import { Spinner } from "@/components/ui/spinner";
 import { Switch } from "@/components/ui/switch";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
+import { useAppSelector } from "@/store/hooks";
 import { OptionPicker } from "../settings/option-picker";
 import { Field } from "../settings/shared";
 import { TASK_TYPES, emptyForm, type FormState, type Props } from "./operate-model";
@@ -45,7 +46,8 @@ export default function CronjobOperate({ target, groups, onClose }: Props) {
     const detail = useLoadCronjobInfoQuery(target?.id as number, { skip: !target });
     const { data: websites = [] } = useListWebsitesQuery();
     const { data: containers = [] } = useListContainersQuery();
-    const { data: installed } = useSearchInstalledQuery({ page: 1, pageSize: 200, name: "", tags: [], update: false, sync: false });
+    const scopeNode = useAppSelector((state) => state.ui.currentNode) || 'local';
+    const { data: installed } = useSearchInstalledQuery({ scopeNode, page: 1, pageSize: 200, name: "", tags: [], update: false, sync: false });
     const { data: scripts } = useSearchScriptsQuery({
         page: 1,
         pageSize: 200,

@@ -16,7 +16,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { newInstallTaskID } from './InstallModal';
 import EvidenceSheet from './EvidenceSheet';
 import { useAppSelector } from '@/store/hooks';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { getAppIconUrl, useInstalledOpMutation, useSearchInstalledQuery, type AppInstallDto } from '@/api/appApi';
 import { useDebouncedValue } from '@/pages/database/shared';
@@ -65,6 +65,10 @@ export default function InstalledTab({ upgradeOnly = false }: { upgradeOnly?: bo
     const [nameInput, setNameInput] = useState('');
     const name = useDebouncedValue(nameInput);
     const node = useAppSelector((state) => state.ui.currentNode) || 'local';
+    const nodeRef = useRef(node);
+    nodeRef.current = node;
+    // All dialogs are scoped to their opening Host; closing on a switch is not authorization.
+    const [dialogNode, setDialogNode] = useState(node);
     const [evidenceId, setEvidenceId] = useState<number | null>(null);
     const [uninstallRow, setUninstallRow] = useState<AppInstallDto | null>(null);
     const [upgradeRow, setUpgradeRow] = useState<AppInstallDto | null>(null);
@@ -73,18 +77,40 @@ export default function InstalledTab({ upgradeOnly = false }: { upgradeOnly?: bo
     const [ignoredOpen, setIgnoredOpen] = useState(false);
     const [sortOpen, setSortOpen] = useState(false);
     useEffect(() => {
+        setDialogNode(node);
+        setPage(1);
+        setEvidenceId(null);
+        setUninstallRow(null);
+        setUpgradeRow(null);
+        setParamsRow(null);
+        setIgnoreRow(null);
+        setIgnoredOpen(false);
+        setSortOpen(false);
+    }, [node]);
+    useEffect(() => {
         setPage(1);
     }, [name]);
-    const listQuery = useSearchInstalledQuery({ page, pageSize, name, tags: [], update: upgradeOnly, sync: false });
-    const rows = listQuery.currentData?.items ?? [];
+    const listQuery = useSearchInstalledQuery(
+        { scopeNode: node, page, pageSize, name, tags: [], update: upgradeOnly, sync: false },
+        { refetchOnMountOrArgChange: true },
+    );
+    // During host switch/refresh, do not expose stale entries as actionable rows.
+    const rows = listQuery.isError || listQuery.isFetching ? [] : (listQuery.currentData?.items ?? []);
     const [op, { isLoading: operating }] = useInstalledOpMutation();
     const doOperate = (row: AppInstallDto, operate: string) => {
+        if (nodeRef.current !== node || listQuery.isError || listQuery.isFetching) {
+            return toast.warning('主机已切换或列表过期，请刷新 / Host changed or list is stale; refresh first');
+        }
         if (row.status.toUpperCase() === 'UNKNOWN') return toast.warning('先核对未知安装状态 / Review UNKNOWN installation first');
         const label = operate === 'delete' ? 'uninstall' : operate;
         confirm({
             title: t(`apps.actions.${label}` as never),
             description: t('apps.operateConfirm', { name: row.name, operate: t(`apps.actions.${label}` as never) }),
             run: async () => {
+                if (nodeRef.current !== node) {
+                    toast.warning('主机已切换，操作已取消 / Host changed; operation cancelled');
+                    return;
+                }
                 try {
                     await op({ installId: row.id, operate, taskID: uuid() }).unwrap();
                     toast.success(t('apps.install.success'));
@@ -151,7 +177,7 @@ export default function InstalledTab({ upgradeOnly = false }: { upgradeOnly?: bo
                                 ) : rows.length === 0 ? (
                                     <TableRow>
                                         <TableCell colSpan={6}>
-                                            {<span className="text-muted-foreground text-sm">{t('apps.installed.empty')}</span>}
+                                            {<span className="text-muted-foreground text-sm">{listQuery.isError ? '读取失败，请重试 / Load failed; retry' : t('apps.installed.empty')}</span>}
                                         </TableCell>
                                     </TableRow>
                                 ) : (
@@ -330,15 +356,15 @@ export default function InstalledTab({ upgradeOnly = false }: { upgradeOnly?: bo
                         </div>
                     </div>
 
-                    {evidenceId !== null && (
+                    {dialogNode === node && evidenceId !== null && (
                         <EvidenceSheet key={`${node}:${evidenceId}`} id={evidenceId} onClose={() => setEvidenceId(null)} />
                     )}
-                    {uninstallRow && <UninstallModal row={uninstallRow} onClose={() => setUninstallRow(null)} />}
-                    {upgradeRow && <UpgradeModal row={upgradeRow} onClose={() => setUpgradeRow(null)} />}
-                    {paramsRow && <ParamsModal row={paramsRow} onClose={() => setParamsRow(null)} />}
-                    {ignoreRow && <IgnoreModal row={ignoreRow} onClose={() => setIgnoreRow(null)} onSaved={() => listQuery.refetch()} />}
-                    {ignoredOpen && <IgnoredListModal onClose={() => setIgnoredOpen(false)} />}
-                    {sortOpen && (
+                    {dialogNode === node && uninstallRow && <UninstallModal row={uninstallRow} onClose={() => setUninstallRow(null)} />}
+                    {dialogNode === node && upgradeRow && <UpgradeModal row={upgradeRow} onClose={() => setUpgradeRow(null)} />}
+                    {dialogNode === node && paramsRow && <ParamsModal row={paramsRow} onClose={() => setParamsRow(null)} />}
+                    {dialogNode === node && ignoreRow && <IgnoreModal row={ignoreRow} onClose={() => setIgnoreRow(null)} onSaved={() => listQuery.refetch()} />}
+                    {dialogNode === node && ignoredOpen && <IgnoredListModal onClose={() => setIgnoredOpen(false)} />}
+                    {dialogNode === node && sortOpen && (
                         <SortModal
                             rows={rows}
                             onClose={() => {
