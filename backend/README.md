@@ -128,7 +128,7 @@ overflow/NaN/Inf/负数/非整数；恰好等于上限与超过上限的输入�
   许可结论待独立核权（见 `docs/gpupanel/APACHE_BACKEND_REPLACEMENT_RESEARCH.md`）；
   已登记的文件级 Apache 范围清单为 `docs/gpupanel/APACHE_FILE_SCOPE.md`，
   **其与 hostmetrics SPDX 的对账仍 outstanding（归协调者，见
-  [GOVERNANCE_STATUS](../docs/engineering/GOVERNANCE_STATUS.md) 第 4 节）**。
+  [治理状态](../docs/engineering/GOVERNANCE_STATUS.md)）**。
   `backend/README.md` 与 `internal/hostmetrics/README.md` 之间的表述冲突由本节消除。
 - 当前无运行接入：无路由、无认证、无执行器、无数据迁移；验收时不得据此声称
   登录→Host 纵切片或安装已交付。
