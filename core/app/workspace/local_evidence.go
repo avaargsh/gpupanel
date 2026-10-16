@@ -18,6 +18,7 @@ import (
 // Never make Workspaces Provisioned based on this table alone.
 const (
 	OperatorReported = "OperatorReported"
+	NoObservation = "NoObservation"
 	HostAttestationRequired = "IndependentHostAttestationRequired"
 )
 
@@ -60,8 +61,10 @@ func evidenceDigest(intentID, planDigest, receiptDigest string) string {
 }
 
 func localEvidenceView(record *LocalEvidence) LocalEvidenceView {
+	state := NoObservation
+	if record != nil { state = OperatorReported }
 	return LocalEvidenceView{
-		Evidence: record, TrustState: OperatorReported,
+		Evidence: record, TrustState: state,
 		WorkspaceState: NotProvisioned, Attested: false,
 		Blocker: HostAttestationRequired,
 	}
