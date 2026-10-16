@@ -30,7 +30,7 @@ The dependency workflow on 2026-10-16 completed successfully at [run 38833308679
 | Go requires from current manifests | **349** (103 direct entries) |
 | Go module replacements | **1** |
 
-These counts are **source-package evidence only**. The 314 files have *not* been reviewed for license compatibility or required redistribution wording; the 3 files without discovered top-level license documents need individual review, and the 65 uninstalled records do **not** mean licenses are violated. Exact per-package hashes are in the workflow artifact `gpupanel-dependency-review`.
+These counts are **source-package evidence only**. The 314 files have *not* been reviewed for license compatibility or required redistribution wording. The **3 installed native/platform packages** lacking a discovered top-level legal file are: `@esbuild/linux-x64@0.25.12`, `@napi-rs/lzma-linux-x64-gnu@1.5.1`, `@rollup/rollup-linux-x64-gnu@4.64.5`. Check corresponding parent package/source licenses and redistributed binary notices before marking them covered; **no missing file alone proves an incompatible license**. The 65 uninstalled records do **not** mean licenses are violated. Exact per-package hashes are in the workflow artifact `gpupanel-dependency-review`.
 
 ## Critical gaps (ranked)
 
