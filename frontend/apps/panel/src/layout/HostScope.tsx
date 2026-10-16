@@ -1,4 +1,4 @@
-import { IconServer } from '@douyinfe/semi-icons';
+import { Server } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useGetBaseInfoQuery } from '@/api/dashboardApi';
 import { useAppSelector } from '@/store/hooks';
@@ -11,7 +11,7 @@ export default function HostScope() {
     const data = !query.isError ? query.currentData : undefined;
     const status = query.isError ? 'unavailable' : data?.hostname ? 'observed' : 'checking';
     return <div className="host-scope" data-state={status} title={t(`workbench.${status}`)}>
-        <IconServer />
+        <Server className="size-4" aria-hidden="true" />
         <span className="host-scope-label"><small>{t('workbench.scope')}</small><strong>{node === 'local' ? t('workbench.local') : node}</strong></span>
         <span className="host-observation" role="status">{t(`workbench.${status}`)}</span>
     </div>;

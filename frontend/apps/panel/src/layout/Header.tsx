@@ -1,16 +1,26 @@
 import { useMemo } from 'react';
-import { Avatar, Button, Dropdown } from '@douyinfe/semi-ui';
-import { IconDesktop, IconExit, IconLanguage, IconMenu, IconMoon, IconSearch, IconSun, IconUser } from '@douyinfe/semi-icons';
+import { Languages, LogOut, Menu, Monitor, Moon, Search, Sun, User } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { baseApi } from '@/api/baseApi';
 import { useLogoutMutation } from '@/api/authApi';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/button';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { currentNav } from '@/config/nav';
 import { clearCredentials } from '@/features/auth/authSlice';
 import { setCommandOpen, setLanguage, setThemeMode, setSidebarCollapsed, type ThemeMode } from '@/features/ui/uiSlice';
 import { SUPPORTED_LANGUAGES } from '@/i18n';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { shape } from '@/theme';
+import { isBlockingDialogOpen } from './dialogOpen';
 import HostScope from './HostScope';
 
 const THEME_CYCLE: ThemeMode[] = ['light', 'dark', 'system'];
@@ -36,7 +46,7 @@ export default function Header() {
     };
 
     const themeIcon =
-        themeMode === 'light' ? <IconSun /> : themeMode === 'dark' ? <IconMoon /> : <IconDesktop />;
+        themeMode === 'light' ? <Sun aria-hidden="true" /> : themeMode === 'dark' ? <Moon aria-hidden="true" /> : <Monitor aria-hidden="true" />;
 
     const changeLanguage = (lang: string) => {
         i18n.changeLanguage(lang);
@@ -66,17 +76,18 @@ export default function Header() {
                 position: 'sticky',
                 top: 0,
                 zIndex: 10,
-                backgroundColor: 'var(--semi-color-bg-0)',
-                borderBottom: '1px solid var(--semi-color-border)',
+                backgroundColor: 'var(--background)',
+                borderBottom: '1px solid var(--border)',
             }}
         >
             <Button
-                theme="borderless"
-                type="tertiary"
-                icon={<IconMenu />}
+                variant="ghost"
+                size="icon"
                 aria-label={collapsed ? t('common.expand') : t('common.collapse')}
                 onClick={() => dispatch(setSidebarCollapsed(!collapsed))}
-            />
+            >
+                <Menu aria-hidden="true" />
+            </Button>
 
             <span className="workspace-page-title">{currentTitle}</span>
             <HostScope />
@@ -84,7 +95,7 @@ export default function Header() {
             <div style={{ flexGrow: 1 }} />
 
             <button className="workspace-search" type="button" aria-label={t('workbench.search')}
-                onClick={() => dispatch(setCommandOpen(true))}
+                onClick={() => { if (isBlockingDialogOpen()) return; dispatch(setCommandOpen(true)); }}
                 style={{
                     display: 'flex',
                     alignItems: 'center',
@@ -92,20 +103,20 @@ export default function Header() {
                     width: 210,
                     padding: '6px 12px',
                     borderRadius: shape.radiusMd,
-                    border: '1px solid var(--semi-color-border)',
-                    backgroundColor: 'var(--semi-color-fill-0)',
-                    color: 'var(--semi-color-text-2)',
+                    border: '1px solid var(--border)',
+                    backgroundColor: 'var(--muted)',
+                    color: 'var(--muted-foreground)',
                     cursor: 'pointer',
                 }}
             >
-                <IconSearch />
+                <Search className="size-4" aria-hidden="true" />
                 <span style={{ flexGrow: 1, fontSize: 13 }}>{t('common.search')}</span>
                 <span
                     style={{
                         fontSize: 11,
                         padding: '2px 6px',
                         borderRadius: 6,
-                        backgroundColor: 'var(--semi-color-fill-1)',
+                        backgroundColor: 'var(--muted)',
                     }}
                 >
                     Ctrl K
@@ -113,56 +124,55 @@ export default function Header() {
             </button>
 
             <Button
-                theme="borderless"
-                type="tertiary"
-                icon={themeIcon}
+                variant="ghost"
+                size="icon"
                 aria-label={t('workbench.theme')} title={t(`common.theme${themeMode === 'light' ? 'Light' : themeMode === 'dark' ? 'Dark' : 'System'}`)}
                 onClick={cycleTheme}
-            />
-
-            <Dropdown
-                trigger="click"
-                position="bottomRight"
-                render={
-                    <Dropdown.Menu>
-                        {SUPPORTED_LANGUAGES.map((lang) => (
-                            <Dropdown.Item
-                                key={lang.value}
-                                active={i18n.language === lang.value}
-                                onClick={() => changeLanguage(lang.value)}
-                            >
-                                {lang.label}
-                            </Dropdown.Item>
-                        ))}
-                    </Dropdown.Menu>
-                }
             >
-                <Button theme="borderless" type="tertiary" icon={<IconLanguage />} aria-label={t('common.language')} />
-            </Dropdown>
+                {themeIcon}
+            </Button>
 
-            <Dropdown
-                trigger="click"
-                position="bottomRight"
-                render={
-                    <Dropdown.Menu>
-                        <Dropdown.Title>
-                            <div style={{ display: 'flex', flexDirection: 'column' }}>
-                                <span style={{ fontWeight: 600 }}>{auth.name ?? '-'}</span>
-                                <span style={{ fontSize: 12, color: 'var(--semi-color-text-2)' }}>{auth.role ?? '-'}</span>
-                            </div>
-                        </Dropdown.Title>
-                        <Dropdown.Divider />
-                        <Dropdown.Item icon={<IconUser />}>{t('common.profile')}</Dropdown.Item>
-                        <Dropdown.Item icon={<IconExit />} onClick={handleLogout}>
-                            {t('common.logout')}
-                        </Dropdown.Item>
-                    </Dropdown.Menu>
-                }
-            >
-                <Avatar size="small" style={{ backgroundColor: 'var(--semi-color-primary)', cursor: 'pointer' }}>
-                    {(auth.name ?? 'U').slice(0, 1).toUpperCase()}
-                </Avatar>
-            </Dropdown>
+            <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" aria-label={t('common.language')} title={t('common.language')}>
+                        <Languages aria-hidden="true" />
+                    </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                    {SUPPORTED_LANGUAGES.map((lang) => (
+                        <DropdownMenuItem key={lang.value} onSelect={() => changeLanguage(lang.value)}>
+                            {lang.label}
+                        </DropdownMenuItem>
+                    ))}
+                </DropdownMenuContent>
+            </DropdownMenu>
+
+            <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" className="rounded-full" aria-label={t('common.profile')}>
+                        <Avatar size="sm">
+                            <AvatarFallback className="bg-primary text-xs font-semibold text-primary-foreground">
+                                {(auth.name ?? 'U').slice(0, 1).toUpperCase()}
+                            </AvatarFallback>
+                        </Avatar>
+                    </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="min-w-44">
+                    <DropdownMenuLabel>
+                        <div style={{ display: 'flex', flexDirection: 'column' }}>
+                            <span style={{ fontWeight: 600 }}>{auth.name ?? '-'}</span>
+                            <span style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>{auth.role ?? '-'}</span>
+                        </div>
+                    </DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem>
+                        <User aria-hidden="true" />{t('common.profile')}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem variant="destructive" onSelect={() => { void handleLogout(); }}>
+                        <LogOut aria-hidden="true" />{t('common.logout')}
+                    </DropdownMenuItem>
+                </DropdownMenuContent>
+            </DropdownMenu>
         </header>
     );
 }
