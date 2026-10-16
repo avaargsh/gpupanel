@@ -101,3 +101,57 @@ files can drift after observation. The panel visibly preserves
 grant machine authority, remotely execute uv, prove an OS UID, or enable
 Notebook/GPU sessions. A future authenticated Core→Agent→non-root
 execution + independent receipt readback must settle these properties.
+
+## Experimental single-user Unix worker (not Core→Agent dispatch)
+
+PR #109 introduces a **separate, explicitly launched user-session worker**,
+not a privileged daemon or public API. It accepts one Unix-socket request in
+\`$XDG_RUNTIME_DIR/gpupanel/uv-worker.sock\` (no TCP, no remote hosts).
+The socket directory must be owned by the actual non-root Linux UID and
+private (0700). \`SO_PEERCRED\` must match that same non-root UID; **root
+and foreign UIDs are rejected**, even if they discover the socket.
+A 256-bit random single-process token is also required. The client cannot
+choose an arbitrary command, path or profile. The worker is started only
+after **both** immutable Core and locally computed uv plan digests match
+the operator's explicit approvals.
+
+Use the original manually exported, already approved \`workspace-intent.json\`
+as described above. On your own Ubuntu desktop:
+
+\`\`\`sh
+python3 scripts/gpupanel-uv-user-worker.py \
+  --intent-file "$HOME/workspace-intent.json" \
+  --approve-plan "<full Core planDigest>" \
+  --approve-uv "<full local uvPlanDigest>"
+\`\`\`
+
+The process prints exactly one JSON object with \`socket\`, \`intentId\`
+and ephemeral \`token\` to that terminal, then accepts a single bounded
+local request. In a second terminal **as that same OS user**, use the
+printed \`intentId\` and \`token\`:
+
+\`\`\`sh
+python3 scripts/gpupanel-uv-user-worker.py \
+  --request execute --intent-id "<intentId>" --token "<token>"
+\`\`\`
+
+An \`inspect\` request is strictly read-only; it also consumes the one
+socket connection but does **not** claim a mutation. The worker exits after
+one request (or bounded idle timeout), and removes only the exact socket
+inode it created. Never persist the token or transmit it to Core/Agent.
+
+Before \`uv\` runs, the local process makes an exclusive, fsynced,
+0600 \`~/GPUPanel/workspace-attempts/<intentId>.json\` marker. A second
+\`execute\` for that intent after a lost ACK/crash returns
+\`ATTEMPT_UNKNOWN_NO_REPLAY\`, **not** a fresh execution. Operators
+must inspect the uv receipt and existing project directory manually.
+A returned \`LOCAL_UV_VERIFIED_NOT_CORE_PROVISIONED\` may include the
+bounded operator-reported \`localEvidence\`; it still does not prove
+independent execution ownership or update Core Workspace state.
+
+**Not yet delivered:** automated Core→Agent routing, mapping a Core session
+to an OS UID, an Agent-signed observation, durable queued runs, or Host
+state reconciliation. The privileged Agent is deliberately **not**
+authorized to use this same-UID socket: it has a different identity.
+This is a narrowly scoped runtime substrate that can be safely connected
+only after those authorization contracts and Ubuntu host acceptance exist.
