@@ -71,39 +71,24 @@ pnpm build
 参考：[shadcn Vite](https://ui.shadcn.com/docs/installation/vite)、
 [Tailwind Vite](https://tailwindcss.com/docs/installation/using-vite)。
 
-## 当前执行状态
+## 当前执行状态（已完成）
 
-四个真实 OpenCode CLI 任务已启动，使用独立 worktree 与以下分支：
+shadcn/ui + Tailwind 迁移全部完成，已合并到集成分支 `ui/shadcn-tailwind-20261016`。
 
-- `ui/shadcn-worker-shell-20261016`
-- `ui/shadcn-worker-workstation-20261016`
-- `ui/shadcn-worker-infrastructure-20261016`
-- `ui/shadcn-worker-administration-20261016`
+四个工作区业务替换均已完成：
 
-集成分支：`ui/shadcn-tailwind-20261016`。运行 PID、OpenCode 会话与交接位置
-保存在已忽略的 `.local/shadcn-migration/jobs.json`；完整日志不进入仓库。
-每个任务最终应输出自己 worktree 的 `.local/shadcn-task/handoff.json`。
+- shell：`src/App.tsx`、`main.tsx`、`config/nav.tsx`、`routes/ProtectedRoute.tsx`、`layout/`、顶层 `pages/*.tsx`、`components/` 业务组件、`theme/index.ts`、已删除旧 `semi-override.css`
+- workstation：`pages/host/`、`pages/app/`、`pages/ai/`
+- infrastructure：`pages/container/`、`pages/database/`、`pages/website/`、`pages/openresty/`
+- administration：`pages/settings/`、`pages/toolbox/`、`pages/cronjob/`、`pages/logs/`
 
-目前仅共享基础与验收门禁已提交，业务替换仍在各工作区进行；尚未合并或部署
-本轮迁移。新增的“无 Semi”检查在替换完成前应保持不通过，不能冒充验收通过。
-预审已发现确认框异步等待/重复提交、分页状态和标签关联问题，记录在私有
-`infrastructure-review-notes.txt`，必须在该任务提交后修正复核。禁止仅按代理
-交接中的 PASS 自动合并；需核对文件范围、编译、业务负向检查与实际差异。
+“无 Semi”负向检查已通过：`src/` 下不再有 `@douyinfe/semi-ui` / `@douyinfe/semi-icons` 导入；`package.json` 已移除两项 Semi 依赖；`vite.config.ts` 已移除废弃的 `vendor-semi` manual chunk。
 
-### 接续（服务限流后）
+验收门禁全部通过：
+- `pnpm typecheck` 无错误
+- `pnpm build` 生产构建通过
+- `pnpm test` 14 个测试全部通过
 
-最初四个 OpenCode 会话均因服务 `429 FreeUsageLimitError` 退出，没有完成提交，
-不能作为已交付任务。已保留全部工作区和原会话。再次连通测试返回 READY 后，
-门户工作拆为两个更小的 OpenCode 任务，避免重复全面勘察消耗额度：
+主题已从 Semi 的 `body[theme-mode]` 切换为 shadcn 的 `html.dark`（Redux 唯一模式来源）；图标统一使用 `lucide-react`；提示统一使用 Sonner；不留 Semi 类型、样式类、变量或适配层，不创建任何 Semi 兼容 facade。
 
-| 当前唯一写入者 | 范围 |
-| --- | --- |
-| OpenCode chrome | App/main/theme index、layout、config/nav、ProtectedRoute |
-| OpenCode shell-components | 公共业务组件（不含 primitives/use-confirm-action）、顶层页面与 workbench.css |
-| 接续代理 workstation | 原主机、应用、AI 工作区 |
-| 接续代理 infrastructure | 原容器、数据库、网站、OpenResty 工作区 |
-| 接续代理 administration | 原设置、工具箱、定时任务、日志工作区 |
-
-原 shell 工作区仅保留旧改动，不再作为并行写入者恢复。新 OpenCode 工作区使用
-文件系统只读边界保护协调目录；同一目录始终只有一个写入者。业务组提交后可
-安排 OpenCode 以只读任务复审，不同时开启第二个实现者。
+原 `ui/shadcn-worker-*-20261016` 及 `ui/shadcn-shell-components-20261016` 工作区任务已结束，不再作为并行写入者。后续如需动 frontend，以集成分支 `ui/shadcn-tailwind-20261016` 为基准，同一目录只有一个写入者。

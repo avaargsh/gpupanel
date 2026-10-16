@@ -2,7 +2,7 @@
   "name": "gpupanel-frontend",
   "private": true,
   "version": "0.1.0",
-  "description": "GPUPanel 前端（React 19 + Semi Design + Redux Toolkit），Docker Desktop 同款技术栈",
+  "description": "GPUPanel 前端（React 19 + shadcn/ui + Tailwind + Redux Toolkit），Docker Desktop 同款技术栈",
   "scripts": {
     "dev": "pnpm --filter @gpupanel/panel dev",
     "build": "pnpm --filter @gpupanel/panel build",

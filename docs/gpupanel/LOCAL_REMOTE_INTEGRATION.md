@@ -1,6 +1,6 @@
 # 本地 React 版本与远程 1Panel 优化整合
 
-本轮按用户明确要求，以本地 React 19 / Semi Design 版本为主体，保留远程基于
+本轮按用户明确要求，以本地 React 19 / shadcn/ui + Tailwind 版本为主体，保留远程基于
 1Panel 的优化。远程固定基线为 `main` 的
 `82d34f0518e340fb0077dddd74ee004305ed56c6`，包含 `dev-v2` 的完整历史。
 未合并的远程候选分支没有被当成已验收代码自动并入。
