@@ -17,6 +17,7 @@ import ToolboxPage from '@/pages/toolbox';
 import LogsPage from '@/pages/logs';
 import SettingsPage from '@/pages/settings';
 import ProtectedRoute from './ProtectedRoute';
+import ProjectsPage from '@/pages/ProjectsPage';
 
 /**
  * 路由骨架 —— 对应 12 个业务模块的占位路由已就位，
@@ -37,6 +38,7 @@ export const router = createBrowserRouter([
         children: [
             { index: true, element: <HomePage /> },
             { path: 'host', element: <HostPage /> },
+            { path: 'projects', element: <ProjectsPage /> },
             { path: 'containers', element: <ContainersPage /> },
             { path: 'databases', element: <DatabasesPage /> },
             { path: 'websites', element: <WebsitesPage /> },

@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
+import { useGetProjectsQuery } from '@/api/projectApi';
 import { useGetBaseInfoQuery, useGetOsInfoQuery } from '@/api/dashboardApi';
 import { useGetGpuInfoQuery } from '@/api/gpuApi';
 import FirstRun from '@/components/FirstRun';
@@ -24,6 +25,8 @@ export default function HomePage() {
     const os = useGetOsInfoQuery();
     const base = useGetBaseInfoQuery({ ioOption: 'all', netOption: 'all' });
     const gpu = useGetGpuInfoQuery();
+    const projects = useGetProjectsQuery(undefined, { refetchOnMountOrArgChange: true });
+    const currentProjects = !projects.isError && !projects.isFetching && projects.isSuccess ? projects.currentData : undefined;
     // Never present last successful values as current after a failed refresh.
     const osInfo = !os.isError ? os.currentData : undefined;
     const baseInfo = !base.isError ? base.currentData : undefined;
@@ -80,9 +83,8 @@ export default function HomePage() {
                         </span>
                     </Link>
                     <div className="workbench-planned">
-                        <Button type="button" aria-label={t('workbench.newProject')} disabled variant="outline">
-                            <FolderIcon data-icon="inline-start" />
-                            {t('workbench.newProject')}
+                        <Button asChild variant="outline">
+                            <Link to="/projects"><FolderIcon data-icon="inline-start" />{t('workbench.newProject')}</Link>
                         </Button>
                         <p>{t('workbench.projectHint')}</p>
                     </div>
@@ -133,12 +135,22 @@ export default function HomePage() {
             <div className="workbench-columns">
                 <section className="workbench-panel" aria-labelledby="recent-projects-title">
                     <div className="workbench-panel-heading"><h2 id="recent-projects-title">{t('workbench.recent')}</h2></div>
-                    <div className="workbench-empty">
-                        <FolderIcon className="size-5" />
-                        <h3>{t('workbench.noProjects')}</h3>
-                        <p>{t('workbench.noProjectsHint')}</p>
-                        <Link to="/apps?tab=installed">{t('workbench.installed')}</Link>
-                    </div>
+                    {projects.isError ? <div className="workbench-empty">
+                        <TriangleAlertIcon className="size-5" />
+                        <h3>{t('projectRegistry.loadError')}</h3>
+                        <Link to="/projects">{t('workbench.projects')}</Link>
+                    </div> : currentProjects === undefined ? <p className="workbench-muted" role="status">{t('common.loading')}</p>
+                        : currentProjects.length === 0 ? <div className="workbench-empty">
+                            <FolderIcon className="size-5" />
+                            <h3>{t('workbench.noProjects')}</h3>
+                            <p>{t('workbench.noProjectsHint')}</p>
+                            <Link to="/projects">{t('workbench.newProject')}</Link>
+                        </div> : <div className="workbench-tool-links">
+                            {currentProjects.slice(0, 3).map((project) => <Link to="/projects" key={project.id}>
+                                <FolderIcon className="size-4 shrink-0" />
+                                <span>{project.name} · {t('projectRegistry.notProvisioned')}</span>
+                            </Link>)}
+                        </div>}
                 </section>
                 <section className="workbench-panel" aria-labelledby="workbench-tools-title">
                     <div className="workbench-panel-heading"><h2 id="workbench-tools-title">{t('workbench.tools')}</h2></div>

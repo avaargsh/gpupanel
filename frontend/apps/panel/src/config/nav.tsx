@@ -21,11 +21,11 @@ export interface NavSection { titleKey: string; items: NavItem[] }
 /** Decorative icons; the owning link/option already exposes the accessible label. */
 const navIcon = (Icon: typeof Component) => <Icon className="size-4" aria-hidden="true" />;
 
-// Only connected capabilities navigate. Project/environment lifecycle needs a backend contract.
+// Project registration is connected to Core metadata only. Environment lifecycle remains unavailable.
 export const navSections: NavSection[] = [
     { titleKey: 'workbench.personal', items: [
         { path: '/', labelKey: 'workbench.title', icon: navIcon(Home) },
-        { path: '/projects', labelKey: 'workbench.projects', icon: navIcon(Folder), unavailable: true },
+        { path: '/projects', labelKey: 'workbench.projects', icon: navIcon(Folder) },
         { path: '/environments', labelKey: 'workbench.environments', icon: navIcon(Layers), unavailable: true },
         { path: '/apps', labelKey: 'workbench.apps', icon: navIcon(LayoutGrid) },
         { path: '/host?tab=terminal', labelKey: 'workbench.terminal', icon: navIcon(Code) },
