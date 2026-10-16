@@ -1,5 +1,6 @@
 """SIMULATED API: vNext layout, accessibility, unavailable capabilities and scope."""
 import json
+import re
 from pathlib import Path
 from urllib.parse import urlparse, parse_qs
 from playwright.sync_api import sync_playwright, expect
@@ -69,7 +70,7 @@ with sync_playwright() as p:
     assert page.locator('.workbench-action').count() == 2
     assert not page.locator('.workspace-sidebar .workspace-nav-link.unavailable').count()
     assert page.evaluate('document.documentElement.scrollWidth <= innerWidth')
-    assert page.locator('dialog[open]').count() == 0
+    assert page.get_by_role('dialog').count() == 0
     assert not any(path.startswith(('/projects', '/workspaces', '/sessions')) for path, _, _ in state['requests'])
     assert page.get_by_role('link', name='Advanced AI settings', exact=True).count() == 1
     assert page.locator('.workspace-sidebar').get_by_role('link', name='GPU & accelerators', exact=True).get_attribute('href') == '/gpu'
@@ -83,7 +84,7 @@ with sync_playwright() as p:
     page.locator('#workspace-content').evaluate('(el) => { el.scrollTop = 0; el.blur(); }')
     page.screenshot(path=str(OUTPUT / 'home-light.png'), full_page=True)
     page.get_by_role('button', name='Switch theme', exact=True).click()
-    expect(page.locator('body')).to_have_attribute('theme-mode', 'dark')
+    expect(page.locator('html')).to_have_class(re.compile(r'(^|\s)dark(\s|$)'))
     expect(page.locator('.workbench-start')).to_have_css('background-color', 'rgb(25, 29, 38)')
     expect(page.locator('.workspace-brand')).to_have_css('color', 'rgb(237, 240, 247)')
     page.screenshot(path=str(OUTPUT / 'home-dark.png'), full_page=True)
@@ -101,18 +102,19 @@ with sync_playwright() as p:
     expect(page.get_by_role('dialog', name='GPUPanel Assistant')).to_be_visible()
     expect(page.get_by_text('Chat is not connected yet', exact=False)).to_be_visible()
     page.keyboard.press('Control+k')
-    assert page.locator('.semi-modal:visible').count() == 0, 'global search must not open behind the assistant'
+    assert page.get_by_role('dialog').count() == 1, 'global search must not open behind the assistant'
     page.get_by_label('Question draft').fill('fixture question')
     for _ in range(10):
         page.keyboard.press('Tab')
-        assert page.evaluate("document.activeElement === document.body || document.activeElement.closest('dialog') !== null")
+        assert page.get_by_role('dialog', name='GPUPanel Assistant').evaluate('(el) => el.contains(document.activeElement)')
     page.screenshot(path=str(OUTPUT / 'assistant.png'), full_page=True)
     page.keyboard.press('Escape')
     expect(page.get_by_role('dialog', name='GPUPanel Assistant')).not_to_be_visible()
     expect(page.get_by_role('button', name='AI assistant', exact=True)).to_be_focused()
     page.keyboard.press('Control+k')
-    expect(page.locator('.semi-modal')).to_be_visible()
-    page.locator('.semi-modal input').fill('Environments')
+    search = page.get_by_role('dialog')
+    expect(search).to_be_visible()
+    search.locator('input').fill('Environments')
     expect(page.get_by_text('No matches', exact=False)).to_be_visible()
     page.keyboard.press('Escape')
     # A failed refresh must remove the previous observed numbers and connection claim.

@@ -85,9 +85,10 @@ with sync_playwright() as playwright:
     assert state['mfa'] == 1
     page.goto(URL + '/apps'); page.wait_for_load_state('networkidle')
     page.get_by_role('button', name=re.compile('^(安装|Install)$')).first.click()
-    expect(page.locator('.semi-modal')).to_be_visible()
+    modal = page.get_by_role('dialog')
+    expect(modal).to_be_visible()
     page.wait_for_load_state('networkidle')
-    # Handle each native dialog immediately; wait for the deferred Semi event.
+    # Handle the existing native destructive-action confirmation explicitly.
     decisions = [False, True]
     observed = []
     def confirmation(dialog):
@@ -96,23 +97,21 @@ with sync_playwright() as playwright:
         dialog.accept() if accept else dialog.dismiss()
     page.on('dialog', confirmation)
     with page.expect_event('dialog'):
-        page.locator('.semi-modal').get_by_role('button', name='confirm', exact=True).click()
+        modal.get_by_role('button', name=re.compile('^(confirm|Install|安装)$', re.I)).click()
     assert observed == [False] and state['installs'] == 0
-    # Semi Modal has a 100 ms leading-only OK debounce; wait past that known window.
-    page.wait_for_timeout(150)
     with page.expect_event('dialog'):
-        page.locator('.semi-modal').get_by_role('button', name='confirm', exact=True).click()
+        modal.get_by_role('button', name=re.compile('^(confirm|Install|安装)$', re.I)).click()
     expect(page.get_by_text(re.compile('结果未核对，禁止再次提交'))).to_be_visible()
     assert state['installs'] == 1
     receipt = page.evaluate(f"JSON.parse(sessionStorage.getItem('{KEY}'))")
     assert set(receipt) == {'taskID', 'node', 'appKey'}
-    expect(page.locator('.semi-modal button').filter(has_text=re.compile('^(安装|Install)$'))).to_be_disabled()
+    expect(modal.get_by_role('button', name=re.compile('^(安装|Install|confirm)$', re.I))).to_be_disabled()
     page.reload(); page.wait_for_load_state('networkidle')
     page.get_by_role('button', name=re.compile('检查未核对安装')).click()
-    expect(page.locator('.semi-modal button').filter(has_text=re.compile('^(安装|Install)$'))).to_be_disabled()
+    expect(modal.get_by_role('button', name=re.compile('^(安装|Install|confirm)$', re.I))).to_be_disabled()
     assert state['installs'] == 1
     page.screenshot(path='/tmp/gpupanel-react-recovery.png', full_page=True)
-    page.locator('.semi-modal').get_by_role('button', name='cancel', exact=True).click()
+    modal.get_by_role('button', name=re.compile('^(cancel|取消)$', re.I)).click()
     page.get_by_role('tab', name='Installed', exact=True).click()
     row = page.get_by_role('row').filter(has_text='Uncertain app')
     expect(row).to_be_visible()
@@ -121,7 +120,7 @@ with sync_playwright() as playwright:
     expect(page.get_by_text('Operator review required', exact=True)).to_be_visible()
     assert 'SECRET_FIXTURE_NOT_FOR_UI' not in page.locator('body').inner_text()
     assert state['installs'] == 1
-    page.locator('.semi-sidesheet').evaluate("async (element) => { await Promise.all(element.getAnimations({ subtree: true }).map(animation => animation.finished.catch(() => {}))); }")
+    page.get_by_role('dialog', name=re.compile('Read-only application evidence')).evaluate("async (element) => { await Promise.all(element.getAnimations({ subtree: true }).map(animation => animation.finished.catch(() => {}))); }")
     page.screenshot(path='/tmp/gpupanel-react-evidence.png', full_page=True)
     assert not errors, errors
     context.close()
