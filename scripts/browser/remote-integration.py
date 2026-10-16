@@ -107,7 +107,7 @@ with sync_playwright() as playwright:
     assert set(receipt) == {'taskID', 'node', 'appKey'}
     expect(modal.get_by_role('button', name=re.compile('^(安装|Install|confirm)$', re.I))).to_be_disabled()
     page.reload(); page.wait_for_load_state('networkidle')
-    page.get_by_role('button', name=re.compile('检查未核对安装')).click()
+    page.get_by_role('button', name=re.compile('检查未核对安装|Review unresolved install')).click()
     expect(modal.get_by_role('button', name=re.compile('^(安装|Install|confirm)$', re.I))).to_be_disabled()
     assert state['installs'] == 1
     page.screenshot(path='/tmp/gpupanel-react-recovery.png', full_page=True)
