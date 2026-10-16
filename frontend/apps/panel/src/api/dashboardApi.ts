@@ -1,27 +1,8 @@
 import { baseApi } from '@/api/baseApi';
+import { normalizeDashboard, normalizeOsInfo } from '@/utils/dashboard';
 
-export interface OsInfo {
-    os: string;
-    arch: string;
-    kernelVersion: string;
-    hostname: string;
-    kernel?: string;
-    platform?: string;
-}
-
-export interface BaseInfo {
-    cpuUsedPercent: number;
-    memoryUsedPercent: number;
-    diskUsedPercent: number;
-    load1: number;
-    load5: number;
-    load15: number;
-    timeSinceUptime: string;
-    cpuTotal: number;
-    memoryTotal: number;
-    diskTotal: number;
-    [key: string]: unknown;
-}
+export type OsInfo = ReturnType<typeof normalizeOsInfo>;
+export type BaseInfo = ReturnType<typeof normalizeDashboard>;
 
 export interface QuickJump {
     id: number;
@@ -36,6 +17,7 @@ export const dashboardApi = baseApi.injectEndpoints({
     endpoints: (build) => ({
         getOsInfo: build.query<OsInfo, void>({
             query: () => ({ url: '/dashboard/base/os', method: 'GET' }),
+            transformResponse: normalizeOsInfo,
             providesTags: ['Dashboard'],
         }),
         getBaseInfo: build.query<BaseInfo, { ioOption?: string; netOption?: string } | void>({
@@ -44,6 +26,7 @@ export const dashboardApi = baseApi.injectEndpoints({
                 const net = arg?.netOption ?? 'all';
                 return { url: `/dashboard/base/${io}/${net}`, method: 'GET' };
             },
+            transformResponse: normalizeDashboard,
             providesTags: ['Dashboard'],
         }),
         getQuickOptions: build.query<QuickJump[], void>({

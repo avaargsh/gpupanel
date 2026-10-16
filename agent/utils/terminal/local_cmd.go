@@ -27,6 +27,7 @@ type LocalCommand struct {
 
 	closeOnce sync.Once
 	closeErr  error
+	onClose   func()
 }
 
 func NewCommand(name string, arg ...string) (*LocalCommand, error) {
@@ -65,6 +66,9 @@ func (lcmd *LocalCommand) Write(p []byte) (n int, err error) {
 
 func (lcmd *LocalCommand) Close() error {
 	lcmd.closeOnce.Do(func() {
+		if lcmd.onClose != nil {
+			defer lcmd.onClose()
+		}
 		if lcmd.pty != nil {
 			_, _ = lcmd.pty.Write([]byte{3})
 			time.Sleep(50 * time.Millisecond)

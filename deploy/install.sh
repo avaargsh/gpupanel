@@ -6,7 +6,8 @@
 # Usage:
 #   sudo install.sh [--base-dir DIR] [--payload DIR] [--port N] [--username NAME]
 #                   [--password PASS] [--entrance PATH] [--language CODE]
-#                   [--no-systemd] [--skip-config]
+#                   [--no-systemd] [--skip-config] [--bind-address 127.0.0.1|0.0.0.0]
+#                   [--experimental-ubuntu-26] [--no-auto-provision]
 #
 # Self-contained: works from a source checkout (deploy/install.sh) and from an
 # extracted release tarball (gpupanel-<version>-<os>-<arch>/install.sh).
@@ -61,9 +62,15 @@ ENTRANCE=""
 LANGUAGE=""
 USE_SYSTEMD=1
 SKIP_CONFIG=0
+BIND_ADDRESS="0.0.0.0"
+AUTO_PROVISION=enabled
+PREFLIGHT_ARGS=()
 
 while [ $# -gt 0 ]; do
     case "$1" in
+        --no-auto-provision) AUTO_PROVISION=disabled; shift ;;
+        --bind-address) BIND_ADDRESS="${2:-}"; shift 2 ;;
+        --experimental-ubuntu-26) PREFLIGHT_ARGS+=(--experimental-ubuntu-26); shift ;;
         --base-dir)  BASE_DIR="${2:-}"; shift 2 ;;
         --payload)   PAYLOAD="${2:-}"; shift 2 ;;
         --port)      PORT="${2:-}"; shift 2 ;;
@@ -78,6 +85,7 @@ while [ $# -gt 0 ]; do
     esac
 done
 
+case "$BIND_ADDRESS" in 127.0.0.1|0.0.0.0) ;; *) die "--bind-address must be 127.0.0.1 or 0.0.0.0" ;; esac
 [ -n "$BASE_DIR" ] || die "--base-dir needs a value"
 case "$BASE_DIR" in
     /*) ;;
@@ -87,6 +95,10 @@ BASE_DIR="${BASE_DIR%/}"
 
 [ "$(id -u)" = "0" ] || die "install.sh must run as root (try: sudo $0 $*)"
 
+if [ "$AUTO_PROVISION" = "disabled" ]; then
+    [ "$USE_SYSTEMD" = "1" ] && [ -d /run/systemd/system ] || die "--no-auto-provision requires systemd"
+fi
+export GPUPANEL_AUTO_PROVISION="$AUTO_PROVISION"
 PANEL_DIR="${BASE_DIR}/gpupanel"
 CONF_DIR="${PANEL_DIR}/conf"
 GEO_DIR="${PANEL_DIR}/geo"
@@ -198,7 +210,7 @@ detect_ip() {
 PREFLIGHT="$(pick gpupanel-install-preflight.py "$ROOT/scripts/gpupanel-install-preflight.py")"
 [ -f "$PREFLIGHT" ] || die "missing reviewed collision preflight"
 command -v python3 >/dev/null || die "Python 3 is required for read-only preflight"
-python3 "$PREFLIGHT" --json || die "preflight blocked; installation was not started"
+python3 "$PREFLIGHT" --json "${PREFLIGHT_ARGS[@]}" || die "preflight blocked; installation was not started"
 python3 - "$BASE_DIR" <<'PYCODE'
 import pathlib, sys
 base = pathlib.Path(sys.argv[1])
@@ -241,6 +253,8 @@ USERNAME="${USERNAME:-admin}"
 LANGUAGE="${LANGUAGE:-zh}"
 [ "$PORT" -ge 1 ] 2>/dev/null && [ "$PORT" -le 65535 ] 2>/dev/null \
     || die "invalid port: $PORT (expected 1-65535)"
+
+port_listening "$PORT" && die "port $PORT is already in use; no process was stopped"
 
 if [ "$REINSTALL" = "1" ]; then
     # Keep whatever the previous install recorded. Rotating it here would hand
@@ -297,19 +311,8 @@ banner
 info "installing GPUPanel $VERSION to $PANEL_DIR"
 [ -n "$PAYLOAD" ] && info "payload: $PAYLOAD"
 
-# ---- stop anything already running -------------------------------------------
-info "stopping any running instance"
-if command -v systemctl >/dev/null 2>&1; then
-    systemctl stop gpupanel-agent gpupanel-core 2>/dev/null || true
-fi
-pkill -x gpupanel-agent 2>/dev/null || true
-pkill -x gpupanel-core 2>/dev/null || true
-# also match on the full path: -x only compares the process name, which misses
-# invocations that were not started under their own basename
-pkill -f "$PANEL_DIR/gpupanel-agent" 2>/dev/null || true
-pkill -f "$PANEL_DIR/gpupanel-core" 2>/dev/null || true
-sleep 1
-
+# Fresh install only: preflight rejects existing units/state. Never use pkill to
+# stop unrelated binaries or test processes whose arguments contain our name.
 # ---- install binary + script ------------------------------------------------
 mkdir -p "$PANEL_DIR" "$CONF_DIR" "$PANEL_DIR/log" "$PANEL_DIR/db" "$GEO_DIR"
 install -m 0755 "$CORE_SRC" "$PANEL_DIR/gpupanel-core"
@@ -333,6 +336,7 @@ fi
 # panics at startup (ctl_conf.Load) or comes up with the placeholder password.
 upsert_kv "$PANEL_DIR/pctl" BASE_DIR          "$BASE_DIR"
 upsert_kv "$PANEL_DIR/pctl" ORIGINAL_PORT     "$PORT"
+upsert_kv "$PANEL_DIR/pctl" ORIGINAL_BIND_ADDRESS "$BIND_ADDRESS"
 upsert_kv "$PANEL_DIR/pctl" ORIGINAL_USERNAME "$USERNAME"
 upsert_kv "$PANEL_DIR/pctl" ORIGINAL_PASSWORD "$PASSWORD"
 upsert_kv "$PANEL_DIR/pctl" ORIGINAL_ENTRANCE "$ENTRANCE"
@@ -375,6 +379,9 @@ if [ "$USE_SYSTEMD" = "1" ] && command -v systemctl >/dev/null 2>&1 && [ -d /run
     for src in "$UNIT_CORE_SRC" "$UNIT_AGENT_SRC"; do
         name="$(basename "$src")"
         sed -e "s|/opt/gpupanel|${PANEL_DIR}|g" "$src" > "$UNIT_DIR/$name"
+        if [ "$name" = "gpupanel-agent.service" ]; then
+            sed -i "/^\[Service\]/a Environment=GPUPANEL_AUTO_PROVISION=$AUTO_PROVISION" "$UNIT_DIR/$name"
+        fi
         chmod 0644 "$UNIT_DIR/$name"
     done
     systemctl daemon-reload 2>/dev/null || warn "systemctl daemon-reload failed"
@@ -401,7 +408,7 @@ fi
 wait_ready() {
     local tries="$1"
     while [ "$tries" -gt 0 ]; do
-        port_listening "$PORT" && return 0
+        port_listening "$PORT" && python3 "$PREFLIGHT" --agent-health && return 0
         sleep 2
         tries=$((tries - 1))
     done
@@ -409,7 +416,7 @@ wait_ready() {
 }
 
 report_failure() {
-    warn "port $PORT is not listening"
+    warn "Core port $PORT or private Agent health check is not ready"
     if command -v systemctl >/dev/null 2>&1 && [ "$USE_SYSTEMD" = "1" ]; then
         systemctl --no-pager --lines 20 status gpupanel-core gpupanel-agent 2>&1 | tee -a "$LOG_FILE" || true
     fi
@@ -421,7 +428,7 @@ report_failure() {
     die "GPUPanel did not come up; see $LOG_FILE"
 }
 
-info "waiting for the panel to listen on port $PORT"
+info "waiting for Core port $PORT and private Agent health"
 if wait_ready 30; then
     :
 elif [ "$started" = "1" ]; then
@@ -440,7 +447,9 @@ else
     report_failure
 fi
 
-if firewall_open "$PORT"; then
+if [ "$BIND_ADDRESS" = "127.0.0.1" ]; then
+    info "loopback-only binding; firewall unchanged"
+elif firewall_open "$PORT"; then
     ok "firewall: opened $PORT/tcp"
 else
     info "firewall: none active (open $PORT/tcp yourself if the panel is unreachable)"
@@ -449,7 +458,7 @@ fi
 # ---- summary ----------------------------------------------------------------
 LOCAL_IP="$(detect_ip || true)"
 PUBLIC_IP=""
-if command -v curl >/dev/null 2>&1; then
+if [ "$BIND_ADDRESS" != "127.0.0.1" ] && command -v curl >/dev/null 2>&1; then
     PUBLIC_IP="$(curl -fsS --max-time 5 https://api64.ipify.org 2>/dev/null || true)"
 fi
 [ -n "$PUBLIC_IP" ] || PUBLIC_IP="N/A"
@@ -458,8 +467,12 @@ fi
 log ""
 ok "GPUPanel $VERSION installed."
 log ""
-log "  external url : http://$PUBLIC_IP:$PORT/$ENTRANCE"
-log "  internal url : http://$LOCAL_IP:$PORT/$ENTRANCE"
+if [ "$BIND_ADDRESS" = "127.0.0.1" ]; then
+    log "  internal url : http://127.0.0.1:$PORT/$ENTRANCE"
+else
+    log "  external url : http://$PUBLIC_IP:$PORT/$ENTRANCE"
+    log "  internal url : http://$LOCAL_IP:$PORT/$ENTRANCE"
+fi
 log "  panel dir    : $PANEL_DIR"
 log "  binaries     : $PANEL_DIR/gpupanel-core, $PANEL_DIR/gpupanel-agent"
 log "  control      : pctl start|stop|restart|status"
@@ -476,7 +489,7 @@ else
     log "  This is a reinstall, so the existing credentials were kept. If you lost"
     log "  them, reset them with: $PANEL_DIR/gpupanel-core reset password"
 fi
-log "  Reminder: remember to open port $PORT in your cloud security group."
+[ "$BIND_ADDRESS" = "127.0.0.1" ] || log "  Reminder: remember to open port $PORT in your cloud security group."
 log ""
 log "  install log  : $LOG_FILE"
 log "================================================================"

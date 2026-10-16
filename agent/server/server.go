@@ -145,7 +145,11 @@ func Start() {
 	global.LOG.Info("agent startup: cron initialized")
 	hook.Init()
 	global.LOG.Info("agent startup: hook initialized")
-	go firewall.Init()
+	if global.AutoProvisionEnabled() {
+		go firewall.Init()
+	} else {
+		global.LOG.Info("automatic firewall/network/ACME provisioning disabled by operator")
+	}
 	global.LOG.Info("agent startup: firewall init scheduled")
 	InitOthers()
 	global.LOG.Info("agent startup: edition initialized")

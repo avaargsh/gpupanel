@@ -1,131 +1,71 @@
-import { useMemo } from 'react';
-import { Banner, Button, Card } from '@douyinfe/semi-ui';
-import { IconComponent, IconHistogram, IconPulse, IconRefresh, IconServer } from '@douyinfe/semi-icons';
+import { Banner, Button } from '@douyinfe/semi-ui';
+import { IconApps, IconCode, IconComponent, IconFolder, IconHistogram, IconRefresh, IconServer } from '@douyinfe/semi-icons';
 import { useTranslation } from 'react-i18next';
+import { Link } from 'react-router-dom';
 import { useGetBaseInfoQuery, useGetOsInfoQuery } from '@/api/dashboardApi';
-import EChart from '@/components/EChart';
+import { useGetGpuInfoQuery } from '@/api/gpuApi';
 import FirstRun from '@/components/FirstRun';
 import StatCard from '@/components/StatCard';
-import { getTokens } from '@/theme';
-import { useResolvedMode } from '@/utils/useResolvedMode';
-import { useAppSelector } from '@/store/hooks';
+import { observedPercent } from '@/utils/observations';
+import './workbench.css';
 
 export default function HomePage() {
     const { t } = useTranslation();
-    const resolvedMode = useResolvedMode(useAppSelector((s) => s.ui.themeMode));
-    const tokens = getTokens(resolvedMode);
-    const { data: osInfo, error: osError, isLoading: osLoading } = useGetOsInfoQuery();
-    const { data: baseInfo, error: baseError, isLoading: baseLoading, refetch } = useGetBaseInfoQuery({ ioOption: 'all', netOption: 'all' });
-
-    const backendDown = Boolean(osError) || Boolean(baseError);
-    const loading = osLoading || baseLoading;
-
-    const fmtPercent = (v?: number) => (typeof v === 'number' ? `${v.toFixed(1)}%` : '--');
-
-    const chartOption = useMemo(() => {
-        const cpu = baseInfo?.cpuUsedPercent;
-        // One observed value is not a historical series. Never synthesize load samples.
-        const points = typeof cpu === 'number' && Number.isFinite(cpu) ? [cpu] : [];
-        const color = tokens.primary;
-        return {
-            tooltip: { trigger: 'axis' as const },
-            grid: { left: 8, right: 8, top: 12, bottom: 8, containLabel: false },
-            xAxis: { type: 'category' as const, boundaryGap: false, show: false },
-            yAxis: { type: 'value' as const, min: 0, max: 100, show: false },
-            series: [
-                {
-                    name: 'CPU %',
-                    type: 'line' as const,
-                    smooth: true,
-                    symbol: 'none',
-                    data: points,
-                    lineStyle: { width: 2.5, color },
-                    areaStyle: {
-                        color: {
-                            type: 'linear' as const,
-                            x: 0,
-                            y: 0,
-                            x2: 0,
-                            y2: 1,
-                            colorStops: [
-                                { offset: 0, color: `${color}55` },
-                                { offset: 1, color: `${color}05` },
-                            ],
-                        },
-                    },
-                },
-            ],
-        };
-    }, [baseInfo?.cpuUsedPercent, tokens.primary]);
-
-    const loadText = baseInfo ? `${(baseInfo.load1 ?? 0).toFixed(2)} / ${(baseInfo.load5 ?? 0).toFixed(2)} / ${(baseInfo.load15 ?? 0).toFixed(2)}` : '--';
-
-    return (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                <h1 style={{ fontSize: 24, fontWeight: 650, letterSpacing: -0.4, margin: 0 }}>{t('home.title')}</h1>
-                <div style={{ flexGrow: 1 }} />
-                <Button size="small" icon={<IconRefresh />} onClick={() => refetch()}>
-                    {t('home.refresh')}
-                </Button>
+    const os = useGetOsInfoQuery();
+    const base = useGetBaseInfoQuery({ ioOption: 'all', netOption: 'all' });
+    const gpu = useGetGpuInfoQuery();
+    // Never present last successful values as current after a failed refresh.
+    const osInfo = !os.isError ? os.currentData : undefined;
+    const baseInfo = !base.isError ? base.currentData : undefined;
+    const gpuInfo = !gpu.isError ? gpu.currentData : undefined;
+    const hasGpuSnapshot = gpuInfo && (typeof gpuInfo.collectedAt === 'string' || [gpuInfo.gpu, gpuInfo.npu, gpuInfo.xpu].some(Array.isArray));
+    const devices = hasGpuSnapshot ? [gpuInfo.gpu, gpuInfo.npu, gpuInfo.xpu].flatMap((items) => Array.isArray(items) ? items : []) : undefined;
+    const failed = os.isError || base.isError || gpu.isError;
+    const refresh = () => { void os.refetch(); void base.refetch(); void gpu.refetch(); };
+    return <div className="workbench">
+        <header className="workbench-heading">
+            <div><h1>{t('workbench.title')}</h1><p>{t('workbench.subtitle')}</p></div>
+            <Button aria-label={t('workbench.retry')} icon={<IconRefresh />} loading={os.isFetching || base.isFetching || gpu.isFetching} onClick={refresh}>{t('workbench.retry')}</Button>
+        </header>
+        <section className="workbench-start" aria-labelledby="workbench-start-title">
+            <div className="workbench-start-heading"><span className="workbench-start-icon"><IconCode size="extra-large" /></span><div><h2 id="workbench-start-title">{t('workbench.intro')}</h2><p>{t('workbench.start')}</p></div></div>
+            <div className="workbench-actions">
+                <Link to="/host?tab=terminal" className="workbench-action"><IconCode /><span><strong>{t('workbench.terminal')}</strong><small>{t('workbench.terminalHint')}</small></span></Link>
+                <Link to="/apps" className="workbench-action"><IconApps /><span><strong>{t('workbench.templates')}</strong><small>{t('workbench.templatesHint')}</small></span></Link>
+                <div className="workbench-planned"><Button aria-label={t('workbench.newProject')} disabled icon={<IconFolder />}>{t('workbench.newProject')}</Button><p>{t('workbench.projectHint')}</p></div>
             </div>
-
-            <FirstRun />
-
-            {backendDown && <Banner type="warning" description={t('home.noData')} closeIcon={null} />}
-
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16 }}>
-                <StatCard
-                    title={t('home.cpu')}
-                    value={fmtPercent(baseInfo?.cpuUsedPercent)}
-                    percent={baseInfo?.cpuUsedPercent}
-                    icon={<IconHistogram size="large" />}
-                    color="var(--semi-color-primary)"
-                />
-                <StatCard
-                    title={t('home.memory')}
-                    value={fmtPercent(baseInfo?.memoryUsedPercent)}
-                    percent={baseInfo?.memoryUsedPercent}
-                    icon={<IconComponent size="large" />}
-                    color="var(--semi-color-info)"
-                />
-                <StatCard
-                    title={t('home.disk')}
-                    value={fmtPercent(baseInfo?.diskUsedPercent)}
-                    percent={baseInfo?.diskUsedPercent}
-                    icon={<IconServer size="large" />}
-                    color="var(--semi-color-success)"
-                />
-                <StatCard title={t('home.load')} value={loadText} icon={<IconPulse size="large" />} color="var(--semi-color-warning)" />
+        </section>
+        <section className="workbench-resources" aria-labelledby="resource-heading">
+            <div className="workbench-section-heading"><div><h2 id="resource-heading">{t('workbench.resources')}</h2><p>{t('workbench.resourcesHint')}</p></div><Link to="/gpu">{t('workbench.inspect')}</Link></div>
+            {failed && <Banner type="warning" description={t('home.noData')} closeIcon={null} />}
+            <div className="workbench-stats">
+                <StatCard compact title={t('workbench.gpu')} value={devices ? String(devices.length) : '--'} icon={<IconComponent />} />
+                <StatCard compact title={t('home.cpu')} value={observedPercent(baseInfo?.cpuUsedPercent)} icon={<IconHistogram />} />
+                <StatCard compact title={t('home.memory')} value={observedPercent(baseInfo?.memoryUsedPercent)} icon={<IconComponent />} />
+                <StatCard compact title={t('home.disk')} value={observedPercent(baseInfo?.diskUsedPercent)} icon={<IconServer />} />
             </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.8fr) minmax(0, 1fr)', gap: 16 }}>
-                <Card bodyStyle={{ padding: 20 }}>
-                    <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 8 }}>{t('home.liveLoad')}</div>
-                    <EChart option={chartOption} height={240} themeKey={resolvedMode} />
-                </Card>
-                <Card style={{ height: '100%' }} bodyStyle={{ padding: 20 }}>
-                    <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 16 }}>{t('home.system')}</div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                        <InfoRow label={t('home.hostname')} value={osInfo?.hostname ?? '--'} />
-                        <InfoRow label={t('home.system')} value={osInfo?.os ?? '--'} />
-                        <InfoRow label={t('home.arch')} value={osInfo?.arch ?? '--'} />
-                        <InfoRow label={t('home.kernel')} value={osInfo?.kernelVersion ?? osInfo?.kernel ?? '--'} />
-                        <InfoRow label={t('home.uptime')} value={baseInfo?.timeSinceUptime ?? '--'} />
-                    </div>
-                </Card>
-            </div>
-
-            {loading && <span style={{ fontSize: 12, color: 'var(--semi-color-text-2)' }}>{t('common.loading')}</span>}
+            <dl className="workbench-host-facts">
+                <div><dt>{t('home.hostname')}</dt><dd>{baseInfo?.hostname || '--'}</dd></div>
+                <div><dt>{t('home.system')}</dt><dd>{osInfo?.prettyDistro || osInfo?.os || '--'}</dd></div>
+                <div><dt>{t('home.arch')}</dt><dd>{osInfo?.arch || '--'}</dd></div>
+                <div><dt>{t('home.uptime')}</dt><dd>{baseInfo?.timeSinceUptime || '--'}</dd></div>
+            </dl>
+        </section>
+        <div className="workbench-columns">
+            <section className="workbench-panel" aria-labelledby="recent-projects-title">
+                <div className="workbench-panel-heading"><h2 id="recent-projects-title">{t('workbench.recent')}</h2></div>
+                <div className="workbench-empty"><IconFolder size="large" /><h3>{t('workbench.noProjects')}</h3><p>{t('workbench.noProjectsHint')}</p><Link to="/apps?tab=installed">{t('workbench.installed')}</Link></div>
+            </section>
+            <section className="workbench-panel" aria-labelledby="workbench-tools-title">
+                <div className="workbench-panel-heading"><h2 id="workbench-tools-title">{t('workbench.tools')}</h2></div>
+                <p className="workbench-muted">{t('workbench.toolsHint')}</p>
+                <div className="workbench-tool-links">
+                    <Link to="/apps?tab=installed"><IconApps />{t('workbench.installed')}</Link>
+                    <Link to="/logs?tab=task"><IconHistogram />{t('workbench.tasks')}</Link>
+                    <Link to="/host?tab=overview"><IconServer />{t('workbench.diagnostics')}</Link>
+                </div>
+            </section>
         </div>
-    );
-}
-
-function InfoRow({ label, value }: { label: string; value: string }) {
-    return (
-        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
-            <span style={{ fontSize: 13, color: 'var(--semi-color-text-2)' }}>{label}</span>
-            <span style={{ fontSize: 13, fontWeight: 600 }}>{value}</span>
-        </div>
-    );
+        <FirstRun />
+    </div>;
 }

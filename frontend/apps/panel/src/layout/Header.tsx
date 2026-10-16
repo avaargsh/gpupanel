@@ -5,12 +5,13 @@ import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { baseApi } from '@/api/baseApi';
 import { useLogoutMutation } from '@/api/authApi';
-import { flatNav } from '@/config/nav';
+import { currentNav } from '@/config/nav';
 import { clearCredentials } from '@/features/auth/authSlice';
 import { setCommandOpen, setLanguage, setThemeMode, setSidebarCollapsed, type ThemeMode } from '@/features/ui/uiSlice';
 import { SUPPORTED_LANGUAGES } from '@/i18n';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { shape } from '@/theme';
+import HostScope from './HostScope';
 
 const THEME_CYCLE: ThemeMode[] = ['light', 'dark', 'system'];
 
@@ -25,11 +26,9 @@ export default function Header() {
     const [logout] = useLogoutMutation();
 
     const currentTitle = useMemo(() => {
-        const found = flatNav.find((item) =>
-            item.path === '/' ? location.pathname === '/' : location.pathname.startsWith(item.path),
-        );
+        const found = currentNav(location.pathname, location.search);
         return t(found?.labelKey ?? 'app.name');
-    }, [location.pathname, t]);
+    }, [location.pathname, location.search, t]);
 
     const cycleTheme = () => {
         const next = THEME_CYCLE[(THEME_CYCLE.indexOf(themeMode) + 1) % THEME_CYCLE.length];
@@ -56,7 +55,7 @@ export default function Header() {
     };
 
     return (
-        <header
+        <header className="workspace-header"
             style={{
                 height: shape.headerHeight,
                 flexShrink: 0,
@@ -79,22 +78,18 @@ export default function Header() {
                 onClick={() => dispatch(setSidebarCollapsed(!collapsed))}
             />
 
-            <span style={{ fontWeight: 650, fontSize: 15, marginLeft: 4 }}>{currentTitle}</span>
+            <span className="workspace-page-title">{currentTitle}</span>
+            <HostScope />
 
             <div style={{ flexGrow: 1 }} />
 
-            <div
-                role="button"
-                tabIndex={0}
+            <button className="workspace-search" type="button" aria-label={t('workbench.search')}
                 onClick={() => dispatch(setCommandOpen(true))}
-                onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') dispatch(setCommandOpen(true));
-                }}
                 style={{
                     display: 'flex',
                     alignItems: 'center',
                     gap: 8,
-                    width: 260,
+                    width: 210,
                     padding: '6px 12px',
                     borderRadius: shape.radiusMd,
                     border: '1px solid var(--semi-color-border)',
@@ -113,15 +108,15 @@ export default function Header() {
                         backgroundColor: 'var(--semi-color-fill-1)',
                     }}
                 >
-                    ⌘K
+                    Ctrl K
                 </span>
-            </div>
+            </button>
 
             <Button
                 theme="borderless"
                 type="tertiary"
                 icon={themeIcon}
-                aria-label={t(`common.theme${themeMode === 'light' ? 'Light' : themeMode === 'dark' ? 'Dark' : 'System'}`)}
+                aria-label={t('workbench.theme')} title={t(`common.theme${themeMode === 'light' ? 'Light' : themeMode === 'dark' ? 'Dark' : 'System'}`)}
                 onClick={cycleTheme}
             />
 

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Tabs, TabPane } from '@douyinfe/semi-ui';
 import { useTranslation } from 'react-i18next';
 import OperationLogTab from './operation';
@@ -14,7 +14,10 @@ import SSHLogTab from './ssh';
  */
 export default function LogsPage() {
     const { t } = useTranslation();
-    const [tab, setTab] = useState('operation');
+    const [query, setQuery] = useSearchParams();
+    const requested = query.get('tab') || 'operation';
+    const tab = ['operation', 'login', 'system', 'task', 'ssh'].includes(requested) ? requested : 'operation';
+    const setTab = (value: string) => setQuery({ tab: value });
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>

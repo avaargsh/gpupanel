@@ -120,6 +120,7 @@ func agentDBMigrations() []*gormigrate.Migration {
 func InitTaskDB() {
 	m := gormigrate.New(global.TaskDB, gormigrate.DefaultOptions, []*gormigrate.Migration{
 		migrations.AddTaskTable,
+		migrations.AddHostOperations,
 	})
 	if err := m.Migrate(); err != nil {
 		global.LOG.Error(err)

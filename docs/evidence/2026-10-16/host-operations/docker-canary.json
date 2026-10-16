@@ -1,0 +1,14 @@
+{
+  "kind": "LIVE native Docker canary via compiled hostops package; not installed Core/browser",
+  "source": "d90a8c9be6eb442dcec8b33efdca5c2add95139f",
+  "testBinarySha256": "b31ee48c5fd2b64b4bb070b8aa599c69ac9b3c4fcf1ab4ae86bbf21b3c345d3c",
+  "checks": {
+    "preview_no_restart": true,
+    "unconfirmed_denied": true,
+    "restart_independently_observed": true,
+    "confirmation_replay_no_restart": true,
+    "canary_removed": true,
+    "preexisting_container_ids_and_states_unchanged": true
+  },
+  "imageId": "sha256:a2b82f3c48559aa0a8446d9af49826b6e2b2016f4cd2afabfe6013ec53729170"
+}

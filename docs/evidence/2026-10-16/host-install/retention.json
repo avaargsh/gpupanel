@@ -1,0 +1,6 @@
+{
+  "file_retained_after_binary_update_and_restart": true,
+  "credentials_and_entry_unchanged_after_restart": true,
+  "four_successful_tasks_retained": true,
+  "all_preexisting_container_ids_and_states_retained": true
+}

@@ -26,8 +26,12 @@ try:
             time.sleep(0.1)
     else:
         raise RuntimeError('Vite readiness timeout')
-    completed = subprocess.run([sys.executable, str(ROOT / 'scripts/browser/remote-integration.py')], cwd=ROOT, timeout=120)
-    status = completed.returncode
+    status = 0
+    for name in ('remote-integration.py', 'vnext-shell.py', 'host-operations.py'):
+        completed = subprocess.run([sys.executable, str(ROOT / 'scripts/browser' / name)], cwd=ROOT, timeout=120)
+        if completed.returncode:
+            status = completed.returncode
+            break
 finally:
     if server.poll() is None:
         os.killpg(server.pid, signal.SIGTERM)

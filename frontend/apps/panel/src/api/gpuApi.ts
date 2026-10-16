@@ -1,3 +1,4 @@
+import { normalizeXpu } from '@/utils/accelerators';
 import { baseApi } from '@/api/baseApi';
 
 /**
@@ -65,6 +66,9 @@ export const gpuApi = baseApi.injectEndpoints({
     endpoints: (build) => ({
         getGpuInfo: build.query<GpuInfo, void>({
             query: () => ({ url: '/ai/gpu/load', method: 'GET' }),
+            transformResponse: (info: Omit<GpuInfo, 'xpu'> & { xpu: Parameters<typeof normalizeXpu>[0][] | null }): GpuInfo => ({
+                ...info, xpu: (info.xpu ?? []).map(normalizeXpu),
+            }),
             providesTags: ['GPU'],
         }),
     }),

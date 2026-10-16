@@ -15,4 +15,4 @@ export function applyThemeMode(mode: ResolvedMode): void {
 }
 
 export type { ResolvedMode } from './tokens';
-export { brandGradient, getTokens, shape, lightTokens, darkTokens } from './tokens';
+export { brandColor, getTokens, shape, lightTokens, darkTokens } from './tokens';

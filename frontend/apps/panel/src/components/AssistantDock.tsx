@@ -1,26 +1,48 @@
-import { useState } from 'react';
-import { Button, TextArea, Modal, Space } from '@douyinfe/semi-ui';
-import { Link } from 'react-router-dom';
+import { useEffect, useRef, useState } from 'react';
+import { Button, TextArea, Space } from '@douyinfe/semi-ui';
+import { IconAIWandLevel1 } from '@douyinfe/semi-icons';
+import { Link, useLocation } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { workstationLinks } from './FirstRun';
+import { currentNav } from '@/config/nav';
+import { useAppSelector } from '@/store/hooks';
 
-/** Optional draft and navigation only. No chat/execution provider is connected. */
+/** Optional draft only: no chat/execution provider, credentials or automatic log collection. */
 export default function AssistantDock() {
+    const node = useAppSelector((s) => s.ui.currentNode) || 'local';
+    return <AssistantPanel key={node} node={node} />;
+}
+function AssistantPanel({ node }: { node: string }) {
     const [open, setOpen] = useState(false);
     const [draft, setDraft] = useState('');
     const [feedback, setFeedback] = useState('');
+    const { t } = useTranslation();
+    const location = useLocation();
+    const dialog = useRef<HTMLDialogElement>(null);
+    useEffect(() => {
+        if (open && !dialog.current?.open) dialog.current?.showModal();
+        if (!open && dialog.current?.open) dialog.current.close();
+    }, [open]);
+    const page = currentNav(location.pathname, location.search);
     return <>
-        <Button style={{ position: 'fixed', bottom: 18, right: 24 }} onClick={() => setOpen(true)}>AI 助手 / AI assistant</Button>
-        <Modal title="工作站 AI 助手 / Workstation AI assistant" visible={open} onCancel={() => setOpen(false)} footer={null}>
-            <p role="status">聊天服务尚未接通 / Chat is not connected yet</p>
-            <Space wrap>{workstationLinks.map((link) => <Link key={link.path} to={link.path} onClick={() => setOpen(false)}>{link.label}</Link>)}</Space>
-            <label htmlFor="assistant-draft">问题草稿 / Question draft</label>
-            <TextArea id="assistant-draft" value={draft} maxCount={2000} onChange={setDraft} />
+        <Button aria-label={t('workbench.assistantLauncher')} title={t('workbench.assistantLauncher')} className="assistant-launcher" icon={<IconAIWandLevel1 />} onClick={() => setOpen(true)} />
+        <dialog ref={dialog} className="workspace-assistant" aria-labelledby="assistant-title"
+            onCancel={(event) => { event.preventDefault(); setOpen(false); }} onClose={() => setOpen(false)}>
+            <header className="assistant-heading"><h2 id="assistant-title">GPUPanel Assistant</h2><Button aria-label={t('common.close')} onClick={() => setOpen(false)}>{t('common.close')}</Button></header>
+            <div className="assistant-body">
+            <div className="assistant-context"><small>{t('workbench.assistantContext')}</small><strong>{t(page?.labelKey || 'workbench.title')}</strong><span>{node === 'local' ? t('workbench.local') : node}</span></div>
+            <p role="status">{t('workbench.assistantUnavailable', 'Chat is not connected yet')}</p>
+            <p className="assistant-description">{t('workbench.assistantDescription')}</p>
+            <label htmlFor="assistant-draft">{t('workbench.assistantDraft')}</label>
+            <TextArea id="assistant-draft" value={draft} maxCount={2000} rows={7} onChange={setDraft} />
             <Button disabled={!draft.trim()} onClick={async () => {
-                try { await navigator.clipboard.writeText(draft); setFeedback('已复制 / Copied'); }
-                catch { setFeedback('无法复制，请手动选择 / Copy unavailable; select the text manually'); }
-            }}>复制问题 / Copy question</Button>
+                try { await navigator.clipboard.writeText(draft); setFeedback(t('workbench.assistantCopied')); }
+                catch { setFeedback(t('workbench.assistantCopyFailed')); }
+            }}>{t('workbench.assistantCopy')}</Button>
             <span role="status">{feedback}</span>
-            <p>草稿仅在当前组件内存中保存，不会发送、执行或授予主机权限。 / Draft stays in memory; no sending, execution or Host authority.</p>
-        </Modal>
+            <p className="assistant-description">{t('workbench.assistantPrivacy')}</p>
+            <Space wrap>{workstationLinks.map((link) => <Link key={link.path} to={link.path} onClick={() => setOpen(false)}>{t(link.labelKey)}</Link>)}</Space>
+            </div>
+        </dialog>
     </>;
 }

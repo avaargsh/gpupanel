@@ -13,6 +13,10 @@ func (s *HostRouter) InitRouter(Router *gin.RouterGroup) {
 	Router.POST("/internal/terminal/sessions/revoke", baseApi.RevokeTerminalSessions)
 	Router.GET("/internal/terminal/capabilities", baseApi.TerminalCapabilities)
 	{
+		hostRouter.GET("/operations", baseApi.ListHostOperations)
+		hostRouter.POST("/operations/plan", baseApi.PlanHostOperation)
+		hostRouter.GET("/operations/:operationId", baseApi.GetHostOperation)
+		hostRouter.POST("/operations/:operationId/confirm", baseApi.ConfirmHostOperation)
 		hostRouter.POST("", baseApi.CreateHost)
 		hostRouter.POST("/info", baseApi.GetHostByID)
 		hostRouter.POST("/del", baseApi.DeleteHost)

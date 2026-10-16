@@ -13,11 +13,15 @@ Decision date: 2026-10-15. Delivery decision: **fork-first direct reuse of inher
 - **Agent operations (later)**: reuse agent-control-plane for authorization, CAS, independent execution observation and audit. Do not build a second control plane.
 - **GPU adapters**: no new vendor CLI parsers, driver management or scheduling work in this stage.
 
+## vNext personal workstation baseline
+
+The 2026-10-16 UI/product baseline is [vNext Workbench](VNEXT_WORKBENCH.md). Deliver a unified React shell and truthful capability states first, then the persistent Project → Workspace → Session developer loop. Existing Linux management remains reachable; GPU/AI/enterprise claims require their own live gates. See [domain language](../../GLOSSARY.md).
+
 ## P0 acceptance ladder — single Ubuntu 24.04 host
 
 | Gate | User outcome | Evidence required | Current status |
 | --- | --- | --- | --- |
-| G0 Brand & frontend baseline | GPUPanel name, branding and compilable web | real Vue build/type-check CI | PASS (source) |
+| G0 Brand & frontend baseline | GPUPanel name, branding and compilable web | React build/type-check CI (historical Vue evidence remains dated) | PASS (source) |
 | G1 Read-only environment review | check local tools, collision risk and trusted cache | fixture tests + Ubuntu CI, no side-effects | PASS (diagnostics only) |
 | G2 Source build + artifact | Vite assets embedded in Go Core, agent built, verified tarball | full Ubuntu Node/Go build, archive checksum and attribution | PASS (CI source preview only, not an installer) |
 | G3 Safe installer/upgrade/rollback | fresh Ubuntu install using reviewed inherited or new paths; refuse unsafe co-install overwrite | disposable VM, systemd/service setup, data backup and rollback | BLOCKED |

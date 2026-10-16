@@ -2,7 +2,7 @@ import { Button } from '@douyinfe/semi-ui';
 import { IconArrowLeft } from '@douyinfe/semi-icons';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
-import { brandGradient } from '@/theme';
+import { brandColor } from '@/theme';
 
 export default function NotFoundPage() {
     const { t } = useTranslation();
@@ -22,10 +22,7 @@ export default function NotFoundPage() {
                         fontSize: 56,
                         fontWeight: 800,
                         lineHeight: 1.2,
-                        backgroundImage: brandGradient,
-                        WebkitBackgroundClip: 'text',
-                        backgroundClip: 'text',
-                        WebkitTextFillColor: 'transparent',
+                        color: brandColor,
                     }}
                 >
                     404

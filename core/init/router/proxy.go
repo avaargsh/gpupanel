@@ -93,7 +93,7 @@ func Proxy() gin.HandlerFunc {
 
 		// Never forward installation/container evidence to a different Host,
 		// an API-key identity, or anyone without a valid admin cookie.
-		if !authorizeLocalAppEvidence(c, currentNode) {
+		if !authorizeLocalAppEvidence(c, currentNode) || !authorizeHostOperations(c, currentNode) {
 			return
 		}
 

@@ -54,7 +54,7 @@ export default function HostOverview() {
 
     const b = base.data;
     const infoItems = [
-        { key: t('home.hostname'), value: os.data.hostname },
+        { key: t('home.hostname'), value: b.hostname },
         { key: t('home.system'), value: `${os.data.os} ${os.data.arch}` },
         { key: t('home.arch'), value: os.data.arch },
         { key: t('home.kernel'), value: os.data.kernelVersion },

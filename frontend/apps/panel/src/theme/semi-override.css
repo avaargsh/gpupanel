@@ -1,6 +1,6 @@
 /*
  * GPUPanel 品牌主题 —— 覆盖 Semi Design 的设计变量。
- * 视觉语言：柔和中性灰背景 + 纯白/深灰卡片 + 低饱和青绿强调色。
+ * 视觉语言：柔和中性灰背景 + 纯白/深灰卡片 + 低饱和蓝色强调色。
  * Semi 的色盘挂在 body 上（亮/暗两套），这里用更高优先级的选择器覆盖。
  * 完整变量列表见：https://semi.design/zh-CN/basic/tokens
  */
@@ -51,16 +51,16 @@ body {
     background: transparent;
 }
 
-/* ---------- 浅色：暖白灰底 + 青绿强调 ---------- */
-body:not([theme-mode='dark']) {
-    /* 主色：低饱和青绿 */
-    --semi-color-primary: #357d73;
-    --semi-color-primary-hover: #20695f;
-    --semi-color-primary-active: #1a564e;
-    --semi-color-primary-disabled: rgba(53, 125, 115, 0.4);
-    --semi-color-primary-light-default: #e6f2ef;
-    --semi-color-primary-light-hover: #d8ebe6;
-    --semi-color-primary-light-active: #c6e2da;
+/* ---------- 浅色：中性灰底 + 蓝色强调 ---------- */
+html body:not([theme-mode='dark']) {
+    /* 主色：低饱和蓝色 */
+    --semi-color-primary: #306fe6;
+    --semi-color-primary-hover: #245dcb;
+    --semi-color-primary-active: #1e4fae;
+    --semi-color-primary-disabled: rgba(48, 111, 230, 0.4);
+    --semi-color-primary-light-default: #edf3ff;
+    --semi-color-primary-light-hover: #e0ebff;
+    --semi-color-primary-light-active: #cedfff;
 
     /* 语义色 */
     --semi-color-success: #2f9e77;
@@ -81,9 +81,9 @@ body:not([theme-mode='dark']) {
     --semi-color-danger-light-default: #fcecef;
 
     /* 链接 */
-    --semi-color-link: #357d73;
-    --semi-color-link-hover: #20695f;
-    --semi-color-link-active: #1a564e;
+    --semi-color-link: #306fe6;
+    --semi-color-link-hover: #245dcb;
+    --semi-color-link-active: #1e4fae;
 
     /* 背景分层：页面灰底 / 卡片白底 / 侧栏浅灰 */
     --semi-color-bg-0: #ffffff;
@@ -105,18 +105,18 @@ body:not([theme-mode='dark']) {
     --semi-color-fill-2: rgba(32, 36, 42, 0.09);
 
     /* 页面底色比卡片更深一档，形成卡片层级 */
-    background-color: #f5f6f8;
+    background-color: #f7f8fa;
 }
 
-/* ---------- 深色：冷调近黑底 + 亮青绿强调 ---------- */
-body[theme-mode='dark'] {
-    --semi-color-primary: #7ac6b6;
-    --semi-color-primary-hover: #8ddccb;
-    --semi-color-primary-active: #9ee6d6;
-    --semi-color-primary-disabled: rgba(122, 198, 182, 0.4);
-    --semi-color-primary-light-default: rgba(122, 198, 182, 0.16);
-    --semi-color-primary-light-hover: rgba(122, 198, 182, 0.24);
-    --semi-color-primary-light-active: rgba(122, 198, 182, 0.32);
+/* ---------- 深色：冷调近黑底 + 亮蓝色强调 ---------- */
+html body[theme-mode='dark'] {
+    --semi-color-primary: #7aa5ff;
+    --semi-color-primary-hover: #a1bfff;
+    --semi-color-primary-active: #bad0ff;
+    --semi-color-primary-disabled: rgba(122, 165, 255, 0.4);
+    --semi-color-primary-light-default: rgba(122, 165, 255, 0.16);
+    --semi-color-primary-light-hover: rgba(122, 165, 255, 0.24);
+    --semi-color-primary-light-active: rgba(122, 165, 255, 0.32);
 
     --semi-color-success: #6fceac;
     --semi-color-success-light-default: rgba(111, 206, 172, 0.16);
@@ -131,28 +131,28 @@ body[theme-mode='dark'] {
     --semi-color-danger-light-default: rgba(240, 150, 155, 0.16);
     --semi-color-danger-light-hover: rgba(240, 150, 155, 0.24);
 
-    --semi-color-link: #7ac6b6;
-    --semi-color-link-hover: #8ddccb;
-    --semi-color-link-active: #9ee6d6;
+    --semi-color-link: #7aa5ff;
+    --semi-color-link-hover: #a1bfff;
+    --semi-color-link-active: #bad0ff;
 
     /* 页面底色最暗，卡片亮一档，侧栏介于两者之间 */
-    --semi-color-bg-0: #242a2f;
-    --semi-color-bg-1: #242a2f;
-    --semi-color-bg-2: #1d2226;
-    --semi-color-bg-3: #2d3539;
-    --semi-color-bg-4: #343c40;
+    --semi-color-bg-0: #191d26;
+    --semi-color-bg-1: #191d26;
+    --semi-color-bg-2: #141821;
+    --semi-color-bg-3: #232936;
+    --semi-color-bg-4: #303644;
 
-    --semi-color-text-0: #e9eeed;
+    --semi-color-text-0: #edf0f7;
     --semi-color-text-1: rgba(233, 238, 237, 0.8);
-    --semi-color-text-2: #b5c1bf;
-    --semi-color-text-3: #83918e;
+    --semi-color-text-2: #a7b0c1;
+    --semi-color-text-3: #8390a6;
 
-    --semi-color-border: #343c40;
+    --semi-color-border: #303644;
     --semi-color-fill-0: rgba(255, 255, 255, 0.05);
     --semi-color-fill-1: rgba(255, 255, 255, 0.08);
     --semi-color-fill-2: rgba(255, 255, 255, 0.12);
 
-    background-color: #181c20;
+    background-color: #0f1117;
 }
 
 /* ---------- 侧栏导航：去掉每个 Nav 自带的右边框/背景，避免叠出粗边框 ---------- */
@@ -169,3 +169,9 @@ body[theme-mode='dark'] {
 .semi-layout-sider .semi-navigation-footer {
     border: none;
 }
+
+body { --workspace-background: #f7f8fa; --workspace-accent: #306fe6; }
+html body[theme-mode='dark'] { --workspace-background: #0f1117; --workspace-accent: #7aa5ff; }
+:focus-visible { outline: 2px solid var(--semi-color-primary); outline-offset: 3px; }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; } }
+body a { color: var(--semi-color-link); }
