@@ -16,6 +16,7 @@ import {
 import { useListWebsitesQuery } from '@/api/websiteApi';
 import { useListContainersQuery } from '@/api/containerApi';
 import { useSearchInstalledQuery } from '@/api/appApi';
+import { useAppSelector } from '@/store/hooks';
 import {
     defaultSpecObj,
     hasBackup,
@@ -121,7 +122,8 @@ export default function CronjobOperate({ target, groups, onClose }: Props) {
     const detail = useLoadCronjobInfoQuery(target?.id as number, { skip: !target });
     const { data: websites = [] } = useListWebsitesQuery();
     const { data: containers = [] } = useListContainersQuery();
-    const { data: installed } = useSearchInstalledQuery({ page: 1, pageSize: 200, name: '', tags: [], update: false, sync: false });
+    const scopeNode = useAppSelector((state) => state.ui.currentNode) || 'local';
+    const { data: installed } = useSearchInstalledQuery({ scopeNode, page: 1, pageSize: 200, name: '', tags: [], update: false, sync: false });
     const { data: scripts } = useSearchScriptsQuery({ page: 1, pageSize: 200, info: '', groupID: 0, orderBy: 'createdAt', order: 'descending' });
     const [create, { isLoading: creating }] = useCreateCronjobMutation();
     const [update, { isLoading: updating }] = useUpdateCronjobMutation();
