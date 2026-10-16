@@ -36,7 +36,7 @@
 
 - 研究树证据（行为需求）：静态采集模块读 `/proc/stat`、`/proc/meminfo` 等并周期聚合（`README.md:62–72` 一条指标生命周期）；自身资源看护与计数持久化（`README.md:74–75`）；模块调度/状态机（`README.md:40–52` 子系统表）。
 - GPUPanel 现有覆盖：`backend/internal/hostobserve/`（os-release/meminfo/uptime 只读，已提交 `8ff4a2b5…`，独立测试通过、待审查）；legacy core/agent 监控端点未审计归属（见 BACKEND_CONTRACT_INVENTORY 线索，本任务不认定）。
-- 期望 Go 切片：**进行中候选**——monitor worker 的 `backend/internal/hostmetrics/`（loadavg + PSI cpu/memory/io 有界只读解析，per-source 可用/缺失/畸形状态，无后台轮询）。后续按需逐文件扩展（如 `/proc/stat` CPU/内存快照），每次一个可独立测试的小切片。
+- 期望 Go 切片：**已提交候选（未集成）**——monitor worker 的 `backend/internal/hostmetrics/`（commit `1acab29ad1695c74f2716d35a1aab23f6ca26a26`：loadavg + PSI cpu/memory/io 有界只读解析，per-source 可用/缺失/畸形状态，无后台轮询）。后续按需逐文件扩展（如 `/proc/stat` CPU/内存快照），每次一个可独立测试的小切片。
 - 信任边界：包内仅接受内部受信调用者传入的构造期路径；无 HTTP 输入面、无 shell、无网络；缺失/畸形必须显式 unavailable，不得零值冒充成功。
 - 许可/来源：全部独立实现；研究树反编译代码为 GPL-2.0 标记来源，**禁止复制/翻译**；`/proc` 公开格式为事实依据。
 - 真实测试：fixture（缺失/超大/畸形/取消/并发）+ Linux 只读 smoke；真实读只证明本机采集，不证明安装或 UI。
@@ -46,7 +46,7 @@
 
 - 研究树证据：上游官方 client（Apache-2.0 自述，**未随树分发**，`README.md:1–12`）覆盖任务引擎（host 命令运行/超时/取消/清理）、会话 PTY shell、文件下发、插件与自更新；`inventory/02-package-map.md` 给出实机二进制↔上游包映射；`STUDY/07` 会话与文件发放、`08` IPC 看护为行为文档。树内同时含逆向证据（`inventory/`、`symbols/`）与注释镜像（`annotated/`），来源层级不同，见 §3。
 - GPUPanel 现有覆盖：`agent/app/api/v1/terminal*.go`（终端/PTY 会话）、`process.go`（进程）、`file.go`（文件）；`agent/cron/`（定时任务）；`agent/app/hostops/`（操作引擎与回执，先例：参考设计、独立实现，`types.go:2`）；legacy 实现未迁移前不得删除（BACKEND_REUSE_BOUNDARIES §8 阻断项）。
-- 期望 Go 切片（顺序）：① **进行中候选**——operations worker 的 `backend/internal/operation/`（planned→running→completed/failed/unknown 生命周期、原子 claim、幂等重放、超时转 unknown、强制 reconciliation、内存态有界）；② 任务执行切片：类型化命令 → 有界超时/取消/进程组回收 → 退出码回执（独立观测，不以 2xx 代替）；③ PTY 执行端：openpty/窗口尺寸/停止/关闭后无泄漏；WebSocket↔PTY 中继是 GPUPanel 自建面，不在执行端切片内；④ 文件切片：路径约束的有界读写/列举，不冒充完整 Files 模块。
+- 期望 Go 切片（顺序）：① **已提交候选（未集成）**——operations worker 的 `backend/internal/operation/`（commit `96442b68fe48c955d0563997ea4563d8abd1ac5e`，detached HEAD 于 worktree `backend-operations-2`，非原空分支：planned→running→completed/failed/unknown 生命周期、原子 claim、幂等重放、超时转 unknown、强制 reconciliation、内存态有界）；② 任务执行切片：类型化命令 → 有界超时/取消/进程组回收 → 退出码回执（独立观测，不以 2xx 代替）；③ PTY 执行端：openpty/窗口尺寸/停止/关闭后无泄漏；WebSocket↔PTY 中继是 GPUPanel 自建面，不在执行端切片内；④ 文件切片：路径约束的有界读写/列举，不冒充完整 Files 模块。
 - 信任边界：执行器只接受后端签发的类型化命令 + operation ID + 过期确认，拒绝自报 owner/uid/路径；浏览器永不直连执行器。
 - 许可/来源：研究树任何文件（含 `aliyun_assist_client@8bbe05f/` 本地快照、`annotated/`、`inventory/`）**一律不复制**；从行为规格与公开 OS 语义独立实现。上游 client 的 Apache 复用走 BACKEND_REUSE_BOUNDARIES §1-A/§7 的独立权利闸，与本映射不合并。
 - 真实测试：race 测试覆盖同时 claim、digest 变更拒绝、跨 owner 拒绝、超时→unknown→reconcile、PTY 关闭泄漏、路径穿越否定用例；legacy 行为对照仅作回归参考。
@@ -78,7 +78,7 @@
 
 | 阶段 | 内容 | 状态 / 候选 | 真实测试门槛 | 阻塞 |
 | --- | --- | --- | --- | --- |
-| 0 | 观测与账本基座：hostmetrics（A）、operation 生命周期（B①） | **进行中**：monitor worker 分支 `backend/agent-go-monitor-20261016`（`backend/internal/hostmetrics/`）、operations worker 分支 `backend/agent-go-operations-20261016`（`backend/internal/operation/`），同 base `5fd75f84`；本批次状态 `running-tools-confirmed`（读取 `.local/agent-go-migration/jobs.json` 时点） | `cd backend && go test -race -count=1 ./... && go vet ./...`；协调者独立复验 | 完成≠验收；需源码审查与集成裁决 |
+| 0 | 观测与账本基座：hostmetrics（A）、operation 生命周期（B①） | **已提交候选，未集成、未接线**：monitor `1acab29ad1695c74f2716d35a1aab23f6ca26a26`（`backend/internal/hostmetrics/`）、operations `96442b68fe48c955d0563997ea4563d8abd1ac5e`（`backend/internal/operation/`，detached HEAD 于 `backend-operations-2`），同 base `5fd75f84` | `cd backend && go test -race -count=1 ./... && go vet ./...`：协调者在**各自 SHA 独立复跑均退出码 0** | 独立 SOURCE 源码审查 pending；完成≠验收，审查通过≠集成；运行期未连接 |
 | 1 | Host 观测扩展（A 后续切片）与 legacy 监控端点归属裁定 | 未开始 | 每切片 fixture+negative+只读 smoke | 阶段 0 验收；api-data-inventory 端点清单 |
 | 2 | 任务执行→PTY→文件切片（B②③④），接 operation 账本 | 未开始 | 取消/进程组/路径穿越/race；操作回执独立观测 | 认证纵切片；阶段 0 验收 |
 | 3 | 非特权只读审计切片（C①②③） | 未开始，待产品用例确认 | fixture 日志/白名单/哈希稳定性 | 真实用例；阶段 2 回执模型 |
@@ -99,6 +99,9 @@
 | 研究树文档/目录只读阅读（README×3、子系统表、模块清单、jobs.json） | 已执行；未 edit/build/test/复制任何研究树文件 |
 | Go 变更、构建、`go test`/`go vet` | **无 Go 变更（本任务按契约不运行 Go 套件，改跑链接检查/diff-check/证据预算）** |
 | 与上游 `8bbe05f` 的差异核验、模型/网络/shell 产品调用、宿主变更 | **NOT RUN / 禁止（超边界）** |
-| 验证 | 见交接 `.local/handoff.json`：文档内链接逐项存在、`git diff --check`、`python3 scripts/gpupanel-evidence-budget.py` |
+| 文档内链接检查（本轮与复审修订轮各一次） | `LINKS PASS`：2/2 内部链接（`BACKEND_REUSE_BOUNDARIES.md`、`../engineering/APACHE_BACKEND_MIGRATION.md`）存在 |
+| `git diff --check` | `PASS`（无空白错误，两轮均过） |
+| `python3 scripts/gpupanel-evidence-budget.py` | `PASS: 35 evidence files, 366581 / 1048576 bytes` |
+| 复审修订（独立复核 ACCEPT 的两条非阻塞意见） | 已更新实现者精确 SHA 与 operations detached-HEAD 事实，替换易变的 jobs.json 状态指针与交接文件相对路径指针（交接实际位置：`/home/avaarg/.local/share/opencode/worktree/64084e/capability-map/.local/handoff.json`，位于本 worker worktree，`.local/` 被本仓库 `.gitignore:21` 忽略故不入库；上表结论已内联，不依赖该文件） |
 
 回退方式：删除本文件（仅本任务唯一交付，`docs/gpupanel/AGENT_GO_MIGRATION_MAP.md`）。本文件被 docs/README.md 入口引用属协调者集成职责，本任务不改公共入口。
