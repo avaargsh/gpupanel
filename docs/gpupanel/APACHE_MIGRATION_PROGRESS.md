@@ -9,7 +9,7 @@
 | L0 | 保留真实许可和上游归因 | **PASS** | 文档检查：根 LICENSE GPL-3.0，NOTICE.md 保留 1Panel 信用和基线 |
 | L1 | 建立文件级 provenance inventory | **IN PROGRESS** | `scripts/gpupanel-license-audit.py` 已就绪，inventory JSON 已生成（见下文） |
 | L2 | 引入明确拥有权的独立组件 | **IN PROGRESS** | `backend/` host-observer 已集成（4 Python 脚本已为文件级 Apache-2.0） |
-| L3 | 从 Apache 分发中移除继承的 GPL 实现 | **NOT STARTED** | 886 个 inherited 文件（573 MODIFIED + 313 UNCHANGED）仍为 GPL |
+| L3 | 从 Apache 分发中移除继承的 GPL 实现 | **IN PROGRESS (pilot)** | 886 个 inherited 文件仍为 GPL；试点：移除 core/logs.go 远程 shell 执行 |
 | L4 | 扫描实际发布产物 | **NOT STARTED** | 无发布产物扫描证据 |
 | L5 | 变更发布级许可证声明 | **BLOCKED** | 需先通过 L1-L4 |
 
@@ -83,7 +83,8 @@ python3 -m unittest discover -s scripts/tests -p 'test_gpupanel_license_audit.py
 - `core/i18n/i18n.go` — 曾读取 pctl 语言（已迁移）
 - `core/app/service/upgrade.go` — 曾复制/更新 pctl（已迁移）
 - `core/cmd/server/docs/docs.go`、`main.go` — 待审查
-- `core/app/service/{setting,logs,backup}.go` — 待审查
+- `core/app/service/{setting,backup}.go` — 待审查
+- `core/app/service/logs.go` — **L3 试点完成**：移除了 `writeLogs`/`runRemoteShellScript`（远程 shell 脚本下载执行），不再引用 `https://resource.fit2cloud.com/installation-log.sh`
 - `core/app/auth/{api_auth,api_key}.go` — 待审查
 - `core/global/global.go` — 资源 URL 引用 1panel.pro/fit2cloud.com（保留，非许可证问题）
 
@@ -113,6 +114,7 @@ python3 -m unittest discover -s scripts/tests -p 'test_gpupanel_license_audit.py
 | 移除 LoadNodeInfo 依赖 | `agent/init/viper/viper.go`、`agent/init/hook/hook.go`、`agent/init/migration/migrations/init.go`、`agent/utils/xpack/helper/multi_node.go` | InstallDir/Version 从嵌入配置 |
 | 移除 pctl 备份/恢复 | `agent/app/service/snapshot_create.go`、`snapshot_recover.go`、`snapshot_rollback.go` | 跳过 legacy pctl 二进制 |
 | 移除根回收站路径 | `agent/init/dir/dir.go` | `RecycleBinDir` 从 `/.gpupanel_clash` 移至 install dir 下 |
+| 移除远程 shell 执行 | `core/app/service/logs.go`、`core/app/service/upgrade.go` | 移除了 `writeLogs`/`runRemoteShellScript`（从 fit2cloud.com 下载并执行 shell 脚本），减少对 1Panel 资源的依赖和安全风险 |
 
 注意：上述变更是**运行时命名空间隔离**，不是许可证变更。这些文件的版权归属未变，仍为 GPL 派生。
 
