@@ -4,6 +4,8 @@ on:
     paths:
       - 'agent/utils/terminal/**'
       - 'agent/app/api/v1/terminal_local*'
+      - 'core/middleware/websocket_origin.go'
+      - 'core/middleware/websocket_origin_test.go'
       - '.github/workflows/gpupanel-local-pty-auth.yml'
   workflow_dispatch:
 permissions:
@@ -20,7 +22,7 @@ jobs:
           cache-dependency-path: agent/go.sum
       - name: Go formatting check
         run: |
-          unformatted="$(gofmt -l agent/utils/terminal/session.go agent/utils/terminal/session_preflight_test.go agent/app/api/v1/terminal_local_test.go)"
+          unformatted="$(gofmt -l agent/utils/terminal/session.go agent/utils/terminal/session_preflight_test.go agent/app/api/v1/terminal_local_test.go core/middleware/websocket_origin_test.go)"
           if [ -n "$unformatted" ]; then
             printf 'Go formatting required:\n%s\n' "$unformatted" >&2
             exit 1
@@ -28,3 +30,11 @@ jobs:
       - name: Privileged PTY authorization and session-negative tests
         working-directory: agent
         run: go test ./utils/terminal ./app/api/v1 -run 'Test(ServeCommandRejectsInvalidIdentityBeforeProviderStartup|LocalPTYRequiresOwnerAndWorksWithoutSSHSettings|HostShellCapacityAndRelease)' -count=1 -timeout=120s -v
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: core/go.mod
+          cache-dependency-path: core/go.sum
+      - name: Core same-origin WS admission and denial
+        working-directory: core
+        run: go test ./middleware -run '^TestWebSocketOriginGuardLocalTerminal
+ -count=1 -timeout=120s -v
