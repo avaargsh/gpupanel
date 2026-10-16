@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
+import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useDebouncedValue } from '@/pages/database/shared';
 import { PlusIcon, RefreshCwIcon } from 'lucide-react';
@@ -123,8 +124,8 @@ export default function WebsitesPage() {
     };
 
     return (
-        <div className="flex flex-col gap-4">
-            <div className="flex flex-wrap items-center gap-2">
+        <div className="module-shell">
+            <div className="module-toolbar">
                 <Input
                     className="w-[220px]"
                     placeholder={t('common.search')}
@@ -178,110 +179,112 @@ export default function WebsitesPage() {
                 )}
             </div>
 
-            <div className="rounded-lg border">
-                <Table>
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead className="w-[40px]">
-                                <Checkbox
-                                    aria-label={t('website.table.domain')}
-                                    checked={allSelected}
-                                    disabled={idsOnPage.length === 0}
-                                    onCheckedChange={(checked) => toggleAll(checked === true)}
-                                />
-                            </TableHead>
-                            <TableHead>{t('website.table.domain')}</TableHead>
-                            <TableHead className="w-[160px]">{t('website.table.type')}</TableHead>
-                            <TableHead className="w-[110px]">{t('website.table.status')}</TableHead>
-                            <TableHead className="w-[180px]">{t('website.table.sitePath')}</TableHead>
-                            <TableHead className="w-[160px]">{t('website.table.expireDate')}</TableHead>
-                            <TableHead className="w-[140px]">{t('website.table.remark')}</TableHead>
-                            <TableHead className="w-[200px]">{t('website.table.operate')}</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {rows.length === 0 ? (
+            <Card className="module-table-card">
+                <CardContent className="p-0">
+                    <Table>
+                        <TableHeader>
                             <TableRow>
-                                <TableCell colSpan={8} className="py-8 text-center text-sm text-muted-foreground">
-                                    {t('common.empty')}
-                                </TableCell>
+                                <TableHead className="w-[40px]">
+                                    <Checkbox
+                                        aria-label={t('website.table.domain')}
+                                        checked={allSelected}
+                                        disabled={idsOnPage.length === 0}
+                                        onCheckedChange={(checked) => toggleAll(checked === true)}
+                                    />
+                                </TableHead>
+                                <TableHead>{t('website.table.domain')}</TableHead>
+                                <TableHead className="w-[160px]">{t('website.table.type')}</TableHead>
+                                <TableHead className="w-[110px]">{t('website.table.status')}</TableHead>
+                                <TableHead className="w-[180px]">{t('website.table.sitePath')}</TableHead>
+                                <TableHead className="w-[160px]">{t('website.table.expireDate')}</TableHead>
+                                <TableHead className="w-[140px]">{t('website.table.remark')}</TableHead>
+                                <TableHead className="w-[200px]">{t('website.table.operate')}</TableHead>
                             </TableRow>
-                        ) : (
-                            rows.map((row) => (
-                                <TableRow key={row.id}>
-                                    <TableCell>
-                                        <Checkbox
-                                            aria-label={row.primaryDomain}
-                                            checked={selected.includes(row.id)}
-                                            onCheckedChange={(checked) => toggleRow(row.id, checked === true)}
-                                        />
-                                    </TableCell>
-                                    <TableCell>
-                                        <button
-                                            type="button"
-                                            className="font-medium text-primary hover:underline"
-                                            onClick={() => navigate(`/websites/${row.id}`)}
-                                        >
-                                            {row.primaryDomain}
-                                        </button>
-                                    </TableCell>
-                                    <TableCell className="text-sm">
-                                        {t(`website.type.${row.type}`)}
-                                        {row.appName ? ` · ${row.appName}` : ''}
-                                        {row.runtimeName ? ` · ${row.runtimeName}` : ''}
-                                    </TableCell>
-                                    <TableCell>
-                                        <Badge variant={STATUS_VARIANT[row.status.toLowerCase()] ?? 'outline'}>
-                                            {t(`website.status.${row.status.toLowerCase()}`)}
-                                        </Badge>
-                                    </TableCell>
-                                    <TableCell className="text-sm">{row.sitePath || '-'}</TableCell>
-                                    <TableCell className="text-sm">{row.expireDate || '-'}</TableCell>
-                                    <TableCell className="text-sm">{row.remark || '-'}</TableCell>
-                                    <TableCell>
-                                        <div className="flex flex-wrap items-center gap-1">
-                                            {row.status === 'Running' ? (
-                                                <Button
-                                                    size="sm"
-                                                    variant="ghost"
-                                                    disabled={operating}
-                                                    onClick={() => doOperate(row, 'stop')}
-                                                >
-                                                    {t('website.actions.stop')}
-                                                </Button>
-                                            ) : (
-                                                <Button
-                                                    size="sm"
-                                                    variant="ghost"
-                                                    disabled={operating}
-                                                    onClick={() => doOperate(row, 'start')}
-                                                >
-                                                    {t('website.actions.start')}
-                                                </Button>
-                                            )}
-                                            <Button
-                                                size="sm"
-                                                variant="ghost"
-                                                onClick={() => navigate(`/websites/${row.id}`)}
-                                            >
-                                                {t('website.actions.config')}
-                                            </Button>
-                                            <Button
-                                                size="sm"
-                                                variant="ghost"
-                                                className="text-destructive hover:text-destructive"
-                                                onClick={() => setDeleteTarget(row)}
-                                            >
-                                                {t('website.actions.delete')}
-                                            </Button>
-                                        </div>
+                        </TableHeader>
+                        <TableBody>
+                            {rows.length === 0 ? (
+                                <TableRow>
+                                    <TableCell colSpan={8} className="py-8 text-center text-sm text-muted-foreground">
+                                        {t('common.empty')}
                                     </TableCell>
                                 </TableRow>
-                            ))
-                        )}
-                    </TableBody>
-                </Table>
-            </div>
+                            ) : (
+                                rows.map((row) => (
+                                    <TableRow key={row.id}>
+                                        <TableCell>
+                                            <Checkbox
+                                                aria-label={row.primaryDomain}
+                                                checked={selected.includes(row.id)}
+                                                onCheckedChange={(checked) => toggleRow(row.id, checked === true)}
+                                            />
+                                        </TableCell>
+                                        <TableCell>
+                                            <button
+                                                type="button"
+                                                className="font-medium text-primary hover:underline"
+                                                onClick={() => navigate(`/websites/${row.id}`)}
+                                            >
+                                                {row.primaryDomain}
+                                            </button>
+                                        </TableCell>
+                                        <TableCell className="text-sm">
+                                            {t(`website.type.${row.type}`)}
+                                            {row.appName ? ` · ${row.appName}` : ''}
+                                            {row.runtimeName ? ` · ${row.runtimeName}` : ''}
+                                        </TableCell>
+                                        <TableCell>
+                                            <Badge variant={STATUS_VARIANT[row.status.toLowerCase()] ?? 'outline'}>
+                                                {t(`website.status.${row.status.toLowerCase()}`)}
+                                            </Badge>
+                                        </TableCell>
+                                        <TableCell className="text-sm">{row.sitePath || '-'}</TableCell>
+                                        <TableCell className="text-sm">{row.expireDate || '-'}</TableCell>
+                                        <TableCell className="text-sm">{row.remark || '-'}</TableCell>
+                                        <TableCell>
+                                            <div className="flex flex-wrap items-center gap-1">
+                                                {row.status === 'Running' ? (
+                                                    <Button
+                                                        size="sm"
+                                                        variant="ghost"
+                                                        disabled={operating}
+                                                        onClick={() => doOperate(row, 'stop')}
+                                                    >
+                                                        {t('website.actions.stop')}
+                                                    </Button>
+                                                ) : (
+                                                    <Button
+                                                        size="sm"
+                                                        variant="ghost"
+                                                        disabled={operating}
+                                                        onClick={() => doOperate(row, 'start')}
+                                                    >
+                                                        {t('website.actions.start')}
+                                                    </Button>
+                                                )}
+                                                <Button
+                                                    size="sm"
+                                                    variant="ghost"
+                                                    onClick={() => navigate(`/websites/${row.id}`)}
+                                                >
+                                                    {t('website.actions.config')}
+                                                </Button>
+                                                <Button
+                                                    size="sm"
+                                                    variant="ghost"
+                                                    className="text-destructive hover:text-destructive"
+                                                    onClick={() => setDeleteTarget(row)}
+                                                >
+                                                    {t('website.actions.delete')}
+                                                </Button>
+                                            </div>
+                                        </TableCell>
+                                    </TableRow>
+                                ))
+                            )}
+                        </TableBody>
+                    </Table>
+                </CardContent>
+            </Card>
 
             {total > 0 || page > 1 ? (
                 <TablePagination

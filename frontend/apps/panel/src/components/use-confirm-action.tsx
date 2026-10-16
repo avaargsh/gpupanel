@@ -49,7 +49,7 @@ export function useConfirmAction() {
                 setRequest(null);
             }
         } catch {
-            if (active.current === current) setError(t('common.operationFailed', 'Request failed. Check the target before retrying.'));
+            if (active.current === current) setError(t('common.operationFailed'));
         } finally {
             running.current = false;
             if (mounted.current) setPending(false);

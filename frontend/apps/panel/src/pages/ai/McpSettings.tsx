@@ -105,11 +105,11 @@ export function McpFormModal({ row, onClose }: { row: McpServer | null; onClose:
                 if (!open && !(creating || updating)) onClose();
             }}
         >
-            <DialogContent aria-describedby={undefined} className="max-h-[90vh] overflow-y-auto" style={{ maxWidth: 560 }}>
+            <DialogContent aria-describedby={undefined} className="max-h-[90vh] overflow-y-auto max-w-[560px]">
                 <DialogHeader>
                     <DialogTitle>{row ? t('ai.mcp.edit') : t('ai.mcp.create')}</DialogTitle>
                 </DialogHeader>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                <div className="flex flex-col gap-2.5">
                     <Field>
                         <FieldLabel htmlFor="ai-mcp-1">{t('ai.mcp.form.name')}</FieldLabel>
                         <Input id="ai-mcp-1" value={form.name} disabled={!!row} onChange={(event) => set('name', event.target.value)} />
@@ -119,18 +119,8 @@ export function McpFormModal({ row, onClose }: { row: McpServer | null; onClose:
                         <NativeSelect
                             id="ai-mcp-2"
                             value={form.type}
-                            style={{ width: '100%' }}
-                            onChange={(event) =>
-                                set(
-                                    'type',
-                                    String(
-                                        [
-                                            { label: 'npx', value: 'npx' },
-                                            { label: 'uvx', value: 'uvx' },
-                                        ].find((option) => String(option.value) === event.target.value)?.value ?? event.target.value,
-                                    ),
-                                )
-                            }
+                            className="w-full"
+                            onChange={(event) => set('type', event.target.value)}
                         >
                             <NativeSelectOption value="" disabled>
                                 {'—'}
@@ -172,18 +162,8 @@ export function McpFormModal({ row, onClose }: { row: McpServer | null; onClose:
                         <NativeSelect
                             id="ai-mcp-6"
                             value={form.outputTransport}
-                            style={{ width: '100%' }}
-                            onChange={(event) =>
-                                set(
-                                    'outputTransport',
-                                    String(
-                                        [
-                                            { label: 'streamableHttp', value: 'streamableHttp' },
-                                            { label: 'sse', value: 'sse' },
-                                        ].find((option) => String(option.value) === event.target.value)?.value ?? event.target.value,
-                                    ),
-                                )
-                            }
+                            className="w-full"
+                            onChange={(event) => set('outputTransport', event.target.value)}
                         >
                             <NativeSelectOption value="" disabled>
                                 {'—'}
@@ -280,14 +260,14 @@ export function DomainModal({ onClose }: { onClose: () => void }) {
                 if (!open && !(binding || updating)) onClose();
             }}
         >
-            <DialogContent aria-describedby={undefined} className="max-h-[90vh] overflow-y-auto" style={{ maxWidth: 480 }}>
+            <DialogContent aria-describedby={undefined} className="max-h-[90vh] overflow-y-auto max-w-[480px]">
                 <DialogHeader>
                     <DialogTitle>{t('ai.mcp.bindDomain')}</DialogTitle>
                 </DialogHeader>
                 {isLoading ? (
                     <span className="text-muted-foreground text-sm">{t('common.loading')}</span>
                 ) : (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                    <div className="flex flex-col gap-2.5">
                         {bound ? (
                             <span className="text-muted-foreground text-sm">{t('ai.mcp.domainBound', { domain: data?.domain })}</span>
                         ) : (

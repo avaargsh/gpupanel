@@ -16,10 +16,9 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { currentNav } from '@/config/nav';
 import { clearCredentials } from '@/features/auth/authSlice';
-import { setCommandOpen, setLanguage, setThemeMode, setSidebarCollapsed, type ThemeMode } from '@/features/ui/uiSlice';
+import { setCommandOpen, setCurrentNode, setLanguage, setThemeMode, setSidebarCollapsed, type ThemeMode } from '@/features/ui/uiSlice';
 import { SUPPORTED_LANGUAGES } from '@/i18n';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
-import { shape } from '@/theme';
 import { isBlockingDialogOpen } from './dialogOpen';
 import HostScope from './HostScope';
 
@@ -33,6 +32,7 @@ export default function Header() {
     const auth = useAppSelector((s) => s.auth);
     const themeMode = useAppSelector((s) => s.ui.themeMode);
     const collapsed = useAppSelector((s) => s.ui.sidebarCollapsed);
+    const currentNode = useAppSelector((s) => s.ui.currentNode) || 'local';
     const [logout] = useLogoutMutation();
 
     const currentTitle = useMemo(() => {
@@ -65,21 +65,7 @@ export default function Header() {
     };
 
     return (
-        <header className="workspace-header"
-            style={{
-                height: shape.headerHeight,
-                flexShrink: 0,
-                display: 'flex',
-                alignItems: 'center',
-                gap: 8,
-                padding: '0 16px',
-                position: 'sticky',
-                top: 0,
-                zIndex: 10,
-                backgroundColor: 'var(--background)',
-                borderBottom: '1px solid var(--border)',
-            }}
-        >
+        <header className="workspace-header">
             <Button
                 variant="ghost"
                 size="icon"
@@ -90,37 +76,17 @@ export default function Header() {
             </Button>
 
             <span className="workspace-page-title">{currentTitle}</span>
+            <LocalModeChip node={currentNode} />
             <HostScope />
 
-            <div style={{ flexGrow: 1 }} />
+            <div className="flex-1" />
 
             <button className="workspace-search" type="button" aria-label={t('workbench.search')}
                 onClick={() => { if (isBlockingDialogOpen()) return; dispatch(setCommandOpen(true)); }}
-                style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 8,
-                    width: 210,
-                    padding: '6px 12px',
-                    borderRadius: shape.radiusMd,
-                    border: '1px solid var(--border)',
-                    backgroundColor: 'var(--muted)',
-                    color: 'var(--muted-foreground)',
-                    cursor: 'pointer',
-                }}
             >
                 <Search className="size-4" aria-hidden="true" />
-                <span style={{ flexGrow: 1, fontSize: 13 }}>{t('common.search')}</span>
-                <span
-                    style={{
-                        fontSize: 11,
-                        padding: '2px 6px',
-                        borderRadius: 6,
-                        backgroundColor: 'var(--muted)',
-                    }}
-                >
-                    Ctrl K
-                </span>
+                <span className="workspace-search-label">{t('common.search')}</span>
+                <span className="workspace-search-hint">Ctrl K</span>
             </button>
 
             <Button
@@ -159,9 +125,9 @@ export default function Header() {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="min-w-44">
                     <DropdownMenuLabel>
-                        <div style={{ display: 'flex', flexDirection: 'column' }}>
-                            <span style={{ fontWeight: 600 }}>{auth.name ?? '-'}</span>
-                            <span style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>{auth.role ?? '-'}</span>
+                        <div className="flex flex-col">
+                            <span className="font-semibold">{auth.name ?? '-'}</span>
+                            <span className="text-xs text-muted-foreground">{auth.role ?? '-'}</span>
                         </div>
                     </DropdownMenuLabel>
                     <DropdownMenuSeparator />
@@ -176,3 +142,27 @@ export default function Header() {
         </header>
     );
 }
+
+/** 轻量本地模式芯片：显示当前连接模式，轻量可点击，不承担导航（对应参考页“本地模式”标识）。 */
+export function LocalModeChip({ node }: { node: string }) {
+    const { t } = useTranslation();
+    const dispatch = useAppDispatch();
+    const isLocal = node === 'local' || node === '';
+    return (
+        <span
+            className="local-mode-chip"
+            data-state={isLocal ? 'ok' : 'unknown'}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); dispatch(setCurrentNode(node)); } }}
+            onClick={() => void dispatch(setCurrentNode(node))}
+            aria-label={t('workbench.scope')}
+            title={t('workbench.scope')}
+        >
+            <span className="chip-dot" aria-hidden="true" />
+            <span className="chip-label">{isLocal ? t('workbench.local') : node}</span>
+        </span>
+    );
+}
+
+

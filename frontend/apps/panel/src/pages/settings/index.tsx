@@ -1,13 +1,15 @@
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useState } from "react";
-import { useTranslation } from "react-i18next";
-import AboutTab from "./about";
-import AlertSettingsTab from "./alert";
-import APIKeysTab from "./apikeys";
-import BackupAccountSettingsTab from "./backup";
-import PanelSettingsTab from "./panel";
-import SafeSettingsTab from "./safe";
-import SnapshotSettingsTab from "./snapshot";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import AboutTab from './about';
+import AlertSettingsTab from './alert';
+import APIKeysTab from './apikeys';
+import BackupAccountSettingsTab from './backup';
+import PanelSettingsTab from './panel';
+import SafeSettingsTab from './safe';
+import SnapshotSettingsTab from './snapshot';
+
+const TABS = ['panel', 'safe', 'backup', 'snapshot', 'alert', 'apikeys', 'about'] as const;
 
 /**
  * 设置模块对应旧版 `frontend/src/views/setting`：将原先「面板设置 / 安全 / 备份账号 /
@@ -17,40 +19,40 @@ import SnapshotSettingsTab from "./snapshot";
  */
 export default function SettingsPage() {
     const { t } = useTranslation();
-    const [tab, setTab] = useState("panel");
+    const [tab, setTab] = useState('panel');
 
     return (
-        <Tabs value={tab} onValueChange={setTab} className="gap-4">
-            <TabsList variant="line" className="w-full justify-start overflow-x-auto">
-                <TabsTrigger value="panel">{t("settings.tabs.panel")}</TabsTrigger>
-                <TabsTrigger value="safe">{t("settings.tabs.safe")}</TabsTrigger>
-                <TabsTrigger value="backup">{t("settings.tabs.backup")}</TabsTrigger>
-                <TabsTrigger value="snapshot">{t("settings.tabs.snapshot")}</TabsTrigger>
-                <TabsTrigger value="alert">{t("settings.tabs.alert")}</TabsTrigger>
-                <TabsTrigger value="apikeys">{t("settings.tabs.apikeys")}</TabsTrigger>
-                <TabsTrigger value="about">{t("settings.tabs.about")}</TabsTrigger>
-            </TabsList>
-            <TabsContent value="panel">
-                <PanelSettingsTab />
-            </TabsContent>
-            <TabsContent value="safe">
-                <SafeSettingsTab />
-            </TabsContent>
-            <TabsContent value="backup">
-                <BackupAccountSettingsTab />
-            </TabsContent>
-            <TabsContent value="snapshot">
-                <SnapshotSettingsTab />
-            </TabsContent>
-            <TabsContent value="alert">
-                <AlertSettingsTab />
-            </TabsContent>
-            <TabsContent value="apikeys">
-                <APIKeysTab />
-            </TabsContent>
-            <TabsContent value="about">
-                <AboutTab />
-            </TabsContent>
-        </Tabs>
+        <div className="module-shell">
+            <Tabs value={tab} onValueChange={setTab}>
+                <TabsList variant="line" className="module-tabs">
+                    {TABS.map((key) => (
+                        <TabsTrigger key={key} value={key}>
+                            {t(`settings.tabs.${key}`)}
+                        </TabsTrigger>
+                    ))}
+                </TabsList>
+                <TabsContent value="panel" className="module-tab-content">
+                    <PanelSettingsTab />
+                </TabsContent>
+                <TabsContent value="safe" className="module-tab-content">
+                    <SafeSettingsTab />
+                </TabsContent>
+                <TabsContent value="backup" className="module-tab-content">
+                    <BackupAccountSettingsTab />
+                </TabsContent>
+                <TabsContent value="snapshot" className="module-tab-content">
+                    <SnapshotSettingsTab />
+                </TabsContent>
+                <TabsContent value="alert" className="module-tab-content">
+                    <AlertSettingsTab />
+                </TabsContent>
+                <TabsContent value="apikeys" className="module-tab-content">
+                    <APIKeysTab />
+                </TabsContent>
+                <TabsContent value="about" className="module-tab-content">
+                    <AboutTab />
+                </TabsContent>
+            </Tabs>
+        </div>
     );
 }

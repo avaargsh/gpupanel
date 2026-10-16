@@ -74,7 +74,7 @@ export function FtpFormModal({ target, onClose, onSaved }: { target: FtpInfo | n
                         <DialogTitle>{isEdit ? t("toolbox.ftp.edit") : t("toolbox.ftp.add")}</DialogTitle>
                     </DialogHeader>
                     <FieldGroup>
-                        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                        <div className="flex flex-col gap-3.5">
                             <Field label={t("toolbox.ftp.user")}>
                                 <Input disabled={isEdit} required value={user ?? ""} onChange={(event) => setUser(event.target.value)} />
                             </Field>
@@ -124,9 +124,9 @@ export function FtpLogSheet({ target, onClose }: { target: FtpInfo; onClose: () 
                         <SheetTitle>{`FTP - ${target.user}`}</SheetTitle>
                     </SheetHeader>
                     <FieldGroup>
-                        <div style={{ marginBottom: 12 }} className="flex flex-wrap items-center gap-2">
+                        <div className="flex flex-wrap items-center gap-2 mb-3">
                             <NativeSelect
-                                style={{ width: 160 }}
+                                className="w-[160px]"
                                 value={operation ?? ""}
                                 aria-label={t("toolbox.ftp.operationFilter")}
                                 onChange={(event) =>

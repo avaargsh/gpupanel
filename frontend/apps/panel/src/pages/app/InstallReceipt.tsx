@@ -26,7 +26,7 @@ const receiptApi = baseApi.injectEndpoints({
 export default function InstallReceipt({ receipt }: { receipt: PendingAppInstall }) {
     const result = receiptApi.useReadInstallReceiptQuery(receipt);
     return (
-        <div style={{ marginTop: 12 }}>
+        <div className="mt-3">
             <span className="text-sm">
                 {receipt.taskID}
                 <Button
@@ -63,7 +63,7 @@ export default function InstallReceipt({ receipt }: { receipt: PendingAppInstall
                             ? '只读受理记录，不证明安装完成 / Admission only; no completed-install proof'
                             : result.data.taskStatus}
                     </p>
-                    <pre style={{ maxHeight: 220, overflow: 'auto', whiteSpace: 'pre-wrap' }}>{result.data.lines?.join('\n')}</pre>
+                    <pre className="log-output max-h-[220px]">{result.data.lines?.join('\n')}</pre>
                 </>
             ) : null}
         </div>

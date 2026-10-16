@@ -11,7 +11,28 @@
     "failed refresh clears metrics",
     "scope resets draft",
     "terminal HTTP and WebSocket select remote scope",
-    "installed deep link"
+    "installed deep link",
+    "redesign pass: 14 routes x light/dark, 0 page errors (mock core API)"
   ],
-  "terminal_scope_requests": 2
+  "terminal_scope_requests": 2,
+  "redesign_pass": {
+    "routes": [
+      "/",
+      "/host",
+      "/host?tab=monitor",
+      "/containers",
+      "/databases",
+      "/websites",
+      "/openresty",
+      "/apps",
+      "/ai",
+      "/gpu",
+      "/cronjobs",
+      "/toolbox",
+      "/logs",
+      "/settings"
+    ],
+    "console_errors": 0,
+    "mock_gaps_found": "apps/tags, ai/accounts/providers, databases/db/list returned wrong JSON shape in the fixture, not app defects"
+  }
 }

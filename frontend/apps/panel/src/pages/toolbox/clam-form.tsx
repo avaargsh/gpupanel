@@ -28,9 +28,9 @@ export function SpecEditor({
     const patch = (p: Partial<typeof value>) => onChange({ ...value, ...p });
 
     return (
-        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+        <div className="flex flex-col gap-2.5">
             <NativeSelect
-                style={{ width: "100%" }}
+                className="w-full"
                 value={type ?? ""}
                 aria-label={t("common.select")}
                 onChange={(event) => onChange(defaultSpecObj(String(event.target.value)))}
@@ -46,7 +46,7 @@ export function SpecEditor({
             <div className="flex flex-wrap items-center gap-2">
                 {type === "perWeek" && (
                     <NativeSelect
-                        style={{ width: 140 }}
+                        className="w-[140px]"
                         value={value.week ?? ""}
                         aria-label={t("common.select")}
                         onChange={(event) => patch({ week: Number(event.target.value) })}
@@ -65,7 +65,7 @@ export function SpecEditor({
                         <Input
                             min={1}
                             max={31}
-                            style={{ width: 160 }}
+                            className="w-[160px]"
                             value={value.day ?? ""}
                             type="number"
                             required
@@ -73,7 +73,7 @@ export function SpecEditor({
                                 patch({ day: Number(event.target.value === "" ? undefined : Number(event.target.value)) || 1 })
                             }
                         />
-                        <span className="shrink-0 text-muted-foreground">{t("cronjob.day")}</span>
+                        <span className="shrink-0 text-muted-foreground">{t("cronjob.operate.day")}</span>
                     </div>
                 )}
                 {["perMonth", "perWeek", "perDay", "perNDay", "perNHour"].includes(type) && (
@@ -81,7 +81,7 @@ export function SpecEditor({
                         <Input
                             min={0}
                             max={23}
-                            style={{ width: 160 }}
+                            className="w-[160px]"
                             value={value.hour ?? ""}
                             type="number"
                             required
@@ -89,7 +89,7 @@ export function SpecEditor({
                                 patch({ hour: Number(event.target.value === "" ? undefined : Number(event.target.value)) || 0 })
                             }
                         />
-                        <span className="shrink-0 text-muted-foreground">{t("cronjob.hour")}</span>
+                        <span className="shrink-0 text-muted-foreground">{t("cronjob.operate.hour")}</span>
                     </div>
                 )}
                 {type !== "perNSecond" && (
@@ -97,7 +97,7 @@ export function SpecEditor({
                         <Input
                             min={0}
                             max={59}
-                            style={{ width: 160 }}
+                            className="w-[160px]"
                             value={value.minute ?? ""}
                             type="number"
                             required
@@ -105,7 +105,7 @@ export function SpecEditor({
                                 patch({ minute: Number(event.target.value === "" ? undefined : Number(event.target.value)) || 0 })
                             }
                         />
-                        <span className="shrink-0 text-muted-foreground">{t("cronjob.minute")}</span>
+                        <span className="shrink-0 text-muted-foreground">{t("cronjob.operate.minute")}</span>
                     </div>
                 )}
                 {type === "perNSecond" && (
@@ -113,7 +113,7 @@ export function SpecEditor({
                         <Input
                             min={1}
                             max={59}
-                            style={{ width: 160 }}
+                            className="w-[160px]"
                             value={value.second ?? ""}
                             type="number"
                             required
@@ -121,7 +121,7 @@ export function SpecEditor({
                                 patch({ second: Number(event.target.value === "" ? undefined : Number(event.target.value)) || 1 })
                             }
                         />
-                        <span className="shrink-0 text-muted-foreground">{t("cronjob.second")}</span>
+                        <span className="shrink-0 text-muted-foreground">{t("cronjob.operate.second")}</span>
                     </div>
                 )}
             </div>
@@ -205,7 +205,7 @@ export function ClamFormModal({ target, onClose, onSaved }: { target: ClamInfo |
                         <DialogTitle>{isEdit ? t("toolbox.clam.edit") : t("toolbox.clam.create")}</DialogTitle>
                     </DialogHeader>
                     <FieldGroup>
-                        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                        <div className="flex flex-col gap-3.5">
                             <Field label={t("toolbox.clam.name")}>
                                 <Input required value={name ?? ""} onChange={(event) => setName(event.target.value)} />
                             </Field>
@@ -214,7 +214,7 @@ export function ClamFormModal({ target, onClose, onSaved }: { target: ClamInfo |
                             </Field>
                             <Field label={t("toolbox.clam.infectedStrategy")}>
                                 <NativeSelect
-                                    style={{ width: "100%" }}
+                                    className="w-full"
                                     value={strategy ?? ""}
                                     aria-label={t("common.select")}
                                     onChange={(event) => setStrategy(String(event.target.value))}
@@ -238,7 +238,7 @@ export function ClamFormModal({ target, onClose, onSaved }: { target: ClamInfo |
                                 <div className="flex flex-wrap items-center gap-2">
                                     <Input
                                         min={1}
-                                        style={{ width: 160 }}
+                                        className="w-[160px]"
                                         value={timeoutValue ?? ""}
                                         type="number"
                                         required
@@ -247,7 +247,7 @@ export function ClamFormModal({ target, onClose, onSaved }: { target: ClamInfo |
                                         }
                                     />
                                     <NativeSelect
-                                        style={{ width: 120 }}
+                                        className="w-[120px]"
                                         value={timeoutUnit ?? ""}
                                         aria-label={t("common.select")}
                                         onChange={(event) => setTimeoutUnit(String(event.target.value))}

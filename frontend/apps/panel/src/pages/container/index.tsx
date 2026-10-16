@@ -31,28 +31,28 @@ export default function ContainersPage() {
     };
 
     return (
-        <div className="px-1">
+        <div className="module-shell">
             <Tabs value={activeKey} onValueChange={setActiveKey}>
-                <TabsList variant="line">
+                <TabsList variant="line" className="module-tabs">
                     <TabsTrigger value="overview">{t('container.tabs.overview')}</TabsTrigger>
                     <TabsTrigger value="list">{t('container.tabs.list')}</TabsTrigger>
                     <TabsTrigger value="images">{t('container.tabs.images')}</TabsTrigger>
                     <TabsTrigger value="logs">{t('container.tabs.logs')}</TabsTrigger>
                     <TabsTrigger value="exec">{t('container.tabs.exec')}</TabsTrigger>
                 </TabsList>
-                <TabsContent value="overview" className="pt-4">
+                <TabsContent value="overview" className="module-tab-content">
                     <ContainerOverview />
                 </TabsContent>
-                <TabsContent value="list" className="pt-4">
+                <TabsContent value="list" className="module-tab-content">
                     <ContainerList onOpenLogs={openLogs} onOpenExec={openExec} />
                 </TabsContent>
-                <TabsContent value="images" className="pt-4">
+                <TabsContent value="images" className="module-tab-content">
                     <ContainerImages />
                 </TabsContent>
-                <TabsContent value="logs" className="pt-4">
+                <TabsContent value="logs" className="module-tab-content">
                     <ContainerLogs target={logTarget} />
                 </TabsContent>
-                <TabsContent value="exec" className="pt-4">
+                <TabsContent value="exec" className="module-tab-content">
                     <ContainerExec target={execTarget} />
                 </TabsContent>
             </Tabs>

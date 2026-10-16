@@ -108,7 +108,7 @@ function LogsTab({ id }: { id: number }) {
                         {t('website.logs.delete')}
                     </Button>
                 </div>
-                <pre className="m-0 max-h-[420px] overflow-auto rounded-md bg-muted p-3 text-xs">
+                <pre className="log-output max-h-[420px]">
                     {data?.content || t('website.logs.empty')}
                 </pre>
             </CardContent>

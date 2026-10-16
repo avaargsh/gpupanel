@@ -44,7 +44,7 @@ export default function AppSettingsTab() {
         }
     };
     return (
-        <div style={{ maxWidth: 640, display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <div className="app-settings max-w-[640px] flex flex-col gap-3">
             {loading && <Spinner role="status" aria-label={t('common.loading')} />}
             {isError && (
                 <Alert variant="destructive">
@@ -57,17 +57,7 @@ export default function AppSettingsTab() {
                 </Alert>
             )}
             {rows.map((row) => (
-                <label
-                    key={row.scope}
-                    style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        gap: 16,
-                        padding: '10px 0',
-                        borderBottom: '1px solid var(--border)',
-                    }}
-                >
+                <label key={row.scope} className="list-row">
                     <span className="text-sm">{row.label}</span>
                     <Switch
                         aria-label={row.label}
@@ -77,7 +67,7 @@ export default function AppSettingsTab() {
                     />
                 </label>
             ))}
-            <span className="text-muted-foreground text-sm" style={{ marginTop: 8 }}>
+            <span className="text-muted-foreground text-sm mt-2">
                 {t('apps.settings.customStoreHint')}
             </span>
         </div>

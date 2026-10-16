@@ -1,12 +1,13 @@
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useSearchParams } from "react-router-dom";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useSearchParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
+import LoginLogTab from './login';
+import OperationLogTab from './operation';
+import SSHLogTab from './ssh';
+import SystemLogTab from './system';
+import TaskLogTab from './task';
 
-import { useTranslation } from "react-i18next";
-import LoginLogTab from "./login";
-import OperationLogTab from "./operation";
-import SSHLogTab from "./ssh";
-import SystemLogTab from "./system";
-import TaskLogTab from "./task";
+const TABS = ['operation', 'login', 'system', 'task', 'ssh'] as const;
 
 /**
  * 日志模块对应旧版 `frontend/src/views/log`：五个页签统一收拢到一个路由，
@@ -16,43 +17,33 @@ import TaskLogTab from "./task";
 export default function LogsPage() {
     const { t } = useTranslation();
     const [query, setQuery] = useSearchParams();
-    const requested = query.get("tab") || "operation";
-    const tab = ["operation", "login", "system", "task", "ssh"].includes(requested) ? requested : "operation";
+    const requested = query.get('tab') || 'operation';
+    const tab = (TABS as readonly string[]).includes(requested) ? requested : 'operation';
     const setTab = (value: string) => setQuery({ tab: value });
 
     return (
-        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-            <Tabs value={tab} onValueChange={(k) => setTab(String(k))}>
-                <TabsList className="flex-wrap">
-                    <TabsTrigger value={"operation"} key={"operation"}>
-                        {t("logs.tabs.operation")}
-                    </TabsTrigger>
-                    <TabsTrigger value={"login"} key={"login"}>
-                        {t("logs.tabs.login")}
-                    </TabsTrigger>
-                    <TabsTrigger value={"system"} key={"system"}>
-                        {t("logs.tabs.system")}
-                    </TabsTrigger>
-                    <TabsTrigger value={"task"} key={"task"}>
-                        {t("logs.tabs.task")}
-                    </TabsTrigger>
-                    <TabsTrigger value={"ssh"} key={"ssh"}>
-                        {t("logs.tabs.ssh")}
-                    </TabsTrigger>
+        <div className="module-shell">
+            <Tabs value={tab} onValueChange={setTab}>
+                <TabsList variant="line" className="module-tabs">
+                    {TABS.map((key) => (
+                        <TabsTrigger key={key} value={key}>
+                            {t(`logs.tabs.${key}`)}
+                        </TabsTrigger>
+                    ))}
                 </TabsList>
-                <TabsContent value={"operation"}>
+                <TabsContent value="operation" className="module-tab-content">
                     <OperationLogTab />
                 </TabsContent>
-                <TabsContent value={"login"}>
+                <TabsContent value="login" className="module-tab-content">
                     <LoginLogTab />
                 </TabsContent>
-                <TabsContent value={"system"}>
+                <TabsContent value="system" className="module-tab-content">
                     <SystemLogTab />
                 </TabsContent>
-                <TabsContent value={"task"}>
+                <TabsContent value="task" className="module-tab-content">
                     <TaskLogTab />
                 </TabsContent>
-                <TabsContent value={"ssh"}>
+                <TabsContent value="ssh" className="module-tab-content">
                     <SSHLogTab />
                 </TabsContent>
             </Tabs>

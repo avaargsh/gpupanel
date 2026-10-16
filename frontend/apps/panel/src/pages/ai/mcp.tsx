@@ -7,7 +7,7 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
 import { Input } from '@/components/ui/input';
-import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
+import { TablePagination } from '../container/table-pagination';
 import { Plus, RefreshCw } from 'lucide-react';
 import { Table, TableHeader, TableHead, TableRow, TableBody, TableCell } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
@@ -113,185 +113,160 @@ export default function McpTab() {
     };
     return (
         <>
-            {' '}
-            {dialog}{' '}
-            {
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                    <div className="flex flex-row flex-wrap gap-3 items-center">
-                        <Input
-                            aria-label={t('ai.mcp.searchPlaceholder')}
-                            value={nameInput}
-                            placeholder={t('ai.mcp.searchPlaceholder')}
-                            style={{ width: 220 }}
-                            onChange={(event) => setNameInput(event.target.value)}
-                        />
-                        <Button
-                            onClick={() => {
-                                setFormRow(null);
-                                setShowForm(true);
-                            }}
-                            variant={'default'}
-                            type={'button'}
-                        >
-                            {<Plus />}
-                            {t('ai.mcp.create')}
-                        </Button>
-                        <Button onClick={() => setShowDomain(true)} variant={'outline'} type={'button'}>
-                            {t('ai.mcp.bindDomain')}
-                        </Button>
-                        <Button onClick={onRefresh} variant={'outline'} type={'button'}>
-                            {<RefreshCw />}
-                            {t('ai.actions.refresh')}
-                        </Button>
-                    </div>
-
-                    {listQuery.isError && (
-                        <Alert variant="destructive">
-                            <AlertDescription>
-                                {t('hostOps.loadError')}{' '}
-                                <Button variant="outline" onClick={() => void listQuery.refetch()}>
-                                    {t('common.refresh')}
-                                </Button>
-                            </AlertDescription>
-                        </Alert>
-                    )}
-                    <div className="flex flex-col gap-3" aria-busy={listQuery.isLoading}>
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead>{t('ai.table.name')}</TableHead>
-                                    <TableHead style={{ width: 110 }}>{t('ai.table.status')}</TableHead>
-                                    <TableHead style={{ width: 90 }}>{t('ai.table.type')}</TableHead>
-                                    <TableHead style={{ width: 90 }}>{t('ai.table.port')}</TableHead>
-                                    <TableHead>{t('ai.table.address')}</TableHead>
-                                    <TableHead style={{ width: 340 }}>{t('ai.table.operate')}</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {listQuery.isLoading ? (
-                                    <TableRow>
-                                        <TableCell colSpan={6}>
-                                            <Spinner role="status" aria-label="Loading" />
-                                        </TableCell>
-                                    </TableRow>
-                                ) : rows.length === 0 ? (
-                                    <TableRow>
-                                        <TableCell colSpan={6}>
-                                            {<span className="text-muted-foreground text-sm">{t('ai.mcp.empty')}</span>}
-                                        </TableCell>
-                                    </TableRow>
-                                ) : (
-                                    rows.map((row, rowIndex) => (
-                                        <TableRow key={row['id'] ?? rowIndex}>
-                                            <TableCell>{row['name']}</TableCell>
-                                            <TableCell>
-                                                {
-                                                    <Badge
-                                                        variant={
-                                                            ['red', 'orange'].includes(statusColor(row['status']))
-                                                                ? 'destructive'
-                                                                : 'secondary'
-                                                        }
-                                                    >
-                                                        {row['status'] || '-'}
-                                                    </Badge>
-                                                }
-                                            </TableCell>
-                                            <TableCell>{row['type'] || '-'}</TableCell>
-                                            <TableCell>{row['port']}</TableCell>
-                                            <TableCell className="max-w-64 truncate">{row.url || row.baseUrl || '-'}</TableCell>
-                                            <TableCell>
-                                                {
-                                                    <div className="flex flex-row  gap-3 items-center">
-                                                        <Button
-                                                            onClick={() => {
-                                                                setFormRow(row);
-                                                                setShowForm(true);
-                                                            }}
-                                                            variant={'ghost'}
-                                                            size="sm"
-                                                            type={'button'}
-                                                        >
-                                                            {t('ai.actions.edit')}
-                                                        </Button>
-                                                        <Button
-                                                            onClick={() => doOperate(row, 'start')}
-                                                            variant={'ghost'}
-                                                            size="sm"
-                                                            type={'button'}
-                                                        >
-                                                            {t('ai.actions.start')}
-                                                        </Button>
-                                                        <Button
-                                                            onClick={() => doOperate(row, 'stop')}
-                                                            variant={'ghost'}
-                                                            size="sm"
-                                                            type={'button'}
-                                                        >
-                                                            {t('ai.actions.stop')}
-                                                        </Button>
-                                                        <Button
-                                                            onClick={() => doOperate(row, 'restart')}
-                                                            variant={'ghost'}
-                                                            size="sm"
-                                                            type={'button'}
-                                                        >
-                                                            {t('ai.actions.restart')}
-                                                        </Button>
-                                                        <Button onClick={() => onTest(row)} variant={'ghost'} size="sm" type={'button'}>
-                                                            {t('ai.actions.test')}
-                                                        </Button>
-                                                        <Button
-                                                            onClick={() => onDelete(row)}
-                                                            variant={'destructive'}
-                                                            size="sm"
-                                                            type={'button'}
-                                                        >
-                                                            {t('ai.actions.delete')}
-                                                        </Button>
-                                                    </div>
-                                                }
-                                            </TableCell>
-                                        </TableRow>
-                                    ))
-                                )}
-                            </TableBody>
-                        </Table>
-                        <div className="flex flex-wrap items-center justify-end gap-3">
-                            <Button variant="outline" disabled={page <= 1 || listQuery.isLoading} onClick={() => setPage(page - 1)}>
-                                ‹
-                            </Button>
-                            <span>
-                                {page} / {Math.max(1, Math.ceil((listQuery.data?.total ?? 0) / 20))}
-                            </span>
-                            <Button
-                                variant="outline"
-                                disabled={page * 20 >= (listQuery.data?.total ?? 0) || listQuery.isLoading}
-                                onClick={() => setPage(page + 1)}
-                            >
-                                ›
-                            </Button>
-                            <NativeSelect
-                                aria-label="Page size"
-                                value={20}
-                                onChange={(event) => {
-                                    setPageSize(Number(event.target.value));
-                                    setPage(1);
-                                }}
-                            >
-                                {[10, 20, 50].map((size) => (
-                                    <NativeSelectOption key={size} value={size}>
-                                        {size}
-                                    </NativeSelectOption>
-                                ))}
-                            </NativeSelect>
-                        </div>
-                    </div>
-
-                    {showForm && <McpFormModal row={formRow} onClose={() => setShowForm(false)} />}
-                    {showDomain && <DomainModal onClose={() => setShowDomain(false)} />}
+            {dialog}
+            <div className="flex flex-col gap-3">
+                <div className="module-toolbar">
+                    <Input
+                        aria-label={t('ai.mcp.searchPlaceholder')}
+                        value={nameInput}
+                        placeholder={t('ai.mcp.searchPlaceholder')}
+                        className="w-[220px]"
+                        onChange={(event) => setNameInput(event.target.value)}
+                    />
+                    <Button
+                        onClick={() => {
+                            setFormRow(null);
+                            setShowForm(true);
+                        }}
+                        variant="default"
+                        type="button"
+                    >
+                        <Plus />
+                        {t('ai.mcp.create')}
+                    </Button>
+                    <Button onClick={() => setShowDomain(true)} variant="outline" type="button">
+                        {t('ai.mcp.bindDomain')}
+                    </Button>
+                    <Button onClick={onRefresh} variant="outline" type="button">
+                        <RefreshCw />
+                        {t('ai.actions.refresh')}
+                    </Button>
                 </div>
-            }{' '}
+
+                {listQuery.isError && (
+                    <Alert variant="destructive">
+                        <AlertDescription>
+                            {t('hostOps.loadError')}{' '}
+                            <Button variant="outline" onClick={() => void listQuery.refetch()}>
+                                {t('common.refresh')}
+                            </Button>
+                        </AlertDescription>
+                    </Alert>
+                )}
+                <div className="flex flex-col gap-3" aria-busy={listQuery.isLoading}>
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>{t('ai.table.name')}</TableHead>
+                                <TableHead className="w-[110px]">{t('ai.table.status')}</TableHead>
+                                <TableHead className="w-[90px]">{t('ai.table.type')}</TableHead>
+                                <TableHead className="w-[90px]">{t('ai.table.port')}</TableHead>
+                                <TableHead>{t('ai.table.address')}</TableHead>
+                                <TableHead className="w-[340px]">{t('ai.table.operate')}</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {listQuery.isLoading ? (
+                                <TableRow>
+                                    <TableCell colSpan={6}>
+                                        <Spinner role="status" aria-label="Loading" />
+                                    </TableCell>
+                                </TableRow>
+                            ) : rows.length === 0 ? (
+                                <TableRow>
+                                    <TableCell colSpan={6}>
+                                        <span className="text-muted-foreground text-sm">{t('ai.mcp.empty')}</span>
+                                    </TableCell>
+                                </TableRow>
+                            ) : (
+                                rows.map((row, rowIndex) => (
+                                    <TableRow key={row['id'] ?? rowIndex}>
+                                        <TableCell>{row['name']}</TableCell>
+                                        <TableCell>
+                                            {
+                                                <Badge
+                                                    variant={
+                                                        ['red', 'orange'].includes(statusColor(row['status']))
+                                                            ? 'destructive'
+                                                            : 'secondary'
+                                                    }
+                                                >
+                                                    {row['status'] || '-'}
+                                                </Badge>
+                                            }
+                                        </TableCell>
+                                        <TableCell>{row['type'] || '-'}</TableCell>
+                                        <TableCell>{row['port']}</TableCell>
+                                        <TableCell className="max-w-64 truncate">{row.url || row.baseUrl || '-'}</TableCell>
+                                        <TableCell>
+                                            {
+                                                <div className="flex flex-row items-center gap-3">
+                                                    <Button
+                                                        onClick={() => {
+                                                            setFormRow(row);
+                                                            setShowForm(true);
+                                                        }}
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        type="button"
+                                                    >
+                                                        {t('ai.actions.edit')}
+                                                    </Button>
+                                                    <Button
+                                                        onClick={() => doOperate(row, 'start')}
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        type="button"
+                                                    >
+                                                        {t('ai.actions.start')}
+                                                    </Button>
+                                                    <Button
+                                                        onClick={() => doOperate(row, 'stop')}
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        type="button"
+                                                    >
+                                                        {t('ai.actions.stop')}
+                                                    </Button>
+                                                    <Button
+                                                        onClick={() => doOperate(row, 'restart')}
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        type="button"
+                                                    >
+                                                        {t('ai.actions.restart')}
+                                                    </Button>
+                                                    <Button onClick={() => onTest(row)} variant="ghost" size="sm" type="button">
+                                                        {t('ai.actions.test')}
+                                                    </Button>
+                                                    <Button
+                                                        onClick={() => onDelete(row)}
+                                                        variant="destructive"
+                                                        size="sm"
+                                                        type="button"
+                                                    >
+                                                        {t('ai.actions.delete')}
+                                                    </Button>
+                                                </div>
+                                            }
+                                        </TableCell>
+                                    </TableRow>
+                                ))
+                            )}
+                        </TableBody>
+                    </Table>
+                    <TablePagination
+                        page={page}
+                        pageSize={pageSize}
+                        total={listQuery.data?.total ?? 0}
+                        onPageChange={setPage}
+                        onPageSizeChange={setPageSize}
+                    />
+                </div>
+
+                {showForm && <McpFormModal row={formRow} onClose={() => setShowForm(false)} />}
+                {showDomain && <DomainModal onClose={() => setShowDomain(false)} />}
+            </div>
         </>
     );
 }

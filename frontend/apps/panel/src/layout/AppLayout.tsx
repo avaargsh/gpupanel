@@ -29,10 +29,10 @@ export default function AppLayout() {
     }, [dispatch]);
 
     return (
-        <div className="workspace-shell" style={{ height: '100dvh', overflow: 'hidden', display: 'flex', flexDirection: 'row' }}>
+        <div className="workspace-shell">
             <a className="skip-content" href="#workspace-content">{t('workbench.skip')}</a>
             <Sidebar />
-            <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, flex: 1, height: '100%' }}>
+            <div className="workspace-main">
                 <Header />
                 <main id="workspace-content" className="workspace-content" tabIndex={-1}>
                     <div key={node} className="workspace-page"><Outlet /></div>

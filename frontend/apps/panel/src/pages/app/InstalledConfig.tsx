@@ -66,7 +66,7 @@ export function ParamsModal({ row, onClose }: { row: AppInstallDto; onClose: () 
                 if (!open && !saving) onClose();
             }}
         >
-            <DialogContent aria-describedby={undefined} className="max-h-[90vh] overflow-y-auto" style={{ maxWidth: 520 }}>
+            <DialogContent aria-describedby={undefined} className="max-h-[90vh] overflow-y-auto max-w-[520px]">
                 <DialogHeader>
                     <DialogTitle>{t('apps.params.title')}</DialogTitle>
                 </DialogHeader>
@@ -98,7 +98,7 @@ export function ParamsModal({ row, onClose }: { row: AppInstallDto; onClose: () 
                                         <NativeSelect
                                             id={`${prefix}-${p.key}`}
                                             value={values[p.key] as string}
-                                            style={{ width: '100%' }}
+                                            className="w-full"
                                             onChange={(event) =>
                                                 setValues((s) => ({
                                                     ...s,
@@ -182,23 +182,16 @@ export function SortModal({ rows, onClose }: { rows: AppInstallDto[]; onClose: (
                 if (!open && !isLoading) onClose();
             }}
         >
-            <DialogContent aria-describedby={undefined} className="max-h-[90vh] overflow-y-auto" style={{ maxWidth: 520 }}>
+            <DialogContent aria-describedby={undefined} className="max-h-[90vh] overflow-y-auto max-w-[520px]">
                 <DialogHeader>
                     <DialogTitle>{t('apps.sort.title')}</DialogTitle>
                 </DialogHeader>
                 <span className="text-muted-foreground text-sm">{t('apps.sort.hint')}</span>
-                <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                <div className="mt-2.5 flex flex-col gap-1.5">
                     {list.map((r, i) => (
                         <div
                             key={r.id}
-                            style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'space-between',
-                                padding: '6px 10px',
-                                border: '1px solid var(--border)',
-                                borderRadius: 6,
-                            }}
+                            className="flex items-center justify-between rounded-md border border-border px-2.5 py-1.5"
                         >
                             <span className="text-sm">{r.name}</span>
                             <div className="flex flex-row  gap-3 items-center">

@@ -60,9 +60,7 @@ export default function SourceTab() {
                 rows={16}
                 aria-label={t('openresty.tabs.source')}
                 placeholder={fileQuery.isLoading ? t('common.loading') : ''}
-                style={{
-                    fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
-                }}
+                className="font-mono"
             />
             <div className="flex flex-wrap gap-3">
                 <Button onClick={onLoadDefault} disabled={loadingDefault || fileQuery.isLoading}>

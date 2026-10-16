@@ -120,7 +120,7 @@ export default function LoginPage() {
                             </>}
                             {needCaptcha && <>
                                 {captcha.isError ? <Button type="button" variant="outline" onClick={() => captcha.refetch()}>重试验证码 / Retry captcha</Button> : null}
-                                {captcha.data ? <button type="button" aria-label="刷新验证码 / Refresh captcha" onClick={() => captcha.refetch()} style={{ border: 0, background: 'transparent' }}><img src={captcha.data.imagePath} alt="验证码 / Captcha" /></button> : null}
+                                {captcha.data ? <button type="button" className="border-0 bg-transparent p-0" aria-label="刷新验证码 / Refresh captcha" onClick={() => captcha.refetch()}><img src={captcha.data.imagePath} alt="验证码 / Captcha" /></button> : null}
                                 <Field>
                                     <FieldLabel htmlFor="login-captcha">验证码 / Captcha</FieldLabel>
                                     <Input id="login-captcha" name="captcha" autoComplete="off" required />

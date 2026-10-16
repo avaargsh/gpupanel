@@ -95,7 +95,7 @@ export function DnsModal({ base, onClose, onSaved }: { base: DeviceBaseInfo; onC
                                 onChange={(event) => setValue(event.target.value)}
                             />
                         </Field>
-                        <Button style={{ marginTop: 12 }} onClick={test} type="button" variant="outline" disabled={testing}>
+                        <Button className="mt-3" onClick={test} type="button" variant="outline" disabled={testing}>
                             {testing ? <Spinner data-icon="inline-start" /> : null}
                             {t("toolbox.device.dnsTest")}
                         </Button>
@@ -158,17 +158,17 @@ export function HostsModal({ base, onClose, onSaved }: { base: DeviceBaseInfo; o
                     </DialogHeader>
                     <FieldGroup>
                         <span className="text-muted-foreground">{t("toolbox.device.hostsHelper")}</span>
-                        <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 12 }}>
+                        <div className="flex flex-col gap-2.5 mt-3">
                             {rows.map((row, i) => (
-                                <div key={i} style={{ width: "100%" }} className="flex flex-wrap items-center gap-2">
+                                <div key={i} className="flex flex-wrap items-center gap-2 w-full">
                                     <Input
-                                        style={{ width: 240 }}
+                                        className="w-[240px]"
                                         placeholder={t("toolbox.device.hostPlaceholder")}
                                         value={row.ip ?? ""}
                                         onChange={(event) => setRow(i, "ip", event.target.value)}
                                     />
                                     <Input
-                                        style={{ width: 240 }}
+                                        className="w-[240px]"
                                         placeholder={t("toolbox.device.hostNamePlaceholder")}
                                         value={row.host ?? ""}
                                         onChange={(event) => setRow(i, "host", event.target.value)}
@@ -183,7 +183,7 @@ export function HostsModal({ base, onClose, onSaved }: { base: DeviceBaseInfo; o
                                 </div>
                             ))}
                             <Button
-                                style={{ alignSelf: "flex-start" }}
+                                className="self-start"
                                 onClick={() => setRows((prev) => [...prev, { ip: "", host: "" }])}
                                 type="button"
                                 variant="ghost"

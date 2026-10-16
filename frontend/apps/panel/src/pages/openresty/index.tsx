@@ -10,12 +10,15 @@ import PerformanceTab from './performance';
 import { useOpenrestyInstalled } from './shared';
 import SourceTab from './source';
 import StatusTab from './status';
+
+const TABS = ['status', 'source', 'performance', 'modules', 'other'] as const;
+
 export default function OpenrestyPage() {
     const { t } = useTranslation();
     const [tab, setTab] = useState('status');
     const { query, installed, running } = useOpenrestyInstalled();
     return (
-        <div className="flex flex-col gap-3">
+        <div className="module-shell">
             {query.isLoading ? <Spinner /> : null}
             {query.isError ? (
                 <Alert variant="destructive">
@@ -37,26 +40,26 @@ export default function OpenrestyPage() {
                 </Alert>
             ) : null}
             <Tabs value={tab} onValueChange={setTab}>
-                <TabsList>
-                    {['status', 'source', 'performance', 'modules', 'other'].map((key) => (
+                <TabsList variant="line" className="module-tabs">
+                    {TABS.map((key) => (
                         <TabsTrigger key={key} value={key}>
                             {t(`openresty.tabs.${key}`)}
                         </TabsTrigger>
                     ))}
                 </TabsList>
-                <TabsContent value="status">
+                <TabsContent value="status" className="module-tab-content">
                     <StatusTab running={running} />
                 </TabsContent>
-                <TabsContent value="source">
+                <TabsContent value="source" className="module-tab-content">
                     <SourceTab />
                 </TabsContent>
-                <TabsContent value="performance">
+                <TabsContent value="performance" className="module-tab-content">
                     <PerformanceTab />
                 </TabsContent>
-                <TabsContent value="modules">
+                <TabsContent value="modules" className="module-tab-content">
                     <ModulesTab />
                 </TabsContent>
-                <TabsContent value="other">
+                <TabsContent value="other" className="module-tab-content">
                     <OtherTab running={running} />
                 </TabsContent>
             </Tabs>

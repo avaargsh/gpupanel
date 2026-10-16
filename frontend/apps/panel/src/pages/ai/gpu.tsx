@@ -22,13 +22,13 @@ function DeviceCard({ device }: { device: GpuDevice }) {
     const { t } = useTranslation();
     const processes = device.processes ?? [];
     return (
-        <Card style={{ marginBottom: 12 }}>
+        <Card className="mb-3">
             <CardHeader>
                 <CardTitle>{`${device.productName || 'GPU'} #${device.index}`}</CardTitle>
                 <CardAction>{<Badge variant={'secondary'}>{device.type || 'gpu'}</Badge>}</CardAction>
             </CardHeader>
             <CardContent>
-                <div className="flex flex-row flex-wrap gap-3 items-center" style={{ marginBottom: 12 }}>
+                <div className="flex flex-row flex-wrap gap-3 items-center mb-3">
                     <Metric label={t('ai.gpu.utilization')} value={device.gpuUtil ? `${device.gpuUtil}%` : '-'} />
                     <Metric
                         label={t('ai.gpu.memory')}
@@ -42,9 +42,9 @@ function DeviceCard({ device }: { device: GpuDevice }) {
                         <Table>
                             <TableHeader>
                                 <TableRow>
-                                    <TableHead style={{ width: 100 }}>{'PID'}</TableHead>
+                                    <TableHead className="w-[100px]">{'PID'}</TableHead>
                                     <TableHead>{t('ai.gpu.processName')}</TableHead>
-                                    <TableHead style={{ width: 140 }}>{t('ai.gpu.usedMemory')}</TableHead>
+                                    <TableHead className="w-[140px]">{t('ai.gpu.usedMemory')}</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -75,8 +75,8 @@ function DeviceCard({ device }: { device: GpuDevice }) {
 }
 function Metric({ label, value }: { label: string; value: string }) {
     return (
-        <div style={{ minWidth: 120 }}>
-            <span className="text-muted-foreground text-sm" style={{ display: 'block' }}>
+        <div className="min-w-[120px]">
+            <span className="text-muted-foreground text-sm block">
                 {label}
             </span>
             <strong className="text-sm">{value}</strong>
@@ -150,20 +150,13 @@ function History() {
         return <span className="text-muted-foreground text-sm">{t('ai.gpu.noHistory')}</span>;
     }
     return (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <div className="flex flex-col gap-3">
             <div className="flex flex-row flex-wrap gap-3 items-center">
                 <NativeSelect
                     aria-label={t('ai.gpu.device')}
                     value={product || undefined}
-                    style={{ width: 200 }}
-                    onChange={(event) =>
-                        setProductName(
-                            String(
-                                products.map((p) => ({ label: p, value: p })).find((option) => String(option.value) === event.target.value)
-                                    ?.value ?? event.target.value,
-                            ),
-                        )
-                    }
+                    className="w-[200px]"
+                    onChange={(event) => setProductName(event.target.value)}
                 >
                     <NativeSelectOption value="" disabled>
                         {t('ai.gpu.device')}
@@ -179,16 +172,8 @@ function History() {
                 <NativeSelect
                     aria-label={t('ai.gpu.history')}
                     value={rangeKey}
-                    style={{ width: 160 }}
-                    onChange={(event) =>
-                        setRangeKey(
-                            String(
-                                RANGES.map((r) => ({ label: t(`ai.gpu.last${r.key}` as never), value: r.key })).find(
-                                    (option) => String(option.value) === event.target.value,
-                                )?.value ?? event.target.value,
-                            ),
-                        )
-                    }
+                    className="w-[160px]"
+                    onChange={(event) => setRangeKey(event.target.value)}
                 >
                     <NativeSelectOption value="" disabled>
                         {'—'}
@@ -202,7 +187,7 @@ function History() {
                 <NativeSelect
                     aria-label={t('ai.gpu.avg')}
                     value={aggregation}
-                    style={{ width: 120 }}
+                    className="w-[120px]"
                     onChange={(event) => setAggregation(event.target.value === 'max' ? 'max' : 'avg')}
                 >
                     <NativeSelectOption value="" disabled>
@@ -237,7 +222,7 @@ export default function GpuTab() {
     const { currentData: data, isLoading, isError, refetch } = useGetGpuInfoQuery();
     const devices = allAccelerators(data);
     return (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <div className="flex flex-col gap-4">
             {data?.warnings?.map((warning) => (
                 <span className="text-muted-foreground text-sm" key={warning}>
                     {warning}

@@ -70,7 +70,7 @@ export default function ContainerExec({ target }: ContainerExecProps) {
     }
 
     return (
-        <div className="flex flex-col gap-4">
+        <div className="module-section">
             <Card>
                 <CardHeader>
                     <CardTitle>{t('container.exec.title')}</CardTitle>

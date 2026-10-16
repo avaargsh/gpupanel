@@ -46,7 +46,7 @@ export function UninstallModal({ row, onClose }: { row: AppInstallDto; onClose: 
                 if (!open && !submitting) onClose();
             }}
         >
-            <DialogContent aria-describedby={undefined} className="max-h-[90vh] overflow-y-auto" style={{ maxWidth: 480 }}>
+            <DialogContent aria-describedby={undefined} className="max-h-[90vh] overflow-y-auto max-w-[480px]">
                 <DialogHeader>
                     <DialogTitle>{t('apps.uninstall.title')}</DialogTitle>
                 </DialogHeader>
@@ -54,9 +54,9 @@ export function UninstallModal({ row, onClose }: { row: AppInstallDto; onClose: 
                 {isLoading ? (
                     <Spinner role="status" aria-label="Loading" />
                 ) : resources.length > 0 ? (
-                    <div style={{ marginTop: 10 }}>
+                    <div className="mt-2.5">
                         <span className="text-muted-foreground text-sm">{t('apps.uninstall.resource')}</span>
-                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 6 }}>
+                        <div className="flex flex-wrap gap-1.5 mt-1.5">
                             {resources.map((r) => (
                                 <Badge
                                     key={`${r.type}-${r.name}`}
@@ -68,7 +68,7 @@ export function UninstallModal({ row, onClose }: { row: AppInstallDto; onClose: 
                         </div>
                     </div>
                 ) : null}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 12 }}>
+                <div className="flex flex-col gap-2 mt-3">
                     <SwitchLine checked={forceDelete} onChange={setForceDelete} label={t('apps.uninstall.force')} />
                     <SwitchLine checked={deleteBackup} onChange={setDeleteBackup} label={t('apps.uninstall.deleteBackup')} />
                     <SwitchLine checked={deleteDB} onChange={setDeleteDb} label={t('apps.uninstall.deleteDB')} />

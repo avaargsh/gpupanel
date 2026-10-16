@@ -112,10 +112,10 @@ export function PasswdModal({ base, onClose, onSaved }: { base: DeviceBaseInfo; 
                         <DialogTitle>{t("toolbox.device.passwd")}</DialogTitle>
                     </DialogHeader>
                     <FieldGroup>
-                        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                        <div className="flex flex-col gap-3.5">
                             <Field label={t("toolbox.device.user")}>
                                 <NativeSelect
-                                    style={{ width: "100%" }}
+                                    className="w-full"
                                     value={user ?? ""}
                                     aria-label={t("common.select")}
                                     onChange={(event) => setUser(String(event.target.value))}
@@ -187,7 +187,7 @@ export function NtpModal({ base, onClose, onSaved }: { base: DeviceBaseInfo; onC
                     <FieldGroup>
                         <Field label={t("toolbox.device.syncSite")}>
                             <div className="flex flex-wrap items-center gap-2">
-                                <Input style={{ width: 280 }} value={value ?? ""} onChange={(event) => setValue(event.target.value)} />
+                                <Input className="w-[280px]" value={value ?? ""} onChange={(event) => setValue(event.target.value)} />
                                 {presets.map((p) => (
                                     <Button key={p} onClick={() => setValue(p)} type="button" variant="ghost">
                                         {p}
@@ -246,7 +246,7 @@ export function TimeZoneModal({ base, onClose, onSaved }: { base: DeviceBaseInfo
                     <FieldGroup>
                         <Field label={t("toolbox.device.timeZone")} help={t("toolbox.device.timeZoneHelper")}>
                             <NativeSelect
-                                style={{ width: "100%" }}
+                                className="w-full"
                                 value={value ?? ""}
                                 aria-label={t("common.select")}
                                 onChange={(event) => setValue(String(event.target.value))}

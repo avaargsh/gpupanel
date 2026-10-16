@@ -128,7 +128,7 @@ export function SnapshotCreateModal({ onClose, onSaved }: { onClose: () => void;
                         </Field>
                         <Field label={t("settings.snapshot.download")} help={t("settings.snapshot.downloadHelper")}>
                             <NativeSelect
-                                style={{ width: "100%" }}
+                                className="w-full"
                                 value={form.downloadAccountID ?? ""}
                                 aria-label={t("common.select")}
                                 onChange={(event) => setForm((f) => ({ ...f, downloadAccountID: Number(event.target.value) }))}
@@ -165,7 +165,7 @@ export function SnapshotCreateModal({ onClose, onSaved }: { onClose: () => void;
                             />
                         </Field>
                         <Field label={t("settings.snapshot.data")}>
-                            <div style={{ gap: 8 }} className="flex flex-col items-start gap-2">
+                            <div className="flex flex-col items-start gap-2 gap-2">
                                 <label className="flex items-center gap-2">
                                     <Checkbox
                                         checked={form.withDockerConf}

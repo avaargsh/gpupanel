@@ -129,13 +129,13 @@ export default function SnapshotSettingsTab() {
         <>
             {confirmationDialog}
             {
-                <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                <div className="flex flex-col gap-3">
                     <div className="flex flex-wrap items-center gap-2">
                         <div className="flex items-center gap-2">
                             <span className="shrink-0 text-muted-foreground">{<SearchIcon />}</span>
                             <Input
                                 placeholder={t("settings.snapshot.searchPlaceholder")}
-                                style={{ width: 220 }}
+                                className="w-[220px]"
                                 value={searchInput ?? ""}
                                 onChange={(event) =>
                                     ((v) => {
@@ -367,8 +367,8 @@ export default function SnapshotSettingsTab() {
                                 </DialogHeader>
                                 <FieldGroup>
                                     <span>{t("settings.snapshot.recoverHelper", { name: recoverTarget?.name ?? "" })}</span>
-                                    <div style={{ marginTop: 12 }}>
-                                        <label style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                    <div className="mt-3">
+                                        <label className="flex items-center gap-2">
                                             <Switch checked={reDownload} onCheckedChange={setReDownload} />
                                             {t("settings.snapshot.reDownload")}
                                         </label>
@@ -416,7 +416,7 @@ export default function SnapshotSettingsTab() {
                                         <span>
                                             {t("settings.snapshot.deleteConfirm", { name: deleteRows.map((r) => r.name).join("、") })}
                                         </span>
-                                        <div style={{ marginTop: 12 }}>
+                                        <div className="mt-3">
                                             <label className="flex items-center gap-2">
                                                 <Checkbox checked={deleteWithFile} onCheckedChange={(e) => setDeleteWithFile(!!e)} />
                                                 {t("settings.snapshot.deleteWithFile")}

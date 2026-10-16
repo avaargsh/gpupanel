@@ -17,23 +17,19 @@ export default function StatCard({ title, value, percent, icon, color = 'var(--p
     return (
         <Card className={cn('h-full', compact ? 'workbench-stat-card [--card-spacing:14px]' : '[--card-spacing:18px]')}>
             <CardContent>
-                <div style={{ display: 'flex', alignItems: 'center', gap: compact ? 8 : 10 }}>
+                <div className={cn('flex items-center', compact ? 'gap-2' : 'gap-2.5')}>
                     <div
-                        style={{
-                            width: compact ? 30 : 34,
-                            height: compact ? 30 : 34,
-                            borderRadius: compact ? 8 : 10,
-                            display: 'grid',
-                            placeItems: 'center',
-                            color,
-                            backgroundColor: 'var(--muted)',
-                        }}
+                        className={cn(
+                            'grid place-items-center bg-muted',
+                            compact ? 'size-[30px] rounded-lg' : 'size-[34px] rounded-[10px]',
+                        )}
+                        style={{ color }}
                     >
                         {icon}
                     </div>
-                    <span style={{ fontSize: compact ? 12 : 13, fontWeight: 600, color: 'var(--muted-foreground)' }}>{title}</span>
+                    <span className={cn('font-semibold text-muted-foreground', compact ? 'text-xs' : 'text-[13px]')}>{title}</span>
                 </div>
-                <div style={{ fontSize: compact ? 22 : 26, fontWeight: 700, letterSpacing: -0.5, marginTop: compact ? 8 : 12 }}>{value}</div>
+                <div className={cn('font-bold tracking-[-0.5px]', compact ? 'text-[22px] mt-2' : 'text-[26px] mt-3')}>{value}</div>
                 {typeof percent === 'number' && (
                     <Progress
                         value={Math.max(0, Math.min(100, percent))}

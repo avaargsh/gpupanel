@@ -143,26 +143,18 @@ export function AccountForm({
                 if (!open && !(creating || updating)) onClose();
             }}
         >
-            <DialogContent aria-describedby={undefined} className="max-h-[90vh] overflow-y-auto" style={{ maxWidth: 520 }}>
+            <DialogContent aria-describedby={undefined} className="max-h-[90vh] overflow-y-auto max-w-[520px]">
                 <DialogHeader>
                     <DialogTitle>{account ? t('ai.accounts.form.titleEdit') : t('ai.accounts.form.titleCreate')}</DialogTitle>
                 </DialogHeader>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                <div className="flex flex-col gap-2.5">
                     <Field>
                         <FieldLabel htmlFor="ai-accounts-1">{t('ai.accounts.form.provider')}</FieldLabel>
                         <NativeSelect
                             id="ai-accounts-1"
                             value={form.provider || undefined}
-                            style={{ width: '100%' }}
-                            onChange={(event) =>
-                                onProviderChange(
-                                    String(
-                                        providers
-                                            .map((p) => ({ label: p.displayName || p.provider, value: p.provider }))
-                                            .find((option) => String(option.value) === event.target.value)?.value ?? event.target.value,
-                                    ),
-                                )
-                            }
+                            className="w-full"
+                            onChange={(event) => onProviderChange(event.target.value)}
                         >
                             <NativeSelectOption value="" disabled>
                                 {t('ai.accounts.form.provider')}
@@ -181,16 +173,8 @@ export function AccountForm({
                         <NativeSelect
                             id="ai-accounts-2"
                             value={form.apiType || undefined}
-                            style={{ width: '100%' }}
-                            onChange={(event) =>
-                                onApiTypeChange(
-                                    String(
-                                        (provider?.apiTypes ?? [])
-                                            .map((a) => ({ label: a.apiType, value: a.apiType }))
-                                            .find((option) => String(option.value) === event.target.value)?.value ?? event.target.value,
-                                    ),
-                                )
-                            }
+                            className="w-full"
+                            onChange={(event) => onApiTypeChange(event.target.value)}
                         >
                             <NativeSelectOption value="" disabled>
                                 {t('ai.accounts.form.apiType')}
@@ -236,17 +220,8 @@ export function AccountForm({
                             <NativeSelect
                                 id="ai-accounts-6"
                                 value={form.authMode || undefined}
-                                style={{ width: '100%' }}
-                                onChange={(event) =>
-                                    setForm((s) => ({
-                                        ...s,
-                                        authMode: String(
-                                            authModes
-                                                .map((m) => ({ label: m, value: m }))
-                                                .find((option) => String(option.value) === event.target.value)?.value ?? event.target.value,
-                                        ),
-                                    }))
-                                }
+                                className="w-full"
+                                onChange={(event) => setForm((s) => ({ ...s, authMode: event.target.value }))}
                             >
                                 <NativeSelectOption value="" disabled>
                                     {'—'}
@@ -273,17 +248,8 @@ export function AccountForm({
                             <NativeSelect
                                 id="ai-accounts-7"
                                 value={form.verifyModel || undefined}
-                                style={{ width: '100%' }}
-                                onChange={(event) =>
-                                    setForm((s) => ({
-                                        ...s,
-                                        verifyModel: String(
-                                            models
-                                                .map((m) => ({ label: m.name || m.id, value: m.id }))
-                                                .find((option) => String(option.value) === event.target.value)?.value ?? event.target.value,
-                                        ),
-                                    }))
-                                }
+                                className="w-full"
+                                onChange={(event) => setForm((s) => ({ ...s, verifyModel: event.target.value }))}
                             >
                                 <NativeSelectOption value="" disabled>
                                     {'—'}
@@ -334,7 +300,7 @@ export function AccountForm({
 }
 function SwitchLine({ checked, onChange, label }: { checked: boolean; onChange: (v: boolean) => void; label: string }) {
     return (
-        <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+        <label className="flex items-center gap-2 cursor-pointer">
             <Switch aria-label={label} checked={checked} onCheckedChange={onChange} />
             <span className="text-sm">{label}</span>
         </label>

@@ -21,7 +21,7 @@ export default function HostOperations() {
     return node === 'local' ? (
         <LocalOperations key={node} />
     ) : (
-        <Empty>
+        <Empty className="host-operations-empty">
             <EmptyHeader>
                 <EmptyDescription>{t('hostOps.localOnly')}</EmptyDescription>
             </EmptyHeader>
@@ -81,18 +81,18 @@ function LocalOperations() {
     };
     const expired = preview ? Date.now() >= Date.parse(preview.expiresAt) : true;
     return (
-        <div className="flex flex-col  gap-3 items-start" style={{ width: '100%' }}>
-            <Card style={{ width: '100%' }}>
+        <div className="host-operations w-full flex flex-col gap-4">
+            <Card className="host-operations-card">
                 <CardHeader>
                     <CardTitle>{t('hostOps.title')}</CardTitle>
                 </CardHeader>
-                <CardContent>
-                    <p>{t('hostOps.description')}</p>
+                <CardContent className="host-operations-form">
+                    <p className="text-sm text-muted-foreground">{t('hostOps.description')}</p>
                     <div className="flex flex-row flex-wrap gap-3 items-center">
                         <NativeSelect
                             value={kind}
                             disabled={busy}
-                            style={{ width: 220 }}
+                            className="w-[220px]"
                             aria-label={t('hostOps.operation')}
                             onChange={(event) =>
                                 setKind(
@@ -122,7 +122,7 @@ function LocalOperations() {
                                 value={target}
                                 disabled={busy}
                                 placeholder={t('hostOps.containerId')}
-                                style={{ width: 420, maxWidth: '100%' }}
+                                className="w-[420px] max-w-full"
                                 aria-label={t('hostOps.containerId')}
                                 onChange={(event) => setTarget(event.target.value)}
                             />
@@ -138,12 +138,12 @@ function LocalOperations() {
                         </Button>
                     </div>
                     {error && (
-                        <Alert style={{ marginTop: 16 }}>
+                        <Alert variant="destructive" className="host-operations-error mt-4">
                             <AlertDescription>{error}</AlertDescription>
                         </Alert>
                     )}
                     {preview && (
-                        <div style={{ marginTop: 16 }}>
+                        <div className="host-operations-preview mt-4">
                             <strong className="text-sm">
                                 {preview.kind}· {t('hostOps.target')}: local · {preview.target}
                             </strong>
@@ -155,7 +155,7 @@ function LocalOperations() {
                             {preview.state === 'planned' && (
                                 <Button
                                     onClick={() => void execute()}
-                                    style={{ marginLeft: 12 }}
+                                    className="ml-3"
                                     variant={'destructive'}
                                     type={'button'}
                                     disabled={busy || expired || !!error || executing.isLoading}
@@ -164,14 +164,14 @@ function LocalOperations() {
                                     {t('hostOps.confirm')}
                                 </Button>
                             )}
-                            {preview.output && <pre style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>{preview.output}</pre>}
+                            {preview.output && <pre className="log-output">{preview.output}</pre>}
                             {preview.error && <p role="alert">{preview.error}</p>}
                         </div>
                     )}
                 </CardContent>
             </Card>
-            <Card style={{ width: '100%' }}>
-                <CardHeader>
+            <Card className="host-operations-card">
+                <CardHeader className="host-operations-receipts-header">
                     <CardTitle>{t('hostOps.receipts')}</CardTitle>
                     <CardAction>
                         {
@@ -187,23 +187,23 @@ function LocalOperations() {
                         }
                     </CardAction>
                 </CardHeader>
-                <CardContent>
-                    <p>{t('hostOps.retention')}</p>
+                <CardContent className="host-operations-receipts">
+                    <p className="text-sm text-muted-foreground">{t('hostOps.retention')}</p>
                     {receipts.isLoading ? (
-                        <p role="status">{t('hostOps.loading')}</p>
+                        <p role="status" className="text-muted-foreground">{t('hostOps.loading')}</p>
                     ) : receipts.isError ? (
                         <Alert variant="destructive">
                             <AlertDescription>{t('hostOps.loadError')}</AlertDescription>
                         </Alert>
                     ) : !receipts.currentData?.length ? (
-                        <Empty>
+                        <Empty className="host-operations-empty">
                             <EmptyHeader>
                                 <EmptyDescription>{t('hostOps.empty')}</EmptyDescription>
                             </EmptyHeader>
                         </Empty>
                     ) : (
                         receipts.currentData.map((row) => (
-                            <details key={row.id} style={{ padding: '12px 0', borderBottom: '1px solid var(--border)' }}>
+                            <details key={row.id} className="host-operations-receipt">
                                 <summary>
                                     {row.kind} · {row.state} · {row.createdAt} · {row.target}
                                 </summary>
@@ -212,9 +212,7 @@ function LocalOperations() {
                                 </p>
                                 {row.error && <p role="alert">{row.error}</p>}
                                 {row.state === 'unknown' && <p>{t('hostOps.uncertain')}</p>}
-                                <pre style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>
-                                    {row.output || t('hostOps.noOutput')}
-                                </pre>
+                                <pre className="log-output">{row.output || t('hostOps.noOutput')}</pre>
                                 {row.state === 'planned' && (
                                     <Button
                                         onClick={() => {

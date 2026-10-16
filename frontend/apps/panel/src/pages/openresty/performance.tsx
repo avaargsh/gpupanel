@@ -185,7 +185,7 @@ export default function PerformanceTab() {
                 min={opts.min}
                 max={opts.max}
                 onChange={(e) => onChange(e.target.valueAsNumber)}
-                style={{ width: '100%' }}
+                className="w-full"
             />
             {opts.suffix ? <span className="text-sm text-muted-foreground">{opts.suffix}</span> : null}
         </ConfigField>
@@ -212,20 +212,8 @@ export default function PerformanceTab() {
                     <AlertTitle>{t('openresty.per.brotliManagedUnavailable')}</AlertTitle>
                 </Alert>
             ) : null}
-            <div
-                style={{
-                    display: 'grid',
-                    gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
-                    gap: 16,
-                }}
-            >
-                <div
-                    style={{
-                        display: 'flex',
-                        flexDirection: 'column',
-                        gap: 14,
-                    }}
-                >
+            <div className="card-grid">
+                <div className="flex flex-col gap-3.5">
                     {numberField(
                         'server_names_hash_bucket_size',
                         t('openresty.per.serverNamesHashBucketSizeHelper'),
@@ -269,13 +257,7 @@ export default function PerformanceTab() {
                         { min: 0 },
                     )}
                 </div>
-                <div
-                    style={{
-                        display: 'flex',
-                        flexDirection: 'column',
-                        gap: 14,
-                    }}
-                >
+                <div className="flex flex-col gap-3.5">
                     <ConfigField label="gzip" help={t('openresty.per.gzipHelper')}>
                         <NativeSelect
                             aria-label="gzip"
@@ -308,13 +290,7 @@ export default function PerformanceTab() {
                     )}
                 </div>
                 {brotliAvailable ? (
-                    <div
-                        style={{
-                            display: 'flex',
-                            flexDirection: 'column',
-                            gap: 14,
-                        }}
-                    >
+                    <div className="flex flex-col gap-3.5">
                         <ConfigField label="brotli" help={t('openresty.per.brotliHelper')}>
                             <NativeSelect
                                 aria-label="brotli"
@@ -361,7 +337,7 @@ export default function PerformanceTab() {
                     </div>
                 ) : null}
             </div>
-            <div style={{ marginTop: 16 }}>
+            <div className="mt-4">
                 <Button onClick={submit} disabled={saving}>
                     {t('common.confirm')}
                 </Button>

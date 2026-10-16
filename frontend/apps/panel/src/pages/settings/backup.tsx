@@ -105,7 +105,7 @@ function BackupFormModal({ target, onClose, onSaved }: { target: BackupInfo | nu
                         <Field label={t("settings.backup.type")}>
                             <NativeSelect
                                 disabled={isEdit}
-                                style={{ width: "100%" }}
+                                className="w-full"
                                 value={form.type ?? ""}
                                 aria-label={t("common.select")}
                                 onChange={(event) => setForm((f) => ({ ...f, type: String(event.target.value) }))}
@@ -215,18 +215,18 @@ export default function BackupAccountSettingsTab() {
     };
 
     return (
-        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+        <div className="flex flex-col gap-3">
             <Card>
                 <CardHeader>
                     <CardTitle>{t("settings.backup.title")}</CardTitle>
                 </CardHeader>
                 <CardContent>
-                    <div style={{ marginBottom: 12 }} className="flex flex-wrap items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2 mb-3">
                         <div className="flex items-center gap-2">
                             <span className="shrink-0 text-muted-foreground">{<SearchIcon />}</span>
                             <Input
                                 placeholder={t("settings.backup.searchPlaceholder")}
-                                style={{ width: 220 }}
+                                className="w-[220px]"
                                 value={searchInput ?? ""}
                                 onChange={(event) =>
                                     ((v) => {

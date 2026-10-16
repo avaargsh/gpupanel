@@ -65,7 +65,7 @@ export default function ContainerOverview() {
 
     if (dockerStatus.isError) {
         return (
-            <Card>
+            <Card className="container-overview-card">
                 <CardHeader>
                     <CardTitle>{t('container.overview.title')}</CardTitle>
                 </CardHeader>
@@ -83,11 +83,11 @@ export default function ContainerOverview() {
 
     if (dockerStatus.isLoading || statusQuery.isLoading) {
         return (
-            <Card>
+            <Card className="container-overview-card">
                 <CardHeader>
                     <CardTitle>{t('container.overview.title')}</CardTitle>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="container-overview-skeleton">
                     <Skeleton className="h-[72px] w-full" />
                 </CardContent>
             </Card>
@@ -102,10 +102,10 @@ export default function ContainerOverview() {
     const total = status?.containerCount ?? 0;
 
     return (
-        <div className="flex flex-col gap-4">
+        <div className="container-overview">
             <h2 className="text-lg font-semibold">{t('container.overview.title')}</h2>
             {docker && !docker.isExist && (
-                <Card>
+                <Card className="container-overview-card">
                     <CardContent className="pt-4">
                         <Empty>
                             <EmptyHeader>
@@ -117,7 +117,7 @@ export default function ContainerOverview() {
                 </Card>
             )}
             {docker && docker.isExist && !docker.isActive && (
-                <Card>
+                <Card className="container-overview-card">
                     <CardContent className="flex items-center justify-between gap-4 pt-4">
                         <span className="text-sm text-destructive">{t('container.overview.dockerNotRunning')}</span>
                         <Button onClick={handleStartDocker} disabled={dockerOperating}>
@@ -128,7 +128,7 @@ export default function ContainerOverview() {
                 </Card>
             )}
 
-            <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))' }}>
+            <div className="container-overview-stats">
                 <StatCard
                     title={t('container.overview.containers')}
                     value={total ? `${running} / ${total}` : '0'}
@@ -152,7 +152,7 @@ export default function ContainerOverview() {
                 />
             </div>
 
-            <Card>
+            <Card className="container-overview-card">
                 <CardHeader>
                     <CardTitle>{t('container.overview.diskUsage')}</CardTitle>
                     <CardAction>
@@ -217,7 +217,7 @@ export default function ContainerOverview() {
                 </CardContent>
             </Card>
 
-            <Card>
+            <Card className="container-overview-card">
                 <CardHeader>
                     <CardTitle>
                         <span className="inline-flex items-center gap-2">
@@ -268,9 +268,7 @@ export default function ContainerOverview() {
                                         <TableHead className="w-[50px]">#</TableHead>
                                         <TableHead>{t('container.overview.gpuProduct')}</TableHead>
                                         <TableHead>{t('container.overview.gpuUtil')}</TableHead>
-                                        <TableHead className="min-w-[180px]">
-                                            {t('container.overview.gpuMemory')}
-                                        </TableHead>
+                                        <TableHead className="min-w-[180px]">{t('container.overview.gpuMemory')}</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
@@ -286,10 +284,7 @@ export default function ContainerOverview() {
                                                         <span className="text-sm">
                                                             {row.memUsed || '—'} / {row.memTotal || '—'}
                                                         </span>
-                                                        <Progress
-                                                            value={pct}
-                                                            aria-label={t('container.overview.gpuMemory')}
-                                                        />
+                                                        <Progress value={pct} aria-label={t('container.overview.gpuMemory')} />
                                                     </div>
                                                 </TableCell>
                                             </TableRow>

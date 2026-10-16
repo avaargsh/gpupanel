@@ -120,7 +120,7 @@ export default function ContainerImages() {
     }
 
     return (
-        <div className="flex flex-col gap-4">
+        <div className="module-section">
             <Card>
                 <CardHeader>
                     <CardTitle>{t('container.images.title')}</CardTitle>

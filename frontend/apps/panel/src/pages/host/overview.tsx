@@ -1,12 +1,12 @@
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-
 import { Empty, EmptyHeader, EmptyTitle, EmptyDescription } from '@/components/ui/empty';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Server, Layers, Archive, Activity } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useGetBaseInfoQuery, useGetOsInfoQuery } from '@/api/dashboardApi';
 import StatCard from '@/components/StatCard';
+
 /**
  * 主机概览：主机信息 + 资源使用率。
  * 数据接口与总览页一致（dashboard/base/*），因为本机即当前节点。
@@ -19,12 +19,12 @@ export default function HostOverview() {
     const failed = os.isError || base.isError;
     if (failed) {
         return (
-            <Card>
+            <Card className="host-overview-card">
                 <CardHeader>
                     <CardTitle>{t('host.overview.title')}</CardTitle>
                 </CardHeader>
-                <CardContent>
-                    <Empty style={{ padding: '32px 0' }}>
+                <CardContent className="host-overview-empty">
+                    <Empty className="py-8">
                         <EmptyHeader>
                             <EmptyTitle>{t('host.overview.noData')}</EmptyTitle>
                             <EmptyDescription>{t('host.overview.noDataDesc')}</EmptyDescription>
@@ -45,20 +45,18 @@ export default function HostOverview() {
     }
     if (loading || !os.data || !base.data) {
         return (
-            <Card>
+            <Card className="host-overview-card">
                 <CardHeader>
                     <CardTitle>{t('host.overview.title')}</CardTitle>
                 </CardHeader>
-                <CardContent>
-                    {
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
-                            <Skeleton className="h-6 w-full" style={{ width: '100%', height: 72 }} />
-                            <Skeleton className="h-6 w-full" style={{ width: '100%', height: 72 }} />
-                            <Skeleton className="h-6 w-full" style={{ width: '100%', height: 72 }} />
-                            <Skeleton className="h-6 w-full" style={{ width: '100%', height: 72 }} />
-                        </div>
-                    }
-                    <Skeleton className="h-24 w-full" style={{ marginTop: 20 }} />
+                <CardContent className="host-overview-skeleton">
+                    <div className="grid gap-3 sm:grid-cols-2">
+                        <Skeleton className="h-6 w-full w-full h-[72px]" />
+                        <Skeleton className="h-6 w-full w-full h-[72px]" />
+                        <Skeleton className="h-6 w-full w-full h-[72px]" />
+                        <Skeleton className="h-6 w-full w-full h-[72px]" />
+                    </div>
+                    <Skeleton className="h-24 w-full mt-5" />
                 </CardContent>
             </Card>
         );
@@ -72,12 +70,12 @@ export default function HostOverview() {
         { key: t('home.uptime'), value: b.timeSinceUptime },
     ];
     return (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            <Card>
+        <div className="host-overview">
+            <Card className="host-overview-card">
                 <CardHeader>
                     <CardTitle>{t('host.overview.title')}</CardTitle>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="host-overview-info">
                     <dl className="grid gap-3 sm:grid-cols-2">
                         {infoItems.map((item, index) => (
                             <div key={index}>
@@ -88,7 +86,7 @@ export default function HostOverview() {
                     </dl>
                 </CardContent>
             </Card>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16 }}>
+            <div className="host-overview-stats">
                 <StatCard
                     title={t('home.cpu')}
                     value={`${(b.cpuUsedPercent ?? 0).toFixed(1)} %`}

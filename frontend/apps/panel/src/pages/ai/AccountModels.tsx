@@ -87,24 +87,24 @@ export function ModelPoolSheet({ account, onClose }: { account: AccountItem; onC
                         if (!open) onClose();
                     }}
                 >
-                    <SheetContent aria-describedby={undefined} className="overflow-y-auto" style={{ maxWidth: 560 }}>
+                    <SheetContent aria-describedby={undefined} className="overflow-y-auto max-w-[560px]">
                         <SheetHeader>
                             <SheetTitle>{`${t('ai.accounts.models.title')} · ${account.name}`}</SheetTitle>
                         </SheetHeader>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                        <div className="flex flex-col gap-3">
                             <div className="flex flex-row flex-wrap gap-3 items-center">
                                 <Input
                                     aria-label={t('ai.accounts.models.id')}
                                     value={addId}
                                     placeholder={t('ai.accounts.models.id')}
-                                    style={{ width: 180 }}
+                                    className="w-[180px]"
                                     onChange={(event) => setAddId(event.target.value)}
                                 />
                                 <Input
                                     aria-label={t('ai.accounts.models.name')}
                                     value={addName}
                                     placeholder={t('ai.accounts.models.name')}
-                                    style={{ width: 180 }}
+                                    className="w-[180px]"
                                     onChange={(event) => setAddName(event.target.value)}
                                 />
                                 <Button onClick={onAdd} variant={'outline'} type={'button'} disabled={false || creating}>
@@ -122,7 +122,7 @@ export function ModelPoolSheet({ account, onClose }: { account: AccountItem; onC
                                         <TableRow>
                                             <TableHead>{t('ai.accounts.models.id')}</TableHead>
                                             <TableHead>{t('ai.accounts.models.name')}</TableHead>
-                                            <TableHead style={{ width: 100 }}>{t('ai.table.operate')}</TableHead>
+                                            <TableHead className="w-[100px]">{t('ai.table.operate')}</TableHead>
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>

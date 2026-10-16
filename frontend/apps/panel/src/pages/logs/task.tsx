@@ -61,10 +61,10 @@ export default function TaskLogTab() {
     };
 
     return (
-        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+        <div className="flex flex-col gap-3">
             <div className="flex flex-wrap items-center gap-2">
                 <NativeSelect
-                    style={{ width: 160 }}
+                    className="w-[160px]"
                     value={status ?? ""}
                     aria-label={t("logs.task.status")}
                     onChange={(event) =>
@@ -161,21 +161,7 @@ export default function TaskLogTab() {
                             {logLoading ? (
                                 <span className="text-muted-foreground">{t("common.loading")}</span>
                             ) : logData && logData.lines.length > 0 ? (
-                                <pre
-                                    style={{
-                                        margin: 0,
-                                        maxHeight: "70vh",
-                                        overflow: "auto",
-                                        padding: 12,
-                                        fontSize: 12,
-                                        lineHeight: 1.6,
-                                        color: "#e8eaf0",
-                                        background: "#14151a",
-                                        borderRadius: 8,
-                                        whiteSpace: "pre-wrap",
-                                        wordBreak: "break-all",
-                                    }}
-                                >
+                                <pre className="log-output max-h-[70vh]">
                                     {logData.lines.join("\n")}
                                 </pre>
                             ) : (

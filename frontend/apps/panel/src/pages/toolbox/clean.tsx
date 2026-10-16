@@ -182,7 +182,7 @@ export default function CleanTab() {
         <>
             {confirmationDialog}
             {
-                <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                <div className="flex flex-col gap-4">
                     <div className="flex flex-wrap items-center gap-2">
                         <Button onClick={doScan} type="button" variant="default" disabled={scanning}>
                             {scanning ? <Spinner data-icon="inline-start" /> : null}
@@ -199,7 +199,7 @@ export default function CleanTab() {
                     {phase === "idle" && (
                         <div>
                             {setting?.lastCleanTime ? (
-                                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                                <div className="flex flex-col gap-1.5">
                                     <span>{t("clean.lastCleanTime", { time: setting.lastCleanTime })}</span>
                                     <span className="text-muted-foreground">
                                         {t("clean.lastCleanHelper", {
@@ -217,14 +217,14 @@ export default function CleanTab() {
                     {phase === "done" && result && (
                         <div>
                             <strong>{t("clean.cleanSuccessful")}</strong>
-                            <div style={{ marginTop: 6 }}>
+                            <div className="mt-1.5">
                                 <span>{t("clean.currentCleanHelper", { num: result.count, size: formatBytes(result.size) })}</span>
                             </div>
                         </div>
                     )}
 
                     {phase === "scanned" && data && (
-                        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                        <div className="flex flex-col gap-3">
                             <strong>
                                 {t("clean.totalScan")}
                                 {formatBytes(topSize)}

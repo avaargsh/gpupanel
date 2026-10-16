@@ -10,6 +10,8 @@ export interface TablePaginationProps {
     onPageChange: (page: number) => void;
     onPageSizeChange: (size: number) => void;
     pageSizeOptions?: number[];
+    /** 额外的禁用条件（例如列表加载中或有操作进行时）。 */
+    disabled?: boolean;
 }
 
 /**
@@ -23,6 +25,7 @@ export function TablePagination({
     onPageChange,
     onPageSizeChange,
     pageSizeOptions = [10, 20, 50, 100],
+    disabled = false,
 }: TablePaginationProps) {
     const pageCount = Math.max(1, Math.ceil(total / pageSize));
     const current = Math.min(Math.max(1, page), pageCount);
@@ -36,6 +39,7 @@ export function TablePagination({
             <NativeSelect
                 size="sm"
                 aria-label="page size"
+                disabled={disabled}
                 value={String(pageSize)}
                 onChange={(e) => {
                     onPageChange(1);
@@ -56,7 +60,7 @@ export function TablePagination({
                     variant="outline"
                     size="icon-sm"
                     aria-label="Previous page"
-                    disabled={current <= 1}
+                    disabled={disabled || current <= 1}
                     onClick={() => onPageChange(current - 1)}
                 >
                     <ChevronLeftIcon />
@@ -65,7 +69,7 @@ export function TablePagination({
                     variant="outline"
                     size="icon-sm"
                     aria-label="Next page"
-                    disabled={current >= pageCount}
+                    disabled={disabled || current >= pageCount}
                     onClick={() => onPageChange(current + 1)}
                 >
                     <ChevronRightIcon />

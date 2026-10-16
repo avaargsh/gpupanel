@@ -28,24 +28,15 @@ export function ScriptFields({
         <>
             {/* Shell 脚本 */}
             {hasScript(form.type) && (
-                <div
-                    style={{
-                        border: "1px solid var(--border)",
-                        borderRadius: 6,
-                        padding: 12,
-                        display: "flex",
-                        flexDirection: "column",
-                        gap: 8,
-                    }}
-                >
-                    <label style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer" }}>
+                <div className="subpanel">
+                    <label className="flex items-center gap-1.5 cursor-pointer">
                         <Switch checked={form.inContainer} onCheckedChange={(v) => set({ inContainer: v })} />
                         <span>{t("cronjob.operate.inContainer")}</span>
                     </label>
                     {form.inContainer && (
                         <div className="flex flex-wrap items-center gap-2">
                             <NativeSelect
-                                style={{ width: 220 }}
+                                className="w-[220px]"
                                 value={(form.containerName || undefined) ?? ""}
                                 aria-label={t("cronjob.operate.containerName")}
                                 onChange={(event) => set({ containerName: String(event.target.value) })}
@@ -62,7 +53,7 @@ export function ScriptFields({
                             <div className="flex items-center gap-2">
                                 <span className="shrink-0 text-muted-foreground">{t("cronjob.operate.command")}</span>
                                 <Input
-                                    style={{ width: 200 }}
+                                    className="w-[200px]"
                                     value={form.command ?? ""}
                                     onChange={(event) => set({ command: event.target.value })}
                                 />
@@ -70,7 +61,7 @@ export function ScriptFields({
                         </div>
                     )}
                     <Field label={t("cronjob.operate.user")}>
-                        <Input style={{ width: 200 }} value={form.user ?? ""} onChange={(event) => set({ user: event.target.value })} />
+                        <Input className="w-[200px]" value={form.user ?? ""} onChange={(event) => set({ user: event.target.value })} />
                     </Field>
                     {!form.inContainer && (
                         <Field label={t("cronjob.operate.executor")}>
@@ -105,7 +96,7 @@ export function ScriptFields({
                     )}
                     {form.scriptMode === "library" && (
                         <NativeSelect
-                            style={{ width: "100%" }}
+                            className="w-full"
                             value={form.scriptID ?? ""}
                             aria-label={t("cronjob.operate.scriptLibrary")}
                             onChange={(event) => set({ scriptID: Number(event.target.value) })}

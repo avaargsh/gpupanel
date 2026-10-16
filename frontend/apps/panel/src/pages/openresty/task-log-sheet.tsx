@@ -45,21 +45,7 @@ export function TaskLogSheet({ taskID, onClose }: { taskID: string; onClose: () 
                 <SheetHeader>
                     <SheetTitle>{t('openresty.modules.buildLog')}</SheetTitle>
                 </SheetHeader>
-                <pre
-                    className="bg-muted text-foreground"
-                    style={{
-                        margin: 0,
-                        maxHeight: '70vh',
-                        overflow: 'auto',
-                        padding: 12,
-                        fontSize: 12,
-                        lineHeight: 1.6,
-
-                        borderRadius: 8,
-                        whiteSpace: 'pre-wrap',
-                        wordBreak: 'break-all',
-                    }}
-                >
+                <pre className="log-output max-h-[70vh]">
                     {lines.length ? lines.join('\n') : t('common.loading')}
                 </pre>
                 {error ? (

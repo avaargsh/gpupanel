@@ -211,11 +211,11 @@ export default function CronjobOperate({ target, groups, onClose }: Props) {
                         </SheetTitle>
                     </SheetHeader>
                     <FieldGroup>
-                        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                        <div className="flex flex-col gap-3">
                             <Field label={t("cronjob.operate.taskType")}>
                                 <NativeSelect
                                     disabled={!isCreate}
-                                    style={{ width: "100%" }}
+                                    className="w-full"
                                     value={form.type ?? ""}
                                     aria-label={t("common.select")}
                                     onChange={(event) =>
@@ -242,7 +242,7 @@ export default function CronjobOperate({ target, groups, onClose }: Props) {
                             </Field>
                             <Field label={t("cronjob.operate.group")}>
                                 <NativeSelect
-                                    style={{ width: "100%" }}
+                                    className="w-full"
                                     value={(form.groupID || undefined) ?? ""}
                                     aria-label={t("cronjob.operate.group")}
                                     onChange={(event) => set({ groupID: Number(event.target.value ?? 0) })}
@@ -266,21 +266,12 @@ export default function CronjobOperate({ target, groups, onClose }: Props) {
                             <ScriptFields form={form} set={set} containers={containers} scripts={scripts} />
                             {/* 备份 */}
                             {showBackup && (
-                                <div
-                                    style={{
-                                        border: "1px solid var(--border)",
-                                        borderRadius: 6,
-                                        padding: 12,
-                                        display: "flex",
-                                        flexDirection: "column",
-                                        gap: 8,
-                                    }}
-                                >
+                                <div className="subpanel">
                                     <div className="flex flex-wrap items-center gap-2">
                                         <Field label={t("cronjob.operate.retainCopies")}>
                                             <Input
                                                 min={1}
-                                                style={{ width: 140 }}
+                                                className="w-[140px]"
                                                 value={form.retainCopies ?? ""}
                                                 type="number"
                                                 required
@@ -296,7 +287,7 @@ export default function CronjobOperate({ target, groups, onClose }: Props) {
                                         {form.type !== "database" && (
                                             <Field label={t("cronjob.operate.secret")}>
                                                 <Input
-                                                    style={{ width: 200 }}
+                                                    className="w-[200px]"
                                                     value={form.secret ?? ""}
                                                     type="password"
                                                     onChange={(event) => set({ secret: event.target.value })}
@@ -323,7 +314,7 @@ export default function CronjobOperate({ target, groups, onClose }: Props) {
                             )}
 
                             {showExclusion && (
-                                <label style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer" }}>
+                                <label className="flex items-center gap-1.5 cursor-pointer">
                                     <Switch checked={form.ignoreErr} onCheckedChange={(v) => set({ ignoreErr: v })} />
                                     <span>{t("cronjob.operate.ignoreErr")}</span>
                                 </label>

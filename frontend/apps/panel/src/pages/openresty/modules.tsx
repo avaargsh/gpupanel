@@ -48,20 +48,13 @@ export default function ModulesTab() {
     };
 
     return (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <div className="flex flex-col gap-3">
             {query.isError ? (
                 <Alert variant="destructive">
                     <AlertTitle>{errText(query.error)}</AlertTitle>
                 </Alert>
             ) : null}
-            <div
-                style={{
-                    display: 'flex',
-                    gap: 8,
-                    alignItems: 'center',
-                    flexWrap: 'wrap',
-                }}
-            >
+            <div className="flex flex-wrap items-center gap-2">
                 <Button onClick={() => setOperate({ mode: 'create' })}>
                     <PlusIcon data-icon="inline-start" />
                     {t('openresty.modules.create')}

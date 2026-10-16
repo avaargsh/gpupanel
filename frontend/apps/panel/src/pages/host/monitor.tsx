@@ -163,10 +163,10 @@ export default function HostMonitor() {
         { title: t('host.monitor.diskIO'), option: ioOption },
     ];
     return (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            <Card>
-                <CardContent style={{ padding: '12px 16px' }}>
-                    <div className="flex flex-row flex-wrap gap-3 items-center" style={{ width: '100%', justifyContent: 'space-between' }}>
+        <div className="host-monitor">
+            <Card className="host-monitor-controls-card">
+                <CardContent className="host-monitor-controls">
+                    <div className="flex flex-row flex-wrap gap-3 items-center w-full justify-between">
                         <div className="flex flex-row flex-wrap gap-3 items-center">
                             <ToggleGroup
                                 type="single"
@@ -194,11 +194,11 @@ export default function HostMonitor() {
                                     </ToggleGroupItem>
                                 ))}
                             </ToggleGroup>
-                            <span style={{ fontSize: 13, color: 'var(--muted-foreground)' }}>{t('host.monitor.network')}</span>
+                            <span className="text-sm text-muted-foreground">{t('host.monitor.networkLabel')}</span>
                             <NativeSelect
-                                aria-label={t('host.monitor.network')}
+                                aria-label={t('host.monitor.networkLabel')}
                                 value={effectiveNetwork}
-                                style={{ width: 120 }}
+                                className="w-[120px]"
                                 onChange={(event) =>
                                     setNetwork(
                                         String(
@@ -213,18 +213,18 @@ export default function HostMonitor() {
                                     {'—'}
                                 </NativeSelectOption>
                                 {selectNetwork
-                                    .map((o) => ({ label: o, value: o }))
+                                    .map((o) => ({ label: o === 'all' ? t('common.all') : o, value: o }))
                                     .map((option) => (
                                         <NativeSelectOption key={String(option.value)} value={option.value}>
                                             {option.label}
                                         </NativeSelectOption>
                                     ))}
                             </NativeSelect>
-                            <span style={{ fontSize: 13, color: 'var(--muted-foreground)' }}>{t('host.monitor.disk')}</span>
+                            <span className="text-sm text-muted-foreground">{t('host.monitor.diskLabel')}</span>
                             <NativeSelect
-                                aria-label={t('host.monitor.disk')}
+                                aria-label={t('host.monitor.diskLabel')}
                                 value={effectiveIo}
-                                style={{ width: 120 }}
+                                className="w-[120px]"
                                 onChange={(event) =>
                                     setIo(
                                         String(
@@ -239,7 +239,7 @@ export default function HostMonitor() {
                                     {'—'}
                                 </NativeSelectOption>
                                 {selectIo
-                                    .map((o) => ({ label: o, value: o }))
+                                    .map((o) => ({ label: o === 'all' ? t('common.all') : o, value: o }))
                                     .map((option) => (
                                         <NativeSelectOption key={String(option.value)} value={option.value}>
                                             {option.label}
@@ -256,9 +256,9 @@ export default function HostMonitor() {
             </Card>
 
             {offline ? (
-                <Card>
-                    <CardContent>
-                        <Empty style={{ padding: '24px 0' }}>
+                <Card className="host-monitor-offline-card">
+                    <CardContent className="host-monitor-offline">
+                        <Empty className="py-6">
                             <EmptyHeader>
                                 <EmptyTitle>{t('host.overview.noData')}</EmptyTitle>
                             </EmptyHeader>
@@ -276,24 +276,24 @@ export default function HostMonitor() {
                     </CardContent>
                 </Card>
             ) : loading ? (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 16 }}>
+                <div className="host-monitor-skeleton-grid">
                     {chartCards.map((c) => (
-                        <Card key={c.title}>
-                            <CardContent style={{ padding: 12 }}>
-                                <Skeleton className="h-6 w-full" style={{ width: 120, marginBottom: 12 }} />
+                        <Card key={c.title} className="host-monitor-skeleton-card">
+                            <CardContent className="host-monitor-skeleton-content">
+                                <Skeleton className="h-6 w-full w-[120px] mb-3" />
                                 <Skeleton className="h-24 w-full" />
                             </CardContent>
                         </Card>
                     ))}
                 </div>
             ) : (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 16 }}>
+                <div className="host-monitor-chart-grid">
                     {chartCards.map((c) => (
-                        <Card key={c.title}>
+                        <Card key={c.title} className="host-monitor-chart-card">
                             <CardHeader>
                                 <CardTitle>{c.title}</CardTitle>
                             </CardHeader>
-                            <CardContent style={{ padding: 12 }}>
+                            <CardContent className="host-monitor-chart-content">
                                 <EChart option={c.option} height={230} themeKey={resolvedMode} />
                             </CardContent>
                         </Card>

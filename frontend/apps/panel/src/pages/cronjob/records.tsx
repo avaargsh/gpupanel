@@ -110,13 +110,13 @@ export default function CronjobRecords({ target, onBack }: Props) {
         <>
             {confirmationDialog}
             {
-                <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                    <div style={{ alignItems: "center" }} className="flex flex-wrap items-center gap-2">
+                <div className="flex flex-col gap-3">
+                    <div className="flex flex-wrap items-center gap-2 items-center">
                         <Button onClick={onBack} type="button" variant="ghost">
                             {<ArrowLeftIcon data-icon="inline-start" />}
                             {t("cronjob.actions.back")}
                         </Button>
-                        <h2 style={{ margin: 0 }}>{target.name}</h2>
+                        <h2 className="m-0">{target.name}</h2>
                         <Badge variant={["red"].includes(target.status === "Enable" ? "green" : "grey") ? "destructive" : "secondary"}>
                             {t("cronjob.status." + target.status, target.status)}
                         </Badge>
@@ -136,11 +136,11 @@ export default function CronjobRecords({ target, onBack }: Props) {
                         </Button>
                     </div>
 
-                    <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
-                        <div style={{ flex: "1 1 60%", minWidth: 0, display: "flex", flexDirection: "column", gap: 8 }}>
+                    <div className="flex items-start gap-3">
+                        <div className="flex flex-col gap-2 min-w-0 grow shrink basis-[60%]">
                             <div className="flex flex-wrap items-center gap-2">
                                 <NativeSelect
-                                    style={{ width: 160 }}
+                                    className="w-[160px]"
                                     value={(status || undefined) ?? ""}
                                     aria-label={t("cronjob.records.statusFilter")}
                                     onChange={(event) =>
@@ -241,11 +241,11 @@ export default function CronjobRecords({ target, onBack }: Props) {
                             </div>
                         </div>
 
-                        <div style={{ flex: "1 1 40%", minWidth: 0, border: "1px solid var(--border)", borderRadius: 6, padding: 12 }}>
+                        <div className="grow shrink basis-[40%] min-w-0 rounded-md border border-border p-3">
                             {!current ? (
                                 <span className="text-muted-foreground">{t("cronjob.records.selectHint")}</span>
                             ) : (
-                                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                                <div className="flex flex-col gap-2">
                                     <strong>{t("cronjob.records.detail")}</strong>
                                     <span>{`${t("cronjob.records.startTime")}: ${current.startTime}`}</span>
                                     <span>{`${t("cronjob.records.status")}: ${t("cronjob.status." + current.status, current.status)}`}</span>
@@ -256,18 +256,7 @@ export default function CronjobRecords({ target, onBack }: Props) {
                                     {logLoading ? (
                                         <span className="text-muted-foreground">{t("common.loading")}</span>
                                     ) : (
-                                        <pre
-                                            style={{
-                                                margin: 0,
-                                                maxHeight: 360,
-                                                overflow: "auto",
-                                                background: "var(--muted)",
-                                                padding: 8,
-                                                borderRadius: 4,
-                                                fontSize: 12,
-                                                whiteSpace: "pre-wrap",
-                                            }}
-                                        >
+                                        <pre className="log-output max-h-[360px]">
                                             {log || t("cronjob.records.logEmpty")}
                                         </pre>
                                     )}

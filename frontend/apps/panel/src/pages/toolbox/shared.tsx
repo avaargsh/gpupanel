@@ -25,19 +25,10 @@ export function SettingRow({
     setLabel: string;
 }) {
     return (
-        <div
-            style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                gap: 16,
-                padding: "10px 0",
-                borderBottom: "1px solid var(--border)",
-            }}
-        >
-            <span style={{ minWidth: 160 }}>{label}</span>
-            <div style={{ flex: 1, display: "flex", justifyContent: "flex-end", alignItems: "center", gap: 12 }}>
-                <span style={{ maxWidth: 560, textAlign: "right", wordBreak: "break-all" }}>{value}</span>
+        <div className="list-row">
+            <span className="min-w-[160px]">{label}</span>
+            <div className="flex flex-1 items-center justify-end gap-3">
+                <span className="max-w-[560px] text-right break-all">{value}</span>
                 {onSet ? (
                     <Button onClick={onSet} type="button" variant="outline" size="sm">
                         {setLabel}
@@ -155,7 +146,7 @@ export function ConfigEditorModal({ title, tabs, onClose }: { title: string; tab
                             rows={18}
                             readOnly={Boolean(current?.readOnly) || loading || Boolean(loadError)}
                             placeholder={loading ? t("toolbox.config.loading") : ""}
-                            style={{ fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace", marginTop: 12 }}
+                            className="font-mono mt-3"
                             value={content ?? ""}
                             onChange={(event) => setContent(event.target.value)}
                         />

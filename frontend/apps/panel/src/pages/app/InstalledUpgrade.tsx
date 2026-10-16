@@ -66,19 +66,19 @@ export function UpgradeModal({ row, onClose }: { row: AppInstallDto; onClose: ()
                 if (!open && !isLoading) onClose();
             }}
         >
-            <DialogContent aria-describedby={undefined} className="max-h-[90vh] overflow-y-auto" style={{ maxWidth: 460 }}>
+            <DialogContent aria-describedby={undefined} className="max-h-[90vh] overflow-y-auto max-w-[460px]">
                 <DialogHeader>
                     <DialogTitle>{t('apps.upgrade.title')}</DialogTitle>
                 </DialogHeader>
                 <span className="text-sm">{t('apps.upgrade.content')}</span>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginTop: 12 }}>
+                <div className="flex flex-col gap-3 mt-3">
                     {loadingVersions ? (
                         <Spinner role="status" aria-label="Loading" />
                     ) : (
                         <NativeSelect
                             aria-label={t('apps.upgrade.version')}
                             value={detailId}
-                            style={{ width: '100%' }}
+                            className="w-full"
                             onChange={(event) => setDetailId(event.target.value ? Number(event.target.value) : undefined)}
                         >
                             <NativeSelectOption value="" disabled>
@@ -147,12 +147,12 @@ export function IgnoreModal({ row, onClose, onSaved }: { row: AppInstallDto; onC
                 if (!open && !isLoading) onClose();
             }}
         >
-            <DialogContent aria-describedby={undefined} className="max-h-[90vh] overflow-y-auto" style={{ maxWidth: 460 }}>
+            <DialogContent aria-describedby={undefined} className="max-h-[90vh] overflow-y-auto max-w-[460px]">
                 <DialogHeader>
                     <DialogTitle>{t('apps.ignore.title')}</DialogTitle>
                 </DialogHeader>
                 <span className="text-sm">{t('apps.ignore.content', { name: row.name })}</span>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginTop: 12 }}>
+                <div className="flex flex-col gap-3 mt-3">
                     <ToggleGroup
                         type="single"
                         value={scope}
@@ -171,7 +171,7 @@ export function IgnoreModal({ row, onClose, onSaved }: { row: AppInstallDto; onC
                             <NativeSelect
                                 aria-label={t('apps.upgrade.version')}
                                 value={detailId}
-                                style={{ width: '100%' }}
+                                className="w-full"
                                 onChange={(event) => setDetailId(event.target.value ? Number(event.target.value) : undefined)}
                             >
                                 <NativeSelectOption value="" disabled>
@@ -211,7 +211,7 @@ export function IgnoredListModal({ onClose }: { onClose: () => void }) {
                 if (!open) onClose();
             }}
         >
-            <DialogContent aria-describedby={undefined} className="max-h-[90vh] overflow-y-auto" style={{ maxWidth: 640 }}>
+            <DialogContent aria-describedby={undefined} className="max-h-[90vh] overflow-y-auto max-w-[640px]">
                 <DialogHeader>
                     <DialogTitle>{t('apps.ignoreList.title')}</DialogTitle>
                 </DialogHeader>
@@ -221,7 +221,7 @@ export function IgnoredListModal({ onClose }: { onClose: () => void }) {
                             <TableRow>
                                 <TableHead>{t('apps.ignoreList.name')}</TableHead>
                                 <TableHead>{t('apps.ignoreList.scope')}</TableHead>
-                                <TableHead style={{ width: 120 }}>{t('apps.ignoreList.operate')}</TableHead>
+                                <TableHead className="w-[120px]">{t('apps.ignoreList.operate')}</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>

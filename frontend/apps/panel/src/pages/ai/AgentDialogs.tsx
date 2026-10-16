@@ -56,7 +56,7 @@ export function OverviewModal({ row, onClose }: { row: AgentItem; onClose: () =>
                 if (!open) onClose();
             }}
         >
-            <DialogContent aria-describedby={undefined} className="max-h-[90vh] overflow-y-auto" style={{ maxWidth: 480 }}>
+            <DialogContent aria-describedby={undefined} className="max-h-[90vh] overflow-y-auto max-w-[480px]">
                 <DialogHeader>
                     <DialogTitle>{`${t('ai.agents.overviewTitle')} · ${row.name}`}</DialogTitle>
                 </DialogHeader>
@@ -101,7 +101,7 @@ export function RemarkModal({ row, onClose }: { row: AgentItem; onClose: () => v
                 if (!open && !isLoading) onClose();
             }}
         >
-            <DialogContent aria-describedby={undefined} className="max-h-[90vh] overflow-y-auto" style={{ maxWidth: 420 }}>
+            <DialogContent aria-describedby={undefined} className="max-h-[90vh] overflow-y-auto max-w-[420px]">
                 <DialogHeader>
                     <DialogTitle>{t('ai.table.remark')}</DialogTitle>
                 </DialogHeader>
@@ -141,7 +141,7 @@ export function BindModal({ row, onClose }: { row: AgentItem; onClose: () => voi
                 if (!open && !isLoading) onClose();
             }}
         >
-            <DialogContent aria-describedby={undefined} className="max-h-[90vh] overflow-y-auto" style={{ maxWidth: 420 }}>
+            <DialogContent aria-describedby={undefined} className="max-h-[90vh] overflow-y-auto max-w-[420px]">
                 <DialogHeader>
                     <DialogTitle>{t('ai.agents.bindTitle')}</DialogTitle>
                 </DialogHeader>
@@ -195,15 +195,15 @@ export function DeleteModal({ row, onClose }: { row: AgentItem; onClose: () => v
                 if (!open && !(checking || deleting)) onClose();
             }}
         >
-            <DialogContent aria-describedby={undefined} className="max-h-[90vh] overflow-y-auto" style={{ maxWidth: 460 }}>
+            <DialogContent aria-describedby={undefined} className="max-h-[90vh] overflow-y-auto max-w-[460px]">
                 <DialogHeader>
                     <DialogTitle>{t('ai.actions.delete')}</DialogTitle>
                 </DialogHeader>
                 <span className="text-sm">{t('ai.agents.deleteConfirm', { name: row.name })}</span>
                 {resources.length > 0 && (
-                    <div style={{ marginTop: 10 }}>
+                    <div className="mt-2.5">
                         <span className="text-muted-foreground text-sm">{t('ai.table.remark')}</span>
-                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 6 }}>
+                        <div className="flex flex-wrap gap-1.5 mt-1.5">
                             {resources.map((r) => (
                                 <Badge
                                     key={`${r.type}-${r.name}`}
@@ -215,9 +215,9 @@ export function DeleteModal({ row, onClose }: { row: AgentItem; onClose: () => v
                         </div>
                     </div>
                 )}
-                <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 12, cursor: 'pointer' }}>
+                <label className="flex items-center gap-2 mt-3 cursor-pointer">
                     <Switch aria-label={t('ai.agents.forceDelete')} checked={force} onCheckedChange={setForce} />
-                    <span className="text-sm">{t('ai.actions.delete')}(force)</span>
+                    <span className="text-sm">{t('ai.agents.forceDelete')}</span>
                 </label>
                 <DialogFooter>
                     <Button variant="outline" disabled={checking || deleting} onClick={onClose}>

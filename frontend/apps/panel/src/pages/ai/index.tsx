@@ -6,34 +6,38 @@ import LocalTab from './local';
 import McpTab from './mcp';
 import GpuTab from './gpu';
 import AgentsTab from './agents';
+
+const TABS = ['accounts', 'local', 'mcp', 'gpu', 'agents'] as const;
+
 export default function AiPage() {
     const { t } = useTranslation();
     const [query, setQuery] = useSearchParams();
-    const tab = query.get('tab') || 'accounts';
+    const requested = query.get('tab') || 'accounts';
+    const tab = (TABS as readonly string[]).includes(requested) ? requested : 'accounts';
     const setTab = (value: string) => setQuery({ tab: value });
     return (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <div className="module-shell">
             <Tabs value={tab} onValueChange={setTab}>
-                <TabsList variant="line">
-                    <TabsTrigger value="accounts">{t('ai.tabs.accounts')}</TabsTrigger>
-                    <TabsTrigger value="local">{t('ai.tabs.local')}</TabsTrigger>
-                    <TabsTrigger value="mcp">{t('ai.tabs.mcp')}</TabsTrigger>
-                    <TabsTrigger value="gpu">{t('ai.tabs.gpu')}</TabsTrigger>
-                    <TabsTrigger value="agents">{t('ai.tabs.agents')}</TabsTrigger>
+                <TabsList variant="line" className="module-tabs">
+                    {TABS.map((key) => (
+                        <TabsTrigger key={key} value={key}>
+                            {t(`ai.tabs.${key}`)}
+                        </TabsTrigger>
+                    ))}
                 </TabsList>
-                <TabsContent value="accounts">
+                <TabsContent value="accounts" className="module-tab-content">
                     <AccountsTab />
                 </TabsContent>
-                <TabsContent value="local">
+                <TabsContent value="local" className="module-tab-content">
                     <LocalTab />
                 </TabsContent>
-                <TabsContent value="mcp">
+                <TabsContent value="mcp" className="module-tab-content">
                     <McpTab />
                 </TabsContent>
-                <TabsContent value="gpu">
+                <TabsContent value="gpu" className="module-tab-content">
                     <GpuTab />
                 </TabsContent>
-                <TabsContent value="agents">
+                <TabsContent value="agents" className="module-tab-content">
                     <AgentsTab />
                 </TabsContent>
             </Tabs>

@@ -31,9 +31,9 @@ export function ClamRecordSheet({ target, onClose }: { target: ClamInfo; onClose
                         <SheetTitle>{`${t("toolbox.clam.recordTitle")} - ${target.name}`}</SheetTitle>
                     </SheetHeader>
                     <FieldGroup>
-                        <div style={{ marginBottom: 12 }} className="flex flex-wrap items-center gap-2">
+                        <div className="flex flex-wrap items-center gap-2 mb-3">
                             <NativeSelect
-                                style={{ width: 160 }}
+                                className="w-[160px]"
                                 value={status ?? ""}
                                 aria-label={t("toolbox.clam.statusFilter")}
                                 onChange={(event) =>
@@ -55,8 +55,8 @@ export function ClamRecordSheet({ target, onClose }: { target: ClamInfo; onClose
                                 ))}
                             </NativeSelect>
                         </div>
-                        <div style={{ display: "flex", gap: 16 }}>
-                            <div style={{ width: 420 }}>
+                        <div className="flex gap-4">
+                            <div className="w-[420px]">
                                 <div className="flex flex-col gap-3">
                                     <Table>
                                         <TableHeader>
@@ -136,9 +136,9 @@ export function ClamRecordSheet({ target, onClose }: { target: ClamInfo; onClose
                                     />
                                 </div>
                             </div>
-                            <div style={{ flex: 1, minWidth: 0 }}>
+                            <div className="flex-1 min-w-0">
                                 {current ? (
-                                    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                                    <div className="flex flex-col gap-2.5">
                                         <strong>{t("toolbox.clam.detail")}</strong>
                                         <div>
                                             <span className="text-muted-foreground">{t("toolbox.clam.startTime")}: </span>

@@ -45,14 +45,7 @@ export default function OtherTab({ running }: { running: boolean }) {
     }
 
     return (
-        <div
-            style={{
-                maxWidth: 720,
-                display: 'flex',
-                flexDirection: 'column',
-                gap: 16,
-            }}
-        >
+        <div className="flex flex-col gap-4 max-w-[720px]">
             <ConfigField label={t('openresty.other.defaultHttps')} help={t('openresty.other.defaultHttpsHelper')}>
                 <Switch
                     aria-label={t('openresty.other.defaultHttps')}

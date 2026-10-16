@@ -181,230 +181,218 @@ export default function HostTerminal() {
         : { ...emptyOperate };
     return (
         <>
-            {' '}
-            {dialog}{' '}
-            {
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                    {listQuery.isError ? (
-                        <Card>
-                            <CardContent>
-                                <Empty style={{ padding: '24px 0' }}>
-                                    <EmptyHeader>
-                                        <EmptyTitle>{t('host.overview.noData')}</EmptyTitle>
-                                        <EmptyDescription>{t('host.terminal.backendOffline')}</EmptyDescription>
-                                    </EmptyHeader>
-                                </Empty>
-                            </CardContent>
-                        </Card>
-                    ) : (
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>{t('host.terminal.hosts')}</CardTitle>
-                                <CardAction>
-                                    {
-                                        <div className="flex flex-row  gap-3 items-center">
-                                            <Button onClick={() => listQuery.refetch()} variant={'outline'} type={'button'}>
-                                                {<RefreshCw />}
-                                                {t('home.refresh')}
-                                            </Button>
-                                            <Button onClick={openCreate} variant={'default'} type={'button'}>
-                                                {<Plus />}
-                                                {t('host.terminal.add')}
-                                            </Button>
-                                        </div>
-                                    }
-                                </CardAction>
-                            </CardHeader>
-                            <CardContent>
-                                <Input
-                                    aria-label={t('host.terminal.search')}
-                                    value={searchInput}
-                                    placeholder={t('host.terminal.search')}
-                                    style={{ maxWidth: 280, marginBottom: 12 }}
-                                    onChange={(event) => setSearchInput(event.target.value)}
-                                />
-                                <div className="flex flex-col gap-3" aria-busy={listQuery.isFetching}>
-                                    <Table>
-                                        <TableHeader>
-                                            <TableRow>
-                                                <TableHead>{t('host.terminal.name')}</TableHead>
-                                                <TableHead>{t('host.terminal.addr')}</TableHead>
-                                                <TableHead>{t('host.terminal.user')}</TableHead>
-                                                <TableHead>{t('host.terminal.authMode')}</TableHead>
-                                                <TableHead style={{ width: 260 }}>{t('host.terminal.actions')}</TableHead>
-                                            </TableRow>
-                                        </TableHeader>
-                                        <TableBody>
-                                            {listQuery.isFetching ? (
-                                                <TableRow>
-                                                    <TableCell colSpan={5}>
-                                                        <Spinner role="status" aria-label="Loading" />
-                                                    </TableCell>
-                                                </TableRow>
-                                            ) : hosts.length === 0 ? (
-                                                <TableRow>
-                                                    <TableCell colSpan={5}>{t('host.terminal.empty')}</TableCell>
-                                                </TableRow>
-                                            ) : (
-                                                hosts.map((row, rowIndex) => (
-                                                    <TableRow key={row['id'] ?? rowIndex}>
-                                                        <TableCell>{<strong className="text-sm">{row.name}</strong>}</TableCell>
-                                                        <TableCell>{`${row.addr}:${row.port}`}</TableCell>
-                                                        <TableCell>{row['user']}</TableCell>
-                                                        <TableCell>
-                                                            {row['authMode'] === 'key'
-                                                                ? t('host.terminal.keyMode')
-                                                                : t('host.terminal.passwordMode')}
-                                                        </TableCell>
-                                                        <TableCell>
-                                                            {
-                                                                <div className="flex flex-row  gap-3 items-center">
-                                                                    <Button
-                                                                        onClick={() =>
-                                                                            setTarget({ kind: 'ssh', id: row.id, title: row.name })
-                                                                        }
-                                                                        variant={'default'}
-                                                                        size="sm"
-                                                                        type={'button'}
-                                                                    >
-                                                                        {<TerminalIcon />}
-                                                                        {t('host.terminal.connect')}
-                                                                    </Button>
-                                                                    <Button
-                                                                        onClick={() => handleTest(row)}
-                                                                        variant={'outline'}
-                                                                        size="sm"
-                                                                        type={'button'}
-                                                                        disabled={false || testing}
-                                                                    >
-                                                                        {testing ? <Spinner data-icon="inline-start" /> : <Wrench />}
-                                                                        {t('host.terminal.test')}
-                                                                    </Button>
-                                                                    <Button
-                                                                        onClick={() => openEdit(row)}
-                                                                        variant={'outline'}
-                                                                        size="sm"
-                                                                        type={'button'}
-                                                                    >
-                                                                        {t('host.terminal.edit')}
-                                                                    </Button>
-                                                                    <Button
-                                                                        onClick={() => handleDelete(row)}
-                                                                        variant={'destructive'}
-                                                                        size="sm"
-                                                                        type={'button'}
-                                                                    >
-                                                                        {t('host.terminal.delete')}
-                                                                    </Button>
-                                                                </div>
-                                                            }
-                                                        </TableCell>
-                                                    </TableRow>
-                                                ))
-                                            )}
-                                        </TableBody>
-                                    </Table>
-                                </div>
-                            </CardContent>
-                        </Card>
-                    )}
-
-                    <Card>
+            {dialog}
+            <div className="host-terminal">
+                {listQuery.isError ? (
+                    <Card className="host-terminal-card">
+                        <CardContent className="host-terminal-empty">
+                            <Empty className="py-6">
+                                <EmptyHeader>
+                                    <EmptyTitle>{t('host.overview.noData')}</EmptyTitle>
+                                    <EmptyDescription>{t('host.terminal.backendOffline')}</EmptyDescription>
+                                </EmptyHeader>
+                            </Empty>
+                        </CardContent>
+                    </Card>
+                ) : (
+                    <Card className="host-terminal-card">
                         <CardHeader>
-                            <CardTitle>
-                                {
-                                    <div className="flex flex-row  gap-3 items-center">
-                                        <TerminalIcon />
-                                        <span>{t('host.terminal.title')}</span>
-                                        <span className="text-muted-foreground text-sm" style={{ marginLeft: 8 }}>
-                                            {targetLabel}
-                                        </span>
-                                    </div>
-                                }
-                            </CardTitle>
+                            <CardTitle>{t('host.terminal.hosts')}</CardTitle>
                             <CardAction>
-                                {
-                                    <div className="flex flex-row  gap-3 items-center">
-                                        <Button
-                                            onClick={() => setTarget({ kind: 'local' })}
-                                            variant={
-                                                (target.kind === 'local' ? 'primary' : 'tertiary') === 'primary' ? 'default' : 'outline'
-                                            }
-                                            size="sm"
-                                            type={'button'}
-                                        >
-                                            {t('host.terminal.local')}
-                                        </Button>
-                                        <NativeSelect
-                                            aria-label={t('host.terminal.chooseHost')}
-                                            style={{ width: 220 }}
-                                            onChange={(event) =>
-                                                ((id) => {
-                                                    const h = hosts.find((x) => x.id === Number(id));
-                                                    if (h) setTarget({ kind: 'ssh', id: h.id, title: h.name });
-                                                })(
-                                                    hosts
-                                                        .map((h) => ({ label: `${h.name} (${h.addr})`, value: h.id }))
-                                                        .find((option) => String(option.value) === event.target.value)?.value ??
-                                                        event.target.value,
-                                                )
-                                            }
-                                        >
-                                            <NativeSelectOption value="" disabled>
-                                                {t('host.terminal.chooseHost')}
-                                            </NativeSelectOption>
-                                            {hosts
-                                                .map((h) => ({ label: `${h.name} (${h.addr})`, value: h.id }))
-                                                .map((option) => (
-                                                    <NativeSelectOption key={String(option.value)} value={option.value}>
-                                                        {option.label}
-                                                    </NativeSelectOption>
-                                                ))}
-                                        </NativeSelect>
-                                    </div>
-                                }
+                                <div className="flex flex-row gap-3 items-center">
+                                    <Button onClick={() => listQuery.refetch()} variant={'outline'} type={'button'}>
+                                        {<RefreshCw />}
+                                        {t('home.refresh')}
+                                    </Button>
+                                    <Button onClick={openCreate} variant={'default'} type={'button'}>
+                                        {<Plus />}
+                                        {t('host.terminal.add')}
+                                    </Button>
+                                </div>
                             </CardAction>
                         </CardHeader>
-                        <CardContent style={{ padding: 0 }}>
-                            <div style={{ padding: 12 }}>
-                                <Terminal
-                                    key={targetKey}
-                                    endpoint={endpoint}
-                                    queryParams={queryParams}
-                                    operateNode={currentNode}
-                                    height="46vh"
-                                />
+                        <CardContent>
+                            <Input
+                                aria-label={t('host.terminal.search')}
+                                value={searchInput}
+                                placeholder={t('host.terminal.search')}
+                                className="max-w-[280px] mb-3"
+                                onChange={(event) => setSearchInput(event.target.value)}
+                            />
+                            <div className="flex flex-col gap-3" aria-busy={listQuery.isFetching}>
+                                <Table>
+                                    <TableHeader>
+                                        <TableRow>
+                                            <TableHead>{t('host.terminal.name')}</TableHead>
+                                            <TableHead>{t('host.terminal.addr')}</TableHead>
+                                            <TableHead>{t('host.terminal.user')}</TableHead>
+                                            <TableHead>{t('host.terminal.authMode')}</TableHead>
+                                            <TableHead className="w-[260px]">{t('host.terminal.actions')}</TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {listQuery.isFetching ? (
+                                            <TableRow>
+                                                <TableCell colSpan={5}>
+                                                    <Spinner role="status" aria-label="Loading" />
+                                                </TableCell>
+                                            </TableRow>
+                                        ) : hosts.length === 0 ? (
+                                            <TableRow>
+                                                <TableCell colSpan={5}>{t('host.terminal.empty')}</TableCell>
+                                            </TableRow>
+                                        ) : (
+                                            hosts.map((row, rowIndex) => (
+                                                <TableRow key={row['id'] ?? rowIndex}>
+                                                    <TableCell>{<strong className="text-sm">{row.name}</strong>}</TableCell>
+                                                    <TableCell>{`${row.addr}:${row.port}`}</TableCell>
+                                                    <TableCell>{row['user']}</TableCell>
+                                                    <TableCell>
+                                                        {row['authMode'] === 'key'
+                                                            ? t('host.terminal.keyMode')
+                                                            : t('host.terminal.passwordMode')}
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        <div className="flex flex-row gap-3 items-center">
+                                                            <Button
+                                                                onClick={() =>
+                                                                    setTarget({ kind: 'ssh', id: row.id, title: row.name })
+                                                                }
+                                                                variant={'default'}
+                                                                size="sm"
+                                                                type={'button'}
+                                                            >
+                                                                {<TerminalIcon />}
+                                                                {t('host.terminal.connect')}
+                                                            </Button>
+                                                            <Button
+                                                                onClick={() => handleTest(row)}
+                                                                variant={'outline'}
+                                                                size="sm"
+                                                                type={'button'}
+                                                                disabled={false || testing}
+                                                            >
+                                                                {testing ? <Spinner data-icon="inline-start" /> : <Wrench />}
+                                                                {t('host.terminal.test')}
+                                                            </Button>
+                                                            <Button
+                                                                onClick={() => openEdit(row)}
+                                                                variant={'outline'}
+                                                                size="sm"
+                                                                type={'button'}
+                                                            >
+                                                                {t('host.terminal.edit')}
+                                                            </Button>
+                                                            <Button
+                                                                onClick={() => handleDelete(row)}
+                                                                variant={'destructive'}
+                                                                size="sm"
+                                                                type={'button'}
+                                                            >
+                                                                {t('host.terminal.delete')}
+                                                            </Button>
+                                                        </div>
+                                                    </TableCell>
+                                                </TableRow>
+                                            ))
+                                        )}
+                                    </TableBody>
+                                </Table>
                             </div>
                         </CardContent>
                     </Card>
+                )}
+            </div>
 
-                    <Dialog
-                        open={modalOpen}
-                        onOpenChange={(open) => {
-                            if (!open) setModalOpen(false);
-                        }}
-                    >
-                        <DialogContent
-                            aria-describedby={undefined}
-                            className="max-h-[90vh] overflow-y-auto"
-                            style={{ ...{ width: 560 } }}
-                            onInteractOutside={(event) => event.preventDefault()}
-                        >
-                            <DialogHeader>
-                                <DialogTitle>{editingHost ? t('host.terminal.edit') : t('host.terminal.add')}</DialogTitle>
-                            </DialogHeader>
-                            <SSHHostForm
-                                key={editingHost ? `edit-${editingHost.id}` : 'new'}
-                                initial={initValues}
-                                editing={!!editingHost}
-                                busy={submitting}
-                                onSubmit={handleSubmit}
-                                onCancel={() => setModalOpen(false)}
-                            />
-                        </DialogContent>
-                    </Dialog>
-                </div>
-            }{' '}
+            <Card className="host-terminal-card">
+                <CardHeader>
+                    <CardTitle>
+                        <div className="flex flex-row gap-3 items-center">
+                            <TerminalIcon />
+                            <span>{t('host.terminal.title')}</span>
+                            <span className="text-muted-foreground text-sm ml-2">
+                                {targetLabel}
+                            </span>
+                        </div>
+                    </CardTitle>
+                    <CardAction>
+                        <div className="flex flex-row gap-3 items-center">
+                            <Button
+                                onClick={() => setTarget({ kind: 'local' })}
+                                variant={
+                                    (target.kind === 'local' ? 'primary' : 'tertiary') === 'primary' ? 'default' : 'outline'
+                                }
+                                size="sm"
+                                type={'button'}
+                            >
+                                {t('host.terminal.local')}
+                            </Button>
+                            <NativeSelect
+                                aria-label={t('host.terminal.chooseHost')}
+                                className="w-[220px]"
+                                onChange={(event) =>
+                                    ((id) => {
+                                        const h = hosts.find((x) => x.id === Number(id));
+                                        if (h) setTarget({ kind: 'ssh', id: h.id, title: h.name });
+                                    })(
+                                        hosts
+                                            .map((h) => ({ label: `${h.name} (${h.addr})`, value: h.id }))
+                                            .find((option) => String(option.value) === event.target.value)?.value ??
+                                            event.target.value,
+                                    )
+                                }
+                            >
+                                <NativeSelectOption value="" disabled>
+                                    {t('host.terminal.chooseHost')}
+                                </NativeSelectOption>
+                                {hosts
+                                    .map((h) => ({ label: `${h.name} (${h.addr})`, value: h.id }))
+                                    .map((option) => (
+                                        <NativeSelectOption key={String(option.value)} value={option.value}>
+                                            {option.label}
+                                        </NativeSelectOption>
+                                    ))}
+                            </NativeSelect>
+                        </div>
+                    </CardAction>
+                </CardHeader>
+                <CardContent className="p-0">
+                    <div className="p-3">
+                        <Terminal
+                            key={targetKey}
+                            endpoint={endpoint}
+                            queryParams={queryParams}
+                            operateNode={currentNode}
+                            height="46vh"
+                        />
+                    </div>
+                </CardContent>
+            </Card>
+
+            <Dialog
+                open={modalOpen}
+                onOpenChange={(open) => {
+                    if (!open) setModalOpen(false);
+                }}
+            >
+                <DialogContent
+                    aria-describedby={undefined}
+                    className="max-h-[90vh] overflow-y-auto w-[560px]"
+                    onInteractOutside={(event) => event.preventDefault()}
+                >
+                    <DialogHeader>
+                        <DialogTitle>{editingHost ? t('host.terminal.edit') : t('host.terminal.add')}</DialogTitle>
+                    </DialogHeader>
+                    <SSHHostForm
+                        key={editingHost ? `edit-${editingHost.id}` : 'new'}
+                        initial={initValues}
+                        editing={!!editingHost}
+                        busy={submitting}
+                        onSubmit={handleSubmit}
+                        onCancel={() => setModalOpen(false)}
+                    />
+                </DialogContent>
+            </Dialog>
         </>
     );
 }

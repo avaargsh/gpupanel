@@ -131,19 +131,19 @@ export default function CronjobTab() {
         <>
             {confirmationDialog}
             {
-                <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                <div className="flex flex-col gap-3">
                     <div className="flex flex-wrap items-center gap-2">
                         <div className="flex items-center gap-2">
                             <span className="shrink-0 text-muted-foreground">{<SearchIcon />}</span>
                             <Input
                                 placeholder={t("cronjob.searchPlaceholder")}
-                                style={{ width: 220 }}
+                                className="w-[220px]"
                                 value={searchInput ?? ""}
                                 onChange={(event) => setSearchInput(event.target.value)}
                             />
                         </div>
                         <NativeSelect
-                            style={{ width: 160 }}
+                            className="w-[160px]"
                             value={groupID ?? ""}
                             aria-label={t("cronjob.groupFilter")}
                             onChange={(event) => setGroupID(event.target.value ? Number(event.target.value) : undefined)}
@@ -175,7 +175,7 @@ export default function CronjobTab() {
                     </div>
 
                     {selected.length > 0 && (
-                        <div style={{ alignItems: "center" }} className="flex flex-wrap items-center gap-2">
+                        <div className="flex flex-wrap items-center gap-2 items-center">
                             <span className="text-muted-foreground">{t("cronjob.selected", { count: selected.length })}</span>
                             <Button onClick={() => batchStatus("Enable")} type="button" variant="ghost" size="sm">
                                 {t("cronjob.batchEnable")}
@@ -355,13 +355,13 @@ export default function CronjobTab() {
                                         <DialogTitle>{t("cronjob.delete.title")}</DialogTitle>
                                     </DialogHeader>
                                     <FieldGroup>
-                                        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                                        <div className="flex flex-col gap-3">
                                             <span>{t("cronjob.delete.content", { name: deleteRows.map((r) => r.name).join("、") })}</span>
-                                            <label style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer" }}>
+                                            <label className="flex items-center gap-1.5 cursor-pointer">
                                                 <Switch checked={cleanData} onCheckedChange={setCleanData} />
                                                 <span>{t("cronjob.delete.cleanData")}</span>
                                             </label>
-                                            <label style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer" }}>
+                                            <label className="flex items-center gap-1.5 cursor-pointer">
                                                 <Switch checked={cleanRemoteData} onCheckedChange={setCleanRemoteData} />
                                                 <span>{t("cronjob.delete.cleanRemoteData")}</span>
                                             </label>

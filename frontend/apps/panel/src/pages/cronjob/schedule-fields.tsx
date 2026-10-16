@@ -23,19 +23,10 @@ export function ScheduleFields({
     return (
         <>
             {/* 执行周期 */}
-            <div
-                style={{
-                    border: "1px solid var(--border)",
-                    borderRadius: 6,
-                    padding: 12,
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: 8,
-                }}
-            >
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <div className="subpanel">
+                <div className="flex items-center justify-between">
                     <strong>{t("cronjob.operate.cronSpec")}</strong>
-                    <label style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer" }}>
+                    <label className="flex items-center gap-1.5 cursor-pointer">
                         <Switch checked={form.specCustom} onCheckedChange={(v) => set({ specCustom: v })} />
                         <span>{t("cronjob.operate.custom")}</span>
                     </label>
@@ -43,9 +34,9 @@ export function ScheduleFields({
                 {form.specCustom ? (
                     <>
                         {form.specs.map((spec, i) => (
-                            <div key={i} style={{ width: "100%" }} className="flex flex-wrap items-center gap-2">
+                            <div key={i} className="flex flex-wrap items-center gap-2 w-full">
                                 <Input
-                                    style={{ width: 260 }}
+                                    className="w-[260px]"
                                     placeholder={"0 3 * * *"}
                                     value={spec ?? ""}
                                     onChange={(event) => set({ specs: form.specs.map((s, idx) => (idx === i ? event.target.value : s)) })}
@@ -72,9 +63,9 @@ export function ScheduleFields({
                 ) : (
                     <>
                         {form.specObjs.map((o, i) => (
-                            <div key={i} style={{ display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center" }}>
+                            <div key={i} className="flex flex-wrap gap-2 items-center">
                                 <NativeSelect
-                                    style={{ width: 140 }}
+                                    className="w-[140px]"
                                     value={o.specType ?? ""}
                                     aria-label={t("common.select")}
                                     onChange={(event) =>
@@ -95,7 +86,7 @@ export function ScheduleFields({
                                 </NativeSelect>
                                 {o.specType === "perWeek" && (
                                     <NativeSelect
-                                        style={{ width: 120 }}
+                                        className="w-[120px]"
                                         value={o.week ?? ""}
                                         aria-label={t("common.select")}
                                         onChange={(event) =>
@@ -120,7 +111,7 @@ export function ScheduleFields({
                                         <span className="shrink-0 text-muted-foreground">{t("cronjob.operate.day")}</span>
                                         <Input
                                             min={1}
-                                            style={{ width: 120 }}
+                                            className="w-[120px]"
                                             value={o.day ?? ""}
                                             type="number"
                                             required
@@ -149,7 +140,7 @@ export function ScheduleFields({
                                         <Input
                                             min={0}
                                             max={23}
-                                            style={{ width: 120 }}
+                                            className="w-[120px]"
                                             value={o.hour ?? ""}
                                             type="number"
                                             required
@@ -177,7 +168,7 @@ export function ScheduleFields({
                                         <span className="shrink-0 text-muted-foreground">{t("cronjob.operate.minute")}</span>
                                         <Input
                                             min={1}
-                                            style={{ width: 120 }}
+                                            className="w-[120px]"
                                             value={o.minute ?? ""}
                                             type="number"
                                             required
@@ -205,7 +196,7 @@ export function ScheduleFields({
                                         <span className="shrink-0 text-muted-foreground">{t("cronjob.operate.second")}</span>
                                         <Input
                                             min={1}
-                                            style={{ width: 120 }}
+                                            className="w-[120px]"
                                             value={o.second ?? ""}
                                             type="number"
                                             required
@@ -233,7 +224,7 @@ export function ScheduleFields({
                                         <Input
                                             min={0}
                                             max={59}
-                                            style={{ width: 120 }}
+                                            className="w-[120px]"
                                             value={o.minute ?? ""}
                                             type="number"
                                             required

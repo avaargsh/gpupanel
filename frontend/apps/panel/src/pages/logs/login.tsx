@@ -67,19 +67,19 @@ export default function LoginLogTab() {
         <>
             {confirmationDialog}
             {
-                <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                <div className="flex flex-col gap-3">
                     <div className="flex flex-wrap items-center gap-2">
                         <div className="flex items-center gap-2">
                             <span className="shrink-0 text-muted-foreground">{<SearchIcon />}</span>
                             <Input
                                 placeholder={t("logs.login.searchPlaceholder")}
-                                style={{ width: 220 }}
+                                className="w-[220px]"
                                 value={searchInput ?? ""}
                                 onChange={(event) => setSearchInput(event.target.value)}
                             />
                         </div>
                         <NativeSelect
-                            style={{ width: 140 }}
+                            className="w-[140px]"
                             value={status ?? ""}
                             aria-label={t("logs.login.status")}
                             onChange={(event) =>

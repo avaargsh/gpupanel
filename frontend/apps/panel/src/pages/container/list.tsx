@@ -164,9 +164,9 @@ export default function ContainerList({ onOpenLogs, onOpenExec }: ContainerListP
     const selectedNames = selected.map((id) => nameMap.get(id)).filter((n): n is string => Boolean(n));
 
     return (
-        <div className="flex flex-col gap-4">
+        <div className="container-list">
             {listQuery.isError ? (
-                <Card>
+                <Card className="container-list-card">
                     <CardHeader>
                         <CardTitle>{t('container.list.title')}</CardTitle>
                     </CardHeader>
@@ -180,7 +180,7 @@ export default function ContainerList({ onOpenLogs, onOpenExec }: ContainerListP
                     </CardContent>
                 </Card>
             ) : (
-                <Card>
+                <Card className="container-list-card">
                     <CardHeader>
                         <CardTitle>{t('container.list.title')}</CardTitle>
                         <CardAction>
@@ -205,7 +205,7 @@ export default function ContainerList({ onOpenLogs, onOpenExec }: ContainerListP
                             </div>
                         </CardAction>
                     </CardHeader>
-                    <CardContent className="flex flex-col gap-3">
+                    <CardContent className="container-list-content">
                         <div className="flex flex-wrap items-center gap-2">
                             {statusChips.map((chip) => (
                                 <Button
@@ -317,10 +317,7 @@ export default function ContainerList({ onOpenLogs, onOpenExec }: ContainerListP
                             <TableBody>
                                 {rows.length === 0 ? (
                                     <TableRow>
-                                        <TableCell
-                                            colSpan={9}
-                                            className="py-8 text-center text-sm text-muted-foreground"
-                                        >
+                                        <TableCell colSpan={9} className="py-8 text-center text-sm text-muted-foreground">
                                             {t('container.list.empty')}
                                         </TableCell>
                                     </TableRow>

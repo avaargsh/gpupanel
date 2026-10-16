@@ -217,19 +217,8 @@ export default function ContainerLogs({ target }: ContainerLogsProps) {
                 {errorMsg ? <span className="text-sm text-destructive">{errorMsg}</span> : null}
 
                 <pre
-                    className="bg-muted text-foreground"
+                    className="log-output h-[52vh]"
                     ref={outRef}
-                    style={{
-                        margin: 0,
-                        height: '52vh',
-                        overflow: 'auto',
-                        padding: 12,
-                        fontSize: 12,
-                        lineHeight: 1.5,
-                        borderRadius: 8,
-                        whiteSpace: 'pre-wrap',
-                        wordBreak: 'break-all',
-                    }}
                     data-testid="container-log-output"
                 >
                     {output || (streaming ? t('container.logs.waiting') : t('container.logs.placeholder'))}

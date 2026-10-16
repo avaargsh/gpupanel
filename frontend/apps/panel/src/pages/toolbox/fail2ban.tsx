@@ -92,7 +92,7 @@ function ConfigEditModal({ kind, value, onClose, onSaved }: { kind: ConfigKind; 
                                 <Input
                                     min={1}
                                     max={65535}
-                                    style={{ width: 200 }}
+                                    className="w-[200px]"
                                     value={(Number(text) || 0) ?? ""}
                                     type="number"
                                     required
@@ -106,7 +106,7 @@ function ConfigEditModal({ kind, value, onClose, onSaved }: { kind: ConfigKind; 
                             <Field label={t("toolbox.fail2ban.maxRetry")}>
                                 <Input
                                     min={1}
-                                    style={{ width: 200 }}
+                                    className="w-[200px]"
                                     value={(Number(text) || 0) ?? ""}
                                     type="number"
                                     required
@@ -121,7 +121,7 @@ function ConfigEditModal({ kind, value, onClose, onSaved }: { kind: ConfigKind; 
                                 <div className="flex flex-wrap items-center gap-2">
                                     <Input
                                         disabled={permanent}
-                                        style={{ width: 160 }}
+                                        className="w-[160px]"
                                         value={num ?? ""}
                                         type="number"
                                         required
@@ -136,7 +136,7 @@ function ConfigEditModal({ kind, value, onClose, onSaved }: { kind: ConfigKind; 
                                     />
                                     <NativeSelect
                                         disabled={permanent}
-                                        style={{ width: 120 }}
+                                        className="w-[120px]"
                                         value={unit ?? ""}
                                         aria-label={t("common.select")}
                                         onChange={(event) => setUnit(String(event.target.value))}
@@ -153,7 +153,7 @@ function ConfigEditModal({ kind, value, onClose, onSaved }: { kind: ConfigKind; 
                             </Field>
                         )}
                         {isDuration && (
-                            <label style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 12, cursor: "pointer" }}>
+                            <label className="flex gap-2 items-center mt-3 cursor-pointer">
                                 <Switch checked={permanent} onCheckedChange={(v) => setNum(v ? -1 : 0)} />
                                 <span>{t("toolbox.fail2ban.permanent")}</span>
                             </label>
@@ -161,7 +161,7 @@ function ConfigEditModal({ kind, value, onClose, onSaved }: { kind: ConfigKind; 
                         {kind === "banaction" && (
                             <Field label={t("toolbox.fail2ban.banAction")}>
                                 <NativeSelect
-                                    style={{ width: "100%" }}
+                                    className="w-full"
                                     value={text ?? ""}
                                     aria-label={t("common.select")}
                                     onChange={(event) => setText(String(event.target.value))}
@@ -287,7 +287,7 @@ export default function Fail2banTab() {
 
     if (!data) {
         return (
-            <div style={{ padding: 24 }}>
+            <div className="p-6">
                 <span className="text-muted-foreground">{isFetching ? t("common.loading") : t("common.empty")}</span>
             </div>
         );
@@ -295,7 +295,7 @@ export default function Fail2banTab() {
 
     if (!data.isExist) {
         return (
-            <div style={{ padding: 24 }}>
+            <div className="p-6">
                 <span className="text-muted-foreground">{t("toolbox.fail2ban.notInstalled")}</span>
             </div>
         );
@@ -323,8 +323,8 @@ export default function Fail2banTab() {
         <>
             {confirmationDialog}
             {
-                <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+                <div className="flex flex-col gap-4">
+                    <div className="flex items-center gap-3 flex-wrap">
                         <Badge variant={["red"].includes("green") ? "destructive" : "secondary"}>Fail2ban</Badge>
                         <Badge variant={["red"].includes(data.isActive ? "green" : "grey") ? "destructive" : "secondary"}>
                             {data.isActive ? t("toolbox.actions.enable") : t("toolbox.actions.disable")}
@@ -361,7 +361,7 @@ export default function Fail2banTab() {
                         </Button>
                     </div>
 
-                    <div style={{ maxWidth: 900 }}>
+                    <div className="max-w-[900px]">
                         <SettingRow
                             label={t("toolbox.fail2ban.sshPort")}
                             value={<span>{data.port}</span>}

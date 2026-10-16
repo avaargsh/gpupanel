@@ -18,24 +18,24 @@ export default function DatabasesPage() {
     const [activeKey, setActiveKey] = useState('mysql');
 
     return (
-        <div className="px-1">
+        <div className="module-shell">
             <Tabs value={activeKey} onValueChange={setActiveKey}>
-                <TabsList variant="line">
+                <TabsList variant="line" className="module-tabs">
                     <TabsTrigger value="mysql">{t('database.tabs.mysql')}</TabsTrigger>
                     <TabsTrigger value="postgresql">{t('database.tabs.postgresql')}</TabsTrigger>
                     <TabsTrigger value="redis">{t('database.tabs.redis')}</TabsTrigger>
                     <TabsTrigger value="mongodb">{t('database.tabs.mongodb')}</TabsTrigger>
                 </TabsList>
-                <TabsContent value="mysql" className="pt-4">
+                <TabsContent value="mysql" className="module-tab-content">
                     <DatabaseMysql />
                 </TabsContent>
-                <TabsContent value="postgresql" className="pt-4">
+                <TabsContent value="postgresql" className="module-tab-content">
                     <DatabasePostgresql />
                 </TabsContent>
-                <TabsContent value="redis" className="pt-4">
+                <TabsContent value="redis" className="module-tab-content">
                     <DatabaseRedis />
                 </TabsContent>
-                <TabsContent value="mongodb" className="pt-4">
+                <TabsContent value="mongodb" className="module-tab-content">
                     <DatabaseMongodb />
                 </TabsContent>
             </Tabs>

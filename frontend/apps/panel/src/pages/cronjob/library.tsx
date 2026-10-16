@@ -80,7 +80,7 @@ function ScriptSheet({ target, groups, onClose }: SheetProps) {
                         <DialogTitle>{target ? t("cronjob.library.edit") : t("cronjob.library.create")}</DialogTitle>
                     </DialogHeader>
                     <FieldGroup>
-                        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                        <div className="flex flex-col gap-3">
                             <Field label={t("cronjob.library.name")}>
                                 <Input
                                     disabled={!!target && target.isSystem}
@@ -90,7 +90,7 @@ function ScriptSheet({ target, groups, onClose }: SheetProps) {
                             </Field>
                             <Field label={t("cronjob.library.group")}>
                                 <NativeSelect
-                                    style={{ width: "100%" }}
+                                    className="w-full"
                                     value={groupID ?? ""}
                                     aria-label={t("common.select")}
                                     onChange={(event) => setGroupID(Number(event.target.value ?? 0))}
@@ -105,7 +105,7 @@ function ScriptSheet({ target, groups, onClose }: SheetProps) {
                                         ))}
                                 </NativeSelect>
                             </Field>
-                            <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
+                            <label className="flex items-center gap-2 cursor-pointer">
                                 <Switch checked={isInteractive} onCheckedChange={setIsInteractive} />
                                 <span>{t("cronjob.library.interactive")}</span>
                             </label>
@@ -192,19 +192,19 @@ export default function ScriptLibraryTab() {
         <>
             {confirmationDialog}
             {
-                <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                <div className="flex flex-col gap-3">
                     <div className="flex flex-wrap items-center gap-2">
                         <div className="flex items-center gap-2">
                             <span className="shrink-0 text-muted-foreground">{<SearchIcon />}</span>
                             <Input
                                 placeholder={t("cronjob.library.searchPlaceholder")}
-                                style={{ width: 220 }}
+                                className="w-[220px]"
                                 value={searchInput ?? ""}
                                 onChange={(event) => setSearchInput(event.target.value)}
                             />
                         </div>
                         <NativeSelect
-                            style={{ width: 160 }}
+                            className="w-[160px]"
                             value={groupID ?? ""}
                             aria-label={t("cronjob.groupFilter")}
                             onChange={(event) => setGroupID(event.target.value ? Number(event.target.value) : undefined)}
@@ -368,7 +368,7 @@ export default function ScriptLibraryTab() {
                                         <DialogTitle>{viewing.name}</DialogTitle>
                                     </DialogHeader>
                                     <FieldGroup>
-                                        <pre style={{ margin: 0, maxHeight: 480, overflow: "auto", whiteSpace: "pre-wrap", fontSize: 12 }}>
+                                        <pre className="log-output max-h-[480px]">
                                             {viewing.script}
                                         </pre>
                                     </FieldGroup>
@@ -385,7 +385,7 @@ export default function ScriptLibraryTab() {
 
 function Field({ label, children }: { label: string; children: ReactNode }) {
     return (
-        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+        <div className="flex flex-col gap-1">
             <span className="text-muted-foreground">{label}</span>
             {children}
         </div>

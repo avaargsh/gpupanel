@@ -60,7 +60,7 @@ export function AlertFormModal({ target, onClose, onSaved }: { target: AlertRule
         try {
             if (isEdit && target) await update({ ...form, id: target.id }).unwrap();
             else await create(form).unwrap();
-            toast.success(t("settings.alert.saved"));
+            toast.success(t("settings.saved"));
             onSaved();
         } catch (e) {
             toast.error(errText(e));

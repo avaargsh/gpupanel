@@ -7,6 +7,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { useEffect, useMemo, useState } from 'react';
+import { ChevronLeftIcon, ChevronRightIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import {
     getAppIconUrl,
@@ -39,52 +40,36 @@ function AppDetailSheet({ appKey, onClose, onInstall }: { appKey: string; onClos
                 if (!open) onClose();
             }}
         >
-            <SheetContent aria-describedby={undefined} className="overflow-y-auto" style={{ maxWidth: 560 }}>
+            <SheetContent aria-describedby={undefined} className="overflow-y-auto app-detail-sheet max-w-[560px]">
                 <SheetHeader>
                     <SheetTitle>{t('apps.detail.title')}</SheetTitle>
                 </SheetHeader>
                 {!app ? (
                     <Spinner role="status" aria-label="Loading" />
                 ) : (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                        <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-                            <img
-                                src={getAppIconUrl(app.key)}
-                                alt={app.name}
-                                style={{ width: 48, height: 48, borderRadius: 8, objectFit: 'contain' }}
-                            />
+                    <div className="app-detail-body">
+                        <div className="app-detail-header">
+                            <img src={getAppIconUrl(app.key)} alt={app.name} className="app-detail-icon" />
                             <div>
-                                <h3 className="font-semibold text-base" style={{ margin: 0 }}>
+                                <h3 className="font-semibold text-base m-0">
                                     {app.name}
                                 </h3>
                                 <span className="text-muted-foreground text-sm">{app.author}</span>
                             </div>
                         </div>
-                        <div style={{ display: 'flex', gap: 8 }}>
+                        <div className="app-detail-versions">
                             <span className="text-muted-foreground text-sm">{t('apps.detail.versions')}：</span>
                             {(app.versions ?? []).map((v) => (
-                                <Badge key={v} variant={'secondary'}>
+                                <Badge key={v} variant="secondary">
                                     {v}
                                 </Badge>
                             ))}
                         </div>
-                        <Button onClick={() => onInstall(app.key)} variant={'default'} type={'button'} disabled={app.installed}>
+                        <Button onClick={() => onInstall(app.key)} variant="default" type="button" disabled={app.installed}>
                             {app.installed ? t('apps.store.installed') : t('apps.actions.install')}
                         </Button>
                         {app.description ? <span className="text-sm">{app.description}</span> : null}
-                        <pre
-                            style={{
-                                margin: 0,
-                                maxHeight: 420,
-                                overflow: 'auto',
-                                background: 'var(--muted)',
-                                padding: 12,
-                                borderRadius: 6,
-                                whiteSpace: 'pre-wrap',
-                            }}
-                        >
-                            {app.readme || app.description || '-'}
-                        </pre>
+                        <pre className="m-0 max-h-[420px] overflow-auto rounded-lg bg-muted p-3 whitespace-pre-wrap">{app.readme || app.description || '-'}</pre>
                     </div>
                 )}
             </SheetContent>
@@ -111,11 +96,11 @@ export default function AppStoreTab() {
     const apps = listQuery.currentData?.items ?? [];
     const [syncLocal, { isLoading: syncingLocal }] = useSyncLocalAppsMutation();
     const doSync = async (fn: typeof syncLocal) => {
-        if (syncingLocal || !window.confirm('扫描本地应用定义？不会安装应用。 / Scan local definitions? No application will be installed.'))
+        if (syncingLocal || !window.confirm(t('apps.store.confirmSync')))
             return;
         try {
             await fn({ taskID: uuid() }).unwrap();
-            toast.info('同步请求已受理 / Synchronization accepted');
+            toast.info(t('apps.store.syncAccepted'));
             listQuery.refetch();
         } catch (e) {
             toast.error(errText(e));
@@ -126,40 +111,40 @@ export default function AppStoreTab() {
         return { total, pages: Math.ceil(total / pageSize) };
     }, [listQuery.data?.total]);
     return (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <div className="app-store">
             {pending ? (
-                <Alert>
+                <Alert className="app-store-pending">
                     <AlertDescription>
                         {
-                            <Button onClick={() => setInstallKey(pending.appKey)} variant={'outline'} type={'button'}>
-                                检查未核对安装 / Review unresolved install · {pending.node}
+                            <Button onClick={() => setInstallKey(pending.appKey)} variant="outline" type="button">
+                                {t('apps.store.reviewPending')} · {pending.node}
                             </Button>
                         }
                     </AlertDescription>
                 </Alert>
             ) : null}
-            <div className="flex flex-row flex-wrap gap-3 items-center">
+            <div className="module-toolbar">
                 <Input
                     aria-label={t('apps.store.searchPlaceholder')}
                     value={nameInput}
                     placeholder={t('apps.store.searchPlaceholder')}
-                    style={{ width: 220 }}
+                    className="w-[220px]"
                     onChange={(event) => setNameInput(event.target.value)}
                 />
-                <Button onClick={() => setTag('')} variant={'ghost'} type={'button'}>
+                <Button onClick={() => setTag('')} variant="ghost" type="button">
                     {t('apps.store.tagAll')}
                 </Button>
                 {tags.map((tg) => (
                     <Button
                         key={tg.key}
                         onClick={() => setTag(tg.key)}
-                        variant={(tag === tg.key ? 'primary' : 'tertiary') === 'primary' ? 'default' : 'outline'}
-                        type={'button'}
+                        variant={tag === tg.key ? 'default' : 'outline'}
+                        type="button"
                     >
                         {tg.name}
                     </Button>
                 ))}
-                <Button onClick={() => doSync(syncLocal)} variant={'default'} type={'button'} disabled={false || syncingLocal}>
+                <Button onClick={() => doSync(syncLocal)} variant="default" type="button" disabled={syncingLocal}>
                     {syncingLocal ? <Spinner data-icon="inline-start" /> : null}
                     {t('apps.actions.syncLocal')}
                 </Button>
@@ -167,21 +152,16 @@ export default function AppStoreTab() {
 
             <span className="text-muted-foreground text-sm">{t('apps.store.helper')}</span>
 
-            <Alert>
-                <AlertDescription>
-                    {
-                        '仅显示本地应用；旧版远程应用源已停用，已安装应用仍可管理。 / Local applications only; legacy remote feed retired. Installed applications remain manageable.'
-                    }
-                </AlertDescription>
+            <Alert className="app-store-legacy-alert">
+                <AlertDescription>{t('apps.store.localOnlyNote')}</AlertDescription>
             </Alert>
             {listQuery.isError ? (
                 <Alert variant="destructive">
                     <AlertDescription>
-                        {
-                            <Button onClick={() => listQuery.refetch()} variant={'outline'} type={'button'}>
-                                重试 / Retry
-                            </Button>
-                        }
+                        {t('apps.store.loadFailed')}{' '}
+                        <Button onClick={() => listQuery.refetch()} variant="outline" type="button">
+                            {t('common.retry')}
+                        </Button>
                     </AlertDescription>
                 </Alert>
             ) : listQuery.isFetching ? (
@@ -189,52 +169,36 @@ export default function AppStoreTab() {
             ) : apps.length === 0 ? (
                 <span className="text-muted-foreground text-sm">{t('apps.store.empty')}</span>
             ) : (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 12 }}>
+                <div className="app-store-grid">
                     {apps.map((app: AppItem) => (
-                        <Card key={app.key} style={{ height: '100%' }}>
-                            <CardContent>
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: 8, height: '100%' }}>
-                                    <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-                                        <img
-                                            src={getAppIconUrl(app.key)}
-                                            alt={app.name}
-                                            style={{ width: 40, height: 40, borderRadius: 8, objectFit: 'contain' }}
-                                        />
-                                        <div style={{ minWidth: 0 }}>
+                        <Card key={app.key} className="app-store-card">
+                            <CardContent className="app-store-card-content">
+                                <div className="app-store-card-body">
+                                    <div className="app-store-card-meta">
+                                        <img src={getAppIconUrl(app.key)} alt={app.name} className="app-store-icon" />
+                                        <div className="min-w-0">
                                             <strong className="text-sm">{app.name}</strong>
                                             {app.installed ? (
-                                                <Badge
-                                                    style={{ marginLeft: 6 }}
-                                                    variant={['red', 'orange'].includes('green') ? 'destructive' : 'secondary'}
-                                                >
+                                                <Badge className="ml-2" variant="secondary">
                                                     {t('apps.store.installed')}
                                                 </Badge>
                                             ) : null}
                                         </div>
                                     </div>
-                                    <span
-                                        className="text-muted-foreground text-sm"
-                                        style={{
-                                            minHeight: 36,
-                                            WebkitLineClamp: 2,
-                                            display: '-webkit-box',
-                                            WebkitBoxOrient: 'vertical',
-                                            overflow: 'hidden',
-                                        }}
-                                    >
+                                    <span className="text-muted-foreground text-sm app-store-description">
                                         {app.description}
                                     </span>
-                                    <div style={{ marginTop: 'auto', display: 'flex', gap: 8 }}>
+                                    <div className="app-store-card-actions">
                                         <Button
                                             onClick={() => setInstallKey(app.key)}
-                                            variant={'default'}
+                                            variant="default"
                                             size="sm"
-                                            type={'button'}
+                                            type="button"
                                             disabled={app.installed}
                                         >
                                             {app.installed ? t('apps.store.installed') : t('apps.actions.install')}
                                         </Button>
-                                        <Button onClick={() => setDetailKey(app.key)} variant={'ghost'} size="sm" type={'button'}>
+                                        <Button onClick={() => setDetailKey(app.key)} variant="ghost" size="sm" type="button">
                                             {t('apps.actions.detail')}
                                         </Button>
                                     </div>
@@ -246,15 +210,29 @@ export default function AppStoreTab() {
             )}
 
             {pager.pages > 1 && (
-                <div className="flex flex-row  gap-3 items-center">
-                    <Button onClick={() => setPage((p) => p - 1)} variant={'outline'} type={'button'} disabled={page <= 1}>
-                        ‹
+                <div className="flex flex-row items-center gap-3">
+                    <Button
+                        onClick={() => setPage((p) => p - 1)}
+                        variant="outline"
+                        size="icon-sm"
+                        aria-label="Previous page"
+                        type="button"
+                        disabled={page <= 1}
+                    >
+                        <ChevronLeftIcon />
                     </Button>
-                    <span className="text-sm">
-                        {page}/ {pager.pages}
+                    <span className="text-muted-foreground text-sm tabular-nums">
+                        {page} / {pager.pages}
                     </span>
-                    <Button onClick={() => setPage((p) => p + 1)} variant={'outline'} type={'button'} disabled={page >= pager.pages}>
-                        ›
+                    <Button
+                        onClick={() => setPage((p) => p + 1)}
+                        variant="outline"
+                        size="icon-sm"
+                        aria-label="Next page"
+                        type="button"
+                        disabled={page >= pager.pages}
+                    >
+                        <ChevronRightIcon />
                     </Button>
                 </div>
             )}

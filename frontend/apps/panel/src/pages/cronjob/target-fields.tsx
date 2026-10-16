@@ -63,7 +63,7 @@ export function TargetFields({
                 <>
                     <Field label={t("cronjob.operate.dbType")}>
                         <NativeSelect
-                            style={{ width: "100%" }}
+                            className="w-full"
                             value={form.dbType ?? ""}
                             aria-label={t("common.select")}
                             onChange={(event) => set({ dbType: String(event.target.value) })}
@@ -130,11 +130,11 @@ export function TargetFields({
             )}
             {form.type === "curl" && (
                 <Field label={t("cronjob.operate.curl")}>
-                    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                    <div className="flex flex-col gap-1.5">
                         {form.urlItems.map((url, i) => (
                             <div key={i} className="flex flex-wrap items-center gap-2">
                                 <Input
-                                    style={{ width: 460 }}
+                                    className="w-[460px]"
                                     value={url ?? ""}
                                     onChange={(event) =>
                                         set({

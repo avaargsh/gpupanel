@@ -84,7 +84,7 @@ export default function SystemLogTab() {
     const keywordDisabled = Boolean(status && !status.keywordFilterSupported);
 
     return (
-        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+        <div className="flex flex-col gap-3">
             {status ? (
                 <Card>
                     <CardContent>
@@ -108,7 +108,7 @@ export default function SystemLogTab() {
 
             <div className="flex flex-wrap items-center gap-2">
                 <NativeSelect
-                    style={{ width: 180 }}
+                    className="w-[180px]"
                     value={priority ?? ""}
                     aria-label={t("logs.system.priority")}
                     onChange={(event) => setPriority(event.target.value ? String(event.target.value) : "")}
@@ -153,12 +153,12 @@ export default function SystemLogTab() {
                     <Input
                         disabled={keywordDisabled}
                         placeholder={t("logs.system.filter")}
-                        style={{ width: 200 }}
+                        className="w-[200px]"
                         value={searchInput ?? ""}
                         onChange={(event) => setSearchInput(event.target.value)}
                     />
                 </div>
-                <label style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+                <label className="inline-flex items-center gap-1.5">
                     <Switch checked={watching} onCheckedChange={setWatching} />
                     <span>{t("logs.system.watch")}</span>
                 </label>
@@ -233,7 +233,7 @@ export default function SystemLogTab() {
 
             <div className="flex flex-wrap items-center gap-2">
                 <NativeSelect
-                    style={{ width: 100 }}
+                    className="w-[100px]"
                     value={String(pageSize) ?? ""}
                     aria-label={t("common.select")}
                     onChange={(event) => setPageSize(Number(event.target.value))}
@@ -265,7 +265,7 @@ export default function SystemLogTab() {
                         </SheetHeader>
                         <FieldGroup>
                             {selected ? (
-                                <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                                <div className="flex flex-col gap-3">
                                     <span>
                                         <strong>{t("logs.system.date")}：</strong>
                                         {selected.time || "-"}
@@ -282,21 +282,7 @@ export default function SystemLogTab() {
                                         <strong>{t("logs.system.message")}：</strong>
                                         {selected.message}
                                     </span>
-                                    <pre
-                                        style={{
-                                            margin: 0,
-                                            maxHeight: "60vh",
-                                            overflow: "auto",
-                                            padding: 12,
-                                            fontSize: 12,
-                                            lineHeight: 1.6,
-                                            color: "#e8eaf0",
-                                            background: "#14151a",
-                                            borderRadius: 8,
-                                            whiteSpace: "pre-wrap",
-                                            wordBreak: "break-all",
-                                        }}
-                                    >
+                                    <pre className="log-output max-h-[60vh]">
                                         {selected.raw}
                                     </pre>
                                 </div>

@@ -65,7 +65,7 @@ function SwapModal({ base, onClose, onSaved }: { base: DeviceBaseInfo; onClose: 
                         <DialogTitle>{t("toolbox.device.swap")}</DialogTitle>
                     </DialogHeader>
                     <FieldGroup>
-                        <div style={{ display: "flex", gap: 24, marginBottom: 12 }}>
+                        <div className="flex gap-6 mb-3">
                             <span>
                                 {t("toolbox.device.swapTotal")}: <strong>{formatBytes(base.swapMemoryTotal)}</strong>
                             </span>
@@ -78,7 +78,7 @@ function SwapModal({ base, onClose, onSaved }: { base: DeviceBaseInfo; onClose: 
                         </div>
                         <span className="text-muted-foreground">{t("toolbox.device.swapHelper")}</span>
                         <div className="flex flex-col gap-3">
-                            <Table style={{ marginTop: 12 }}>
+                            <Table className="mt-3">
                                 <TableHeader>
                                     <TableRow>
                                         <TableHead>{t("toolbox.device.swapPath")}</TableHead>
@@ -143,7 +143,7 @@ function SwapModal({ base, onClose, onSaved }: { base: DeviceBaseInfo; onClose: 
                                 </TableBody>
                             </Table>
                         </div>
-                        <span style={{ display: "block", marginTop: 8 }} className="text-muted-foreground">
+                        <span className="text-muted-foreground block mt-2">
                             {t("toolbox.device.swapOff")}
                         </span>
                     </FieldGroup>
@@ -169,7 +169,7 @@ export default function DeviceTab() {
 
     if (!data) {
         return (
-            <div style={{ padding: 24 }}>
+            <div className="p-6">
                 <span className="text-muted-foreground">{isFetching ? t("toolbox.device.loading") : t("common.empty")}</span>
             </div>
         );
@@ -201,12 +201,12 @@ export default function DeviceTab() {
         <>
             {confirmationDialog}
             {
-                <div style={{ maxWidth: 960 }}>
-                    <Button onClick={() => refetch()} style={{ marginBottom: 8 }} type="button" variant="outline" disabled={isFetching}>
+                <div className="max-w-[960px]">
+                    <Button onClick={() => refetch()} className="mb-2" type="button" variant="outline" disabled={isFetching}>
                         {isFetching ? <Spinner data-icon="inline-start" /> : <RefreshCwIcon data-icon="inline-start" />}
                         {t("toolbox.actions.refresh")}
                     </Button>
-                    <Button onClick={() => setConfigOpen(true)} style={{ marginBottom: 8, marginLeft: 8 }} type="button" variant="outline">
+                    <Button onClick={() => setConfigOpen(true)} className="mb-2 ml-2" type="button" variant="outline">
                         {<FileIcon data-icon="inline-start" />}
                         {t("toolbox.config.title")}
                     </Button>

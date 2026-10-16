@@ -124,13 +124,7 @@ export function ModuleOperateSheet({
                 <SheetHeader>
                     <SheetTitle>{title}</SheetTitle>
                 </SheetHeader>
-                <div
-                    style={{
-                        display: 'flex',
-                        flexDirection: 'column',
-                        gap: 14,
-                    }}
-                >
+                <div className="flex flex-col gap-3.5">
                     <ConfigField label={t('openresty.modules.name')}>
                         <Input
                             aria-label={t('openresty.modules.name')}
@@ -288,13 +282,7 @@ export function BuildModal({ config, onClose }: { config: NginxBuildConfig; onCl
                 <DialogHeader>
                     <DialogTitle>{t('openresty.modules.build')}</DialogTitle>
                 </DialogHeader>
-                <div
-                    style={{
-                        display: 'flex',
-                        flexDirection: 'column',
-                        gap: 14,
-                    }}
-                >
+                <div className="flex flex-col gap-3.5">
                     <Alert>
                         <AlertTitle>{t('openresty.modules.buildPurposeHint')}</AlertTitle>
                     </Alert>
@@ -337,12 +325,7 @@ export function BuildModal({ config, onClose }: { config: NginxBuildConfig; onCl
                             label={t('openresty.modules.staticModules')}
                             help={t('openresty.modules.staticModulesHelper')}
                         >
-                            <div
-                                style={{
-                                    display: 'flex',
-                                    flexDirection: 'column',
-                                }}
-                            >
+                            <div className="flex flex-col">
                                 {staticModules.map((m) => (
                                     <p key={m.name}>{m.name}</p>
                                 ))}

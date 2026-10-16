@@ -96,7 +96,7 @@ export default function ClamTab() {
 
     if (!base) {
         return (
-            <div style={{ padding: 24 }}>
+            <div className="p-6">
                 <span className="text-muted-foreground">{baseFetching ? t("common.loading") : t("common.empty")}</span>
             </div>
         );
@@ -104,7 +104,7 @@ export default function ClamTab() {
 
     if (!base.isExist) {
         return (
-            <div style={{ padding: 24 }}>
+            <div className="p-6">
                 <span className="text-muted-foreground">{t("toolbox.clam.notInstalled")}</span>
             </div>
         );
@@ -165,8 +165,8 @@ export default function ClamTab() {
         <>
             {confirmationDialog}
             {
-                <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+                <div className="flex flex-col gap-3">
+                    <div className="flex items-center gap-3 flex-wrap">
                         <Badge variant={["red"].includes("green") ? "destructive" : "secondary"}>ClamAV</Badge>
                         <Badge variant={["red"].includes(base.isActive ? "green" : "grey") ? "destructive" : "secondary"}>
                             {base.isActive ? t("toolbox.actions.enable") : t("toolbox.actions.disable")}
@@ -187,7 +187,7 @@ export default function ClamTab() {
                     </div>
 
                     {base.freshIsExist && (
-                        <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+                        <div className="flex items-center gap-3 flex-wrap">
                             <Badge variant={["red"].includes("blue") ? "destructive" : "secondary"}>FreshClam</Badge>
                             <Badge variant={["red"].includes(base.freshIsActive ? "green" : "grey") ? "destructive" : "secondary"}>
                                 {base.freshIsActive ? t("toolbox.actions.enable") : t("toolbox.actions.disable")}
@@ -215,7 +215,7 @@ export default function ClamTab() {
                             <span className="shrink-0 text-muted-foreground">{<SearchIcon />}</span>
                             <Input
                                 placeholder={t("toolbox.clam.searchPlaceholder")}
-                                style={{ width: 220 }}
+                                className="w-[220px]"
                                 value={searchInput ?? ""}
                                 onChange={(event) =>
                                     ((v) => {
@@ -426,7 +426,7 @@ export default function ClamTab() {
                                             {t("toolbox.clam.deleteContent", { name: (deleteRows ?? []).map((r) => r.name).join(", ") })}
                                         </span>
                                     </div>
-                                    <div style={{ marginTop: 12 }}>
+                                    <div className="mt-3">
                                         <label className="flex items-center gap-2">
                                             <Checkbox checked={removeInfected} onCheckedChange={(e) => setRemoveInfected(!!e)} />
                                             {t("toolbox.clam.removeInfected")}

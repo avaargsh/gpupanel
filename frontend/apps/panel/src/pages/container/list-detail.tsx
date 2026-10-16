@@ -116,7 +116,7 @@ export function ContainerDetailSheet({ container, onClose }: { container: Contai
                                 {t('container.detail.inspect')}
                             </Button>
                             {inspectText && (
-                                <pre className="mt-2.5 max-h-80 overflow-auto rounded-lg bg-muted p-2.5 text-xs">
+                                <pre className="log-output mt-2.5 max-h-80">
                                     {inspectText}
                                 </pre>
                             )}

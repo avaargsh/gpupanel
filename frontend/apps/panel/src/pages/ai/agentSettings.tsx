@@ -72,13 +72,13 @@ function ModelTab({ agentId }: { agentId: number }) {
         }
     };
     return (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <div className="flex flex-col gap-3">
             <Field>
                 <FieldLabel htmlFor="ai-agentSettings-1">{t('ai.agents.model.account')}</FieldLabel>
                 <NativeSelect
                     id="ai-agentSettings-1"
                     value={accountId}
-                    style={{ width: '100%' }}
+                    className="w-full"
                     onChange={(event) => setFallbacks(Array.from(event.target.selectedOptions, (option) => option.value))}
                 >
                     <NativeSelectOption value="" disabled>
@@ -98,13 +98,8 @@ function ModelTab({ agentId }: { agentId: number }) {
                 <NativeSelect
                     id="ai-agentSettings-2"
                     value={model}
-                    style={{ width: '100%' }}
-                    onChange={(event) =>
-                        setModel(
-                            modelOptions.find((option) => String(option.value) === event.target.value)?.value ??
-                                (event.target.value as string),
-                        )
-                    }
+                    className="w-full"
+                    onChange={(event) => setModel(event.target.value)}
                 >
                     <NativeSelectOption value="" disabled>
                         {t('ai.agents.model.model')}
@@ -122,7 +117,7 @@ function ModelTab({ agentId }: { agentId: number }) {
                     id="ai-agentSettings-3"
                     value={fallbacks}
                     multiple
-                    style={{ width: '100%' }}
+                    className="w-full"
                     onChange={(event) => setFallbacks(Array.from(event.target.selectedOptions, (option) => option.value))}
                 >
                     <NativeSelectOption value="" disabled>
@@ -136,7 +131,7 @@ function ModelTab({ agentId }: { agentId: number }) {
                 </NativeSelect>
             </Field>
             <div>
-                <div className="flex flex-row  gap-3 items-center" style={{ justifyContent: 'space-between', width: '100%' }}>
+                <div className="flex flex-row  gap-3 items-center justify-between w-full">
                     <span className="text-muted-foreground text-sm">{t('ai.agents.model.metadata')}</span>
                     <Button onClick={addMetadata} variant={'outline'} size="sm" type={'button'}>
                         {t('ai.agents.model.addMetadata')}
@@ -147,10 +142,10 @@ function ModelTab({ agentId }: { agentId: number }) {
                         <TableHeader>
                             <TableRow>
                                 <TableHead>{t('ai.agents.model.model')}</TableHead>
-                                <TableHead style={{ width: 130 }}>{t('ai.agents.model.inputMode')}</TableHead>
-                                <TableHead style={{ width: 130 }}>{t('ai.agents.model.contextWindow')}</TableHead>
-                                <TableHead style={{ width: 130 }}>{t('ai.agents.model.maxTokens')}</TableHead>
-                                <TableHead style={{ width: 70 }}>{''}</TableHead>
+                                <TableHead className="w-[130px]">{t('ai.agents.model.inputMode')}</TableHead>
+                                <TableHead className="w-[130px]">{t('ai.agents.model.contextWindow')}</TableHead>
+                                <TableHead className="w-[130px]">{t('ai.agents.model.maxTokens')}</TableHead>
+                                <TableHead className="w-[70px]">{''}</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -164,74 +159,55 @@ function ModelTab({ agentId }: { agentId: number }) {
                                 metadata.map((row, rowIndex) => (
                                     <TableRow key={rowIndex}>
                                         <TableCell>
-                                            {
-                                                <Input
-                                                    aria-label={'gpt-4o'}
-                                                    value={row.model}
-                                                    placeholder={'gpt-4o'}
-                                                    onChange={(event) => ((v) => patchMetadata(rowIndex, { model: v }))(event.target.value)}
-                                                />
-                                            }
+                                            <Input
+                                                aria-label={'gpt-4o'}
+                                                value={row.model}
+                                                placeholder={'gpt-4o'}
+                                                onChange={(event) => patchMetadata(rowIndex, { model: event.target.value })}
+                                            />
                                         </TableCell>
                                         <TableCell>
-                                            {
-                                                <NativeSelect
-                                                    aria-label={t('ai.agents.model.inputMode')}
-                                                    value={row.inputMode}
-                                                    style={{ width: '100%' }}
-                                                    onChange={(event) =>
-                                                        ((v) =>
-                                                            patchMetadata(rowIndex, { inputMode: v as AgentModelMetadata['inputMode'] }))(
-                                                            INPUT_MODES.map((m) => ({
-                                                                label: t(`ai.agents.model.mode.${m}`),
-                                                                value: m,
-                                                            })).find((option) => String(option.value) === event.target.value)?.value ??
-                                                                event.target.value,
-                                                        )
-                                                    }
-                                                >
-                                                    <NativeSelectOption value="" disabled>
-                                                        {'—'}
-                                                    </NativeSelectOption>
-                                                    {INPUT_MODES.map((m) => ({ label: t(`ai.agents.model.mode.${m}`), value: m })).map(
-                                                        (option) => (
-                                                            <NativeSelectOption key={String(option.value)} value={option.value}>
-                                                                {option.label}
-                                                            </NativeSelectOption>
-                                                        ),
-                                                    )}
-                                                </NativeSelect>
-                                            }
+                                            <NativeSelect
+                                                aria-label={t('ai.agents.model.inputMode')}
+                                                value={row.inputMode}
+                                                className="w-full"
+                                                onChange={(event) =>
+                                                    patchMetadata(rowIndex, {
+                                                        inputMode: event.target.value as AgentModelMetadata['inputMode'],
+                                                    })
+                                                }
+                                            >
+                                                <NativeSelectOption value="" disabled>
+                                                    {'—'}
+                                                </NativeSelectOption>
+                                                {INPUT_MODES.map((m) => ({ label: t(`ai.agents.model.mode.${m}`), value: m })).map(
+                                                    (option) => (
+                                                        <NativeSelectOption key={String(option.value)} value={option.value}>
+                                                            {option.label}
+                                                        </NativeSelectOption>
+                                                    ),
+                                                )}
+                                            </NativeSelect>
                                         </TableCell>
                                         <TableCell>
-                                            {
-                                                <Input
-                                                    aria-label={t('ai.agents.model.contextWindow')}
-                                                    value={row.contextWindow}
-                                                    min={0}
-                                                    type="number"
-                                                    onChange={(event) =>
-                                                        ((v) => patchMetadata(rowIndex, { contextWindow: Number(v) || 0 }))(
-                                                            event.target.value === '' ? undefined : Number(event.target.value),
-                                                        )
-                                                    }
-                                                />
-                                            }
+                                            <Input
+                                                aria-label={t('ai.agents.model.contextWindow')}
+                                                value={row.contextWindow}
+                                                min={0}
+                                                type="number"
+                                                onChange={(event) =>
+                                                    patchMetadata(rowIndex, { contextWindow: Number(event.target.value) || 0 })
+                                                }
+                                            />
                                         </TableCell>
                                         <TableCell>
-                                            {
-                                                <Input
-                                                    aria-label={t('ai.agents.model.maxTokens')}
-                                                    value={row.maxTokens}
-                                                    min={0}
-                                                    type="number"
-                                                    onChange={(event) =>
-                                                        ((v) => patchMetadata(rowIndex, { maxTokens: Number(v) || 0 }))(
-                                                            event.target.value === '' ? undefined : Number(event.target.value),
-                                                        )
-                                                    }
-                                                />
-                                            }
+                                            <Input
+                                                aria-label={t('ai.agents.model.maxTokens')}
+                                                value={row.maxTokens}
+                                                min={0}
+                                                type="number"
+                                                onChange={(event) => patchMetadata(rowIndex, { maxTokens: Number(event.target.value) || 0 })}
+                                            />
                                         </TableCell>
                                         <TableCell>
                                             {
@@ -253,7 +229,7 @@ function ModelTab({ agentId }: { agentId: number }) {
                     </Table>
                 </div>
             </div>
-            <div style={{ textAlign: 'right' }}>
+            <div className="text-right">
                 <Button onClick={submit} variant={'outline'} type={'button'} disabled={false || saving || isLoading}>
                     {saving || isLoading ? <Spinner data-icon="inline-start" /> : null}
                     {t('ai.agents.save')}
@@ -289,7 +265,7 @@ function SecurityTab({ agentId }: { agentId: number }) {
                 rows={6}
                 onChange={(event) => setOrigins(event.target.value)}
             />
-            <div style={{ textAlign: 'right' }}>
+            <div className="text-right">
                 <Button onClick={submit} variant={'outline'} type={'button'} disabled={false || isLoading}>
                     {isLoading ? <Spinner data-icon="inline-start" /> : null}
                     {t('ai.agents.save')}
@@ -335,9 +311,9 @@ function OtherTab({ agentId }: { agentId: number }) {
         </Field>
     );
     return (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <div className="flex flex-col gap-3">
             {field(t('ai.agents.other.userTimezone'), form.userTimezone, (v) => setForm((f) => ({ ...f, userTimezone: v })))}
-            <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <label className="flex items-center gap-2">
                 <Switch
                     aria-label={t('ai.agents.other.browserEnabled')}
                     checked={form.browserEnabled}
@@ -353,7 +329,7 @@ function OtherTab({ agentId }: { agentId: number }) {
                 (v) => setForm((f) => ({ ...f, dashboardPassword: v })),
                 true,
             )}
-            <div style={{ textAlign: 'right' }}>
+            <div className="text-right">
                 <Button onClick={submit} variant={'outline'} type={'button'} disabled={false || isLoading}>
                     {isLoading ? <Spinner data-icon="inline-start" /> : null}
                     {t('ai.agents.save')}
@@ -386,10 +362,10 @@ function ConfigFileTab({ agentId }: { agentId: number }) {
                 id="ai-agentSettings-6"
                 value={content}
                 placeholder={isLoading ? t('common.loading') : t('ai.agents.configFile.empty')}
-                style={{ fontFamily: 'monospace' }}
+                className="font-mono"
                 onChange={(event) => setContent(event.target.value)}
             />
-            <div style={{ textAlign: 'right' }}>
+            <div className="text-right">
                 <Button onClick={submit} variant={'outline'} type={'button'} disabled={false || saving}>
                     {saving ? <Spinner data-icon="inline-start" /> : null}
                     {t('ai.agents.save')}
@@ -409,7 +385,7 @@ export default function AgentConfigModal({ agentId, name, onClose }: { agentId: 
                 if (!open) onClose();
             }}
         >
-            <DialogContent aria-describedby={undefined} className="max-h-[90vh] overflow-y-auto" style={{ maxWidth: 760 }}>
+            <DialogContent aria-describedby={undefined} className="max-h-[90vh] overflow-y-auto max-w-[760px]">
                 <DialogHeader>
                     <DialogTitle>{`${t('ai.agents.configTitle')} · ${name}`}</DialogTitle>
                 </DialogHeader>

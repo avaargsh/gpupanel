@@ -31,7 +31,7 @@ export default function EvidenceSheet({ id, onClose }: { id: number; onClose: ()
                 if (!open) onClose();
             }}
         >
-            <SheetContent aria-describedby={undefined} className="overflow-y-auto" style={{ maxWidth: 560 }}>
+            <SheetContent aria-describedby={undefined} className="overflow-y-auto max-w-[560px]">
                 <SheetHeader>
                     <SheetTitle>{'只读应用证据 / Read-only application evidence'}</SheetTitle>
                 </SheetHeader>

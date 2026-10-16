@@ -49,7 +49,7 @@ function ParamField({
                     value={Array.isArray(value) ? value.map(String) : String(value ?? '')}
                     disabled={disabled}
                     multiple={field.multiple}
-                    style={{ width: '100%' }}
+                    className="w-full"
                     aria-label={label}
                     onChange={(event) =>
                         onChange(
@@ -199,8 +199,7 @@ export default function InstallModal({ appKey, onClose }: { appKey: string; onCl
         >
             <DialogContent
                 aria-describedby={undefined}
-                className="max-h-[90vh] overflow-y-auto"
-                style={{ maxWidth: 560 }}
+                className="max-h-[90vh] overflow-y-auto max-w-[560px]"
                 onInteractOutside={(event) => event.preventDefault()}
             >
                 <DialogHeader>
@@ -275,7 +274,7 @@ export default function InstallModal({ appKey, onClose }: { appKey: string; onCl
                         <NativeSelect
                             value={version}
                             disabled={phase !== 'idle'}
-                            style={{ width: '100%' }}
+                            className="w-full"
                             aria-label={t('apps.install.version')}
                             onChange={(event) =>
                                 setVersion(
@@ -314,12 +313,12 @@ export default function InstallModal({ appKey, onClose }: { appKey: string; onCl
                                     />
                                 ))
                         )}
-                        <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+                        <label className="flex items-center gap-2 cursor-pointer">
                             <input type="checkbox" checked={advanced} onChange={(e) => setAdvanced(e.target.checked)} />
                             <span className="text-sm">{t('apps.install.advanced')}</span>
                         </label>
                         {advanced && (
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                            <div className="flex flex-col gap-2.5">
                                 <Field>
                                     <FieldLabel htmlFor="install-container-name">{t('apps.install.containerName')}</FieldLabel>
                                     <Input
@@ -330,7 +329,7 @@ export default function InstallModal({ appKey, onClose }: { appKey: string; onCl
                                         onChange={(event) => setContainerName(event.target.value)}
                                     />
                                 </Field>
-                                <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                <label className="flex items-center gap-2">
                                     <input type="checkbox" checked={allowPort} onChange={(e) => setAllowPort(e.target.checked)} />
                                     <span className="text-sm">{t('apps.install.allowPort')}</span>
                                 </label>
@@ -345,7 +344,7 @@ export default function InstallModal({ appKey, onClose }: { appKey: string; onCl
                                 <NativeSelect
                                     aria-label="Restart policy"
                                     value={restartPolicy}
-                                    style={{ width: '100%' }}
+                                    className="w-full"
                                     onChange={(event) =>
                                         setRestartPolicy(
                                             [
@@ -372,7 +371,7 @@ export default function InstallModal({ appKey, onClose }: { appKey: string; onCl
                                         </NativeSelectOption>
                                     ))}
                                 </NativeSelect>
-                                <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                <label className="flex items-center gap-2">
                                     <input type="checkbox" checked={pullImage} onChange={(e) => setPullImage(e.target.checked)} />
                                     <span className="text-sm">{t('apps.install.pullImage')}</span>
                                 </label>

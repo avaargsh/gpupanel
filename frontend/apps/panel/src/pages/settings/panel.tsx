@@ -72,7 +72,7 @@ export default function PanelSettingsTab() {
         if (savingSetting) return;
         try {
             await updateSetting({ key, value }).unwrap();
-            toast.success(t("settings.panel.saved"));
+            toast.success(t("settings.saved"));
         } catch (e) {
             toast.error(errText(e));
         }

@@ -200,12 +200,12 @@ export default function APIKeysTab() {
         <>
             {confirmationDialog}
             {
-                <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+                <div className="flex flex-col gap-3">
+                    <div className="flex items-center justify-between gap-3">
                         <Button onClick={openCreate} type="button" variant="default">
                             {t("settings.apikeys.create")}
                         </Button>
-                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        <div className="flex items-center gap-2">
                             <span>{t("settings.apikeys.showRevoked")}</span>
                             <Switch
                                 checked={!excludeRevoked}
@@ -269,8 +269,8 @@ export default function APIKeysTab() {
                                             onChange={(event) => setForm((f) => ({ ...f, description: event.target.value }))}
                                         />
                                     </Field>
-                                    <div style={{ marginBottom: 12 }}>
-                                        <div style={{ marginBottom: 6 }}>
+                                    <div className="mb-3">
+                                        <div className="mb-1.5">
                                             <strong>{t("settings.apikeys.ipWhiteList")}</strong>
                                         </div>
                                         <ToggleGroup
@@ -285,7 +285,7 @@ export default function APIKeysTab() {
                                         </ToggleGroup>
                                         {ipMode === "restricted" ? (
                                             <Textarea
-                                                style={{ marginTop: 8 }}
+                                                className="mt-2"
                                                 rows={4}
                                                 maxLength={4096}
                                                 placeholder={"192.168.1.0/24\n10.0.0.1"}
@@ -318,13 +318,13 @@ export default function APIKeysTab() {
                                                 }))
                                             }
                                         />
-                                        <span style={{ marginLeft: 8 }}>{t("settings.apikeys.minute")}</span>
+                                        <span className="ml-2">{t("settings.apikeys.minute")}</span>
                                     </Field>
-                                    <div style={{ marginBottom: 12 }}>
-                                        <div style={{ marginBottom: 6 }}>
+                                    <div className="mb-3">
+                                        <div className="mb-1.5">
                                             <strong>{t("settings.apikeys.expiresAt")}</strong>
                                         </div>
-                                        <label style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+                                        <label className="flex items-center gap-2 mb-2">
                                             <input
                                                 type="checkbox"
                                                 checked={neverExpires}
@@ -349,7 +349,7 @@ export default function APIKeysTab() {
                                             />
                                         ) : null}
                                     </div>
-                                    <label style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                    <label className="flex items-center gap-2">
                                         <input
                                             type="checkbox"
                                             checked={form.allowAppBinding}
@@ -398,7 +398,7 @@ export default function APIKeysTab() {
                                             </Button>
                                         }
                                     />
-                                    <Textarea rows={2} readOnly style={{ marginTop: 8 }} value={secret ?? ""} />
+                                    <Textarea rows={2} readOnly className="mt-2" value={secret ?? ""} />
                                 </FieldGroup>
                                 {
                                     <Button onClick={() => setSecret("")} type="button" variant="default">
@@ -464,9 +464,9 @@ export default function APIKeysTab() {
                                                 value={formatDateTime(detailItem.createdAt)}
                                             />
                                             {detailItem.kind === "legacy" && detailItem.status !== "Revoked" ? (
-                                                <div style={{ marginTop: 16, display: "flex", flexDirection: "column", gap: 8 }}>
+                                                <div className="mt-4 flex flex-col gap-2">
                                                     <span className="text-muted-foreground">{t("settings.apikeys.legacyHelp")}</span>
-                                                    <div style={{ display: "flex", gap: 8 }}>
+                                                    <div className="flex gap-2">
                                                         <Button onClick={() => void revealLegacy()} type="button" variant="secondary">
                                                             {t("settings.apikeys.showLegacy")}
                                                         </Button>
