@@ -114,6 +114,12 @@ func Serve(ws *websocket.Conn, sessionID string, opts SessionOptions, connect fu
 }
 
 func ServeCommand(ws *websocket.Conn, sessionID string, opts SessionOptions, connect func() (*LocalCommand, error)) error {
+	// Check authorization before the provider can start a local process.
+	// OpenCommand validates again, but that runs after connect may have
+	// spawned a privileged shell with externally visible side effects.
+	if err := validateSessionOptions(opts); err != nil {
+		return err
+	}
 	return serve(ws, sessionID, opts, func() (*Session, error) {
 		command, err := connect()
 		if err != nil {
