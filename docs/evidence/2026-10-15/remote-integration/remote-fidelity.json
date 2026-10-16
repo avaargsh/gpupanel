@@ -1,8 +1,0 @@
-{
-  "remote_sha": "82d34f0518e340fb0077dddd74ee004305ed56c6",
-  "normalization": "module import, API package/version, runtime namespace and pctl; preserve upstream HTTP URLs; gofmt both sides; internal HTTP documentation examples use API-v1",
-  "differences": [],
-  "excluded": "generated API documentation, branding assets and local boot configuration intentionally retained",
-  "matched_backend_path_count": 884,
-  "retention": "Path list omitted; historical original is available in Git before evidence compaction."
-}

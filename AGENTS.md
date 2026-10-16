@@ -56,15 +56,8 @@ A PR must include:
 
 **Do not mark G3-G6, real AI chat, production multi-tenancy or installation as delivered on the strength of docs-only, mocks-only or source-build evidence.**
 
-## Local integration contract (2026-10-15)
+## 当前主线与证据治理
 
-The owner explicitly requested retaining the local React 19/Semi Design frontend,
-`github.com/avaargsh/GPUPanel/{core,agent}` modules, `/api/v1` and GPUPanel runtime
-namespace while integrating remote main optimizations. Historical Vue/npm/API-v2
-references in archived evidence are not current commands or acceptance proof.
-See `docs/gpupanel/LOCAL_REMOTE_INTEGRATION.md`. No compatibility API alias or
-second frontend is required. Existing installed data migration remains unverified.
+当前基线为 `main`，前端 React 19 + shadcn/ui + Tailwind + pnpm，Go Core/Agent，公共 API 维持既有契约。过去的 Semi/Vue 与 `dev-v2` 交接要求已过时。**唯一默认状态**见 [docs/STATUS.md](docs/STATUS.md)；历史测试按其精确源码/二进制 SHA 有效，不代表新 HEAD。
 
-## Frontend migration contract (2026-10-16)
-
-The owner now explicitly requests shadcn/ui + Tailwind and multiple OpenCode workers. This supersedes the earlier requirement to preserve Semi Design. Follow `docs/engineering/SHADCN_MIGRATION.md`: isolated ownership, native primitives, unchanged API/auth/business behavior, no Semi compatibility facade, and independently verified integration.
+允许删除无运行时依赖的 `.skills` 旧指引及已留 Git 历史的冗余证据。删除继承的 GPL 运行时代码前，必须核实调用方、产物包含、鉴权/DB/备份兼容与负向测试。不得删除版权归因、有效回滚资料、用户状态或以代码重命名宣称 Apache 化。

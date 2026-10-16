@@ -68,7 +68,7 @@ python3 scripts/gpupanel-release.py build --version local-integration-20261015 -
 python3 scripts/gpupanel-release.py verify dist/gpupanel-preview.tar.gz
 ```
 
-执行结果与文件摘要见 [验证记录](../evidence/2026-10-15/remote-integration/RESULTS.md)。
+2026-10-15 的旧整合记录已从当前树清理，可通过治理前主线 `33d6176a51dfb3dccdae1a688ebe645a4f6972d2` 的 Git 历史恢复。该记录不具有当前 main 的验收效力；请查看 [当前状态](../STATUS.md)。
 Python 中原先读取 Vue 文件的断言已替换为当前 React 契约；回执与证据解析另有
 10 项 Node 可执行测试，浏览器负向场景独立运行。没有将找不到 Vue 文件变成跳过。
 
