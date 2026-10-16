@@ -130,3 +130,12 @@ OpenCode 修复为 `ed228acac439`，独立浏览器复验基线为
 忽略的 `.local/bugfix-integration/`，不新增证据附件。
 NOT RUN：远程 CI、真实安装/升级/恢复、线上业务操作与人工读屏审查。
 回退：撤销本轮集成/修复提交后重新构建；原始补丁和恢复 stash 保留，未改 schema 或服务。
+
+推送前发现远程新增 #92 squash（`283ad4b242e1`）和 #96（`147b7aabead6`）。
+核对远程 #92 与其原分支树相同；本地已有其工作台实现并完成 shadcn 迁移。
+独立引入 #96 的 10 个文件变更，NOTICE 合并保留完整 shadcn MIT 声明，
+再保留远程与许可证原分支历史；未用旧 Semi 树覆盖当前前端。
+整合基线 `9fa6e4b5cc2821c4d2159c4d7e845eb5c51f11ec` 上重跑 Python 全套：
+256 项通过；`python3 scripts/gpupanel-pnpm-license-evidence.py --output .local/bugfix-integration/pnpm-license-evidence.json` 退出 0。
+审计成功仅表示证据采集完成，`rights_clearance=false`，不表示许可证审查完成。
+证据预算和 `git diff --check bd0ebc50604b` 通过。
