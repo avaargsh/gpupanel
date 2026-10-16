@@ -1,13 +1,36 @@
-import { Button, Card, Descriptions, Empty, Progress, Skeleton, Space, Table, Tag, Toast, Typography } from '@douyinfe/semi-ui';
-import { IconActivity, IconBolt, IconBox, IconImage, IconLayers, IconPlay, IconRefresh, IconServer } from '@douyinfe/semi-icons';
-import { useTranslation } from 'react-i18next';
-import { useState } from 'react';
-import { useGetDockerStatusQuery, useGetContainerStatusQuery, useGetContainerItemStatsMutation, useDockerOperateMutation, type ContainerItemStats } from '@/api/containerApi';
-import { useGetGpuInfoQuery, allAccelerators, type GpuDevice } from '@/api/gpuApi';
-import { formatBytes, formatPercent, metricPercent } from '@/utils/format';
+import {
+    useDockerOperateMutation,
+    useGetContainerItemStatsMutation,
+    useGetContainerStatusQuery,
+    useGetDockerStatusQuery,
+    type ContainerItemStats,
+} from '@/api/containerApi';
+import { allAccelerators, useGetGpuInfoQuery, type GpuDevice } from '@/api/gpuApi';
 import StatCard from '@/components/StatCard';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardAction, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from '@/components/ui/empty';
+import { Progress } from '@/components/ui/progress';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { formatBytes, metricPercent } from '@/utils/format';
+import {
+    ActivityIcon,
+    BoxIcon,
+    ImageIcon,
+    LayersIcon,
+    PlayIcon,
+    RefreshCwIcon,
+    ServerIcon,
+    ZapIcon,
+} from 'lucide-react';
+import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { toast } from 'sonner';
+import { Descriptions } from './descriptions';
 
-const { Text } = Typography;
+const errText = (e: unknown) => (e as { data?: { message?: string } }).data?.message ?? String(e);
 
 /**
  * 容器概览：Docker 状态 + 容器/镜像/网络/卷统计 + 磁盘占用 + GPU（主机级）。
@@ -24,10 +47,10 @@ export default function ContainerOverview() {
     const handleStartDocker = async () => {
         try {
             await dockerOperate({ operation: 'start' }).unwrap();
-            Toast.success(t('container.overview.dockerStarted'));
+            toast.success(t('container.overview.dockerStarted'));
             dockerStatus.refetch();
         } catch (e) {
-            Toast.error((e as { data?: { message?: string } }).data?.message ?? String(e));
+            toast.error(errText(e));
         }
     };
 
@@ -36,22 +59,37 @@ export default function ContainerOverview() {
             const res = await loadItemStats({ name: 'system' }).unwrap();
             setItemStats(res);
         } catch (e) {
-            Toast.error((e as { data?: { message?: string } }).data?.message ?? String(e));
+            toast.error(errText(e));
         }
     };
 
     if (dockerStatus.isError) {
         return (
-            <Card title={t('container.overview.title')}>
-                <Empty title={t('container.overview.noData')} description={t('container.overview.backendOffline')} style={{ padding: '32px 0' }} />
+            <Card>
+                <CardHeader>
+                    <CardTitle>{t('container.overview.title')}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <Empty>
+                        <EmptyHeader>
+                            <EmptyTitle>{t('container.overview.noData')}</EmptyTitle>
+                            <EmptyDescription>{t('container.overview.backendOffline')}</EmptyDescription>
+                        </EmptyHeader>
+                    </Empty>
+                </CardContent>
             </Card>
         );
     }
 
     if (dockerStatus.isLoading || statusQuery.isLoading) {
         return (
-            <Card title={t('container.overview.title')}>
-                <Skeleton placeholder={<Skeleton.Title style={{ width: '100%', height: 72 }} />} loading />
+            <Card>
+                <CardHeader>
+                    <CardTitle>{t('container.overview.title')}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <Skeleton className="h-[72px] w-full" />
+                </CardContent>
             </Card>
         );
     }
@@ -64,141 +102,208 @@ export default function ContainerOverview() {
     const total = status?.containerCount ?? 0;
 
     return (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            <Typography.Title heading={4} style={{ margin: 0 }}>
-                {t('container.overview.title')}
-            </Typography.Title>
+        <div className="flex flex-col gap-4">
+            <h2 className="text-lg font-semibold">{t('container.overview.title')}</h2>
             {docker && !docker.isExist && (
                 <Card>
-                    <Empty title={t('container.overview.dockerNotInstalled')} description={t('container.overview.dockerNotInstalledDesc')} style={{ padding: '24px 0' }} />
+                    <CardContent className="pt-4">
+                        <Empty>
+                            <EmptyHeader>
+                                <EmptyTitle>{t('container.overview.dockerNotInstalled')}</EmptyTitle>
+                                <EmptyDescription>{t('container.overview.dockerNotInstalledDesc')}</EmptyDescription>
+                            </EmptyHeader>
+                        </Empty>
+                    </CardContent>
                 </Card>
             )}
             {docker && docker.isExist && !docker.isActive && (
-                <Card bodyStyle={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
-                    <Text type="danger">{t('container.overview.dockerNotRunning')}</Text>
-                    <Button type="primary" icon={<IconPlay />} loading={dockerOperating} onClick={handleStartDocker}>
-                        {t('container.overview.startDocker')}
-                    </Button>
+                <Card>
+                    <CardContent className="flex items-center justify-between gap-4 pt-4">
+                        <span className="text-sm text-destructive">{t('container.overview.dockerNotRunning')}</span>
+                        <Button onClick={handleStartDocker} disabled={dockerOperating}>
+                            <PlayIcon data-icon="inline-start" />
+                            {t('container.overview.startDocker')}
+                        </Button>
+                    </CardContent>
                 </Card>
             )}
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16 }}>
+            <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))' }}>
                 <StatCard
                     title={t('container.overview.containers')}
                     value={total ? `${running} / ${total}` : '0'}
                     percent={total ? (running / total) * 100 : 0}
-                    icon={<IconBox size="large" />}
+                    icon={<BoxIcon className="size-5" />}
                 />
-                <StatCard title={t('container.overview.images')} value={String(status?.imageCount ?? 0)} icon={<IconImage size="large" />} color="var(--semi-color-success)" />
-                <StatCard title={t('container.overview.networks')} value={String(status?.networkCount ?? 0)} icon={<IconServer size="large" />} color="var(--semi-color-warning)" />
-                <StatCard title={t('container.overview.volumes')} value={String(status?.volumeCount ?? 0)} icon={<IconLayers size="large" />} color="var(--semi-color-info)" />
+                <StatCard
+                    title={t('container.overview.images')}
+                    value={String(status?.imageCount ?? 0)}
+                    icon={<ImageIcon className="size-5" />}
+                />
+                <StatCard
+                    title={t('container.overview.networks')}
+                    value={String(status?.networkCount ?? 0)}
+                    icon={<ServerIcon className="size-5" />}
+                />
+                <StatCard
+                    title={t('container.overview.volumes')}
+                    value={String(status?.volumeCount ?? 0)}
+                    icon={<LayersIcon className="size-5" />}
+                />
             </div>
 
-            <Card
-                title={t('container.overview.diskUsage')}
-                headerExtraContent={
-                    <Button size="small" icon={<IconRefresh />} onClick={handleLoadItemStats}>
-                        {t('container.overview.loadDetail')}
-                    </Button>
-                }
-            >
-                {(() => {
-                    const usage = itemStats ?? status;
-                    if (!usage) return <Empty description={t('container.overview.loadDetailHint')} style={{ padding: '12px 0' }} />;
-                    const rows: Array<{ label: string; used: number; reclaimable: number }> = [
-                        { label: t('container.overview.containerUsage'), used: usage.containerUsage ?? 0, reclaimable: usage.containerReclaimable ?? 0 },
-                        { label: t('container.overview.imageUsage'), used: usage.imageUsage ?? 0, reclaimable: usage.imageReclaimable ?? 0 },
-                        { label: t('container.overview.volumeUsage'), used: usage.volumeUsage ?? 0, reclaimable: usage.volumeReclaimable ?? 0 },
-                        { label: t('container.overview.buildCacheUsage'), used: usage.buildCacheUsage ?? 0, reclaimable: usage.buildCacheReclaimable ?? 0 },
-                    ];
-                    const maxUsage = Math.max(1, ...rows.map((r) => r.used));
-                    return (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-                            {rows.map((r) => (
-                                <div key={r.label}>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                                        <Text size="small">{r.label}</Text>
-                                        <Text size="small" type="tertiary">
-                                            {formatBytes(r.used)} · {t('container.overview.reclaimable')} {formatBytes(r.reclaimable)}
-                                        </Text>
+            <Card>
+                <CardHeader>
+                    <CardTitle>{t('container.overview.diskUsage')}</CardTitle>
+                    <CardAction>
+                        <Button variant="outline" size="sm" onClick={handleLoadItemStats}>
+                            <RefreshCwIcon data-icon="inline-start" />
+                            {t('container.overview.loadDetail')}
+                        </Button>
+                    </CardAction>
+                </CardHeader>
+                <CardContent>
+                    {(() => {
+                        const usage = itemStats ?? status;
+                        if (!usage) {
+                            return (
+                                <Empty>
+                                    <EmptyHeader>
+                                        <EmptyDescription>{t('container.overview.loadDetailHint')}</EmptyDescription>
+                                    </EmptyHeader>
+                                </Empty>
+                            );
+                        }
+                        const rows: Array<{ label: string; used: number; reclaimable: number }> = [
+                            {
+                                label: t('container.overview.containerUsage'),
+                                used: usage.containerUsage ?? 0,
+                                reclaimable: usage.containerReclaimable ?? 0,
+                            },
+                            {
+                                label: t('container.overview.imageUsage'),
+                                used: usage.imageUsage ?? 0,
+                                reclaimable: usage.imageReclaimable ?? 0,
+                            },
+                            {
+                                label: t('container.overview.volumeUsage'),
+                                used: usage.volumeUsage ?? 0,
+                                reclaimable: usage.volumeReclaimable ?? 0,
+                            },
+                            {
+                                label: t('container.overview.buildCacheUsage'),
+                                used: usage.buildCacheUsage ?? 0,
+                                reclaimable: usage.buildCacheReclaimable ?? 0,
+                            },
+                        ];
+                        const maxUsage = Math.max(1, ...rows.map((r) => r.used));
+                        return (
+                            <div className="flex flex-col gap-3.5">
+                                {rows.map((r) => (
+                                    <div key={r.label}>
+                                        <div className="mb-1 flex justify-between gap-4">
+                                            <span className="text-sm">{r.label}</span>
+                                            <span className="text-xs text-muted-foreground">
+                                                {formatBytes(r.used)} · {t('container.overview.reclaimable')}{' '}
+                                                {formatBytes(r.reclaimable)}
+                                            </span>
+                                        </div>
+                                        <Progress value={(r.used / maxUsage) * 100} aria-label={r.label} />
                                     </div>
-                                    <Progress percent={(r.used / maxUsage) * 100} showInfo={false} aria-label={r.label} />
-                                </div>
-                            ))}
-                        </div>
-                    );
-                })()}
+                                ))}
+                            </div>
+                        );
+                    })()}
+                </CardContent>
             </Card>
 
-            <Card
-                title={
-                    <Space>
-                        <IconBolt />
-                        <span>{t('container.overview.gpu')}</span>
-                        {acceleratorType && <Tag color="blue">{acceleratorType}</Tag>}
-                    </Space>
-                }
-                headerExtraContent={<Button size="small" icon={<IconRefresh />} onClick={() => gpuQuery.refetch()}>{t('home.refresh')}</Button>}
-            >
-                {gpuQuery.isError ? (
-                    <Empty title={t('container.overview.gpuUnavailable')} description={t('container.overview.gpuUnavailableDesc')} style={{ padding: '16px 0' }} />
-                ) : devices.length === 0 ? (
-                    <Empty title={t('container.overview.noGpu')} description={t('container.overview.noGpuDesc')} style={{ padding: '16px 0' }} />
-                ) : (
-                    <>
-                        <Descriptions
-                            row
-                            size="small"
-                            style={{ marginBottom: 12, maxWidth: 900 }}
-                            data={[
-                                { key: t('container.overview.gpuType'), value: acceleratorType || '—' },
-                                { key: t('container.overview.gpuDriver'), value: gpuQuery.data?.driverVersion || gpuQuery.data?.xpuDriverVersion || '—' },
-                                { key: t('container.overview.gpuCuda'), value: gpuQuery.data?.cudaVersion || '—' },
-                                { key: t('container.overview.gpuCount'), value: String(devices.length) },
-                            ]}
-                        />
-                        <Table
-                            rowKey={(row) => (row ? `${row.type}-${row.index}-${row.uuid}` : 'gpu')}
-                            size="small"
-                            pagination={false}
-                            dataSource={devices}
-                            columns={[
-                                { title: '#', dataIndex: 'index', width: 50 },
-                                { title: t('container.overview.gpuProduct'), dataIndex: 'productName', render: (v: string, row: GpuDevice) => v || row.type || '—' },
-                                {
-                                    title: t('container.overview.gpuUtil'),
-                                    dataIndex: 'gpuUtil',
-                                    render: (v: string) => v || '—',
-                                },
-                                {
-                                    title: t('container.overview.gpuMemory'),
-                                    dataIndex: 'memUsed',
-                                    render: (_: string, row: GpuDevice) => {
+            <Card>
+                <CardHeader>
+                    <CardTitle>
+                        <span className="inline-flex items-center gap-2">
+                            <ZapIcon />
+                            <span>{t('container.overview.gpu')}</span>
+                            {acceleratorType && <Badge variant="secondary">{acceleratorType}</Badge>}
+                        </span>
+                    </CardTitle>
+                    <CardAction>
+                        <Button variant="outline" size="sm" onClick={() => gpuQuery.refetch()}>
+                            <RefreshCwIcon data-icon="inline-start" />
+                            {t('home.refresh')}
+                        </Button>
+                    </CardAction>
+                </CardHeader>
+                <CardContent>
+                    {gpuQuery.isError ? (
+                        <Empty>
+                            <EmptyHeader>
+                                <EmptyTitle>{t('container.overview.gpuUnavailable')}</EmptyTitle>
+                                <EmptyDescription>{t('container.overview.gpuUnavailableDesc')}</EmptyDescription>
+                            </EmptyHeader>
+                        </Empty>
+                    ) : devices.length === 0 ? (
+                        <Empty>
+                            <EmptyHeader>
+                                <EmptyTitle>{t('container.overview.noGpu')}</EmptyTitle>
+                                <EmptyDescription>{t('container.overview.noGpuDesc')}</EmptyDescription>
+                            </EmptyHeader>
+                        </Empty>
+                    ) : (
+                        <div className="flex flex-col gap-3">
+                            <Descriptions
+                                column={4}
+                                data={[
+                                    { key: t('container.overview.gpuType'), value: acceleratorType || '—' },
+                                    {
+                                        key: t('container.overview.gpuDriver'),
+                                        value: gpuQuery.data?.driverVersion || gpuQuery.data?.xpuDriverVersion || '—',
+                                    },
+                                    { key: t('container.overview.gpuCuda'), value: gpuQuery.data?.cudaVersion || '—' },
+                                    { key: t('container.overview.gpuCount'), value: String(devices.length) },
+                                ]}
+                            />
+                            <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead className="w-[50px]">#</TableHead>
+                                        <TableHead>{t('container.overview.gpuProduct')}</TableHead>
+                                        <TableHead>{t('container.overview.gpuUtil')}</TableHead>
+                                        <TableHead className="min-w-[180px]">
+                                            {t('container.overview.gpuMemory')}
+                                        </TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {devices.map((row: GpuDevice) => {
                                         const pct = metricPercent(row.memUsed, row.memTotal);
                                         return (
-                                            <div style={{ minWidth: 140 }}>
-                                                <Text size="small">
-                                                    {row.memUsed || '—'} / {row.memTotal || '—'} {pct !== undefined && `(${formatPercent(pct, 0)})`}
-                                                </Text>
-                                                {pct !== undefined && <Progress percent={pct} showInfo={false} aria-label="memory" />}
-                                            </div>
+                                            <TableRow key={`${row.type}-${row.index}-${row.uuid}`}>
+                                                <TableCell>{row.index}</TableCell>
+                                                <TableCell>{row.productName || row.type || '—'}</TableCell>
+                                                <TableCell>{row.gpuUtil || '—'}</TableCell>
+                                                <TableCell>
+                                                    <div className="flex min-w-[140px] flex-col gap-1.5">
+                                                        <span className="text-sm">
+                                                            {row.memUsed || '—'} / {row.memTotal || '—'}
+                                                        </span>
+                                                        <Progress
+                                                            value={pct}
+                                                            aria-label={t('container.overview.gpuMemory')}
+                                                        />
+                                                    </div>
+                                                </TableCell>
+                                            </TableRow>
                                         );
-                                    },
-                                },
-                                { title: t('container.overview.gpuTemp'), dataIndex: 'temperature', render: (v: string) => v || '—' },
-                                { title: t('container.overview.gpuPower'), dataIndex: 'powerDraw', render: (v: string, row: GpuDevice) => `${v || '—'} / ${row.powerLimit || '—'}` },
-                                {
-                                    title: t('container.overview.gpuProcesses'),
-                                    dataIndex: 'processes',
-                                    render: (v: GpuDevice['processes']) => (v && v.length ? `${v.length}` : '0'),
-                                },
-                            ]}
-                        />
-                        <Text type="tertiary" size="small" style={{ display: 'block', marginTop: 10 }}>
-                            <IconActivity size="small" /> {t('container.overview.gpuBindingNote')}
-                        </Text>
-                    </>
-                )}
+                                    })}
+                                </TableBody>
+                            </Table>
+                            <span className="block text-xs text-muted-foreground">
+                                <ActivityIcon className="mr-1 inline size-3.5 align-text-bottom" />
+                                {t('container.overview.gpuBindingNote')}
+                            </span>
+                        </div>
+                    )}
+                </CardContent>
             </Card>
         </div>
     );

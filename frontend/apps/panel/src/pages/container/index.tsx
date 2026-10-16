@@ -1,12 +1,12 @@
-import { useState } from 'react';
-import { Tabs, TabPane } from '@douyinfe/semi-ui';
-import { useTranslation } from 'react-i18next';
 import type { ContainerInfo } from '@/api/containerApi';
-import ContainerOverview from './overview';
-import ContainerList from './list';
-import ContainerImages from './images';
-import ContainerLogs from './logs';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import ContainerExec from './exec';
+import ContainerImages from './images';
+import ContainerList from './list';
+import ContainerLogs from './logs';
+import ContainerOverview from './overview';
 
 /**
  * 容器模块（迁移自旧版 frontend/ 的 container 模块）。
@@ -31,33 +31,30 @@ export default function ContainersPage() {
     };
 
     return (
-        <div style={{ padding: '0 4px' }}>
-            <Tabs type="line" activeKey={activeKey} onChange={setActiveKey} lazyRender>
-                <TabPane itemKey="overview" tab={t('container.tabs.overview')}>
-                    <div style={{ paddingTop: 16 }}>
-                        <ContainerOverview />
-                    </div>
-                </TabPane>
-                <TabPane itemKey="list" tab={t('container.tabs.list')}>
-                    <div style={{ paddingTop: 16 }}>
-                        <ContainerList onOpenLogs={openLogs} onOpenExec={openExec} />
-                    </div>
-                </TabPane>
-                <TabPane itemKey="images" tab={t('container.tabs.images')}>
-                    <div style={{ paddingTop: 16 }}>
-                        <ContainerImages />
-                    </div>
-                </TabPane>
-                <TabPane itemKey="logs" tab={t('container.tabs.logs')}>
-                    <div style={{ paddingTop: 16 }}>
-                        <ContainerLogs target={logTarget} />
-                    </div>
-                </TabPane>
-                <TabPane itemKey="exec" tab={t('container.tabs.exec')}>
-                    <div style={{ paddingTop: 16 }}>
-                        <ContainerExec target={execTarget} />
-                    </div>
-                </TabPane>
+        <div className="px-1">
+            <Tabs value={activeKey} onValueChange={setActiveKey}>
+                <TabsList variant="line">
+                    <TabsTrigger value="overview">{t('container.tabs.overview')}</TabsTrigger>
+                    <TabsTrigger value="list">{t('container.tabs.list')}</TabsTrigger>
+                    <TabsTrigger value="images">{t('container.tabs.images')}</TabsTrigger>
+                    <TabsTrigger value="logs">{t('container.tabs.logs')}</TabsTrigger>
+                    <TabsTrigger value="exec">{t('container.tabs.exec')}</TabsTrigger>
+                </TabsList>
+                <TabsContent value="overview" className="pt-4">
+                    <ContainerOverview />
+                </TabsContent>
+                <TabsContent value="list" className="pt-4">
+                    <ContainerList onOpenLogs={openLogs} onOpenExec={openExec} />
+                </TabsContent>
+                <TabsContent value="images" className="pt-4">
+                    <ContainerImages />
+                </TabsContent>
+                <TabsContent value="logs" className="pt-4">
+                    <ContainerLogs target={logTarget} />
+                </TabsContent>
+                <TabsContent value="exec" className="pt-4">
+                    <ContainerExec target={execTarget} />
+                </TabsContent>
             </Tabs>
         </div>
     );
