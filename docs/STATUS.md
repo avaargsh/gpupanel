@@ -30,6 +30,10 @@
 
 这轮删除 `.skills/semi-ui-skills/` 旧前端代理指导及不带当前提交验收的旧远程源码整合资料。**仅删除四个不参与 Linux 构建的 Darwin/Windows 日志平台文件，其他继承 GPL 运行时仍保留。** 文件移除不代表 Apache 重新许可。 旧 Catalog 禁用门槛、API 兼容锁、Host/备份/已安装应用仍需调用方/构建产物/数据库迁移及回滚证据。见 [许可现状](gpupanel/APACHE_MIGRATION_PROGRESS.md)。
 
+## 当前增量：本地项目发现（源码阶段）
+
+增加 `scripts/gpupanel-project-inventory.py list [--json]`：只读识别现有 uv/Catalog 用户项目，区分 VERIFIED/INSTALLED、MODIFIED/DRIFT 和 CONFLICT；**仍没有 Web/API 持久 Project Registry 或 Session 控制面**。真实 Ubuntu 用户执行与单版本 G3–G6 仍待验证，不能将 CLI 回执扫描当作已完成持久化工作台。
+
 ## 证据与下一步
 
 历史摘要保留 exact SHA 和 PASS/FAIL/NOT RUN；只维护本页“当前状态”。同主题新证据替换旧摘要，旧附件靠 Git history / Actions 恢复，不改写历史、不删除运行数据或系统备份。下一优先级：Project→持久 Workspace→Session、AppInstall UNKNOWN 受控恢复、Ubuntu 24.04 一致版本 G3–G6 验收。
