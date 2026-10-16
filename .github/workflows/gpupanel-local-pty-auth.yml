@@ -1,0 +1,30 @@
+name: GPUPanel local PTY authorization regression
+on:
+  pull_request:
+    paths:
+      - 'agent/utils/terminal/**'
+      - 'agent/app/api/v1/terminal_local*'
+      - '.github/workflows/gpupanel-local-pty-auth.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  local-pty-auth:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: agent/go.mod
+          cache-dependency-path: agent/go.sum
+      - name: Go formatting check
+        run: |
+          unformatted="$(gofmt -l agent/utils/terminal/session.go agent/utils/terminal/session_preflight_test.go agent/app/api/v1/terminal_local_test.go)"
+          if [ -n "$unformatted" ]; then
+            printf 'Go formatting required:\n%s\n' "$unformatted" >&2
+            exit 1
+          fi
+      - name: Privileged PTY authorization and session-negative tests
+        working-directory: agent
+        run: go test ./utils/terminal ./app/api/v1 -run 'Test(ServeCommandRejectsInvalidIdentityBeforeProviderStartup|LocalPTYRequiresOwnerAndWorksWithoutSSHSettings|HostShellCapacityAndRelease)' -count=1 -timeout=120s -v
