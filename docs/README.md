@@ -20,6 +20,7 @@
 | 上一轮 VM 安装结果 | [本轮证据](evidence/2026-10-16/local-install/RESULTS.md) |
 | 1Panel 优化与本地 React 整合 | [整合说明](gpupanel/LOCAL_REMOTE_INTEGRATION.md) |
 | Apache 后端替换调研 | [agentaliyun / HolmesGPT 复用、缺口与迁移顺序](gpupanel/APACHE_BACKEND_REPLACEMENT_RESEARCH.md) |
+| Core/Agent 重写 | [范围、接口与数据迁移](engineering/CORE_AGENT_REWRITE.md) |
 | Apache 后端替换执行 | [OpenCode 首批任务、隔离所有权与验收契约](engineering/APACHE_BACKEND_MIGRATION.md) |
 | 全仓治理 | [状态与门禁](engineering/GOVERNANCE_STATUS.md)、[风险发现](engineering/GOVERNANCE_FINDINGS.md) |
 | agentaliyun 能力 Go 重写 | [OpenCode 执行与验收](engineering/AGENT_GO_MIGRATION.md)、[能力及来源清单](gpupanel/AGENT_GO_MIGRATION_MAP.md) |
