@@ -514,7 +514,7 @@ func snapPanelData(snap snapHelper, req dto.SnapshotCreate, targetDir string) er
 	excludes = append(excludes, "./db")
 	excludes = append(excludes, "./tmp")
 	if !req.WithSystemLog {
-		excludes = append(excludes, "./log/1Panel*")
+		excludes = append(excludes, "./log/1Panel*", "./log/GPUPanel*")
 	}
 	if !req.WithTaskLog {
 		excludes = append(excludes, "./log/task")

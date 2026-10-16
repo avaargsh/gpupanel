@@ -94,7 +94,9 @@ python3 -m unittest discover -s scripts/tests -p 'test_gpupanel_license_audit.py
 - `agent/app/service/{snapshot_create,snapshot_recover,snapshot_rollback}.go` — 曾复制 `/usr/local/bin/pctl`（已迁移）
 - `agent/constant/app.go:4` — `ContainerPrefix = "1Panel-"` → `"GPUPanel-"`（**L3 清理完成**：容器名前缀不再使用 1Panel 标识）
 - `agent/app/service/nginx_http_config.go:25` — `nginxHTTPConfigHeader = "# Managed by 1Panel..."` → `"# Managed by GPUPanel..."`（**L3 清理完成**：nginx 管理配置头部不再使用 1Panel 标识）
-- `agent/app/service/{app,container_compose,file,website_*,database_*,firewall_utils,...}` — 大量待审查
+- `agent/app/service/snapshot_create.go:517` — 快照排除 `"./log/1Panel*"` → `"./log/1Panel*", "./log/GPUPanel*"`（**L3 清理完成**：快照排除同时覆盖旧 1Panel 和新 GPUPanel 日志）
+- `agent/app/service/app.go:374` — 错误码 `"Err1PanelNetworkFailed"` → `"ErrGPUPanelNetworkFailed"`（**L3 清理完成**：网络失败错误码不再使用 1Panel 标识）
+- `agent/app/service/{container_compose,file,website_*,database_*,firewall_utils,...}` — 大量待审查
 - `agent/app/api/v1/{app,terminal,...}` — 待审查
 - `agent/global/global.go` — 资源 URL 引用（保留）
 - `agent/utils/geo/database.go` — GeoIP 数据源 URL（保留）

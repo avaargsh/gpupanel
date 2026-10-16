@@ -371,7 +371,7 @@ func (a AppService) installWithHooks(req request.AppInstallCreate, executeScript
 		return
 	}
 	if err = docker.CreateDefaultDockerNetwork(); err != nil {
-		err = buserr.WithDetail("Err1PanelNetworkFailed", err.Error(), nil)
+		err = buserr.WithDetail("ErrGPUPanelNetworkFailed", err.Error(), nil)
 		return
 	}
 	var (
