@@ -9,7 +9,7 @@
 | L0 | 保留真实许可和上游归因 | **PASS** | 文档检查：根 LICENSE GPL-3.0，NOTICE.md 保留 1Panel 信用和基线 |
 | L1 | 建立文件级 provenance inventory | **IN PROGRESS** | `scripts/gpupanel-license-audit.py` 已就绪，inventory JSON 已生成（见下文） |
 | L2 | 引入明确拥有权的独立组件 | **IN PROGRESS** | `backend/` host-observer 已集成（4 Python 脚本已为文件级 Apache-2.0） |
-| L3 | 从 Apache 分发中移除继承的 GPL 实现 | **IN PROGRESS (pilot)** | 886 个 inherited 文件仍为 GPL；试点：移除 core/logs.go 远程 shell 执行 |
+| L3 | 从 Apache 分发中移除继承的 GPL 实现 | **IN PROGRESS (pilot)** | 886 个 inherited 文件仍为 GPL；试点 1：移除 core/logs.go 远程 shell 执行；试点 2：移除 agent 容器前缀和 nginx 配置头部中的 "1Panel" 内部标识 |
 | L4 | 扫描实际发布产物 | **NOT STARTED** | 无发布产物扫描证据 |
 | L5 | 变更发布级许可证声明 | **BLOCKED** | 需先通过 L1-L4 |
 
@@ -92,6 +92,8 @@ python3 -m unittest discover -s scripts/tests -p 'test_gpupanel_license_audit.py
 - `agent/init/viper/viper.go`、`init/hook/hook.go` — 曾调用 `xpack.MultiNodeProvider.LoadNodeInfo`（已迁移）
 - `agent/init/migration/migrations/init.go` — 曾读取 pctl LANGUAGE/PANEL_EDITION（已迁移）
 - `agent/app/service/{snapshot_create,snapshot_recover,snapshot_rollback}.go` — 曾复制 `/usr/local/bin/pctl`（已迁移）
+- `agent/constant/app.go:4` — `ContainerPrefix = "1Panel-"` → `"GPUPanel-"`（**L3 清理完成**：容器名前缀不再使用 1Panel 标识）
+- `agent/app/service/nginx_http_config.go:25` — `nginxHTTPConfigHeader = "# Managed by 1Panel..."` → `"# Managed by GPUPanel..."`（**L3 清理完成**：nginx 管理配置头部不再使用 1Panel 标识）
 - `agent/app/service/{app,container_compose,file,website_*,database_*,firewall_utils,...}` — 大量待审查
 - `agent/app/api/v1/{app,terminal,...}` — 待审查
 - `agent/global/global.go` — 资源 URL 引用（保留）
