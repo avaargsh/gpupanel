@@ -19,7 +19,7 @@ All other files retain their existing terms unless separately and explicitly rev
 
 | Question | Evidence and limitations |
 | --- | --- |
-| Were these four files present in 1Panel baseline? | No. The L1 source provenance tool marks the first audit pair as added; the dependency audit pair was subsequently introduced in #62; the installed-pnpm evidence pair was introduced in [#96](https://github.com/avaargsh/gpupanel/pull/96). This fact alone does **not** prove original authorship. |
+| Were these six files present in 1Panel baseline? | No. The L1 source provenance tool marks the first audit pair as added; the dependency audit pair was subsequently introduced in #62; the installed-pnpm evidence pair was introduced in [#96](https://github.com/avaargsh/gpupanel/pull/96). This fact alone does **not** prove original authorship. |
 | Where were they authored? | Independently developed as standalone review tooling during GPUPanel's Apache transition, introduced in [#59](https://github.com/avaargsh/gpupanel/pull/59), [#62](https://github.com/avaargsh/gpupanel/pull/62), and [#96](https://github.com/avaargsh/gpupanel/pull/96), with GPUPanel owner requesting Apache-2.0 migration and continued development. |
 | Did they copy GPL-covered implementation? | Source review: they use Python standard-library Git subprocess/JSON/digest utilities and synthetic fixtures, without importing or embedding 1Panel Core, Agent or frontend code. This is a bounded technical/source review, **not a comprehensive copyright opinion**. |
 | Is this code distributed as a separate Apache-only GPUPanel product? | No. These files may be independently reused under their file-level Apache-2.0 terms, but the inherited 1Panel-based fork/combined GPUPanel distribution remains GPL-3.0. |
