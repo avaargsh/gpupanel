@@ -101,17 +101,24 @@ type Guard struct {
 
 // New validates configuration and returns a Guard. It fails when the fixed
 // target is missing/unbounded/wildcarded or when any required trusted
-// dependency is nil, so a Guard can never be built without authentication and
-// CSRF enforcement.
+// dependency is unusable, including a typed-nil pointer implementation or a
+// nil function adapter. A Guard therefore can never be built without working
+// authentication and CSRF enforcement, and it never panics per request because
+// of a typed-nil dependency.
 func New(cfg Config) (*Guard, error) {
 	if err := validateTarget(cfg.TargetResource); err != nil {
 		return nil, err
 	}
-	if cfg.Authenticator == nil {
+	if isNilDependency(cfg.Authenticator) {
 		return nil, errors.New("requestguard: authenticator is required")
 	}
-	if cfg.CSRF == nil {
+	if isNilDependency(cfg.CSRF) {
 		return nil, errors.New("requestguard: CSRF validator is required")
+	}
+	if isNilDependency(cfg.Origin) {
+		// Origin is optional: a typed-nil value is treated as absent rather
+		// than stored, so it can never be invoked and panic.
+		cfg.Origin = nil
 	}
 	return &Guard{
 		target: cfg.TargetResource,
@@ -155,7 +162,8 @@ func (g *Guard) Handler(next http.Handler) http.Handler {
 
 		principal, err := g.auth.Authenticate(r)
 		if err != nil {
-			writeRefusal(w, refusalStatus(err), refusalMessage(err))
+			status, message := authRefusal(err)
+			writeRefusal(w, status, message)
 			return
 		}
 
@@ -171,15 +179,24 @@ func (g *Guard) Handler(next http.Handler) http.Handler {
 
 		if !IsSafeMethod(r.Method) {
 			if err := g.csrf.ValidateCSRF(r); err != nil {
-				writeRefusal(w, http.StatusForbidden, msgForbidden)
+				status, message := dependencyRefusal(err)
+				writeRefusal(w, status, message)
 				return
 			}
 			if g.origin != nil {
 				if err := g.origin.ValidateOrigin(r); err != nil {
-					writeRefusal(w, http.StatusForbidden, msgForbidden)
+					status, message := dependencyRefusal(err)
+					writeRefusal(w, status, message)
 					return
 				}
 			}
+		}
+
+		// Final check: a successful CSRF or origin callback may itself have
+		// canceled the context. Never call downstream with a dead context.
+		if ctx.Err() != nil {
+			writeRefusal(w, http.StatusServiceUnavailable, msgUnavailable)
+			return
 		}
 
 		next.ServeHTTP(w, r.WithContext(
@@ -188,22 +205,23 @@ func (g *Guard) Handler(next http.Handler) http.Handler {
 	})
 }
 
-// refusalStatus maps a dependency error to a status without inspecting its
-// message: only the trusted sentinel classification matters.
-func refusalStatus(err error) int {
-	switch {
-	case errors.Is(err, ErrUnauthenticated):
-		return http.StatusUnauthorized
-	default:
-		return http.StatusServiceUnavailable
+// authRefusal classifies an authenticator error without inspecting its
+// message: anonymous is 401, every other (including wrapped ErrBackend) is a
+// non-diagnostic 503.
+func authRefusal(err error) (int, string) {
+	if errors.Is(err, ErrUnauthenticated) {
+		return http.StatusUnauthorized, msgUnauthorized
 	}
+	return http.StatusServiceUnavailable, msgUnavailable
 }
 
-func refusalMessage(err error) string {
-	switch {
-	case errors.Is(err, ErrUnauthenticated):
-		return msgUnauthorized
-	default:
-		return msgUnavailable
+// dependencyRefusal classifies a CSRF/origin error: only the trusted ErrBackend
+// sentinel (wrapped or not) is an operational failure mapping to 503; an
+// ordinary rejection such as an invalid CSRF token stays 403. Both responses
+// use a fixed, non-diagnostic message.
+func dependencyRefusal(err error) (int, string) {
+	if errors.Is(err, ErrBackend) {
+		return http.StatusServiceUnavailable, msgUnavailable
 	}
+	return http.StatusForbidden, msgForbidden
 }
