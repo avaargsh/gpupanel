@@ -9,11 +9,14 @@
 | --- | --- | --- |
 | Host metrics | `1acab29ad169` 审查 ACCEPT，已集成；race/vet 通过 | 接入 API 时保留逐源状态，只用固定系统路径；内部自定义路径仍有 stat/open 阻塞窗口 |
 | operation | `6b600eaf9409` 独立复审 ACCEPT，已纳入集成树；race/vet 通过 | 功能验收完成；变更接线仍受 D1/D2 限制，无执行器/持久账本 |
-| 源码门禁 | 候选 `4d47768bfe66`，未接收 | quality-gates：新增源码 500 行限制、backend CI；待独立复验 |
+| 源码门禁 | `e689facdc406` 修复已接收，集成 `d2cd86329929` | 新增源码 500 行限制及 backend CI；本机 275 项 Python 通过，远程 CI 未执行 |
 | Core 本地 token | 已确认非空 token 获得认证豁免，修复中 | local-token-auth：真实 token 验证、精确 peer/路径/方法和拒绝测试 |
 | MySQL 凭据 | 已确认备份/恢复 argv 含密码，修复中 | mysql-secret-argv：安全传递、失败清理、回归测试 |
 | 许可来源 | 未决 | hostmetrics 与 hostobserve 存在注释/骨架匹配；核对归属及 Apache 文件清单 |
 | 数据迁移、安装恢复 | 未验收 | 明确 GORM/存储所有者，在一次性 Ubuntu VM 验证迁移和恢复 |
+
+重写进展：Host 诊断候选 `073925202b9a`（审查补强后待复验）；请求边界 `879d54294391`
+因 typed-nil、错误分类和取消检查返工；两者未接真实会话或运行路由。
 
 ## 本机基线
 
