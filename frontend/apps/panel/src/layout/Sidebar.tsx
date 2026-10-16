@@ -1,10 +1,11 @@
-import { Button } from '@douyinfe/semi-ui';
-import { IconChevronLeft, IconChevronRight, IconComponent } from '@douyinfe/semi-icons';
+import { ChevronLeft, ChevronRight, Component } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Link, useLocation } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
 import { currentNav, navSections } from '@/config/nav';
-import { useAppDispatch, useAppSelector } from '@/store/hooks';
+import { cn } from '@/lib/utils';
 import { toggleSidebar } from '@/features/ui/uiSlice';
+import { useAppDispatch, useAppSelector } from '@/store/hooks';
 
 export default function Sidebar() {
     const { t } = useTranslation();
@@ -12,9 +13,9 @@ export default function Sidebar() {
     const dispatch = useAppDispatch();
     const collapsed = useAppSelector((s) => s.ui.sidebarCollapsed);
     const active = currentNav(location.pathname, location.search)?.path;
-    return <aside className={`workspace-sidebar ${collapsed ? 'is-collapsed' : ''}`} aria-label={t('app.name')}>
+    return <aside className={cn('workspace-sidebar', collapsed && 'is-collapsed')} aria-label={t('app.name')}>
         <Link className="workspace-brand" to="/" aria-label="GPUPanel">
-            <span className="workspace-mark"><IconComponent size="large" /></span>
+            <span className="workspace-mark"><Component className="size-4" aria-hidden="true" /></span>
             {!collapsed && <span><strong>GPUPanel</strong></span>}
         </Link>
         <nav className="workspace-nav" aria-label={t('workbench.personal')}>
@@ -29,8 +30,10 @@ export default function Sidebar() {
             </section>)}
         </nav>
         <div className="workspace-sidebar-footer">
-            <Button theme="borderless" type="tertiary" icon={collapsed ? <IconChevronRight /> : <IconChevronLeft />}
-                aria-label={collapsed ? t('common.expand') : t('common.collapse')} onClick={() => dispatch(toggleSidebar())} />
+            <Button variant="ghost" size="icon" aria-label={collapsed ? t('common.expand') : t('common.collapse')}
+                onClick={() => dispatch(toggleSidebar())}>
+                {collapsed ? <ChevronRight aria-hidden="true" /> : <ChevronLeft aria-hidden="true" />}
+            </Button>
         </div>
     </aside>;
 }

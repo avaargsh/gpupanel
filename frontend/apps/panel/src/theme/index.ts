@@ -1,17 +1,11 @@
 import type { ResolvedMode } from './tokens';
 
 /**
- * 切换 Semi Design 的亮/暗色盘。
- * Semi 会在 body 下同时挂载两套色盘，通过 `body[theme-mode='dark']` 激活暗色。
- * 参考：https://semi.design/zh-CN/advanced/dark-mode
+ * Redux is the sole theme source. shadcn/ui activates dark tokens through the
+ * `dark` class on the html element (`@custom-variant dark` in globals.css).
  */
 export function applyThemeMode(mode: ResolvedMode): void {
-    const body = document.body;
-    if (mode === 'dark') {
-        body.setAttribute('theme-mode', 'dark');
-    } else {
-        body.removeAttribute('theme-mode');
-    }
+    document.documentElement.classList.toggle('dark', mode === 'dark');
 }
 
 export type { ResolvedMode } from './tokens';
