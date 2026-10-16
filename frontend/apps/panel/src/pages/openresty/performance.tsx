@@ -1,6 +1,3 @@
-import { useEffect, useState } from 'react';
-import { Banner, Button, InputNumber, Select, Spin, Toast, Typography } from '@douyinfe/semi-ui';
-import { useTranslation } from 'react-i18next';
 import {
     useGetNginxBrotliConfigQuery,
     useGetNginxConfigByScopeQuery,
@@ -8,10 +5,17 @@ import {
     useUpdateNginxConfigMutation,
     type NginxParam,
 } from '@/api/openrestyApi';
-import { errText, Field } from '@/pages/toolbox/shared';
+import { Alert, AlertTitle } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
+import { Spinner } from '@/components/ui/spinner';
+import { errText } from '@/pages/toolbox/shared';
+import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { toast } from 'sonner';
+import { ConfigField } from './fields';
 import { parseIntParam, parseSizeParam, SIZE_KEYS, unitLabel, withUnit } from './shared';
-
-const { Text } = Typography;
 
 interface PerfForm {
     server_names_hash_bucket_size: number;
@@ -40,7 +44,10 @@ const DEFAULT_FORM: PerfForm = {
 };
 
 /** 把 scope 返回的指令参数解析进表单字段，并记录体积单位。 */
-function fromParams(params: NginxParam[]): { values: Record<string, unknown>; units: Record<string, string> } {
+function fromParams(params: NginxParam[]): {
+    values: Record<string, unknown>;
+    units: Record<string, string>;
+} {
     const values: Record<string, unknown> = {};
     const units: Record<string, string> = {};
     for (const p of params) {
@@ -69,7 +76,9 @@ export default function PerformanceTab() {
     const modules = useGetNginxModulesQuery();
     const brotli = modules.data?.modules?.find((item) => item.name === 'ngx_brotli');
     const brotliAvailable = !!brotli && brotli.enable && brotli.buildStatus === 'ready';
-    const brotliCfg = useGetNginxBrotliConfigQuery(undefined, { skip: !brotliAvailable });
+    const brotliCfg = useGetNginxBrotliConfigQuery(undefined, {
+        skip: !brotliAvailable,
+    });
     const [updateConfig, { isLoading: saving }] = useUpdateNginxConfigMutation();
 
     const [form, setForm] = useState(DEFAULT_FORM);
@@ -105,7 +114,11 @@ export default function PerformanceTab() {
         }
         if (brotliAvailable && !managedUnavailable) {
             if (!Number.isFinite(form.brotli_comp_level) || form.brotli_comp_level < 0 || form.brotli_comp_level > 11) {
-                return t('openresty.per.rangeError', { name: t('openresty.per.brotliCompLevel'), min: 0, max: 11 });
+                return t('openresty.per.rangeError', {
+                    name: t('openresty.per.brotliCompLevel'),
+                    min: 0,
+                    max: 11,
+                });
             }
         }
         return null;
@@ -114,7 +127,7 @@ export default function PerformanceTab() {
     const submit = async () => {
         const invalid = validate();
         if (invalid) {
-            Toast.error(invalid);
+            toast.error(invalid);
             return;
         }
         const params = {
@@ -127,9 +140,13 @@ export default function PerformanceTab() {
             gzip_comp_level: String(form.gzip_comp_level),
         };
         try {
-            await updateConfig({ scope: 'http-per', operate: 'update', params }).unwrap();
+            await updateConfig({
+                scope: 'http-per',
+                operate: 'update',
+                params,
+            }).unwrap();
         } catch (e) {
-            Toast.error(errText(e));
+            toast.error(errText(e));
             return;
         }
         if (brotliAvailable && !managedUnavailable) {
@@ -144,11 +161,11 @@ export default function PerformanceTab() {
                     },
                 }).unwrap();
             } catch (e) {
-                Toast.error(t('openresty.per.brotliSaveFailed'));
+                toast.error(t('openresty.per.brotliSaveFailed'));
                 return;
             }
         }
-        Toast.success(t('openresty.saveSuccess'));
+        toast.success(t('openresty.saveSuccess'));
         httpPer.refetch();
         if (brotliAvailable) brotliCfg.refetch();
     };
@@ -160,52 +177,89 @@ export default function PerformanceTab() {
         onChange: (v: number) => void,
         opts: { min?: number; max?: number; suffix?: string } = {},
     ) => (
-        <Field key={label} label={label} help={help}>
-            <InputNumber
+        <ConfigField key={label} label={label} help={help}>
+            <Input
+                type="number"
+                aria-label={label}
                 value={value}
                 min={opts.min}
                 max={opts.max}
-                suffix={opts.suffix}
-                onChange={(v) => onChange(Number(v ?? 0))}
+                onChange={(e) => onChange(e.target.valueAsNumber)}
                 style={{ width: '100%' }}
             />
-        </Field>
+            {opts.suffix ? <span className="text-sm text-muted-foreground">{opts.suffix}</span> : null}
+        </ConfigField>
     );
 
     if (httpPer.isError) {
-        return <Banner type="danger" closeIcon={null} title={errText(httpPer.error)} />;
+        return (
+            <Alert variant="destructive">
+                <AlertTitle>{errText(httpPer.error)}</AlertTitle>
+            </Alert>
+        );
     }
 
     return (
-        <Spin spinning={httpPer.isLoading || modules.isLoading}>
+        <div className="flex flex-col gap-4">
+            {httpPer.isLoading || modules.isLoading ? <Spinner /> : null}
             {brotliAvailable && brotliCfg.data?.managedExternally ? (
-                <Banner type="info" closeIcon={null} style={{ marginBottom: 12 }} title={t('openresty.per.brotliManagedExternally')} />
+                <Alert>
+                    <AlertTitle>{t('openresty.per.brotliManagedExternally')}</AlertTitle>
+                </Alert>
             ) : null}
             {managedUnavailable ? (
-                <Banner type="warning" closeIcon={null} style={{ marginBottom: 12 }} title={t('openresty.per.brotliManagedUnavailable')} />
+                <Alert>
+                    <AlertTitle>{t('openresty.per.brotliManagedUnavailable')}</AlertTitle>
+                </Alert>
             ) : null}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 16 }}>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            <div
+                style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+                    gap: 16,
+                }}
+            >
+                <div
+                    style={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: 14,
+                    }}
+                >
                     {numberField(
                         'server_names_hash_bucket_size',
                         t('openresty.per.serverNamesHashBucketSizeHelper'),
                         form.server_names_hash_bucket_size,
-                        (v) => setForm((s) => ({ ...s, server_names_hash_bucket_size: v })),
+                        (v) =>
+                            setForm((s) => ({
+                                ...s,
+                                server_names_hash_bucket_size: v,
+                            })),
                         { min: 1, max: 9999 },
                     )}
                     {numberField(
                         'client_header_buffer_size',
                         t('openresty.per.clientHeaderBufferSizeHelper'),
                         form.client_header_buffer_size,
-                        (v) => setForm((s) => ({ ...s, client_header_buffer_size: v })),
-                        { min: 0, suffix: unitLabel(units.client_header_buffer_size, 'k') },
+                        (v) =>
+                            setForm((s) => ({
+                                ...s,
+                                client_header_buffer_size: v,
+                            })),
+                        {
+                            min: 0,
+                            suffix: unitLabel(units.client_header_buffer_size, 'k'),
+                        },
                     )}
                     {numberField(
                         'client_max_body_size',
                         t('openresty.per.clientMaxBodySizeHelper'),
                         form.client_max_body_size,
                         (v) => setForm((s) => ({ ...s, client_max_body_size: v })),
-                        { min: 0, suffix: unitLabel(units.client_max_body_size, 'm') },
+                        {
+                            min: 0,
+                            suffix: unitLabel(units.client_max_body_size, 'm'),
+                        },
                     )}
                     {numberField(
                         'keepalive_timeout',
@@ -215,16 +269,35 @@ export default function PerformanceTab() {
                         { min: 0 },
                     )}
                 </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-                    <Field label="gzip" help={t('openresty.per.gzipHelper')}>
-                        <Select value={form.gzip} onChange={(v) => setForm((s) => ({ ...s, gzip: String(v) }))} optionList={ON_OFF} style={{ width: '100%' }} />
-                    </Field>
+                <div
+                    style={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: 14,
+                    }}
+                >
+                    <ConfigField label="gzip" help={t('openresty.per.gzipHelper')}>
+                        <NativeSelect
+                            aria-label="gzip"
+                            value={form.gzip}
+                            onChange={(e) => setForm((s) => ({ ...s, gzip: e.target.value }))}
+                        >
+                            {ON_OFF.map((option) => (
+                                <NativeSelectOption key={option.value} value={option.value}>
+                                    {option.label}
+                                </NativeSelectOption>
+                            ))}
+                        </NativeSelect>
+                    </ConfigField>
                     {numberField(
                         'gzip_min_length',
                         t('openresty.per.gzipMinLengthHelper'),
                         form.gzip_min_length,
                         (v) => setForm((s) => ({ ...s, gzip_min_length: v })),
-                        { min: 0, suffix: unitLabel(units.gzip_min_length, 'k') },
+                        {
+                            min: 0,
+                            suffix: unitLabel(units.gzip_min_length, 'k'),
+                        },
                     )}
                     {numberField(
                         'gzip_comp_level',
@@ -235,35 +308,65 @@ export default function PerformanceTab() {
                     )}
                 </div>
                 {brotliAvailable ? (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-                        <Field label="brotli" help={t('openresty.per.brotliHelper')}>
-                            <Select value={form.brotli} onChange={(v) => setForm((s) => ({ ...s, brotli: String(v) }))} optionList={ON_OFF} style={{ width: '100%' }} />
-                        </Field>
+                    <div
+                        style={{
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: 14,
+                        }}
+                    >
+                        <ConfigField label="brotli" help={t('openresty.per.brotliHelper')}>
+                            <NativeSelect
+                                aria-label="brotli"
+                                value={form.brotli}
+                                onChange={(e) =>
+                                    setForm((s) => ({
+                                        ...s,
+                                        brotli: e.target.value,
+                                    }))
+                                }
+                            >
+                                {ON_OFF.map((option) => (
+                                    <NativeSelectOption key={option.value} value={option.value}>
+                                        {option.label}
+                                    </NativeSelectOption>
+                                ))}
+                            </NativeSelect>
+                        </ConfigField>
                         {numberField(
                             'brotli_min_length',
                             t('openresty.per.brotliMinLengthHelper'),
                             form.brotli_min_length,
-                            (v) => setForm((s) => ({ ...s, brotli_min_length: v })),
-                            { min: 0, suffix: unitLabel(units.brotli_min_length, 'k') },
+                            (v) =>
+                                setForm((s) => ({
+                                    ...s,
+                                    brotli_min_length: v,
+                                })),
+                            {
+                                min: 0,
+                                suffix: unitLabel(units.brotli_min_length, 'k'),
+                            },
                         )}
                         {numberField(
                             'brotli_comp_level',
                             t('openresty.per.brotliCompLevelHelper'),
                             form.brotli_comp_level,
-                            (v) => setForm((s) => ({ ...s, brotli_comp_level: v })),
+                            (v) =>
+                                setForm((s) => ({
+                                    ...s,
+                                    brotli_comp_level: v,
+                                })),
                             { min: 0, max: 11 },
                         )}
                     </div>
                 ) : null}
             </div>
             <div style={{ marginTop: 16 }}>
-                <Button theme="solid" type="primary" onClick={submit} loading={saving}>
+                <Button onClick={submit} disabled={saving}>
                     {t('common.confirm')}
                 </Button>
             </div>
-            <Typography.Text type="tertiary" size="small" style={{ display: 'block', marginTop: 8 }}>
-                {t('openresty.per.helper')}
-            </Typography.Text>
-        </Spin>
+            <p className="text-sm text-muted-foreground">{t('openresty.per.helper')}</p>
+        </div>
     );
 }

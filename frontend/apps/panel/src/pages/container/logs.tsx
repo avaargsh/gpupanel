@@ -1,18 +1,24 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { Button, Card, Empty, InputNumber, Select, Space, Switch, Typography } from '@douyinfe/semi-ui';
-import { IconPlay, IconRefresh, IconStop } from '@douyinfe/semi-icons';
-import { useTranslation } from 'react-i18next';
 import { useListContainersQuery, type ContainerInfo } from '@/api/containerApi';
-import { getCookie } from '@/utils/cookie';
+import { Button } from '@/components/ui/button';
+import { Card, CardAction, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from '@/components/ui/empty';
+import { Input } from '@/components/ui/input';
+import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
+import { Switch } from '@/components/ui/switch';
 import { useAppSelector } from '@/store/hooks';
-
-const { Text } = Typography;
+import { getCookie } from '@/utils/cookie';
+import { PlayIcon, RefreshCwIcon, SquareIcon } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { Combobox } from './combobox';
 
 const MAX_LINES = 3000;
 
 /** 与 Terminal 一致的鉴权探测：仅 401/403/313 等鉴权错误才阻断 */
 const AUTH_ERROR_STATUS = new Set([401, 403, 313]);
 const AUTH_ERROR_CODE = new Set([401, 403, 412, 313]);
+
+const SINCE_OPTIONS = ['all', '30m', '1h', '6h', '12h', '24h'];
 
 interface ContainerLogsProps {
     target: ContainerInfo | null;
@@ -86,7 +92,8 @@ export default function ContainerLogs({ target }: ContainerLogsProps) {
             const ct = res.headers.get('content-type') ?? '';
             if (!ct.includes('application/json')) return '';
             const data = (await res.json()) as { code?: number; message?: string };
-            if (typeof data.code === 'number' && AUTH_ERROR_CODE.has(data.code)) return data.message ?? String(data.code);
+            if (typeof data.code === 'number' && AUTH_ERROR_CODE.has(data.code))
+                return data.message ?? String(data.code);
             return '';
         } catch {
             return '';
@@ -124,83 +131,110 @@ export default function ContainerLogs({ target }: ContainerLogsProps) {
 
     if (listQuery.isError) {
         return (
-            <Card title={t('container.logs.title')}>
-                <Empty title={t('container.overview.noData')} description={t('container.overview.backendOffline')} style={{ padding: '24px 0' }} />
+            <Card>
+                <CardHeader>
+                    <CardTitle>{t('container.logs.title')}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <Empty>
+                        <EmptyHeader>
+                            <EmptyTitle>{t('container.overview.noData')}</EmptyTitle>
+                            <EmptyDescription>{t('container.overview.backendOffline')}</EmptyDescription>
+                        </EmptyHeader>
+                    </Empty>
+                </CardContent>
             </Card>
         );
     }
 
     return (
-        <Card
-            title={t('container.logs.title')}
-            headerExtraContent={
-                <Space>
-                    <Button icon={<IconRefresh />} onClick={() => listQuery.refetch()}>{t('home.refresh')}</Button>
-                    {streaming ? (
-                        <Button type="danger" icon={<IconStop />} onClick={stop}>{t('container.logs.stop')}</Button>
-                    ) : (
-                        <Button type="primary" icon={<IconPlay />} disabled={!containerName} onClick={start}>{t('container.logs.start')}</Button>
-                    )}
-                </Space>
-            }
-        >
-            <Space spacing={12} wrap style={{ marginBottom: 12 }}>
-                <Select
-                    placeholder={t('container.logs.selectContainer')}
-                    value={containerName || undefined}
-                    optionList={options}
-                    filter
-                    style={{ width: 240 }}
-                    onChange={(v) => setContainerName(String(v))}
-                />
-                <Select
-                    value={since}
-                    style={{ width: 120 }}
-                    optionList={[
-                        { label: t('container.logs.sinceAll'), value: 'all' },
-                        { label: '30m', value: '30m' },
-                        { label: '1h', value: '1h' },
-                        { label: '6h', value: '6h' },
-                        { label: '12h', value: '12h' },
-                        { label: '24h', value: '24h' },
-                    ]}
-                    onChange={(v) => setSince(String(v))}
-                />
-                <Space spacing={4}>
-                    <Text size="small">{t('container.logs.tail')}</Text>
-                    <InputNumber value={tail} min={0} max={10000} style={{ width: 100 }} onChange={(v) => setTail(Number(v ?? 0))} />
-                </Space>
-                <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                    <Switch size="small" checked={follow} onChange={setFollow} />
-                    <Text size="small">{t('container.logs.follow')}</Text>
-                </label>
-                <Space spacing={4}>
-                    <Switch size="small" checked={timestamp} onChange={setTimestamp} />
-                    <Text size="small">{t('container.logs.timestamp')}</Text>
-                </Space>
-            </Space>
+        <Card>
+            <CardHeader>
+                <CardTitle>{t('container.logs.title')}</CardTitle>
+                <CardAction>
+                    <div className="flex items-center gap-2">
+                        <Button variant="outline" onClick={() => listQuery.refetch()}>
+                            <RefreshCwIcon data-icon="inline-start" />
+                            {t('home.refresh')}
+                        </Button>
+                        {streaming ? (
+                            <Button variant="destructive" onClick={stop}>
+                                <SquareIcon data-icon="inline-start" />
+                                {t('container.logs.stop')}
+                            </Button>
+                        ) : (
+                            <Button disabled={!containerName} onClick={start}>
+                                <PlayIcon data-icon="inline-start" />
+                                {t('container.logs.start')}
+                            </Button>
+                        )}
+                    </div>
+                </CardAction>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-3">
+                <div className="flex flex-wrap items-center gap-3">
+                    <Combobox
+                        className="w-[240px]"
+                        options={options}
+                        value={containerName || undefined}
+                        onChange={setContainerName}
+                        placeholder={t('container.logs.selectContainer')}
+                        emptyText={t('container.overview.noData')}
+                    />
+                    <NativeSelect
+                        aria-label="since"
+                        className="w-[120px]"
+                        value={since}
+                        onChange={(e) => setSince(e.target.value)}
+                    >
+                        {SINCE_OPTIONS.map((value) => (
+                            <NativeSelectOption key={value} value={value}>
+                                {value === 'all' ? t('container.logs.sinceAll') : value}
+                            </NativeSelectOption>
+                        ))}
+                    </NativeSelect>
+                    <div className="flex items-center gap-1.5">
+                        <span className="text-sm">{t('container.logs.tail')}</span>
+                        <Input
+                            type="number"
+                            min={0}
+                            max={10000}
+                            value={tail}
+                            onChange={(e) => setTail(Math.min(10000, Math.max(0, Number(e.target.value) || 0)))}
+                            className="w-[100px]"
+                        />
+                    </div>
+                    <label className="inline-flex items-center gap-1.5">
+                        <Switch checked={follow} onCheckedChange={setFollow} />
+                        <span className="text-sm">{t('container.logs.follow')}</span>
+                    </label>
+                    <div className="inline-flex items-center gap-1.5">
+                        <Switch checked={timestamp} onCheckedChange={setTimestamp} />
+                        <span className="text-sm">{t('container.logs.timestamp')}</span>
+                    </div>
+                </div>
 
-            {errorMsg && <Text type="danger" style={{ display: 'block', marginBottom: 8 }}>{errorMsg}</Text>}
+                {errorMsg ? <span className="text-sm text-destructive">{errorMsg}</span> : null}
 
-            <pre
-                ref={outRef}
-                style={{
-                    margin: 0,
-                    height: '52vh',
-                    overflow: 'auto',
-                    padding: 12,
-                    fontSize: 12,
-                    lineHeight: 1.5,
-                    color: '#e8eaf0',
-                    background: '#14151a',
-                    borderRadius: 8,
-                    whiteSpace: 'pre-wrap',
-                    wordBreak: 'break-all',
-                }}
-                data-testid="container-log-output"
-            >
-                {output || (streaming ? t('container.logs.waiting') : t('container.logs.placeholder'))}
-            </pre>
+                <pre
+                    className="bg-muted text-foreground"
+                    ref={outRef}
+                    style={{
+                        margin: 0,
+                        height: '52vh',
+                        overflow: 'auto',
+                        padding: 12,
+                        fontSize: 12,
+                        lineHeight: 1.5,
+                        borderRadius: 8,
+                        whiteSpace: 'pre-wrap',
+                        wordBreak: 'break-all',
+                    }}
+                    data-testid="container-log-output"
+                >
+                    {output || (streaming ? t('container.logs.waiting') : t('container.logs.placeholder'))}
+                </pre>
+            </CardContent>
         </Card>
     );
 }

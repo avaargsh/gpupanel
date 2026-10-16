@@ -1,14 +1,12 @@
-import { useEffect, useState } from 'react';
-import { Banner, Button, Space, Spin, TextArea, Toast, Typography } from '@douyinfe/semi-ui';
-import { useTranslation } from 'react-i18next';
-import {
-    useGetAppDefaultConfigMutation,
-    useGetNginxFileQuery,
-    useUpdateNginxFileMutation,
-} from '@/api/openrestyApi';
+import { useGetAppDefaultConfigMutation, useGetNginxFileQuery, useUpdateNginxFileMutation } from '@/api/openrestyApi';
+import { Alert, AlertTitle } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
+import { Spinner } from '@/components/ui/spinner';
+import { Textarea } from '@/components/ui/textarea';
 import { errText } from '@/pages/toolbox/shared';
-
-const { Text } = Typography;
+import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { toast } from 'sonner';
 
 export default function SourceTab() {
     const { t } = useTranslation();
@@ -26,54 +24,60 @@ export default function SourceTab() {
 
     const onLoadDefault = async () => {
         try {
-            const res = await loadDefault({ type: 'openresty', name: '' }).unwrap();
+            const res = await loadDefault({
+                type: 'openresty',
+                name: '',
+            }).unwrap();
             setContent(typeof res === 'string' ? res : String(res ?? ''));
             setUseDefault(true);
         } catch (e) {
-            Toast.error(errText(e));
+            toast.error(errText(e));
         }
     };
 
     const onSave = async () => {
         try {
             await saveFile({ content, backup: useDefault }).unwrap();
-            Toast.success(t('common.confirm'));
+            toast.success(t('common.confirm'));
             setUseDefault(false);
             fileQuery.refetch();
         } catch (e) {
-            Toast.error(errText(e));
+            toast.error(errText(e));
         }
     };
 
     return (
-        <Spin spinning={fileQuery.isLoading}>
+        <div className="flex flex-col gap-3">
+            {fileQuery.isLoading ? <Spinner /> : null}
             {fileQuery.isError ? (
-                <Banner type="danger" closeIcon={null} title={errText(fileQuery.error)} style={{ marginBottom: 12 }} />
+                <Alert variant="destructive">
+                    <AlertTitle>{errText(fileQuery.error)}</AlertTitle>
+                </Alert>
             ) : null}
-            <TextArea
+            <Textarea
                 value={content}
-                onChange={setContent}
-                autosize={{ minRows: 16, maxRows: 30 }}
+                onChange={(e) => setContent(e.target.value)}
+                rows={16}
+                aria-label={t('openresty.tabs.source')}
                 placeholder={fileQuery.isLoading ? t('common.loading') : ''}
-                style={{ fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace' }}
+                style={{
+                    fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
+                }}
             />
-            <Space style={{ marginTop: 12 }}>
-                <Button onClick={onLoadDefault} loading={loadingDefault} disabled={fileQuery.isLoading}>
+            <div className="flex flex-wrap gap-3">
+                <Button onClick={onLoadDefault} disabled={loadingDefault || fileQuery.isLoading}>
                     {t('openresty.defaultConfig')}
                 </Button>
-                <Button theme="solid" type="primary" onClick={onSave} loading={saving} disabled={fileQuery.isLoading}>
+                <Button onClick={onSave} disabled={saving || fileQuery.isLoading}>
                     {t('common.confirm')}
                 </Button>
                 <Button onClick={() => fileQuery.refetch()}>{t('common.refresh')}</Button>
-            </Space>
+            </div>
             {useDefault ? (
-                <Banner
-                    type="info"
-                    closeIcon={null}
-                    style={{ marginTop: 12 }}
-                    title={t('openresty.defaultConfigHelper')}
-                />
+                <Alert>
+                    <AlertTitle>{t('openresty.defaultConfigHelper')}</AlertTitle>
+                </Alert>
             ) : null}
-        </Spin>
+        </div>
     );
 }
