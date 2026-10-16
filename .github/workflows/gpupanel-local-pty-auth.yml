@@ -36,5 +36,4 @@ jobs:
           cache-dependency-path: core/go.sum
       - name: Core same-origin WS admission and denial
         working-directory: core
-        run: go test ./middleware -run '^TestWebSocketOriginGuardLocalTerminal
- -count=1 -timeout=120s -v
+        run: go test ./middleware -run TestWebSocketOriginGuardLocalTerminal -count=1 -timeout=120s -v
