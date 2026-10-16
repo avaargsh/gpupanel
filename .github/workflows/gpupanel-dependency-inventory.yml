@@ -65,6 +65,12 @@ jobs:
           print('Locked identities:', evidence['unique_locked_identities'])
           print('Actual installed identities:', evidence['observed_identities'])
           print('License source evidence states:', evidence['counts'])
+          needs = [x for x in evidence['packages'] if x['state'] in
+                   ('LICENSE_TEXT_MISSING_REVIEW', 'CONFLICTING_INSTALLED_EVIDENCE')]
+          for item in needs:
+              print('MISSING OR CONFLICTING LEGAL FILE:', item['name'], item['version'], item['state'])
+          if evidence['unlocked_installed_identities']:
+              print('Unmatched installed package identities:', evidence['unlocked_installed_identities'])
           print('Not installed in this OS is not automatically a license violation.')
           print('File hashes and package.json license hints are NOT rights clearance or release SBOM.')
           PY
