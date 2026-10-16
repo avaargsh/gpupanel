@@ -171,14 +171,54 @@ def serve_once(plan: dict, home: Path, runtime: Path, token: str,
             pass
 
 
+def request_local(runtime: Path, token: str, intent_id: str, action: str) -> dict:
+    if not local.canonical(intent_id) or len(token) != 64 or any(
+        char not in "0123456789abcdef" for char in token
+    ):
+        raise WorkerError("invalid local capability")
+    path = worker_socket(runtime, os.getuid())
+    try:
+        info = path.lstat()
+        if not stat.S_ISSOCK(info.st_mode) or info.st_uid != os.getuid():
+            raise WorkerError("not a user-owned Unix socket")
+        with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as conn:
+            conn.settimeout(15)
+            conn.connect(str(path))
+            conn.sendall(json.dumps({"action": action, "intentId": intent_id,
+                                     "token": token}).encode())
+            data = conn.recv(8193)
+            if len(data) > 8192:
+                raise WorkerError("worker response too large")
+            result = json.loads(data)
+            if not isinstance(result, dict) or not isinstance(result.get("status"), str):
+                raise WorkerError("invalid worker response")
+            return result
+    except (OSError, ValueError) as exc:
+        raise WorkerError("local worker unavailable") from exc
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Single-attempt local user uv worker")
-    parser.add_argument("--intent-file", required=True, type=Path)
-    parser.add_argument("--approve-plan", required=True)
-    parser.add_argument("--approve-uv", required=True)
+    parser.add_argument("--intent-file", type=Path)
+    parser.add_argument("--approve-plan")
+    parser.add_argument("--approve-uv")
+    parser.add_argument("--request", choices=("inspect", "execute"))
+    parser.add_argument("--token")
+    parser.add_argument("--intent-id")
     args = parser.parse_args(argv)
     try:
         home = local.identity_home()
+        if args.request:
+            if not args.token or not args.intent_id:
+                raise WorkerError("request needs a token and intent ID")
+            result = request_local(Path(os.environ["XDG_RUNTIME_DIR"]),
+                                   args.token, args.intent_id, args.request)
+            print(json.dumps(result, indent=2, ensure_ascii=False))
+            return 0 if result["status"] in {
+                "READY_FOR_APPROVAL", "LOCAL_UV_VERIFIED_NOT_CORE_PROVISIONED"
+            } else 2
+        if not args.intent_file or not args.approve_plan or not args.approve_uv:
+            raise WorkerError("serve needs intent file and both approvals")
         plan = local.read_intent_file(args.intent_file)
         preview = local.inspect(plan, home)
         if preview["status"] != "READY_FOR_APPROVAL" or (
