@@ -1,13 +1,14 @@
 import { fileURLToPath, URL } from 'node:url';
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
+import tailwindcss from '@tailwindcss/vite';
 
 // 后端地址：dev 时由 `make dev PANEL_PORT=xxxx` 通过 VITE_API_TARGET 注入，默认 :9999
 const apiTarget = process.env.VITE_API_TARGET ?? 'http://localhost:9999/';
 
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => ({
-    plugins: [react()],
+    plugins: [react(), tailwindcss()],
     resolve: {
         alias: {
             '@': fileURLToPath(new URL('./src', import.meta.url)),

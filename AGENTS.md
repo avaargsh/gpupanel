@@ -64,3 +64,7 @@ namespace while integrating remote main optimizations. Historical Vue/npm/API-v2
 references in archived evidence are not current commands or acceptance proof.
 See `docs/gpupanel/LOCAL_REMOTE_INTEGRATION.md`. No compatibility API alias or
 second frontend is required. Existing installed data migration remains unverified.
+
+## Frontend migration contract (2026-10-16)
+
+The owner now explicitly requests shadcn/ui + Tailwind and multiple OpenCode workers. This supersedes the earlier requirement to preserve Semi Design. Follow `docs/engineering/SHADCN_MIGRATION.md`: isolated ownership, native primitives, unchanged API/auth/business behavior, no Semi compatibility facade, and independently verified integration.

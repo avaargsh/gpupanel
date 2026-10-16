@@ -3,6 +3,7 @@
 import '@douyinfe/semi-ui/react19-adapter';
 import 'reset-css/reset.css';
 import '@/theme/semi-override.css';
+import '@/theme/globals.css';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import '@/i18n';
