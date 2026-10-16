@@ -1,6 +1,6 @@
 # 本地主机诊断与受控运维验收
 
-源码与安装二进制：`d90a8c9be6eb442dcec8b33efdca5c2add95139f`，两二进制
+源码与安装二进制：`8400884a1605167b601d6b6eb0c31c0f8c26adb1`，两二进制
 build info 均 `vcs.modified=false`。安装摘要见 [installed.json](installed.json)。
 本机 Ubuntu 26.04 实验安装；用户选择的范围是本地主机诊断与受控运维。
 
@@ -22,11 +22,13 @@ build info 均 `vcs.modified=false`。安装摘要见 [installed.json](installed
 | 安装保留 | 当前二进制哈希与构建一致；更新前后账号/入口及既有 Task 行摘要一致；备份提取后 task.db quick_check=ok |
 | 已登录真机浏览器→Core→Agent | NOT RUN；不将模拟浏览器或私有 socket 检查称为该链路通过 |
 
-真实 Docker 结果见 [docker-canary.json](docker-canary.json)：测试构建/执行前后
-源码 SHA 与 clean 状态一致。测试容器无网络、挂载或发布端口，非特权，使用
+真实 Docker 结果见 [docker-canary.json](docker-canary.json)：该组件测试绑定
+`d90a8c9be6eb`，构建/执行前后源码 SHA 与 clean 状态一致。随后保留并合入
+远程 #95 终端鉴权修复；集成 SHA 下 hostops 实现与该组件提交逐字一致，独立复审
+及 Core/Agent 全包与相关 race 检查重新通过，安装中的诊断 API 也重新验证。测试容器无网络、挂载或发布端口，非特权，使用
 UID/GID 65534；仅操作确切 ID 与本轮标签，不使用 prune。
 
-备份：`/var/backups/gpupanel/installed-20261016T010722Z/`。
+备份：`/var/backups/gpupanel/installed-20261016T011114Z/`。
 追加的回执表不改旧 Task 行。回退二进制时保留审计；未在有新回执后覆盖旧快照，
 也未执行安装中断/异常终止的真实业务恢复演练。
 

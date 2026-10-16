@@ -1,6 +1,6 @@
 {
   "kind": "LIVE installed private Agent diagnostics and public Core anonymous denials; not authenticated browser acceptance",
-  "runtimeSource": "d90a8c9be6eb442dcec8b33efdca5c2add95139f",
+  "runtimeSource": "8400884a1605167b601d6b6eb0c31c0f8c26adb1",
   "checks": {
     "public_anonymous_and_spoof_denied": true,
     "strict_private_identity": true,
@@ -10,16 +10,17 @@
     "repeated_confirmation_returns_same_receipt": true,
     "foreign_session_receipt_denied": true,
     "view_omits_owner_key_deadline": true,
+    "prior_host_operation_receipts_preserved": true,
     "credentials_preserved": true,
     "existing_task_rows_preserved": true,
     "receipt_persisted": true,
     "restored_backup_task_db_integrity": true
   },
   "binarySha256": {
-    "core": "efd1e277f82e53afa7250bf5fb226eb4d6d003c22c2d95f0f736207e1572328c",
-    "agent": "ae72c53e0948f652f9fed2f5707e2a260088dcae13880f06df1106568f0ec43b"
+    "core": "d39b1640ff2d7f3f066516b07590e3a46ea68a0cae8e9f033abb73736dd68d12",
+    "agent": "89aa7a86c715063d8dcab2e748e1c55e3253ef0f122149dd84adc5b6a152dbb7"
   },
-  "backup": "/var/backups/gpupanel/installed-20261016T010722Z",
+  "backup": "/var/backups/gpupanel/installed-20261016T011114Z",
   "diagnosticSummary": {
     "hostnameMatchesMachine": true,
     "acceleratorCount": 1
