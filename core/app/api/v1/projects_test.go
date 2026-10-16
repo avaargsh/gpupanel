@@ -3,10 +3,13 @@ package v1
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
 	"encoding/json"
+	"encoding/hex"
 	"net/http"
 	"net/http/httptest"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/avaargsh/GPUPanel/core/app/workspace"
@@ -236,5 +239,52 @@ func TestWorkspaceProvisionAPISessionCSRFForeignAndLostACKReplay(t *testing.T) {
 	var count int64
 	if err := db.Model(&workspace.ProvisionIntent{}).Count(&count).Error; err != nil || count != 1 {
 		t.Fatalf("requests created too many rows: %d %v", count, err)
+	}
+}
+
+func TestWorkspaceEvidenceHTTPAuthReplayAndNoPromotion(t *testing.T) {
+	router, cookies, csrf, db := projectRegistryHarness(t)
+	r := workspace.New(db)
+	p, err := r.Create(context.Background(), psession.SuperAdminSessionUserID, "local", "uv")
+	if err != nil { t.Fatal(err) }
+	ws := p.Workspaces[0].ID
+	plan, err := r.PreviewProvision(context.Background(), psession.SuperAdminSessionUserID, p.ID, ws)
+	if err != nil { t.Fatal(err) }
+	ap, err := r.RequestProvision(context.Background(), psession.SuperAdminSessionUserID, p.ID, ws, plan.PlanDigest)
+	if err != nil { t.Fatal(err) }
+	receipt := strings.Repeat("a", 64)
+	sum := sha256.Sum256([]byte("GPUPanel-local-evidence-v1\n" +
+		ap.Intent.ID + "\n" + plan.PlanDigest + "\n" + receipt + "\n"))
+	payload, err := json.Marshal(workspace.LocalEvidenceInput{
+		IntentID: ap.Intent.ID, PlanDigest: plan.PlanDigest,
+		ReceiptDigest: receipt, EvidenceDigest: hex.EncodeToString(sum[:]),
+	})
+	if err != nil { t.Fatal(err) }
+	url := "/api/v1/core/projects/" + p.ID + "/workspaces/" + ws + "/local-evidence"
+	if code, _ := projectRequestAt(t, router, http.MethodGet, url, "", nil, ""); code != http.StatusForbidden {
+		t.Fatalf("anonymous evidence read allowed: %d", code)
+	}
+	if code, _ := projectRequestAt(t, router, http.MethodPost, url, string(payload), cookies, ""); code != http.StatusForbidden {
+		t.Fatalf("post without csrf allowed: %d", code)
+	}
+	code, saved := projectRequestAt(t, router, http.MethodPost, url, string(payload), cookies, csrf)
+	if code != http.StatusOK || saved["data"].(map[string]interface{})["attested"] != false ||
+		saved["data"].(map[string]interface{})["workspaceState"] != workspace.NotProvisioned ||
+		saved["data"].(map[string]interface{})["trustState"] != workspace.OperatorReported {
+		t.Fatalf("operator claim promoted workspace: %d %#v", code, saved)
+	}
+	code, replay := projectRequestAt(t, router, http.MethodPost, url, string(payload), cookies, csrf)
+	if code != http.StatusOK || replay["data"].(map[string]interface{})["evidence"].(map[string]interface{})["id"] !=
+		saved["data"].(map[string]interface{})["evidence"].(map[string]interface{})["id"] {
+		t.Fatalf("replay not idempotent: %d %#v", code, replay)
+	}
+	bad := strings.TrimSuffix(string(payload), "}") + `,"command":"rm -rf /"}`
+	code, denied := projectRequestAt(t, router, http.MethodPost, url, bad, cookies, csrf)
+	if code != http.StatusOK || denied["code"] != float64(http.StatusBadRequest) {
+		t.Fatalf("untrusted command field accepted: %d %#v", code, denied)
+	}
+	if code, got := projectRequestAt(t, router, http.MethodGet, url, "", cookies, ""); code != http.StatusOK ||
+		got["data"].(map[string]interface{})["attested"] != false {
+		t.Fatalf("GET lost evidence or promoted environment: %d %#v", code, got)
 	}
 }
