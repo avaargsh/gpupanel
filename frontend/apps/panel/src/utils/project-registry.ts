@@ -14,3 +14,9 @@ export function normalizeProjectName(input: string): string | null {
 export function projectWorkspaceReady(state: string): boolean {
     return state === 'Provisioned';
 }
+
+// Only canonical project UUIDs are accepted in the detail route. A malformed
+// deep link never starts a network request or selects a prior cached record.
+export function validProjectId(value: string): boolean {
+    return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(value);
+}

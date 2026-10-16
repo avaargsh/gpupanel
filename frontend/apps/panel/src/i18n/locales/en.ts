@@ -94,6 +94,9 @@ const en: LocaleResource = {
     "observations": "Readiness checks"
 },
     projectRegistry: {
+        detail: "Project details",
+        back: "Back to projects",
+        detailUnavailable: "Project not found, unauthorized, or unavailable; cached details are hidden.",
         description: "Manage project records in the existing Core database without changing host files.",
         metadataOnly: "Metadata only: no existing folder verified, environment/container created, or GPU session started.",
         register: "Register project",

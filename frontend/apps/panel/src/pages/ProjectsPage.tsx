@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from 'react';
+import { Link } from 'react-router-dom';
 import { FolderOpen, Plus, RefreshCw, TriangleAlert } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useGetProjectsQuery, useRegisterProjectMutation } from '@/api/projectApi';
@@ -107,7 +108,11 @@ export default function ProjectsPage() {
                 </p> : current.map((project) => <div key={project.id}
                     className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border px-4 py-3">
                     <div className="min-w-0">
-                        <p className="break-words text-sm font-medium">{project.name}</p>
+                        <p className="break-words text-sm font-medium">
+                            <Link className="underline-offset-4 hover:underline" to={`/projects/${encodeURIComponent(project.id)}`}>
+                                {project.name}
+                            </Link>
+                        </p>
                         <p className="mt-1 text-xs text-muted-foreground">
                             {t('projectRegistry.source')}: {project.sourceHint} · {t('projectRegistry.registeredState')}
                         </p>
