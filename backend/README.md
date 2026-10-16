@@ -96,7 +96,7 @@ overflow/NaN/Inf/负数/非整数；恰好等于上限与超过上限的输入�
 只读三个系统文件并断言有意义的不变量（内存不为零、available≤total、uptime 为
 正且合理），不写系统状态——它只证明本机采集，不证明 Ubuntu 安装、API 或 UI。
 
-## 来源与许可限制
+## 接收状态
 
 - **接收状态（hostmetrics）**：`internal/hostmetrics/` 已由协调者接收至隔离集成分支
   `integration/agent-go-20261016` 的 `c69d036d0455`，monitor 独立源码审查 ACCEPT
@@ -108,13 +108,15 @@ overflow/NaN/Inf/负数/非整数；恰好等于上限与超过上限的输入�
   固定系统路径。`internal/hostobserve/` 亦已接收（`8ff4a2b58e46` + 审查修订
   `a8d0e6187f82`）。
 - **operation 状态机不在本模块当前树内**：`backend/internal/operation/` 候选
-  `96442b68fe48` 仍在返工与独立审查，**blocked、未集成**；不得据其存在宣称账本已交付。
+  `6b600eaf9409` 已完成首轮返工，正在独立复审，**blocked、未集成**；不得据其存在宣称账本已交付。
 
 ## 来源与许可限制
 
 - 本模块代码为按需求独立实现，依据公开的 Linux 文件格式文档
   （os-release(5)、proc(5)、内核 `Documentation/accounting/psi.rst`）编写；
-  **未从 `core/`、`agent/`、许可未知研究树或任何第三方项目复制实现**，仅标准库调用。
+  来源审查未在有界比对中发现第三方复制，但 `hostmetrics` 与同仓 `hostobserve`
+  的注释和读取骨架存在匹配；不得将这解释为完全无复用的证明。仅标准库调用，
+  共同来源的归属、文件级授权范围与声明仍待裁定。
 - **文件级 SPDX 现状（按包区分）**：
   - `internal/hostmetrics/*`：每个新原创文件首行 `SPDX-License-Identifier: Apache-2.0`，
     为所有者明确要求的**文件级**声明（含 `README.md` 顶部的注释声明）。

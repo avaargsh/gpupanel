@@ -28,7 +28,7 @@
 Python 契约 256 项 exit 0；`frontend` `pnpm install --frozen-lockfile && pnpm typecheck
 && pnpm test && pnpm build` exit 0（20 项）；`agent` `go test ./... -count=1 -timeout=120s`
 exit 0（socket/Docker 环境门控用例仍为 skip，不等于 live）；`core` 首次 exit 1
-（干净源码树缺 `go:embed` 资产），重跑状态未返回。
+（干净源码树缺 `go:embed` 资产），补齐本轮真实 React 构建 assets/index 后重跑 exit 0（见 REPOSITORY_GOVERNANCE.md）。
 
 **本任务 NOT RUN**：`pnpm typecheck` / `pnpm build`、`cd core|agent|backend && go test ...`、
 `python3 -m unittest discover -s scripts/tests -p 'test_gpupanel_*.py'`、
@@ -41,9 +41,9 @@ exit 0（socket/Docker 环境门控用例仍为 skip，不等于 live）；`core
 | --- | --- | --- | --- | --- | --- | --- |
 | P0 文档/契约对账 | documentation（本任务）：`docs/engineering/{project-structure,development,testing,GOVERNANCE_STATUS}.md`、`backend/README.md` | 消除过期目录/命令/模块/后端许可陈述 | 3 | 3 | 1 | 本轮交付 |
 | P1 新源码行数与后端门禁 | quality-gates：`scripts/gpupanel-source-policy.py`、`scripts/tests/test_gpupanel_source_policy.py`、`.github/workflows/gpupanel-source-policy.yml` | 新增 Go/Py/TS 源 >500 行失败；legacy 仅信息提示；补 `backend` `go test -race`/`go vet` CI | 4 | 3 | 3 | 进行中，**产物路径尚不可用（pending）** |
-| P2 安全审计报告 | security-architecture：`docs/engineering/GOVERNANCE_FINDINGS.md` | 5–12 项带 `path:line` 的优先级发现 | 5 | 4 | 3 | 进行中，**报告尚不可用（pending）** |
+| P2 安全审计报告 | security-architecture：`docs/engineering/GOVERNANCE_FINDINGS.md` | 5–12 项带 `path:line` 的优先级发现 | 5 | 4 | 3 | 进行中，**报告已提交 `7eb90d1856f6` 并纳入隔离集成分支，F1/F2 已指派修复** |
 | P3 许可范围声明/文档对账 | 协调者：`docs/gpupanel/APACHE_FILE_SCOPE.md`、根 `LICENSE`/`NOTICE` | 见第 4 节，**outstanding** | 4 | 4 | 2 | 待协调者处理 |
-| P4 operation 状态机验收 | operation 实现者 + 独立审查（非本任务） | `backend/internal/operation/` `96442b68fe48` 返工后重审 | 4 | 4 | 3 | **blocked：等待独立审查，旧提交不集成** |
+| P4 operation 状态机验收 | operation 实现者 + 独立审查（非本任务） | `backend/internal/operation/` `6b600eaf9409` 返工后重审 | 4 | 4 | 3 | **blocked：等待独立审查，旧提交不集成** |
 | P5 持久化数据迁移 | 迁移所有者（未指派） | GORM 实际迁移所有者、正向迁移、回滚证据 | 5 | 5 | 4 | **blocked：无已验证迁移证据** |
 | P6 安装/升级 G3–G6 | 安装所有者（未指派） | 一次性 Ubuntu 24.04 VM 的 preflight/backup/install/回滚 | 5 | 5 | 5 | **NOT RUN / BLOCKED**（见 ROADMAP） |
 
@@ -68,12 +68,12 @@ exit 0（socket/Docker 环境门控用例仍为 skip，不等于 live）；`core
 
 ## 5. 待发布链接（pending，文件尚不可用时不得当作已验收）
 
-- 安全审计报告：`docs/engineering/GOVERNANCE_FINDINGS.md` — **pending**（P2 产物）。
+- 安全审计报告：[GOVERNANCE_FINDINGS](GOVERNANCE_FINDINGS.md) — 已纳入隔离分支；F1 Core token、F2 MySQL argv 凭据的修复任务正在执行，未验收。
 - 源码策略门禁：`scripts/gpupanel-source-policy.py`、
   `scripts/tests/test_gpupanel_source_policy.py`、
   `.github/workflows/gpupanel-source-policy.yml` — **pending**（P1 产物）。
 - 许可范围清单：`docs/gpupanel/APACHE_FILE_SCOPE.md` — 存在，但**第 4 节对账未完成**。
-- 操作状态机候选：`backend/internal/operation/` @ `96442b68fe48` — **不在当前树**，blocked。
+- 操作状态机候选：`backend/internal/operation/` @ `6b600eaf9409` — **不在当前树**，blocked。
 
 ## 6. 验收 / 移除 / 回滚准则
 
