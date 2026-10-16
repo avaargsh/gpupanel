@@ -2,6 +2,7 @@ package v1
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -40,6 +41,7 @@ func projectRegistryHarness(t *testing.T) (*gin.Engine, []*http.Cookie, string, 
 	router.Use(middleware.CSRFTokenGuard())
 	api := &BaseApi{}
 	router.GET("/api/v1/core/projects", api.ListProjects)
+	router.GET("/api/v1/core/projects/:id", api.GetProject)
 	router.POST("/api/v1/core/projects", api.CreateProject)
 
 	w := httptest.NewRecorder()
@@ -58,8 +60,12 @@ func projectRegistryHarness(t *testing.T) (*gin.Engine, []*http.Cookie, string, 
 }
 
 func projectRequest(t *testing.T, router *gin.Engine, method string, body string, cookies []*http.Cookie, csrf string) (int, map[string]interface{}) {
+	return projectRequestAt(t, router, method, "/api/v1/core/projects", body, cookies, csrf)
+}
+
+func projectRequestAt(t *testing.T, router *gin.Engine, method string, path string, body string, cookies []*http.Cookie, csrf string) (int, map[string]interface{}) {
 	t.Helper()
-	req := httptest.NewRequest(method, "/api/v1/core/projects", bytes.NewBufferString(body))
+	req := httptest.NewRequest(method, path, bytes.NewBufferString(body))
 	req.Header.Set("Content-Type", "application/json")
 	for _, cookie := range cookies { req.AddCookie(cookie) }
 	if csrf != "" { req.Header.Set(constant.CSRFHeaderName, csrf) }
@@ -138,5 +144,33 @@ func TestProjectRegistryHTTPRejectsLocalAndAPIKeyBypass(t *testing.T) {
 	var count int64
 	if err := db.Model(&workspace.Project{}).Count(&count).Error; err != nil || count != 0 {
 		t.Fatalf("bypass registered a project: %d %v", count, err)
+	}
+}
+
+func TestProjectDetailHTTPNoCrossOwnerOrUnauthenticatedReads(t *testing.T) {
+	router, cookies, _, db := projectRegistryHarness(t)
+	a, err := workspace.New(db).Create(context.Background(), psession.SuperAdminSessionUserID, "my-study", "uv")
+	if err != nil { t.Fatal(err) }
+	b, err := workspace.New(db).Create(context.Background(), "another-user", "private", "manual")
+	if err != nil { t.Fatal(err) }
+	path := "/api/v1/core/projects/" + a.ID
+	if code, _ := projectRequestAt(t, router, http.MethodGet, path, "", nil, ""); code != http.StatusForbidden {
+		t.Fatalf("anonymous detail disclosure: %d", code)
+	}
+	code, data := projectRequestAt(t, router, http.MethodGet, path, "", cookies, "")
+	if code != http.StatusOK {
+		t.Fatalf("authorized detail failed: %d %#v", code, data)
+	}
+	item := data["data"].(map[string]interface{})
+	if item["id"] != a.ID || len(item["workspaces"].([]interface{})) != 1 ||
+		item["workspaces"].([]interface{})[0].(map[string]interface{})["state"] != workspace.NotProvisioned {
+		t.Fatalf("false provisioned state or wrong record: %#v", data)
+	}
+	if _, ok := item["ownerId"]; ok { t.Fatal("owner identity leaked") }
+	for _, id := range []string{b.ID, "not-a-uuid", "00000000-0000-0000-0000-000000000000"} {
+		code, denied := projectRequestAt(t, router, http.MethodGet, "/api/v1/core/projects/"+id, "", cookies, "")
+		if code != http.StatusNotFound || denied["message"] != "ProjectNotFound" {
+			t.Fatalf("foreign/invalid must be identical not found: %d %#v", code, denied)
+		}
 	}
 }

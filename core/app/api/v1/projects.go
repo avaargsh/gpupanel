@@ -77,3 +77,19 @@ func (b *BaseApi) CreateProject(c *gin.Context) {
 		helper.SuccessWithData(c, item)
 	}
 }
+
+func (b *BaseApi) GetProject(c *gin.Context) {
+	owner, ok := projectOwner(c)
+	if !ok { return }
+	item, err := workspace.New(global.DB).Get(c.Request.Context(), owner, c.Param("id"))
+	switch {
+	case errors.Is(err, workspace.ErrNotFound):
+		c.AbortWithStatusJSON(http.StatusNotFound, dto.Response{
+			Code: http.StatusNotFound, Message: "ProjectNotFound",
+		})
+	case err != nil:
+		helper.InternalServer(c, errors.New("project registry unavailable"))
+	default:
+		helper.SuccessWithData(c, item)
+	}
+}

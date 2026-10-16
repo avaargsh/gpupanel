@@ -107,3 +107,32 @@ func TestRegistryFailsClosedWithoutDatabaseOrIdentity(t *testing.T) {
 	db := registryTestDB(t, filepath.Join(t.TempDir(), "core.db"))
 	if _, err := New(db).List(context.Background(), ""); !errors.Is(err, ErrInvalidInput) { t.Fatal(err) }
 }
+
+func TestGetProjectOwnerScopedAndReopen(t *testing.T) {
+	ctx := context.Background()
+	path := filepath.Join(t.TempDir(), "core.db")
+	db := registryTestDB(t, path)
+	r := New(db)
+	a, err := r.Create(ctx, "owner-a", "GPU", "uv")
+	if err != nil { t.Fatal(err) }
+	b, err := r.Create(ctx, "owner-b", "private", "manual")
+	if err != nil { t.Fatal(err) }
+	got, err := r.Get(ctx, "owner-a", a.ID)
+	if err != nil || got.ID != a.ID || len(got.Workspaces) != 1 ||
+		got.Workspaces[0].State != NotProvisioned {
+		t.Fatalf("owner detail cannot be read: %#v %v", got, err)
+	}
+	for _, id := range []string{b.ID, "invalid-uuid", "", "00000000-0000-0000-0000-000000000000"} {
+		_, err := r.Get(ctx, "owner-a", id)
+		if !errors.Is(err, ErrNotFound) { t.Fatalf("foreign/missing ID %q: %v", id, err) }
+	}
+	if _, err := r.Get(ctx, "", a.ID); !errors.Is(err, ErrInvalidInput) { t.Fatal(err) }
+	sqlDB, err := db.DB()
+	if err != nil { t.Fatal(err) }
+	if err := sqlDB.Close(); err != nil { t.Fatal(err) }
+	again, err := New(registryTestDB(t, path)).Get(ctx, "owner-a", a.ID)
+	if err != nil || again.ID != a.ID || len(again.Workspaces) != 1 ||
+		again.Workspaces[0].ID != a.Workspaces[0].ID {
+		t.Fatalf("detail lost on SQLite restart: %#v %v", again, err)
+	}
+}

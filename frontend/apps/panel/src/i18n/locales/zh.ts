@@ -92,6 +92,9 @@ const zh = {
     "observations": "就绪检查"
 },
     projectRegistry: {
+        detail: "项目详情",
+        back: "返回项目列表",
+        detailUnavailable: "项目不存在、当前会话无权限或读取失败；不会显示缓存详情。",
         description: "在现有 Core 数据库中管理项目记录，不修改主机文件。",
         metadataOnly: "此处仅登记项目与默认 Workspace 元数据。未验证已有目录，也不会创建环境、容器或 GPU 会话。",
         register: "登记项目",

@@ -28,6 +28,10 @@ export type ProjectRegistration = {
 
 export const projectApi = baseApi.injectEndpoints({
     endpoints: (build) => ({
+        getProject: build.query<RegisteredProject, string>({
+            query: (id) => ({ url: `/core/projects/${encodeURIComponent(id)}`, method: 'GET' }),
+            providesTags: ['Project'],
+        }),
         getProjects: build.query<RegisteredProject[], void>({
             query: () => ({ url: '/core/projects', method: 'GET' }),
             providesTags: ['Project'],
@@ -39,4 +43,4 @@ export const projectApi = baseApi.injectEndpoints({
     }),
 });
 
-export const { useGetProjectsQuery, useRegisterProjectMutation } = projectApi;
+export const { useGetProjectsQuery, useGetProjectQuery, useRegisterProjectMutation } = projectApi;

@@ -21,6 +21,7 @@ var (
 	ErrInvalidInput = errors.New("invalid project metadata")
 	ErrConflict     = errors.New("project already registered")
 	ErrLimit        = errors.New("project registry limit reached")
+	ErrNotFound     = errors.New("project not found")
 )
 
 // Project contains durable control-plane metadata, NEVER authority to run
@@ -133,4 +134,27 @@ func (r *Registry) List(ctx context.Context, owner string) ([]Project, error) {
 		Preload("Workspaces", "owner_id = ?", owner).
 		Order("created_at DESC, id DESC").Limit(maxProjects).Find(&items).Error
 	return items, err
+}
+
+func (r *Registry) Get(ctx context.Context, owner, id string) (Project, error) {
+	if r == nil || r.db == nil {
+		return Project{}, fmt.Errorf("registry database unavailable")
+	}
+	if !validOwner(owner) {
+		return Project{}, ErrInvalidInput
+	}
+	parsed, err := uuid.Parse(id)
+	if err != nil || parsed.String() != id {
+		return Project{}, ErrNotFound
+	}
+	var item Project
+	err = r.db.WithContext(ctx).Where("owner_id = ? AND id = ?", owner, id).
+		Preload("Workspaces", "owner_id = ?", owner).First(&item).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return Project{}, ErrNotFound
+	}
+	if err != nil {
+		return Project{}, err
+	}
+	return item, nil
 }

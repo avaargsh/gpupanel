@@ -78,3 +78,13 @@
 缓存条目；创建返回未知时不自动重试写入。所有状态仍严格标识 `NotProvisioned`，
 **不提供伪造的 Notebook、目录、容器或 GPU 启动按钮**。本切片需要前端构建、
 合约测试和模拟浏览器 CI，真实登录到 Core 并升级数据的单版本 E2E 仍待验。
+
+## Project 详情回读切片（当前增量）
+
+Core 新增 `GET /api/v1/core/projects/:id`，仅接受真实 Session 超级管理员身份。
+按 owner + UUID 精确读取持久元数据；不合法 UUID、未找到、跨 owner 均为同一
+`ProjectNotFound` 404，不泄漏其他用户资源。前端 `/projects/:id` 可从列表进入、
+链接直达及手动刷新；认证失败/加载期间隐藏旧缓存，继续明确
+`NotProvisioned` 不代表已部署 Notebook、GPU 或 Session。
+新增测试覆盖 SQLite 关闭重开、owner 隔离、HTTP 匿名拒绝和前端 UUID 合约。
+该切片不增加 Host 文件/容器的写入授权，M0 G3–G6 仍为 NO-GO。
