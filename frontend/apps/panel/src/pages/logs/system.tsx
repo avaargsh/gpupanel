@@ -1,17 +1,24 @@
-import { useEffect, useMemo, useState } from 'react';
-import { Banner, Button, Card, DatePicker, Empty, Input, Select, SideSheet, Space, Switch, Table, Tag, Typography } from '@douyinfe/semi-ui';
-import { IconRefresh, IconSearch } from '@douyinfe/semi-icons';
-import { useTranslation } from 'react-i18next';
-import { useDebouncedValue } from '@/pages/database/shared';
-import {
-    useGetSystemLogStatusQuery,
-    useListRunningServicesQuery,
-    useReadSystemLogQuery,
-    type SystemLogItem,
-} from '@/api/logsApi';
-import { LOG_PRIORITIES, priorityColor, priorityLabel, startOfToday } from './shared';
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Empty, EmptyDescription } from "@/components/ui/empty";
+import { FieldGroup } from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
+import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Spinner } from "@/components/ui/spinner";
+import { Switch } from "@/components/ui/switch";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { RefreshCwIcon, SearchIcon } from "lucide-react";
+import { useEffect, useState } from "react";
+import { localDateTime } from "../settings/date-input";
+import { OptionPicker } from "../settings/option-picker";
 
-const { Text } = Typography;
+import { useGetSystemLogStatusQuery, useListRunningServicesQuery, useReadSystemLogQuery, type SystemLogItem } from "@/api/logsApi";
+import { useDebouncedValue } from "@/pages/database/shared";
+import { useTranslation } from "react-i18next";
+import { LOG_PRIORITIES, priorityColor, priorityLabel, startOfToday } from "./shared";
 
 const PAGE_SIZES = [20, 50, 100, 200, 500];
 
@@ -19,17 +26,17 @@ export default function SystemLogTab() {
     const { t } = useTranslation();
 
     const [pageSize, setPageSize] = useState(100);
-    const [searchInput, setSearchInput] = useState('');
+    const [searchInput, setSearchInput] = useState("");
     const keyword = useDebouncedValue(searchInput);
-    const [priority, setPriority] = useState('');
-    const [service, setService] = useState('');
+    const [priority, setPriority] = useState("");
+    const [service, setService] = useState("");
     const [range, setRange] = useState<[Date, Date]>([startOfToday(), new Date()]);
     const [watching, setWatching] = useState(false);
-    const [stack, setStack] = useState<string[]>(['']);
+    const [stack, setStack] = useState<string[]>([""]);
     const [idx, setIdx] = useState(0);
     const [selected, setSelected] = useState<SystemLogItem | null>(null);
 
-    const cursor = stack[idx] ?? '';
+    const cursor = stack[idx] ?? "";
 
     const { data: status } = useGetSystemLogStatusQuery();
     const { data: services = [] } = useListRunningServicesQuery();
@@ -57,7 +64,7 @@ export default function SystemLogTab() {
 
     // 过滤条件变化时回到第一页。
     useEffect(() => {
-        setStack(['']);
+        setStack([""]);
         setIdx(0);
     }, [keyword, priority, service, pageSize, range]);
 
@@ -76,184 +83,232 @@ export default function SystemLogTab() {
 
     const keywordDisabled = Boolean(status && !status.keywordFilterSupported);
 
-    const columns = useMemo(
-        () => [
-            {
-                title: t('logs.system.date'),
-                dataIndex: 'time',
-                key: 'time',
-                width: 200,
-                render: (v: string) => v || '-',
-            },
-            {
-                title: t('logs.system.priority'),
-                key: 'priority',
-                width: 130,
-                render: (_: unknown, row: SystemLogItem) => (
-                    <Tag color={priorityColor(row.priority)} size="small">
-                        {priorityLabel(t, row.priority)}
-                    </Tag>
-                ),
-            },
-            {
-                title: t('logs.system.service'),
-                key: 'service',
-                width: 180,
-                ellipsis: true,
-                render: (_: unknown, row: SystemLogItem) => row.service || '-',
-            },
-            {
-                title: t('logs.system.message'),
-                dataIndex: 'message',
-                key: 'message',
-                ellipsis: true,
-            },
-        ],
-        [t],
-    );
-
     return (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
             {status ? (
                 <Card>
-                    <Space wrap>
-                        <Tag color="green" size="large">
-                            {status.source}
-                        </Tag>
-                        {status.version ? (
-                            <Text type="tertiary">
-                                {t('logs.system.version')}: {status.version}
-                            </Text>
-                        ) : null}
-                    </Space>
+                    <CardContent>
+                        <div className="flex flex-wrap items-center gap-2">
+                            <Badge variant={["red"].includes("green") ? "destructive" : "secondary"}>{status.source}</Badge>
+                            {status.version ? (
+                                <span className="text-muted-foreground">
+                                    {t("logs.system.version")}: {status.version}
+                                </span>
+                            ) : null}
+                        </div>
+                    </CardContent>
                 </Card>
             ) : null}
 
             {keywordDisabled && status?.message ? (
-                <Banner type="info" description={status.message} closeIcon={null} />
+                <Alert>
+                    <AlertDescription>{status.message}</AlertDescription>
+                </Alert>
             ) : null}
 
-            <Space wrap>
-                <Select
-                    value={priority}
-                    placeholder={t('logs.system.priority')}
+            <div className="flex flex-wrap items-center gap-2">
+                <NativeSelect
                     style={{ width: 180 }}
-                    showClear
-                    optionList={LOG_PRIORITIES.map((p) => ({ label: priorityLabel(t, p), value: p }))}
-                    onChange={(v) => setPriority(v ? String(v) : '')}
+                    value={priority ?? ""}
+                    aria-label={t("logs.system.priority")}
+                    onChange={(event) => setPriority(event.target.value ? String(event.target.value) : "")}
+                >
+                    <NativeSelectOption value="">{t("logs.system.priority")}</NativeSelectOption>
+                    {LOG_PRIORITIES.map((p) => ({ label: priorityLabel(t, p), value: p })).map((option) => (
+                        <NativeSelectOption key={String(option.value)} value={String(option.value)}>
+                            {option.label}
+                        </NativeSelectOption>
+                    ))}
+                </NativeSelect>
+                <OptionPicker
+                    value={String(service ?? "")}
+                    options={services.map((s) => ({ label: s, value: s }))}
+                    creatable
+                    searchable
+                    placeholder={t("logs.system.service")}
+                    onValueChange={(v) => setService(v ? String(v) : "")}
                 />
-                <Select
-                    value={service}
-                    placeholder={t('logs.system.service')}
-                    style={{ width: 180 }}
-                    showClear
-                    filter
-                    allowCreate
-                    optionList={services.map((s) => ({ label: s, value: s }))}
-                    onChange={(v) => setService(v ? String(v) : '')}
-                />
-                <DatePicker
-                    type="dateTimeRange"
-                    value={range}
-                    format="yyyy-MM-dd HH:mm:ss"
-                    onChange={(value) => {
-                        if (Array.isArray(value) && value[0] && value[1]) {
-                            setRange([value[0] as Date, value[1] as Date]);
-                        }
-                    }}
-                />
-                <Input
-                    prefix={<IconSearch />}
-                    value={searchInput}
-                    disabled={keywordDisabled}
-                    placeholder={t('logs.system.filter')}
-                    onChange={setSearchInput}
-                    style={{ width: 200 }}
-                    showClear
-                />
-                <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                    <Switch checked={watching} onChange={setWatching} size="small" />
-                    <Text size="small">{t('logs.system.watch')}</Text>
-                </label>
-                <Button icon={<IconRefresh />} onClick={() => refetch()}>
-                    {t('logs.system.refresh')}
-                </Button>
-            </Space>
-
-            <Table
-                rowKey={(row) => `${row?.time ?? ''}-${row?.priority ?? ''}-${row?.service ?? ''}-${row?.message ?? ''}`}
-                columns={columns}
-                dataSource={rows}
-                loading={isFetching}
-                pagination={false}
-                onRow={(row) => ({
-                    onClick: () => setSelected(row as SystemLogItem),
-                    style: { cursor: 'pointer' },
-                })}
-                empty={<Text type="tertiary">{t('logs.system.empty')}</Text>}
-            />
-
-            <Space>
-                <Select
-                    value={String(pageSize)}
-                    style={{ width: 100 }}
-                    optionList={PAGE_SIZES.map((s) => ({ label: String(s), value: String(s) }))}
-                    onChange={(v) => setPageSize(Number(v))}
-                />
-                <Button disabled={isFirst || isFetching} onClick={() => setIdx((i) => Math.max(0, i - 1))}>
-                    {t('logs.system.previous')}
-                </Button>
-                <Button disabled={isLast || isFetching} onClick={() => setIdx((i) => i + 1)}>
-                    {t('logs.system.next')}
-                </Button>
-            </Space>
-
-            <SideSheet
-                title={t('logs.system.detail')}
-                visible={Boolean(selected)}
-                onCancel={() => setSelected(null)}
-                width={720}
-            >
-                {selected ? (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                        <Text>
-                            <strong>{t('logs.system.date')}：</strong>
-                            {selected.time || '-'}
-                        </Text>
-                        <Text>
-                            <strong>{t('logs.system.priority')}：</strong>
-                            {priorityLabel(t, selected.priority)}
-                        </Text>
-                        <Text>
-                            <strong>{t('logs.system.service')}：</strong>
-                            {selected.service || '-'}
-                        </Text>
-                        <Text>
-                            <strong>{t('logs.system.message')}：</strong>
-                            {selected.message}
-                        </Text>
-                        <pre
-                            style={{
-                                margin: 0,
-                                maxHeight: '60vh',
-                                overflow: 'auto',
-                                padding: 12,
-                                fontSize: 12,
-                                lineHeight: 1.6,
-                                color: '#e8eaf0',
-                                background: '#14151a',
-                                borderRadius: 8,
-                                whiteSpace: 'pre-wrap',
-                                wordBreak: 'break-all',
+                <div className="flex flex-wrap gap-2">
+                    {[0, 1].map((index) => (
+                        <Input
+                            key={index}
+                            type="datetime-local"
+                            aria-label={index === 0 ? t("logs.system.date") + " 1" : t("logs.system.date") + " 2"}
+                            value={localDateTime(range[index])}
+                            onChange={(event) => {
+                                if (!event.target.value) return;
+                                const next = [...range];
+                                next[index] = new Date(event.target.value);
+                                ((value) => {
+                                    if (Array.isArray(value) && value[0] && value[1]) {
+                                        setRange([value[0] as Date, value[1] as Date]);
+                                    }
+                                })(next);
                             }}
-                        >
-                            {selected.raw}
-                        </pre>
+                        />
+                    ))}
+                </div>
+                <div className="flex items-center gap-2">
+                    <span className="shrink-0 text-muted-foreground">{<SearchIcon />}</span>
+                    <Input
+                        disabled={keywordDisabled}
+                        placeholder={t("logs.system.filter")}
+                        style={{ width: 200 }}
+                        value={searchInput ?? ""}
+                        onChange={(event) => setSearchInput(event.target.value)}
+                    />
+                </div>
+                <label style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+                    <Switch checked={watching} onCheckedChange={setWatching} />
+                    <span>{t("logs.system.watch")}</span>
+                </label>
+                <Button onClick={() => refetch()} type="button" variant="outline">
+                    {<RefreshCwIcon data-icon="inline-start" />}
+                    {t("logs.system.refresh")}
+                </Button>
+            </div>
+
+            <div className="flex flex-col gap-3">
+                <Table>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead>{t("logs.system.date")}</TableHead>
+                            <TableHead>{t("logs.system.priority")}</TableHead>
+                            <TableHead>{t("logs.system.service")}</TableHead>
+                            <TableHead>{t("logs.system.message")}</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {isFetching ? (
+                            <TableRow>
+                                <TableCell colSpan={4}>
+                                    <Spinner className="mx-auto" />
+                                </TableCell>
+                            </TableRow>
+                        ) : rows.length === 0 ? (
+                            <TableRow>
+                                <TableCell colSpan={4}>
+                                    <Empty>
+                                        <EmptyDescription>
+                                            {<span className="text-muted-foreground">{t("logs.system.empty")}</span>}
+                                        </EmptyDescription>
+                                    </Empty>
+                                </TableCell>
+                            </TableRow>
+                        ) : (
+                            rows.map((row, rowIndex) => (
+                                <TableRow
+                                    key={`${row?.time ?? ""}-${row?.priority ?? ""}-${row?.service ?? ""}-${row?.message ?? ""}`}
+                                    {...{
+                                        onClick: () => setSelected(row as SystemLogItem),
+                                        style: { cursor: "pointer" },
+                                    }}
+                                    tabIndex={0}
+                                    onKeyDown={(event) => {
+                                        if (event.key === "Enter" || event.key === " ") {
+                                            event.preventDefault();
+                                            ({
+                                                onClick: () => setSelected(row as SystemLogItem),
+                                                style: { cursor: "pointer" },
+                                            }).onClick?.();
+                                        }
+                                    }}
+                                >
+                                    <TableCell>{row["time"] || "-"}</TableCell>
+                                    <TableCell>
+                                        {
+                                            <Badge variant={["red"].includes(priorityColor(row.priority)) ? "destructive" : "secondary"}>
+                                                {priorityLabel(t, row.priority)}
+                                            </Badge>
+                                        }
+                                    </TableCell>
+                                    <TableCell>{row.service || "-"}</TableCell>
+                                    <TableCell>{row["message"]}</TableCell>
+                                </TableRow>
+                            ))
+                        )}
+                    </TableBody>
+                </Table>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2">
+                <NativeSelect
+                    style={{ width: 100 }}
+                    value={String(pageSize) ?? ""}
+                    aria-label={t("common.select")}
+                    onChange={(event) => setPageSize(Number(event.target.value))}
+                >
+                    {PAGE_SIZES.map((s) => ({ label: String(s), value: String(s) })).map((option) => (
+                        <NativeSelectOption key={String(option.value)} value={String(option.value)}>
+                            {option.label}
+                        </NativeSelectOption>
+                    ))}
+                </NativeSelect>
+                <Button onClick={() => setIdx((i) => Math.max(0, i - 1))} type="button" variant="outline" disabled={isFirst || isFetching}>
+                    {t("logs.system.previous")}
+                </Button>
+                <Button onClick={() => setIdx((i) => i + 1)} type="button" variant="outline" disabled={isLast || isFetching}>
+                    {t("logs.system.next")}
+                </Button>
+            </div>
+
+            <Sheet
+                open={Boolean(selected)}
+                onOpenChange={(open) => {
+                    if (!open && true) setSelected(null);
+                }}
+            >
+                <SheetContent className="max-h-[90vh] overflow-y-auto sm:max-w-4xl">
+                    <div className="flex flex-col gap-4">
+                        <SheetHeader>
+                            <SheetTitle>{t("logs.system.detail")}</SheetTitle>
+                        </SheetHeader>
+                        <FieldGroup>
+                            {selected ? (
+                                <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                                    <span>
+                                        <strong>{t("logs.system.date")}：</strong>
+                                        {selected.time || "-"}
+                                    </span>
+                                    <span>
+                                        <strong>{t("logs.system.priority")}：</strong>
+                                        {priorityLabel(t, selected.priority)}
+                                    </span>
+                                    <span>
+                                        <strong>{t("logs.system.service")}：</strong>
+                                        {selected.service || "-"}
+                                    </span>
+                                    <span>
+                                        <strong>{t("logs.system.message")}：</strong>
+                                        {selected.message}
+                                    </span>
+                                    <pre
+                                        style={{
+                                            margin: 0,
+                                            maxHeight: "60vh",
+                                            overflow: "auto",
+                                            padding: 12,
+                                            fontSize: 12,
+                                            lineHeight: 1.6,
+                                            color: "#e8eaf0",
+                                            background: "#14151a",
+                                            borderRadius: 8,
+                                            whiteSpace: "pre-wrap",
+                                            wordBreak: "break-all",
+                                        }}
+                                    >
+                                        {selected.raw}
+                                    </pre>
+                                </div>
+                            ) : (
+                                <Empty>
+                                    <EmptyDescription>{t("common.empty")}</EmptyDescription>
+                                </Empty>
+                            )}
+                        </FieldGroup>
                     </div>
-                ) : (
-                    <Empty />
-                )}
-            </SideSheet>
+                </SheetContent>
+            </Sheet>
         </div>
     );
 }
