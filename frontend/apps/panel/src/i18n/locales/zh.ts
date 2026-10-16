@@ -92,6 +92,14 @@ const zh = {
     "observations": "就绪检查"
 },
     projectRegistry: {
+        localEvidence: "本机观察记录",
+        untrustedEvidence: "仅保存操作员报告的摘要，不是独立 Host/OS 身份认证；即使有记录，Workspace 仍未配置。",
+        evidenceUnavailable: "本地证据无法读取或当前身份无权限。",
+        evidenceRecorded: "操作员观察已保存，尚未独立核验",
+        pasteEvidence: "粘贴本机 Runner 输出中的 localEvidence 对象（仅四个摘要字段）",
+        reportEvidence: "提交观察摘要",
+        evidenceUnknown: "提交结果不明确；请刷新核对，不要自动重试。",
+
         preparation: "Workspace 准备意图",
         preparationWarning: "这只保存经过授权的准备意图。还没有普通用户 Host 执行器，不会创建目录、安装软件或启动 GPU 环境。",
         planUnavailable: "计划不可读取或 Workspace 状态已变更。",

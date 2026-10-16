@@ -49,8 +49,38 @@ export interface ProvisionPlan {
 
 export type WorkspaceRef = { projectId: string; workspaceId: string };
 
+export interface LocalEvidenceInput {
+    intentId: string;
+    planDigest: string;
+    receiptDigest: string;
+    evidenceDigest: string;
+}
+
+export interface LocalEvidenceResult {
+    evidence: (LocalEvidenceInput & { id: string; trustState: 'OperatorReported' }) | null;
+    trustState: 'OperatorReported' | 'NoObservation';
+    workspaceState: 'NotProvisioned';
+    attested: false;
+    blocker: 'IndependentHostAttestationRequired';
+}
+
 export const projectApi = baseApi.injectEndpoints({
     endpoints: (build) => ({
+        getLocalEvidence: build.query<LocalEvidenceResult, WorkspaceRef>({
+            query: ({ projectId, workspaceId }) => ({
+                url: `/core/projects/${encodeURIComponent(projectId)}/workspaces/${encodeURIComponent(workspaceId)}/local-evidence`,
+                method: 'GET',
+            }),
+            providesTags: ['Project'],
+        }),
+        reportLocalEvidence: build.mutation<LocalEvidenceResult, WorkspaceRef & LocalEvidenceInput>({
+            query: ({ projectId, workspaceId, ...body }) => ({
+                url: `/core/projects/${encodeURIComponent(projectId)}/workspaces/${encodeURIComponent(workspaceId)}/local-evidence`,
+                method: 'POST',
+                body,
+            }),
+            invalidatesTags: ['Project'],
+        }),
         getProvisionPlan: build.query<ProvisionPlan, WorkspaceRef>({
             query: ({ projectId, workspaceId }) => ({
                 url: `/core/projects/${encodeURIComponent(projectId)}/workspaces/${encodeURIComponent(workspaceId)}/provision-plan`,
@@ -81,4 +111,4 @@ export const projectApi = baseApi.injectEndpoints({
     }),
 });
 
-export const { useGetProjectsQuery, useGetProjectQuery, useRegisterProjectMutation, useGetProvisionPlanQuery, useRequestProvisionIntentMutation } = projectApi;
+export const { useGetProjectsQuery, useGetProjectQuery, useRegisterProjectMutation, useGetProvisionPlanQuery, useRequestProvisionIntentMutation, useGetLocalEvidenceQuery, useReportLocalEvidenceMutation } = projectApi;
