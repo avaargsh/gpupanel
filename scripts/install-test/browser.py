@@ -42,7 +42,7 @@ with sync_playwright() as playwright:
     page.locator('input[autocomplete="username"]').fill(credentials['username'])
     page.locator('input[autocomplete="current-password"]').fill(credentials['password'])
     page.locator('button[type="submit"]').click()
-    expect(page.get_by_text('工作站起步 / Workstation first run', exact=True)).to_be_visible(timeout=20000)
+    expect(page.get_by_role('heading', name='Workbench', exact=True)).to_be_visible(timeout=20000)
     user = page.request.get(credentials['url'] + '/api/v1/core/auth/current').json()
     assert user['code'] == 200 and user['data']['name'] == credentials['username']
     assert any(cookie['name'] == 'SecurityEntrance' and cookie['httpOnly'] for cookie in context.cookies())
