@@ -173,7 +173,35 @@ def apply(plan: dict, home: Path, plan_approval: str, uv_approval: str,
     return {"status": "LOCAL_UV_VERIFIED_NOT_CORE_PROVISIONED",
             "intentId": plan["intentId"], "executed": True,
             "coreWorkspaceState": "NotProvisioned",
-            "note": "Independent Core owner/session/runner attestation is still required"}
+            "localEvidence": operator_observation(plan, home),
+            "trustState": "OperatorReported",
+            "note": "Hash consistency is not Core/Agent/OS execution attestation"}
+
+
+def operator_observation(plan: dict, home: Path) -> dict:
+    """Bounded operator claim, NOT signed Host/Agent execution attestation."""
+    target = workspace_target(home, plan["workspaceId"])
+    if uv.status(target, home)["status"] != "VERIFIED":
+        raise IntentError("local uv receipt cannot be independently verified")
+    receipt = target / uv.RECEIPT
+    # Re-open without following symlinks and cap bytes independently of
+    # earlier path status checks. No user code or network operations occur.
+    fd = os.open(receipt, os.O_RDONLY | os.O_CLOEXEC | os.O_NOFOLLOW)
+    try:
+        meta = os.fstat(fd)
+        if not stat.S_ISREG(meta.st_mode) or meta.st_size > 2048:
+            raise IntentError("unsafe uv receipt")
+        raw = os.read(fd, 2049)
+        if len(raw) > 2048:
+            raise IntentError("uv receipt exceeds limit")
+    finally:
+        os.close(fd)
+    receipt_digest = hashlib.sha256(raw).hexdigest()
+    claim_digest = hashlib.sha256(("GPUPanel-local-evidence-v1\n" +
+        plan["intentId"] + "\n" + plan["planDigest"] + "\n" +
+        receipt_digest + "\n").encode("ascii")).hexdigest()
+    return {"intentId": plan["intentId"], "planDigest": plan["planDigest"],
+            "receiptDigest": receipt_digest, "evidenceDigest": claim_digest}
 
 
 def main(argv: list[str] | None = None) -> int:

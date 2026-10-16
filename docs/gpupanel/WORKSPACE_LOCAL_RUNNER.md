@@ -72,3 +72,32 @@ observations and independent readback. Validate the same Ubuntu build under
 real login→SQLite→non-root runner→receipt→reboot. Do **not** use the raw
 JSON file as an Agent authorization token or mark Workspace Provisioned
 solely from this local CLI. M0 G3–G6 remain NO-GO.
+
+## Operator-reported local evidence (not an attestation)
+
+After a successful `apply --json`, the runner returns
+`localEvidence` with exactly four fields: `intentId`, `planDigest`,
+`receiptDigest` (SHA256 of the checked local uv receipt), and
+`evidenceDigest` (SHA256 over the versioned four-line intent binding).
+**Only** this nested object should be pasted into the Project details
+**Local observation record** panel; it may also be submitted to
+`POST /api/v1/core/projects/<project-uuid>/workspaces/<workspace-uuid>/local-evidence`
+using the user's already-authenticated Core session and CSRF header.
+Do not paste full output, private shell history, Host credentials, paths
+or environment variables. No API token bypass is supported.
+
+Core recomputes the digest and authorizes the immutable Project/Workspace/
+Intent relation. On success it stores an append-only, owner-scoped
+`OperatorReported` record. Re-submitting the same four fields returns the
+same record ID; a different receipt for the same intent returns a conflict.
+`GET` of the same URL works after Core/SQLite restart. A lost response
+must be reconciled with GET rather than automatically POSTed again.
+
+**Critical trust boundary:** the JSON and digest are **not signatures**.
+An authenticated operator could fabricate every field, and the local uv
+files can drift after observation. The panel visibly preserves
+`attested=false`, `blocker=IndependentHostAttestationRequired`, and
+`workspaceState=NotProvisioned` in all cases. Evidence hashes do not
+grant machine authority, remotely execute uv, prove an OS UID, or enable
+Notebook/GPU sessions. A future authenticated Core→Agent→non-root
+execution + independent receipt readback must settle these properties.

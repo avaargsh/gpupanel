@@ -94,6 +94,14 @@ const en: LocaleResource = {
     "observations": "Readiness checks"
 },
     projectRegistry: {
+        localEvidence: "Local observation record",
+        untrustedEvidence: "Operator-reported hash only, not independently verified Host/OS identity. Workspace remains unprovisioned.",
+        evidenceUnavailable: "Observation unavailable or session unauthorized.",
+        evidenceRecorded: "Operator observation stored; not independently attested",
+        pasteEvidence: "Paste the localEvidence object from the local Runner output (four fields only)",
+        reportEvidence: "Record observation digest",
+        evidenceUnknown: "Save outcome uncertain. Refresh to reconcile; do not retry automatically.",
+
         preparation: "Workspace preparation intent",
         preparationWarning: "This saves an approved intent only. No non-root Host runner is wired; no files, packages, containers or GPU sessions are started.",
         planUnavailable: "Plan unavailable or Workspace state changed.",

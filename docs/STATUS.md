@@ -116,3 +116,17 @@ root/suid、目录链接、覆盖已存在项目和下载网络依赖。
 不能当成远程执行凭据。详情见
 [本机安全手工交接](gpupanel/WORKSPACE_LOCAL_RUNNER.md)。
 这不代表持久 Session / GPU 资源调度已实现，M0 G3–G6 NO-GO。
+
+## 当前增量：本机观察摘要可持久对账（仍未独立认证）
+
+用户本机成功执行离线 uv 后输出只包含
+`intentId`、`planDigest`、`receiptDigest` 和版本化
+`evidenceDigest` 的 `localEvidence`。Core 新增严格 Session/CSRF
+保护的 `GET/POST /api/v1/core/projects/:id/workspaces/:workspaceId/local-evidence`，
+只做归属/意图/哈希一致性检查及独立 SQLite 表不可变记录。
+相同报告重放返回同一 ID，不一致冲突；重启后可回读。
+前端 Project 详情可粘贴四字段并展示
+`OperatorReported`（未经独立认证）。
+**哈希不等于签名，操作者可伪造。** 无 Agent/OS 身份证明，任何
+报告都维持 `attested=false` 与 `NotProvisioned`。
+不存在控制面自动执行、GPU/Notebook 授权或 M0 G3–G6 生产验收。
