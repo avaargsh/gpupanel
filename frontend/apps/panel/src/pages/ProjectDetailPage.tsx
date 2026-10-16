@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Spinner } from '@/components/ui/spinner';
 import { projectWorkspaceReady, validProjectId } from '@/utils/project-registry';
+import WorkspaceProvisionCard from '@/pages/WorkspaceProvisionCard';
 
 export default function ProjectDetailPage() {
     const { id } = useParams();
@@ -61,6 +62,11 @@ export default function ProjectDetailPage() {
                         </p>
                     </div>)}
                 </div>
+                {project.workspaces.length === 1 && <WorkspaceProvisionCard
+                    projectId={project.id}
+                    workspaceId={project.workspaces[0].id}
+                    state={project.workspaces[0].state}
+                />}
                 <Alert><AlertDescription>{t('projectRegistry.metadataOnly')}</AlertDescription></Alert>
             </CardContent>
         </Card>}

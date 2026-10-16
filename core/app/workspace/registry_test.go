@@ -16,7 +16,7 @@ func registryTestDB(t *testing.T, path string) *gorm.DB {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := db.AutoMigrate(&Project{}, &Workspace{}); err != nil {
+	if err := db.AutoMigrate(&Project{}, &Workspace{}, &ProvisionIntent{}); err != nil {
 		t.Fatal(err)
 	}
 	return db

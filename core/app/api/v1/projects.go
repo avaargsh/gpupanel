@@ -93,3 +93,62 @@ func (b *BaseApi) GetProject(c *gin.Context) {
 		helper.SuccessWithData(c, item)
 	}
 }
+
+type provisionIntentRequest struct {
+	PlanDigest string `json:"planDigest"`
+}
+
+func (b *BaseApi) PreviewWorkspaceProvision(c *gin.Context) {
+	owner, ok := projectOwner(c)
+	if !ok { return }
+	plan, err := workspace.New(global.DB).PreviewProvision(
+		c.Request.Context(), owner, c.Param("id"), c.Param("workspaceId"),
+	)
+	switch {
+	case errors.Is(err, workspace.ErrNotFound):
+		c.AbortWithStatusJSON(http.StatusNotFound, dto.Response{
+			Code: http.StatusNotFound, Message: "ProjectNotFound",
+		})
+	case errors.Is(err, workspace.ErrConflict):
+		c.AbortWithStatusJSON(http.StatusConflict, dto.Response{
+			Code: http.StatusConflict, Message: "WorkspaceStateConflict",
+		})
+	case err != nil:
+		helper.InternalServer(c, errors.New("workspace provision plan unavailable"))
+	default:
+		helper.SuccessWithData(c, plan)
+	}
+}
+
+func (b *BaseApi) RequestWorkspaceProvision(c *gin.Context) {
+	owner, ok := projectOwner(c)
+	if !ok { return }
+	var req provisionIntentRequest
+	dec := json.NewDecoder(http.MaxBytesReader(c.Writer, c.Request.Body, 512))
+	dec.DisallowUnknownFields()
+	if err := dec.Decode(&req); err != nil {
+		helper.BadRequest(c, errors.New("invalid workspace request"))
+		return
+	}
+	if err := dec.Decode(new(interface{})); err != io.EOF {
+		helper.BadRequest(c, errors.New("unexpected workspace payload"))
+		return
+	}
+	result, err := workspace.New(global.DB).RequestProvision(
+		c.Request.Context(), owner, c.Param("id"), c.Param("workspaceId"), req.PlanDigest,
+	)
+	switch {
+	case errors.Is(err, workspace.ErrNotFound):
+		c.AbortWithStatusJSON(http.StatusNotFound, dto.Response{
+			Code: http.StatusNotFound, Message: "ProjectNotFound",
+		})
+	case errors.Is(err, workspace.ErrConflict), errors.Is(err, workspace.ErrPlanChanged):
+		c.AbortWithStatusJSON(http.StatusConflict, dto.Response{
+			Code: http.StatusConflict, Message: "WorkspacePlanConflict",
+		})
+	case err != nil:
+		helper.InternalServer(c, errors.New("workspace provision request unavailable"))
+	default:
+		helper.SuccessWithData(c, result)
+	}
+}

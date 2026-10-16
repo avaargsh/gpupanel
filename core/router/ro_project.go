@@ -15,5 +15,7 @@ func (s *ProjectRouter) InitRouter(root *gin.RouterGroup) {
 	api := v1.ApiGroupApp.BaseApi
 	group.GET("", api.ListProjects)
 	group.GET("/:id", api.GetProject)
+	group.GET("/:id/workspaces/:workspaceId/provision-plan", api.PreviewWorkspaceProvision)
+	group.POST("/:id/workspaces/:workspaceId/provision-intent", api.RequestWorkspaceProvision)
 	group.POST("", api.CreateProject)
 }

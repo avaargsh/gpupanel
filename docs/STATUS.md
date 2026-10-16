@@ -88,3 +88,15 @@ Core 新增 `GET /api/v1/core/projects/:id`，仅接受真实 Session 超级管�
 `NotProvisioned` 不代表已部署 Notebook、GPU 或 Session。
 新增测试覆盖 SQLite 关闭重开、owner 隔离、HTTP 匿名拒绝和前端 UUID 合约。
 该切片不增加 Host 文件/容器的写入授权，M0 G3–G6 仍为 NO-GO。
+
+## Workspace 准备请求（元数据阶段）
+
+新增 GET `/api/v1/core/projects/:id/workspaces/:workspaceId/provision-plan`
+和显式 POST `/.../provision-intent`。复用 Core 真实 Session/CSRF，
+在服务端核验 owner + project + workspace，固定 `uv-python-stdlib-offline-v1`
+离线模板及 SHA256 digest。提交后只在独立 SQLite 表持久保存
+`AwaitingHostBinding`，相同 digest 重放返回相同 ID；状态回读可用于
+未知提交结果对账。Workspace 仍为 `NotProvisioned`，尚未接入普通用户
+Host 执行器，**不会调用 uv、写项目目录、启动容器或 GPU**。提交意图
+不代表计划可执行，也不代表资源配额、磁盘路径和宿主身份已经审核。
+UI 明示阻断原因与操作未知状态；M0 G3–G6 仍为 NO-GO。
