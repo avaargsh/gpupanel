@@ -15,7 +15,7 @@ import re
 import sys
 
 ROOT = Path(__file__).resolve().parents[1]
-MAX_MANIFEST = 512 * 1024
+MAX_MANIFEST = 8 * 1024 * 1024
 MAX_LICENSE = 512 * 1024
 LICENSE_NAME = re.compile(r"^(license|licence|copying|notice)([._ -].*)?$", re.IGNORECASE)
 
