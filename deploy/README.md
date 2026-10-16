@@ -44,7 +44,7 @@ sudo ./gpupanel-<version>-linux-<arch>/install.sh
 
 - 在停止服务或复制二进制前检查 OS、已存在的运行路径、父路径符号链接和可用空间。
 - 默认安装到 `/opt/gpupanel`，暴露 `/usr/local/bin/pctl` 与两项自有二进制链接。
-- `pctl` 以 0700 保存引导值，安装日志为 0600；生成的密码只打印到终端，不写日志。
+- `pctl` 以 0700 保存引导值；安装日志在**通过冲突预检与参数校验之后**才建立于 `<base-dir>/gpupanel/log/install.log`（0600），不写入源码或 payload 目录。`--help`、非法选项和预检失败不创建安装日志。生成的密码只打印到终端；密码及入口值的非法输入也不会出现在报错中。
 - 配置和数据库归属由 Core/Agent 管理。当前 Core 内嵌配置 `mode=dev` 时可能读取
   `/opt/gpupanel/conf/app.yaml`；其他引导路径从 pctl 读取。不要假设改一个 YAML
   就完成了任意路径迁移，或把模板里的开发默认值当成实际安装密码。
