@@ -3,11 +3,14 @@
 状态：**源码评审候选，未接入任何运行服务**。本模块是 Apache 后端替换方向的
 首个独立实现切片（见 [APACHE_BACKEND_MIGRATION](../docs/engineering/APACHE_BACKEND_MIGRATION.md)、
 [替换调研](../docs/gpupanel/APACHE_BACKEND_REPLACEMENT_RESEARCH.md)），
-当前仅包含一个只读 Host 采集器，不包含 HTTP 服务、登录、路由、安装器或数据库。
+当前包含两个只读 Host 采集器（`hostobserve`、`hostmetrics`）及内存操作状态机 `operation`，
+不包含 HTTP 服务、登录、路由、安装器或数据库，也未接入任何运行服务。
 
 - 模块路径：`github.com/avaargsh/GPUPanel/backend`
 - Go 版本：`go 1.26.6`（与 `core/`、`agent/` 声明一致；无 `go.work`、无根模块改动）
 - 依赖：**仅 Go 标准库**，无第三方模块，`go.mod` 之外无 `go.sum`
+- 三个 Go module 的分工：`core/`、`agent/` 为在役模块（认证、`/api/v1`、主机执行），
+  `backend/` 为实验性替换候选，不参与当前发行与运行。
 
 ## 布局
 
@@ -15,6 +18,10 @@
 backend/
 ├── go.mod
 ├── README.md
+├── internal/hostmetrics/     # 已接收：loadavg/PSI 只读采集（见下"接收状态"）
+│   ├── README.md             # 包内契约、来源与许可说明（文件级 Apache-2.0 SPDX）
+│   ├── metrics.go / collector.go / loadavg.go / pressure.go / numbers.go
+│   └── *_test.go             # 解析、取消、并发、真实 Linux 只读冒烟
 └── internal/hostobserve/
     ├── snapshot.go        # Status、Snapshot 视图类型、sentinel 错误、读取上限常量
     ├── collector.go       # Collector 构造、Collect（context 检查）、有界读取、状态映射
@@ -83,17 +90,45 @@ GOTOOLCHAIN=local GOCACHE=<worktree>/.local/go-cache go vet ./...
 覆盖：带转义/引号的 os-release 有效数据；必需字段缺失与畸形行；数值
 overflow/NaN/Inf/负数/非整数；恰好等于上限与超过上限的输入；缺失文件与断裂
 符号链接；预取消与读取间隙取消（逐点计数断言检查次数）；目录不可读；部分可用
-语义；四态与"成功零值"的区分；并发采集。`smoke_test.go` 在真实 Linux 主机上
+语义；四态与"成功零值"的区分；并发采集。`internal/hostmetrics/` 有独立的解析/
+取消/并发/冒烟测试，命令相同（`go test -race ./...` 覆盖两个包），细节见
+[hostmetrics 包说明](internal/hostmetrics/README.md)。`smoke_test.go` 在真实 Linux 主机上
 只读三个系统文件并断言有意义的不变量（内存不为零、available≤total、uptime 为
 正且合理），不写系统状态——它只证明本机采集，不证明 Ubuntu 安装、API 或 UI。
+
+## 接收状态
+
+- **接收状态（hostmetrics）**：`internal/hostmetrics/` 已由协调者接收至隔离集成分支
+  `integration/agent-go-20261016` 的 `c69d036d0455`，monitor 独立源码审查 ACCEPT
+  （`1acab29ad169`，无 BLOCKER/MAJOR），协调者复跑
+  `cd backend && go test -race -count=1 ./... && go vet ./...` 退出 0。
+  这只证明只读 Host 包测试通过，**不证明 API/UI/安装接线**；三项非阻断保留意见
+  （内部自定义路径 stat/open FIFO 窗口、逐数据源 Status 映射到未来 API、CRLF 容忍）
+  见 [AGENT_GO_MIGRATION](../docs/engineering/AGENT_GO_MIGRATION.md)，接线时必须使用
+  固定系统路径。`internal/hostobserve/` 亦已接收（`8ff4a2b58e46` + 审查修订
+  `a8d0e6187f82`）。
+- **operation 状态机已在集成树内**：`backend/internal/operation/` 候选
+  `6b600eaf9409` 独立功能复审 ACCEPT；变更用途仍受 D1/D2 门槛约束；不得据其存在宣称账本已交付。
 
 ## 来源与许可限制
 
 - 本模块代码为按需求独立实现，依据公开的 Linux 文件格式文档
-  （os-release(5)、proc(5)）编写；**未从 `core/`、`agent/` 或任何第三方项目
-  复制实现**，仅标准库调用。
-- 不添加 SPDX/许可授权声明：作者身份不等于权利证明。仓库根 `LICENSE`/`NOTICE`
-  仍为 GPL-3.0 fork 声明，**本提交不声明整个 backend 已获 Apache 批准**；
-  许可结论待独立核权（见 `docs/gpupanel/APACHE_BACKEND_REPLACEMENT_RESEARCH.md`）。
+  （os-release(5)、proc(5)、内核 `Documentation/accounting/psi.rst`）编写；
+  来源审查未在有界比对中发现第三方复制，但 `hostmetrics` 与同仓 `hostobserve`
+  的注释和读取骨架存在匹配；不得将这解释为完全无复用的证明。仅标准库调用，
+  共同来源的归属、文件级授权范围与声明仍待裁定。
+- **文件级 SPDX 现状（按包区分）**：
+  - `internal/hostmetrics/*`：每个新原创文件首行 `SPDX-License-Identifier: Apache-2.0`，
+    为所有者明确要求的**文件级**声明（含 `README.md` 顶部的注释声明）。
+  - `internal/hostobserve/*`：**无 SPDX 头**，仍未作许可声明。
+- 上一条修订自旧表述“不添加 SPDX/许可授权声明”——该表述在 hostmetrics 接收后已过期；
+  本文件是 `backend/` 的共享 README，故在此统一记录两个包的真实差异。
+- 文件级 SPDX **不等于**模块级或仓库级许可结论：仓库根 `LICENSE`/`NOTICE` 仍为
+  GPL-3.0 fork 声明，**本模块不声明整个 backend 已获 Apache 批准，不声明整仓已 Apache 化**。
+  许可结论待独立核权（见 `docs/gpupanel/APACHE_BACKEND_REPLACEMENT_RESEARCH.md`）；
+  已登记的文件级 Apache 范围清单为 `docs/gpupanel/APACHE_FILE_SCOPE.md`，
+  **其与 hostmetrics SPDX 的对账仍 outstanding（归协调者，见
+  [治理状态](../docs/STATUS.md)）**。
+  `backend/README.md` 与 `internal/hostmetrics/README.md` 之间的表述冲突由本节消除。
 - 当前无运行接入：无路由、无认证、无执行器、无数据迁移；验收时不得据此声称
   登录→Host 纵切片或安装已交付。

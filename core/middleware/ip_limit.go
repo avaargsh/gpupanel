@@ -1,7 +1,6 @@
 package middleware
 
 import (
-	"net"
 	"strings"
 
 	"github.com/avaargsh/GPUPanel/core/app/api/v1/helper"
@@ -12,10 +11,14 @@ import (
 )
 
 func WhiteAllow() gin.HandlerFunc {
+	return whiteAllowWith(defaultLocalTokenValidator())
+}
+
+// whiteAllowWith exists so tests inject a synthetic token validator; production
+// callers use WhiteAllow, which reads the fixed shared secret path lazily.
+func whiteAllowWith(validator *localTokenValidator) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		tokenString := c.GetHeader("X-Panel-Local-Token")
-		remoteIP := common.GetRealClientIP(c)
-		if isLocalSyncRequest(c.Request.URL.Path, remoteIP, tokenString) {
+		if isLocalSyncRequest(c, validator) {
 			c.Set("LOCAL_REQUEST", true)
 			c.Next()
 			return
@@ -50,21 +53,5 @@ func WhiteAllow() gin.HandlerFunc {
 		}
 		code := security.LoadErrCode()
 		helper.ErrWithHtml(c, code, "err_ip_limit")
-	}
-}
-
-func isLocalSyncRequest(reqPath, clientIP, token string) bool {
-	ip := net.ParseIP(clientIP)
-	if ip == nil || !ip.IsLoopback() {
-		return false
-	}
-
-	switch reqPath {
-	case "/api/v1/core/xpack/sync/ssl":
-		return token != ""
-	case "/api/v1/core/settings/ssl/reload":
-		return token != ""
-	default:
-		return false
 	}
 }

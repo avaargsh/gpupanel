@@ -9,21 +9,21 @@
 
 | 仓库 | 复核命令 | HEAD / 状态 |
 | --- | --- | --- |
-| GPUPanel（本 worktree） | `git rev-parse HEAD`、`git status --short` | `e133f405481e08cc7dd9130e1d87c20e49fbbb97`；未跟踪输入 `docs/engineering/APACHE_BACKEND_MIGRATION.md`、`docs/gpupanel/APACHE_BACKEND_REPLACEMENT_RESEARCH.md`（只读任务输入，**不提交、不修改**） |
-| `/home/avaarg/workspace/agentaliyun` | `git rev-parse HEAD`、`git status --short` | `57a0eec76667fcc12855dbf8decc9fc305b00a31`；脏范围仅 `?? agent/`（未跟踪研究树，不被该 HEAD 覆盖） |
-| `/home/avaarg/sre/holmesgpt` | `git rev-parse HEAD`、`git status --short` | `5e983c17f30e93099c7d775167266d4cd1d586c4`；脏范围仅 ` M CLAUDE.md`（`AGENTS.md` 为指向 `CLAUDE.md` 的符号链接，已按其指引只读） |
+| GPUPanel（本 worktree） | `git rev-parse HEAD`、`git status --short` | `e133f405481e08cc7dd9130e1d87c20e49fbbb97`（本轮复核基线） |
+| `/home/avaarg/workspace/agentaliyun` | 同上 | `57a0eec76667fcc12855dbf8decc9fc305b00a31`；脏范围仅 `?? agent/`（未跟踪研究树，不被该 HEAD 覆盖） |
+| `/home/avaarg/sre/holmesgpt` | 同上 | `5e983c17f30e93099c7d775167266d4cd1d586c4`；脏范围仅 ` M CLAUDE.md`（`AGENTS.md` 为指向 `CLAUDE.md` 的符号链接，已按其指引只读） |
 
-外部仓库只读：本轮未在两仓库执行 edit、build、test、service、model 调用；遵守 agentaliyun `AGENTS.md` §5 所有权与 §15 Git 规则（不触碰其 worktree/脏状态）。所有引用为只读路径与行号锚点。
+外部仓库只读：本轮未在两仓库执行 edit、build、test、service、model 调用；遵守 agentaliyun `AGENTS.md` §5 所有权与 §15 Git 规则。所有引用为只读路径与行号锚点。
 
 ### 0.1 许可与来源文件（独立 find/grep 复核）
 
 - agentaliyun：深度 ≤2 全仓 `find` 只命中 `./client/LICENSE`；**仓库根与 `controlplane/` 无任何 LICENSE/NOTICE**（`find controlplane -iname 'LICENSE*' -o -iname 'NOTICE*'` → 0）。`client/` 无 NOTICE 文件。
 - `client/LICENSE` 开头为 `Apache License / Version 2.0, January 2004`；`client/go.mod`：`module github.com/aliyun/aliyun_assist_client`、`go 1.20`，依赖 `github.com/docker/docker v24.0.4+incompatible`、`github.com/creack/pty v1.1.15` 等。
 - `controlplane/go.mod`：`module controlplane`（**无域名路径，非可 `go get` 的发布模块**）、`go 1.26.0`、`github.com/jackc/pgx/v5 v5.11.0`。
-- 客户端上游溯源：`testdata/client/source-manifest.json` 记录 `upstream.url = https://github.com/aliyun/aliyun_assist_client.git`、`upstream.revision = 8bbe05f476a172f7c7d9233011f7bc80d4f2686b`、`recovered.candidateCommit = fd3b866d…`、`legacyCommit = 716e95eb…`、`legacyPatchSha256 = 34083b6b…`，并声明“恢复提交是新身份，不继承历史验收结论”。同目录另有 `testdata/client/pre-v2.patch`（本地补丁实体）。
-- 本地 fork patch 位置：外层 `git log -- client` 仅一个提交 `84118e5e83fa squash(consolidation): land repository consolidation as one commit`，即**本地 client 是合并快照**；与上游的差异必须用 `candidateTree`（`e617d213…`）+ `pre-v2.patch` + manifest 逐项还原比对，不能靠外层历史推断。**本轮未执行与上游 revision 的全量 diff（NOT RUN，见 §9）。**
+- 客户端上游溯源：`testdata/client/source-manifest.json` 记录 `upstream.url = https://github.com/aliyun/aliyun_assist_client.git`、`upstream.revision = 8bbe05f476a172f7c7d9233011f7bc80d4f2686b`、`recovered.candidateCommit = fd3b866d…`、`legacyCommit = 716e95eb…`、`legacyPatchSha256 = 34083b6b…`，并声明“恢复提交是新身份，不继承历史验收结论”；同目录另有本地补丁 `testdata/client/pre-v2.patch`。
+- 本地 fork patch 位置：外层 `git log -- client` 仅一个提交 `84118e5e83fa squash(consolidation)`，即**本地 client 是合并快照**；与上游差异必须用 `candidateTree`（`e617d213…`）+ `pre-v2.patch` + manifest 逐项还原比对，不能靠外层历史推断。**本轮未执行全量 diff（NOT RUN，见 §9）。**
 - vendor：`client/vendor/` 实测 51M，含 `bou.ke/monkey`、`github.com/docker/docker`、`go.etcd.io` 等；**禁止整目录拷贝**，按依赖闭包逐个审。
-- HolmesGPT：根 `LICENSE` 178 行 Apache-2.0 正文；`AGENTS.md -> CLAUDE.md`。其 `pyproject.toml` 的 `[tool.poetry.dependencies]`（约 :12–58）含 `fastapi`、`litellm=1.89.0`、`supabase=2.28.1`、`kubernetes`、`boto3`、`sentry-sdk`、`confluent-kafka`、`opensearch-py`、`mcp=1.28.1` 等——**根 Apache 文本不覆盖这些第三方依赖与 `images/` 第三方 logo 资产的权利**。
+- HolmesGPT：根 `LICENSE` 178 行 Apache-2.0 正文；`AGENTS.md -> CLAUDE.md`。`pyproject.toml` 的 `[tool.poetry.dependencies]`（约 :12–58）含 `fastapi`、`litellm=1.89.0`、`supabase=2.28.1`、`kubernetes`、`boto3`、`sentry-sdk`、`confluent-kafka`、`opensearch-py`、`mcp=1.28.1` 等——**根 Apache 文本不覆盖这些第三方依赖与 `images/` 第三方 logo 资产的权利**。
 - 未跟踪 `agent/` 研究树：SPDX 计数 `56 × GPL-2.0`、`2 × (LGPL-2.1 OR BSD-2-Clause)`；`agent/monitor-agent/README.md:1–11` 自述“二进制符号+反编译重建、非官方、非可编译”。
 
 ## 1. 分类总表（A=复用候选 / D=仅设计参考 / X=排除）
@@ -67,12 +67,12 @@
 
 ## 2. 六条链路的追踪结论
 
-1. **进程取消**：入口 `client/agent/taskengine/host/processor.go:402 Cancel`（配 `:377 SyncRun`、`:422 Cleanup`）。本地执行、无 `requester` 直连，但依赖客户端内部 `agent/util/process`、`agent/log`、`metrics`、`acspluginmanager`（`:14–28`）。→ A 类：先做依赖拆解再提取；取消成功必须由进程退出独立观测，不允许“发出 Cancel 即完成”。
-2. **输出/finish 对账**：`runningoutput.go` 的 `retain/beginDelivery/settle/abandon/observe`（`:87–170`）实现“同一 request id + 相同字节 = 幂等重放”；`finish_v2.go` 的 `v2TerminalLedger`（`:371–444`）区分 in-flight/unknown/retryable。服务端对账在 `controlplane/task-store/postgres.go:658–831` 与迁移 `0008/0009`。→ 判据可借（D 类设计），wire 与 Postgres 事务不拷贝；GPUPanel 用本地 operation ledger 实现 `planned→running→completed/verified/failed/unknown`，退出码 receipt 与业务 verified 分开。
-3. **PTY relay**：执行端 A 类（`shell_unix.go:36 StartPty` 等）；**浏览器中继不存在**——`docs/architecture.md:117`（agentaliyun 根 docs/） “Session relay comes only after the task and update paths are proven”，`docs/roadmap.md:20/:78` 将 Session WSS relay 列为 P5（forward only, never decrypt）。→ GPUPanel 必须自建 WebSocket↔PTY 中继与断连/进程退出语义；执行端复用不能替代中继验收。
-4. **Docker scope**：`docker/exec.go` 覆盖 `ContainerExecCreate/Attach/Inspect`，即“已存在容器内执行与观察”。不含镜像/网络/卷/Compose/应用生命周期与失败恢复——这些属 GPUPanel 自建面，须用真实 Ubuntu 生命周期测试。
-5. **用户 auth vs 实例 auth**：GPUPanel 是**浏览器用户身份**：`core/middleware/session.go:15 SessionAuth()`、`core/middleware/csrf_protect.go:14 CSRFTokenGuard()`（`:22 CheckCSRFToken`）。agentaliyun 是**实例身份**：`registry/register.go:177/:433` 注册与激活码（迁移 `0004`）、`gateway/router.go:20–31 /luban/*` 心跳与任务、签名门 `:210`；本地运维是 **uid allowlist**（`operator/auth.go:51 SO_PEERCRED`）；任务归属是**实例归属**（`task-store/ownership.go:30 assertOwnership(taskInstanceID)`）。→ 四种身份不可混用：实例凭据/allowlist/header 都不得替代用户会话与项目授权；执行器不得信任自报 owner header。
-6. **Postgres vs SQLite**：`controlplane/go.mod` → `jackc/pgx/v5`，迁移 10 个 `.sql`（`store/migrations/0001…0010`），`task-store/postgres.go` + `memory.go`；**无 SQLite**。GPUPanel：`core/init/db/db.go:10 Init()`（GORM/SQLite）、`core/init/migration/{migrate.go,migrations,helper}`，且 Core 还打开 agent/task/alert 库。→ controlplane 迁移器**不是** GPUPanel 数据迁移方案；数据迁移必须按 `core/init/*` 实际存储另行设计（占位冻结见 api-data-inventory 任务）。
+1. **进程取消**：`processor.go:402 Cancel`（配 `:377 SyncRun`、`:422 Cleanup`）；本地执行、无 `requester` 直连，但依赖客户端内部 `agent/util/process`、`agent/log`、`metrics`、`acspluginmanager`（`:14–28`）。→ A 类先拆依赖再提取；取消成功必须由进程退出独立观测。
+2. **输出/finish 对账**：`runningoutput.go:87–170` 的 retain/beginDelivery/settle/abandon/observe 实现“同 request id + 相同字节 = 幂等重放”；`finish_v2.go:371–444` 区分 in-flight/unknown/retryable；服务端对账在 `task-store/postgres.go:658–831` 与迁移 `0008/0009`。→ 判据可借（D 类），wire 与 Postgres 事务不拷贝；GPUPanel 以本地 operation ledger 实现 `planned→running→completed/verified/failed/unknown`，退出码 receipt 与业务 verified 分开。
+3. **PTY relay**：执行端 A 类（`shell_unix.go:36 StartPty` 等）；**浏览器中继不存在**——`docs/architecture.md:117`（agentaliyun 根 docs/）“Session relay comes only after the task and update paths are proven”，`docs/roadmap.md:20/:78` 列 Session WSS relay 为 P5。→ GPUPanel 必须自建 WebSocket↔PTY 中继与断连/进程退出语义。
+4. **Docker scope**：`docker/exec.go` 覆盖 ContainerExecCreate/Attach/Inspect（已存在容器内执行观察），不含镜像/网络/卷/Compose/应用生命周期——属 GPUPanel 自建面，须真实 Ubuntu 生命周期测试。
+5. **用户 auth vs 实例 auth**：GPUPanel 是**浏览器用户身份**（`core/middleware/session.go:15 SessionAuth()`、`csrf_protect.go:14/:22`）；agentaliyun 是**实例身份**（`registry/register.go:177/:433` 注册/激活码迁移 `0004`、`gateway/router.go:20–31 /luban/*`、签名门 `:210`）；本地运维是 **uid allowlist**（`operator/auth.go:51 SO_PEERCRED`）；任务归属是**实例归属**（`task-store/ownership.go:30 assertOwnership(taskInstanceID)`）。→ 四种身份不可混用；执行器不得信任自报 owner header。
+6. **Postgres vs SQLite**：`controlplane/go.mod` → `jackc/pgx/v5`，10 个 `.sql` 迁移（`0001…0010`），无 SQLite。GPUPanel：`core/init/db/db.go:10 Init()`（GORM/SQLite）、`core/init/migration/*`，且 Core 还打开 agent/task/alert 库。→ controlplane 迁移器**不是** GPUPanel 数据迁移方案，须按 `core/init/*` 另行设计。
 
 ## 3. 依赖方向与 API 输入权限边界（准入即约束）
 
@@ -88,7 +88,7 @@ React(shadcn) ──/api/v1──▶ GPUPanel 应用后端（core 职责的后�
 ```
 
 - 禁止方向：前端 → 执行器；Holmes → 执行器；执行器 → 直接读写业务库；Holmes `user_id` → 授权决策。
-- **API 输入权限边界**：任何 `/api/v1` 变更的权威只能在后端认证会话；请求体/头中的 owner、uid、role、容器名、路径一律是“待验证输入”。Catalog 是声明，不是任意 shell 的执行权限；AI 建议不构成执行授权；`2xx/Desired state` 不构成完成证据。执行器只接受类型化命令 + 后端签发的 operation ID + 过期确认，拒绝自报身份。
+- **API 输入权限边界**：`/api/v1` 变更的权威只能在后端认证会话；请求体/头中的 owner、uid、role、容器名、路径一律是“待验证输入”。Catalog 是声明，不是任意 shell 的执行权限；AI 建议不构成执行授权；`2xx/Desired state` 不构成完成证据。执行器只接受类型化命令 + 后端签发的 operation ID + 过期确认，拒绝自报身份。
 
 ## 4. 禁止 import/复制清单与解除条件（给未来 backend/ 任务）
 
@@ -106,9 +106,9 @@ React(shadcn) ──/api/v1──▶ GPUPanel 应用后端（core 职责的后�
 - 模块与版本：`core/go.mod` `module github.com/avaargsh/GPUPanel/core`、`go 1.26.6`；`agent/go.mod` 同版本（与 client 的 `go 1.20`、controlplane 的 `go 1.26.0` 均不一致，选取源码前必须实测编译）。
 - 认证/CSRF：`core/middleware/session.go:15`、`csrf_protect.go:14/:22`；其余中间件（`password_rsa.go`、`ip_limit.go`、`password_expired.go`、`operation.go`、`websocket_origin.go`）同属须保留语义的登录面。
 - 数据入口：`core/init/db/db.go:10`；`core/init/migration/{migrate.go,migrations}`。
-- 已有“参考而非复制”先例：`agent/app/hostops/types.go:2`（“Design reference: agentaliyun assist controlplane; independently implemented”）——预览摘要绑定、session owner、原子 claim、超时 unknown、查询不重放、真实 Docker inspect 核验等行为在替换后保持。
+- 已有“参考而非复制”先例：`agent/app/hostops/types.go:2`（“Design reference: agentaliyun assist controlplane; independently implemented”）——预览摘要绑定、session owner、原子 claim、超时 unknown、查询不重放、真实 Docker inspect 核验等行为在替换后保持。注：backend/hostmetrics 与 hostobserve 的注释/骨架相似性归属仍未裁定（见 GOVERNANCE_STATUS“许可来源”），先例不构成 blanket 豁免。
 - 打包耦合：`scripts/gpupanel-release.py:105` 硬编码 `("core","gpupanel-core")`、`("agent","gpupanel-agent")`（`:80` 说明与 Makefile 路径一致）——删除旧模块时必须同步，否则发行物缺件。
-- 工程契约：新文件 ≤500 行、新增操作需 operation/超时/回执、证据预算、`.local/` 不入库（本仓库 `.gitignore:20 /.local/`，交接文件放 `.local/backend-task/handoff.json` 正确落在忽略区）。
+- 其余工程契约（新文件行数、operation/超时/回执、证据预算、`.local/` 不入库）以 [AGENTS](../../AGENTS.md) 与 [evidence README](../evidence/README.md) 为准，本文不复述。
 
 ## 6. HolmesGPT 专项（根 Apache ≠ 免审）
 
@@ -130,7 +130,7 @@ React(shadcn) ──/api/v1──▶ GPUPanel 应用后端（core 职责的后�
 5. **测试**：`go vet`、`go test -race`（含恶意/超大输入、取消、进程退出、PTY 关闭后无泄漏）；对照 §3 边界写“拒绝自报 owner/未授权容器/路径穿越”的否定测试。
 6. **第二候选**（`processor.go` 的 SyncRun/Cancel）先完成 import 拆解与周期/插件功能裁剪，再重复 2–5。
 7. **对账判据**（`runningoutput`/`finish_v2`/`task-store`）走 D 类：写成 GPUPanel operation 状态机与对账测试场景，**不拷贝 wire/SQL**。
-8. **证据**：按 `docs/evidence/README.md` 留 commit、命令、输出摘要与 NOT RUN；过 `scripts/gpupanel-evidence-budget.py`。
+8. **证据**：按 `docs/evidence/README.md` 留 commit、命令、输出摘要与 NOT RUN。
 
 ## 8. core/agent 完整移除前的延迟缺口（每项都是删除阻断项）
 
@@ -145,14 +145,11 @@ React(shadcn) ──/api/v1──▶ GPUPanel 应用后端（core 职责的后�
 
 ## 9. 本轮执行记录（诚实口径）
 
-| 动作 | 结果 |
-| --- | --- |
-| 三仓 `git rev-parse HEAD` + `git status --short` | 已执行，见 §0 |
-| 许可文件 find、Apache 正文 head、`client/controlplane go.mod`、`source-manifest.json` 解析 | 已执行，见 §0.1 |
-| 六链路行锚 grep（`func`/`SO_PEERCRED`/`/luban`/`migrations`/`shell=True`/`user_id`/`HOLMES_API_KEY` 等） | 已执行，行号以本轮 grep 输出为准 |
-| `client/` vs 上游 `8bbe05f…` 全量 diff、`legacyPatchSha256` 还原校验 | **NOT RUN**（需外部上游对象/网络，超本任务边界） |
-| 任何 Go/Python 构建、测试、vet（两候选仓库与 GPUPanel） | **NOT RUN**（只读研究树，禁止在其执行测试/服务） |
-| 模型调用、服务/容器/host 变更、凭据或运行库读取 | **未执行（禁止）** |
-| 复制任何候选源码、修改外部仓库、修改 `LICENSE`/`NOTICE`/公共 API | **未执行（禁止）** |
+只读复核命令与结果见上文各节锚点。**NOT RUN / 未执行**：`client/` 与上游 `8bbe05f…` 的
+全量 diff 及 `legacyPatchSha256` 还原校验（需外部上游对象/网络，超本任务边界）；两候选
+仓库与 GPUPanel 的任何 Go/Python 构建、测试、vet（只读研究树，禁止在其执行测试/服务）；
+模型调用、服务/容器/host 变更、凭据读取、复制候选源码、修改外部仓库或
+`LICENSE`/`NOTICE`/公共 API（全部禁止）。
 
-本文件即本任务唯一交付（`docs/gpupanel/BACKEND_REUSE_BOUNDARIES.md`）；回退方式：删除本文件。
+本文件即复用边界任务唯一交付；回退方式：删除本文件。后续任务状态见
+[GOVERNANCE_STATUS](../STATUS.md)。

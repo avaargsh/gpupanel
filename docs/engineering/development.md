@@ -1,7 +1,9 @@
 # 开发与构建
 
-使用 Go module 声明的 Go 版本、Node 24 和 `frontend/package.json` 固定的 pnpm。
-不使用 npm lockfile，也没有根 Bun workspace。
+使用 Go module 声明的 Go 版本（`core/`、`agent/`、`backend/` 均为 `go 1.26.6`）、
+Node 24（`.github/workflows/gpupanel-mainline.yml` 的 `node-version: '24'`）和
+`frontend/package.json` 的 `"packageManager": "pnpm@12.8.1"`。
+不使用 npm lockfile，也没有根 Bun workspace 或 `go.work`。
 
 ## 安装前端依赖
 
@@ -9,6 +11,10 @@
 cd frontend
 pnpm install --frozen-lockfile
 ```
+
+前端是 React 19 + shadcn/ui + Tailwind 的 pnpm workspace
+（`frontend/pnpm-workspace.yaml`、`frontend/apps/panel/`），命令必须在 `frontend/` 目录执行，
+根目录没有 `package.json`。
 
 纯前端热更新不会启动或改写宿主机已安装服务：
 
@@ -36,6 +42,10 @@ make build_all
 
 该命令编译 React 并更新 Core 的 embed 资源，再编译两项 Go 二进制。
 只生成后端可用 `make build_backend`，但它不更新已有前端资源。
+注意 `make build_backend` 实际目标是 `build_core_on_linux build_agent_on_linux`
+（`Makefile:68`），**不编译实验模块 `backend/`**；`backend/` 只能用
+`cd backend && go test -race -count=1 ./...` 之类的模块内命令验证，
+不进入发行产物，也没有安装入口。
 
 待验收安装 payload：
 
@@ -61,3 +71,10 @@ python3 scripts/gpupanel-release.py verify dist/gpupanel-preview.tar.gz
 宿主机默认仍可能有其他项目、旧 1Panel 或 GPUPanel 数据；`make dev` 会尝试通过
 sudo/pctl 拉起已安装后端，因此不作为默认开发入口。源码改动需要重建和重新验收，
 不能用旧后端服务的运行状态验证新源码。
+
+## 状态与证据口径
+
+本文件只描述**如何执行**，不代表任何命令本轮已运行。历史 VM/真机结果按
+[证据索引](../evidence/README.md) 的 historical/source/live 分级阅读，
+当前交付状态、整改所有权与 NOT RUN 清单见 [GOVERNANCE_STATUS](../STATUS.md)。
+未执行的命令一律记为 NOT RUN，不改写为 PASS。

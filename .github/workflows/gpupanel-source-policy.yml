@@ -1,0 +1,114 @@
+name: GPUPanel source policy
+# Read-only quality gate: newly added Go/Python/TS/TSX source must stay <=500
+# physical lines, plus race tests and vet for the backend/ Go module.
+# No pull_request_target and no secrets: permissions are read-only throughout.
+on:
+  pull_request:
+    branches: [main, dev-v2]
+  push:
+    branches: [main, dev-v2]
+  workflow_dispatch:
+    inputs:
+      base:
+        description: 'Baseline ref (empty = merge-base with the default branch)'
+        required: false
+        default: ''
+permissions:
+  contents: read
+concurrency:
+  group: source-policy-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  source-policy:
+    name: source-policy (<=500 new source lines)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      # fetch-depth 0 so explicit baselines (PR base SHA, push before SHA and
+      # merge-base fallbacks) are present locally instead of silently defaulting.
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Resolve explicit baseline (fail closed when none exists)
+        id: baseline
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PUSH_BEFORE_SHA: ${{ github.event.before }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+          INPUT_BASE: ${{ inputs.base }}
+        run: |
+          set -eu
+          zero=0000000000000000000000000000000000000000
+          base=""
+          case "$EVENT_NAME" in
+            pull_request)
+              base="${PR_BASE_SHA:-}"
+              if [ -z "$base" ]; then
+                echo "::error::pull_request event carries no base SHA; refusing to invent a baseline"
+                exit 2
+              fi
+              ;;
+            push)
+              before="${PUSH_BEFORE_SHA:-}"
+              if [ -z "$before" ] || [ "$before" = "$zero" ]; then
+                echo "push before SHA is zero (new branch, new tag, or first push): resolving merge-base with origin/${DEFAULT_BRANCH}"
+                base="$(git merge-base HEAD "origin/${DEFAULT_BRANCH}" 2>/dev/null || true)"
+              else
+                base="$before"
+              fi
+              ;;
+            *)
+              base="${INPUT_BASE:-}"
+              if [ -z "$base" ]; then
+                echo "workflow_dispatch without input: resolving merge-base with origin/${DEFAULT_BRANCH}"
+                base="$(git merge-base HEAD "origin/${DEFAULT_BRANCH}" 2>/dev/null || true)"
+              fi
+              ;;
+          esac
+          if [ -z "$base" ]; then
+            echo "::error::no baseline resolved (zero before SHA without a common ancestor, or unknown event); refusing to compare against an empty tree"
+            exit 2
+          fi
+          if ! git rev-parse --verify --quiet "${base}^{commit}" >/dev/null; then
+            echo "baseline ${base} not present locally; fetching that object from origin"
+            git fetch --no-tags --depth=1 origin "${base}" || true
+          fi
+          if ! git rev-parse --verify --quiet "${base}^{commit}" >/dev/null; then
+            echo "::error::baseline ${base} does not resolve to a commit; refusing to compare against an empty tree"
+            exit 2
+          fi
+          resolved="$(git rev-parse "${base}^{commit}")"
+          head_sha="$(git rev-parse HEAD)"
+          if [ "$resolved" = "$head_sha" ]; then
+            echo "::error::no meaningful baseline: resolved baseline equals HEAD (${resolved}); the check would compare nothing. Initial push to ${DEFAULT_BRANCH} (zero before SHA) must supply an explicit base input via workflow_dispatch instead of silently passing."
+            exit 2
+          fi
+          echo "ref=${resolved}" >> "$GITHUB_OUTPUT"
+          echo "resolved baseline: ${resolved}"
+      - name: Source policy on explicit baseline (read-only)
+        run: >-
+          python3 scripts/gpupanel-source-policy.py
+          --base "${{ steps.baseline.outputs.ref }}"
+          --include-worktree
+      - name: Policy unit tests (synthetic git fixtures, no host mutation)
+        run: python3 -m unittest discover -s scripts/tests -p 'test_gpupanel_source_policy.py' -v
+  backend:
+    name: backend go test -race and vet
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: backend/go.mod
+          cache-dependency-path: backend/go.mod
+      - name: go vet (backend module)
+        working-directory: backend
+        run: go vet ./...
+      - name: go test -race -count=1 (backend module)
+        working-directory: backend
+        run: go test -race -count=1 ./...
