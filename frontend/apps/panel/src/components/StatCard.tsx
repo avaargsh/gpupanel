@@ -7,17 +7,19 @@ export interface StatCardProps {
     percent?: number;
     icon: ReactNode;
     color?: string;
+    /** Compact variant for the developer workbench summary only. */
+    compact?: boolean;
 }
 
-export default function StatCard({ title, value, percent, icon, color = 'var(--semi-color-primary)' }: StatCardProps) {
+export default function StatCard({ title, value, percent, icon, color = 'var(--semi-color-primary)', compact = false }: StatCardProps) {
     return (
-        <Card style={{ height: '100%' }} bodyStyle={{ padding: 18 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <Card className={compact ? 'workbench-stat-card' : undefined} style={{ height: '100%' }} bodyStyle={{ padding: compact ? 14 : 18 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: compact ? 8 : 10 }}>
                 <div
                     style={{
-                        width: 34,
-                        height: 34,
-                        borderRadius: 10,
+                        width: compact ? 30 : 34,
+                        height: compact ? 30 : 34,
+                        borderRadius: compact ? 8 : 10,
                         display: 'grid',
                         placeItems: 'center',
                         color,
@@ -26,9 +28,9 @@ export default function StatCard({ title, value, percent, icon, color = 'var(--s
                 >
                     {icon}
                 </div>
-                <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--semi-color-text-2)' }}>{title}</span>
+                <span style={{ fontSize: compact ? 12 : 13, fontWeight: 600, color: 'var(--semi-color-text-2)' }}>{title}</span>
             </div>
-            <div style={{ fontSize: 26, fontWeight: 700, letterSpacing: -0.5, marginTop: 12 }}>{value}</div>
+            <div style={{ fontSize: compact ? 22 : 26, fontWeight: 700, letterSpacing: -0.5, marginTop: compact ? 8 : 12 }}>{value}</div>
             {typeof percent === 'number' && (
                 <Progress
                     percent={Math.max(0, Math.min(100, percent))}

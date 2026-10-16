@@ -1,0 +1,46 @@
+name: GPUPanel vNext visual smoke
+on:
+  pull_request:
+    paths:
+      - 'frontend/**'
+      - 'scripts/browser/**'
+      - '.github/workflows/gpupanel-vnext-visual-smoke.yml'
+  workflow_dispatch:
+jobs:
+  visual-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: '12.8.1'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install frontend
+        run: pnpm install --frozen-lockfile
+        working-directory: frontend
+      - name: Install Chromium test harness
+        run: |
+          python3 -m pip install 'playwright==1.56.0'
+          python3 -m playwright install --with-deps chromium
+      - name: Simulated browser functional and layout smoke
+        run: python3 scripts/browser/run-react-tests.py
+      - name: Upload mocked screenshot evidence (not live GPU)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: vnext-visual-smoke-${{ github.sha }}
+          path: |
+            .local/install-test/vnext/*.png
+            .local/install-test/vnext/*.json
+          if-no-files-found: warn
+          retention-days: 7

@@ -80,7 +80,6 @@ export default function Header() {
 
             <span className="workspace-page-title">{currentTitle}</span>
             <HostScope />
-            <Button className="workspace-task-link" theme="borderless" onClick={() => navigate('/logs?tab=task')}>{t('workbench.tasks')}</Button>
 
             <div style={{ flexGrow: 1 }} />
 
