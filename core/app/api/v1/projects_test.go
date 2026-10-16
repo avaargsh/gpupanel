@@ -18,7 +18,7 @@ import (
 	"gorm.io/gorm"
 )
 
-func projectRegistryHarness(t *testing.T) (*gin.Engine, [](*http.Cookie), string, *gorm.DB) {
+func projectRegistryHarness(t *testing.T) (*gin.Engine, []*http.Cookie, string, *gorm.DB) {
 	t.Helper()
 	oldDB, oldSession := global.DB, global.SESSION
 	db, err := gorm.Open(sqlite.Open(filepath.Join(t.TempDir(), "core.db")), &gorm.Config{})
@@ -105,10 +105,10 @@ func TestProjectRegistryHTTPCreateListConflictAndUnprovisionedState(t *testing.T
 	if code != http.StatusOK || len(listing["data"].([]interface{})) != 1 {
 		t.Fatalf("persisted project cannot be listed: %d %#v", code, listing)
 	}
-	if code, _ := projectRequest(t, router, http.MethodPost,
-		`{"name":"bad","sourceHint":"manual","ownerId":"forged"}`, cookies, csrf); code != http.StatusOK && code != http.StatusBadRequest {
-		t.Fatalf("unexpected status: %d", code)
-	} else if code == http.StatusOK { t.Fatal("forged owner field was silently accepted") }
+	if status, rejected := projectRequest(t, router, http.MethodPost,
+		`{"name":"bad","sourceHint":"manual","ownerId":"forged"}`, cookies, csrf); status != http.StatusOK || rejected["code"] != float64(http.StatusBadRequest) {
+		t.Fatalf("forged owner field was not rejected: status=%d response=%#v", status, rejected)
+	}
 }
 
 func TestProjectRegistryHTTPRejectsLocalAndAPIKeyBypass(t *testing.T) {
