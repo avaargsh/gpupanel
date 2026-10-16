@@ -79,7 +79,7 @@ export const baseQueryWithEnvelope: BaseQueryFn<
 export const baseApi = createApi({
     reducerPath: 'api',
     baseQuery: baseQueryWithEnvelope,
-    tagTypes: ['Auth', 'Dashboard', 'Host', 'Container', 'ContainerImage', 'GPU', 'Database', 'Website', 'App', 'AI', 'Cronjob', 'Script', 'Toolbox', 'Log', 'Setting'],
+    tagTypes: ['Auth', 'Dashboard', 'Host', 'Container', 'ContainerImage', 'GPU', 'Database', 'Website', 'App', 'AI', 'Cronjob', 'Script', 'Toolbox', 'Log', 'Setting', 'Project'],
     refetchOnReconnect: true,
     endpoints: () => ({}),
 });
