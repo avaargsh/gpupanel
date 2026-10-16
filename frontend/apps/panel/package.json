@@ -12,8 +12,6 @@
     "test": "node --experimental-strip-types --test src/utils/*.test.mjs"
   },
   "dependencies": {
-    "@douyinfe/semi-icons": "^2.104.0",
-    "@douyinfe/semi-ui": "^2.104.0",
     "@reduxjs/toolkit": "^2.5.0",
     "@tailwindcss/vite": "^4.3.3",
     "@xterm/addon-fit": "^0.10.0",

@@ -108,6 +108,11 @@ const zh = {
     common: {
         search: '搜索',
         searchPlaceholder: '搜索页面、功能或命令…',
+        add: '添加',
+        all: '全部',
+        pageSize: '每页',
+        select: '选择',
+        selectAll: '全选',
         theme: '主题',
         themeLight: '浅色',
         themeDark: '深色',

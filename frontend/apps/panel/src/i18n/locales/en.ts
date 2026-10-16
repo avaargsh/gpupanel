@@ -110,6 +110,11 @@ const en: LocaleResource = {
     common: {
         search: 'Search',
         searchPlaceholder: 'Search pages, features or commands…',
+        add: 'Add',
+        all: 'All',
+        pageSize: 'Page size',
+        select: 'Select',
+        selectAll: 'Select all',
         theme: 'Theme',
         themeLight: 'Light',
         themeDark: 'Dark',
