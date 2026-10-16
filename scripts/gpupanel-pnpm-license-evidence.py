@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+# Copyright 2026 GPUPanel contributors
+# SPDX-License-Identifier: Apache-2.0
+# See LICENSES/Apache-2.0.txt for the license terms.
 """Evidence from installed pnpm packages, not a license clearance or complete SBOM.
 
 Read-only. Requires a frozen pnpm install; never follows package-directory symlinks.
