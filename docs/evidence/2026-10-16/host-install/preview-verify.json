@@ -1,8 +1,0 @@
-{
-  "verified": true,
-  "artifact": "/home/avaarg/GPUPanel/dist/gpupanel-preview.tar.gz",
-  "sha256": "9bc490aa6fd327e646f4e96cdd6bc7cb105b760da6945605cf4af8f36bc3d7a8",
-  "version": "dev",
-  "installable": false,
-  "source_commit": "7599fd56c5cd09a46fa2b881709d3141ed6bc8f7"
-}

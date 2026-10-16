@@ -1,5 +1,8 @@
 # vNext Shell 与工作台首批结果
 
+> 历史验收摘要；本次仅整理资料，没有重跑以下测试。重复日志、整树清单和多余截图已清理，
+> 原附件可从 Git `87c64f6ed2a52ea106a2d57a870165c3f1ce54e2` 找回。保留范围见 [归档规则](../../README.md)。
+
 日期：2026-10-16（Asia/Shanghai）。基线：远程 main
 `c237280d3a4f614f3360b8a4c35601bdf1d1d270`。本轮源码由 `source.sha256` 标识；
 提交后以 PR 的精确 HEAD 关联，不将旧 VM 或旧提交的通过结论挪用到当前产物。
@@ -17,15 +20,17 @@
 
 ## 本地执行
 
-| 检查 | 结果 | 文件 |
-| --- | --- | --- |
-| `pnpm install --frozen-lockfile` | 通过，锁文件未变 | 当前 workspace，未新增依赖 |
-| `pnpm typecheck` | 通过 | `typecheck.txt` |
-| `pnpm test` | 11 项通过 | `unit.txt` |
-| `pnpm build` | 通过 | `build.txt` |
-| Python 完整工具/契约 | 229 项通过 | `python.txt` |
-| `scripts/browser/run-react-tests.py` | 两套模拟 API 浏览器回归通过 | `browser.txt`、`browser.json` |
-| `git diff --check` | 通过 | 提交前执行 |
+| 检查 | 结果 |
+| --- | --- |
+| `pnpm install --frozen-lockfile` | 通过，锁文件未变 |
+| `pnpm typecheck` | 通过 |
+| `pnpm test` | 11 项通过 |
+| `pnpm build` | 通过 |
+| Python 完整工具/契约 | 229 项通过 |
+| `scripts/browser/run-react-tests.py` | 两套模拟 API 浏览器回归通过 |
+| `git diff --check` | 通过 |
+
+保留的模拟检查摘要见 [browser.json](browser.json)。
 
 新增模拟浏览器覆盖：中英文、浅深色、1440/1280/1024/640px、侧栏折叠记忆、
 主要内容跳转、键盘搜索、模态焦点约束与 Esc/焦点返回、助手打开时阻止全局搜索叠层（修复前已复现失败）、项目禁用状态、失败刷新
@@ -33,8 +38,7 @@
 目标一致、已安装应用直达。旧验证码/MFA、回执恢复、重复安装拒绝、UNKNOWN
 拒绝与脱敏证据用例仍运行。无页面脚本异常。
 
-`home-light.png`、`home-dark.png`、`home-1024.png`、`home-zh.png`、`home-640.png`、
-`assistant.png` 为上述模拟 API 截图。**截图中的 24%、38%、设备数及主机名称是测试
+仅保留 `home-dark.png` 作为模拟 API 视觉示例，其余尺寸与语言截图已清理。**截图中的 24%、38%、设备数及主机名称是测试
 夹具数据，不是当前机器或实际 GPU 测量。** 应用实现仍只读取 API，不内置这些数字。
 
 ## 未完成与证据边界

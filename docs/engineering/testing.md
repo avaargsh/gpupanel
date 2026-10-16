@@ -20,6 +20,10 @@
 Go 测试中需要专用 Docker 或 Agent socket 的用例由环境变量门槛控制；缺失时会
 跳过。普通 `go test` exit 0 不能把这些跳过项变成 live Docker 通过。
 
+证据按 [索引与保留规则](../evidence/README.md) 精简归档，并运行
+`python3 scripts/gpupanel-evidence-budget.py` 检查体积、主题和附件数上限。
+同一能力的新结果替换旧附件，不按每次执行无限新建目录。
+
 证据按 `docs/evidence/<日期>/<工作项>/` 组织：记录源码指纹或 SHA、二进制/归档摘要、
 环境版本、可复制命令、通过/失败/阻塞/跳过、恢复方式。原始安装日志、账号密码、
 私钥、Cookie、数据库、VM 磁盘放 `.local/`，只将脱敏结果发布到文档目录。

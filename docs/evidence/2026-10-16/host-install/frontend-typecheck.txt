@@ -1,2 +1,0 @@
-$ pnpm --filter @gpupanel/panel typecheck
-$ tsc --noEmit

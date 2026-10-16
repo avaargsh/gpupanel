@@ -21,6 +21,7 @@ class ProjectLayoutTest(unittest.TestCase):
         documents = [ROOT / name for name in ('README.md', 'frontend/README.md', 'deploy/README.md', 'scripts/README.md', 'docs/README.md')]
         documents += list((ROOT / 'docs/engineering').glob('*.md'))
         documents += list((ROOT / 'docs/operations').glob('*.md'))
+        documents += list((ROOT / 'docs/evidence').rglob('*.md'))
         for document in documents:
             for target in re.findall(r'\[[^\]]*\]\(([^)]+)\)', document.read_text()):
                 if '://' in target or target.startswith(('#', 'mailto:')):
@@ -28,6 +29,32 @@ class ProjectLayoutTest(unittest.TestCase):
                 path = target.split('#', 1)[0]
                 with self.subTest(document=str(document.relative_to(ROOT)), link=target):
                     self.assertTrue((document.parent / path).resolve().exists(), target)
+
+    def test_curated_evidence_stays_within_budget(self):
+        result = subprocess.run(['python3', 'scripts/gpupanel-evidence-budget.py'], cwd=ROOT, capture_output=True, text=True)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
+    def test_evidence_budget_rejects_raw_logs_growth_and_missing_summary(self):
+        import tempfile
+        for scenario in ('raw-log', 'oversize', 'missing-summary', 'too-many-files'):
+            with self.subTest(scenario=scenario), tempfile.TemporaryDirectory() as directory:
+                root = Path(directory)
+                bundle = root / '2026-10-16' / 'example'
+                bundle.mkdir(parents=True)
+                if scenario != 'missing-summary':
+                    (bundle / 'RESULTS.md').write_text('Historical result with explicit limits.\n')
+                if scenario == 'raw-log':
+                    (bundle / 'test-output.txt').write_text('Repeated test output')
+                elif scenario == 'oversize':
+                    (bundle / 'inventory.json').write_bytes(b' ' * (64 * 1024 + 1))
+                elif scenario == 'too-many-files':
+                    for index in range(8):
+                        (bundle / f'receipt-{index}.json').write_text('{}')
+                else:
+                    (bundle / 'receipt.json').write_text('{}')
+                result = subprocess.run(['python3', str(ROOT / 'scripts/gpupanel-evidence-budget.py'), '--root', str(root)], capture_output=True, text=True)
+                self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
+                self.assertIn('FAIL:', result.stdout)
 
     def test_vm_is_local_and_owner_checked(self):
         source = (ROOT / 'scripts/install-test/vm.py').read_text()

@@ -8,6 +8,7 @@
 | vNext 工作台基线 | [设计、能力边界与开发顺序](gpupanel/VNEXT_WORKBENCH.md)、[领域术语](../GLOSSARY.md) |
 | 工程目录与边界 | [目录规范](engineering/project-structure.md) |
 | 开发、配置与构建 | [开发指南](engineering/development.md) |
+| 验收资料保留与预算 | [证据索引与规则](evidence/README.md) |
 | 回归测试与证据分类 | [测试指南](engineering/testing.md) |
 | 本地真机安装 | [安装边界与操作说明](operations/host-install.md) |
 | 本机隔离安装与停止 | [本地 VM 安装测试](operations/local-install-test.md) |

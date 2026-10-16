@@ -1,8 +1,11 @@
 # Intel GPU 真机识别修复
 
+> 历史验收摘要；本次仅整理资料，没有重跑以下测试。重复日志、整树清单和多余截图已清理，
+> 原附件可从 Git `87c64f6ed2a52ea106a2d57a870165c3f1ce54e2` 找回。保留范围见 [归档规则](../../README.md)。
+
 运行源码：`a74e4c51b9e2d279cb5dff6811d32af979c5265a`。
 安装的 Core 与 Agent build info 均为该提交，`vcs.modified=false`。
-SHA256 见 `intel-update-checks.json`，完整 build info 见 `build-info.txt`。
+二进制 SHA256 见 `intel-update-checks.json`；移除重复的完整依赖 build info。
 
 本机 Ubuntu 26.04，PCI `0000:00:02.0`、Intel `8086:7d51`、DRM `card1`、
 驱动 i915。修复前指定该 PCI 地址的探测测试失败：collector unavailable。
