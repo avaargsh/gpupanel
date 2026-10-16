@@ -8,13 +8,29 @@
 | --- | ---: | --- |
 | Inherited 1Panel Core / Agent / substantial fork source | GPL-3.0 | **Apache-only release blocked** until rights are obtained or a separately audited independently lawful implementation/distribution exists |
 | Explicit file-scoped Apache-2.0 | 4 Python audit source/test files | Defined in `APACHE_FILE_SCOPE.md`; not a project-wide grant |
-| pnpm v9 lock package records | **367** | Lock records, **not 367 installed/shipped packages**. Existing lock-only audit has no authoritative license text/hints |
+| pnpm v9 lock package records | **382** | Lock records (367 application package entries + 15 package-manager/bootstrap entries across the lock documents), **not 382 installed/shipped packages**. Existing lock-only audit has no authoritative license text/hints |
 | React workspace direct + dev declarations | **15 + 7** | `frontend/apps/panel/package.json`; versions resolve via `frontend/pnpm-lock.yaml` |
-| Go `require` records | **131 Core + 217 Agent = 348** | May include duplicate modules and indirect requirements; **not** measured final binary dependency count |
+| Go `require` records | **131 Core + 218 Agent = 349** | May include duplicate modules and indirect requirements; **not** measured final binary dependency count |
 | Go `replace` | **1** | `github.com/go-acme/lego/v5 => github.com/1Panel-dev/lego/v5 v5.3.1` |
 | Actual installable bundle | GPL `LICENSE` + fork `NOTICE.md` copied | No verified third-party notices manifest, resolved dependency license texts, code/asset SBOM or all-artifact license sign-off in `deploy/build.sh` |
 
 Evidence is drawn from the pinned `frontend/pnpm-lock.yaml`, `frontend/apps/panel/package.json`, `core/go.mod`, `agent/go.mod`, `deploy/build.sh`, `NOTICE.md`, and the existing license review tooling.
+
+## Real Ubuntu CI evidence (PR #96)
+
+The dependency workflow on 2026-10-16 completed successfully at [run 38833308679](https://github.com/avaargsh/gpupanel/actions/runs/38833308679) after a pinned frozen pnpm install, plus the Go/manifest evidence generator:
+
+| Evidence result | Count |
+| --- | ---: |
+| pnpm lock identities | **382** |
+| Installed identities on Ubuntu runner | **317** |
+| Installed packages with at least one top-level LICENSE/COPYING/NOTICE file | **314** |
+| Installed packages without a readable matching top-level legal file | **3** |
+| Lock identities not installed in this environment (including platform-specific optional dependencies) | **65** |
+| Go requires from current manifests | **349** (103 direct entries) |
+| Go module replacements | **1** |
+
+These counts are **source-package evidence only**. The 314 files have *not* been reviewed for license compatibility or required redistribution wording; the 3 files without discovered top-level license documents need individual review, and the 65 uninstalled records do **not** mean licenses are violated. Exact per-package hashes are in the workflow artifact `gpupanel-dependency-review`.
 
 ## Critical gaps (ranked)
 
@@ -23,7 +39,7 @@ Evidence is drawn from the pinned `frontend/pnpm-lock.yaml`, `frontend/apps/pane
 | **P0 – blocking the goal** | GPL derivative work remains the actual product | Identify upstream-owned and derived code/assets and their copyright holders. Keep the GPL distribution, or obtain **documented rights for all affected content**; a renamed/refactored fork does not become Apache-only |
 | **P0 – release claims** | Root GPL and file-scoped Apache declarations could be confused | Continue `L0/L2` guards. No Apache-only badges, root license replacement, or release declaration unless L1–L5 verified |
 | **P1 – pnpm license evidence** | pnpm lock has versions/integrities, **not actual license texts or clearance** | Run frozen pnpm install in CI and inventory installed package `package.json` license hints and local LICENSE/COPYING/NOTICE document SHA-256, with explicit missing/OS-optional states; see this PR |
-| **P1 – Go effective graph** | 348 manifest entries do not prove which Go modules and notices enter the shipped binaries | For each Core/Agent build, save `go list -m -json all` / build info and licenses from the exact resolved module source, including replacements/build tags; compare against binary and copy required notices |
+| **P1 – Go effective graph** | 349 manifest entries do not prove which Go modules and notices enter the shipped binaries | For each Core/Agent build, save `go list -m -json all` / build info and licenses from the exact resolved module source, including replacements/build tags; compare against binary and copy required notices |
 | **P1 – specific fork** | 1Panel-maintained Lego fork is different from upstream module | `1Panel-dev/lego` **tag v5.3.1** contains MIT `LICENSE` (verified via GitHub). Audit its actual changes, third-party files and associated notice obligations before clearing. MIT text is not an Apache relicense of 1Panel-owned additions |
 | **P1 – frontend bundle** | Browser bundle embeds React/Semi/assets; package lock scan alone cannot identify licenses in shipped output | Build frontend, map included dependencies/third-party font and icon assets to source packages, record notices/licenses in release payload. `DouyinFE/semi-design` **v2.104.0** repository tag has MIT `LICENSE`; its bundled/third-party notices still require version-specific review |
 | **P1 – actual installer artifacts** | `deploy/build.sh` currently copies GPL `LICENSE` and `NOTICE.md` but does not assemble verified third-party notices/SBOM | On an isolated release candidate, inspect exact tar members, Go binaries, embedded web static assets, optional GeoIP, language packs, supplied scripts and dependency license texts. Ship required attribution before any broad release-compliance claim |
