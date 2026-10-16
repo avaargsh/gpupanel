@@ -23,7 +23,7 @@ export function parseInstalledPage(input: unknown): PageResult<AppInstallDto> {
     }
     const value = input as Record<string, unknown>;
     const total = value.total;
-    if (!Number.isSafeInteger(total) || (total as number) < 0) {
+    if (typeof total !== 'number' || !Number.isSafeInteger(total) || total < 0) {
         throw new Error('invalid installed list total');
     }
     if (value.items === null && total === 0) return { items: [], total: 0 };
