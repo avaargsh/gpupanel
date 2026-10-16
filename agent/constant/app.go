@@ -1,7 +1,7 @@
 package constant
 
 const (
-	ContainerPrefix = "1Panel-"
+	ContainerPrefix = "GPUPanel-"
 
 	AppNormal   = "Normal"
 	AppTakeDown = "TakeDown"

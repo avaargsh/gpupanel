@@ -2,11 +2,12 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Terminal as XTerm } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
 import '@xterm/xterm/css/xterm.css';
-import { Button } from '@douyinfe/semi-ui';
-import { IconRefresh } from '@douyinfe/semi-icons';
+import { Button } from '@/components/ui/button';
+import { RefreshCwIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { decodeBase64, encodeBase64 } from '@/utils/base64';
 import { getCookie } from '@/utils/cookie';
+import { cn } from '@/lib/utils';
 import { useAppSelector } from '@/store/hooks';
 
 /** 鉴权相关状态码（对齐旧前端 ResultEnum：401 OVERDUE / 403 FORBIDDEN / 313 EXPIRED） */
@@ -294,45 +295,38 @@ export default function Terminal({
                 : t('host.terminal.disconnected');
 
     return (
-        <div style={{ display: 'flex', flexDirection: 'column', height, minHeight: 300, border: '1px solid var(--semi-color-border)', borderRadius: 8, overflow: 'hidden' }}>
-            <div
-                style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 8,
-                    padding: '4px 10px',
-                    fontSize: 12,
-                    backgroundColor: 'var(--semi-color-fill-0)',
-                    borderBottom: '1px solid var(--semi-color-border)',
-                }}
-            >
+        <div className="term-shell" style={{ height }}>
+            <div className="term-status">
                 <span
-                    style={{
-                        width: 8,
-                        height: 8,
-                        borderRadius: '50%',
-                        backgroundColor: connState === 'connected' ? 'var(--semi-color-success)' : connState === 'connecting' ? 'var(--semi-color-warning)' : 'var(--semi-color-danger)',
-                    }}
+                    className={cn(
+                        'size-2 rounded-full',
+                        connState === 'connected'
+                            ? 'bg-emerald-600 dark:bg-emerald-400'
+                            : connState === 'connecting'
+                              ? 'bg-amber-600 dark:bg-amber-400'
+                              : 'bg-destructive',
+                    )}
                 />
-                <span style={{ color: 'var(--semi-color-text-2)' }}>{statusText}</span>
+                <span className="text-muted-foreground">{statusText}</span>
                 {errorMsg && (
-                    <span style={{ color: 'var(--semi-color-danger)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    <span className="min-w-0 truncate text-destructive">
                         {errorMsg}
                     </span>
                 )}
                 {connState !== 'connected' && (
                     <Button
-                        size="small"
-                        icon={<IconRefresh />}
-                        theme="borderless"
-                        style={{ marginLeft: 'auto' }}
+                        type="button"
+                        size="sm"
+                        variant="ghost"
+                        className="ml-auto"
                         onClick={() => setSeq((s) => s + 1)}
                     >
+                        <RefreshCwIcon data-icon="inline-start" />
                         {t('host.terminal.reconnect')}
                     </Button>
                 )}
             </div>
-            <div ref={hostRef} style={{ flex: 1, minHeight: 0, padding: 6, backgroundColor: '#14151a' }} />
+            <div ref={hostRef} className="term-body" />
         </div>
     );
 }

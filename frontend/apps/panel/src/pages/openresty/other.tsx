@@ -1,8 +1,12 @@
-import { useEffect, useState } from 'react';
-import { Banner, Button, Spin, Switch, Toast } from '@douyinfe/semi-ui';
-import { useTranslation } from 'react-i18next';
 import { useGetNginxHttpsQuery, useOperateNginxHttpsMutation } from '@/api/openrestyApi';
-import { errText, Field } from '@/pages/toolbox/shared';
+import { Alert, AlertTitle } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
+import { Switch } from '@/components/ui/switch';
+import { errText } from '@/pages/toolbox/shared';
+import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { toast } from 'sonner';
+import { ConfigField } from './fields';
 
 export default function OtherTab({ running }: { running: boolean }) {
     const { t } = useTranslation();
@@ -20,29 +24,49 @@ export default function OtherTab({ running }: { running: boolean }) {
 
     const submit = async () => {
         try {
-            await operate({ operate: enable ? 'enable' : 'disable', sslRejectHandshake: rejectHandshake }).unwrap();
-            Toast.success(t('openresty.saveSuccess'));
+            await operate({
+                operate: enable ? 'enable' : 'disable',
+                sslRejectHandshake: rejectHandshake,
+            }).unwrap();
+            toast.success(t('openresty.saveSuccess'));
             query.refetch();
         } catch (e) {
-            Toast.error(errText(e));
+            toast.error(errText(e));
             query.refetch();
         }
     };
 
     if (!query.isLoading && query.isError) {
-        return <Banner type="danger" closeIcon={null} title={errText(query.error)} />;
+        return (
+            <Alert variant="destructive">
+                <AlertTitle>{errText(query.error)}</AlertTitle>
+            </Alert>
+        );
     }
 
     return (
-        <div style={{ maxWidth: 720, display: 'flex', flexDirection: 'column', gap: 16 }}>
-            <Field label={t('openresty.other.defaultHttps')} help={t('openresty.other.defaultHttpsHelper')}>
-                <Switch checked={enable} onChange={setEnable} disabled={query.isLoading} />
-            </Field>
-            <Field label={t('openresty.other.sslRejectHandshake')} help={t('openresty.other.sslRejectHandshakeHelper')}>
-                <Switch checked={rejectHandshake} onChange={setRejectHandshake} disabled={query.isLoading} />
-            </Field>
+        <div className="flex flex-col gap-4 max-w-[720px]">
+            <ConfigField label={t('openresty.other.defaultHttps')} help={t('openresty.other.defaultHttpsHelper')}>
+                <Switch
+                    aria-label={t('openresty.other.defaultHttps')}
+                    checked={enable}
+                    onCheckedChange={setEnable}
+                    disabled={query.isLoading || saving || !running}
+                />
+            </ConfigField>
+            <ConfigField
+                label={t('openresty.other.sslRejectHandshake')}
+                help={t('openresty.other.sslRejectHandshakeHelper')}
+            >
+                <Switch
+                    aria-label={t('openresty.other.sslRejectHandshake')}
+                    checked={rejectHandshake}
+                    onCheckedChange={setRejectHandshake}
+                    disabled={query.isLoading || saving || !running}
+                />
+            </ConfigField>
             <div>
-                <Button theme="solid" type="primary" onClick={submit} loading={saving} disabled={query.isLoading}>
+                <Button onClick={submit} disabled={saving || query.isLoading || !running}>
                     {t('common.confirm')}
                 </Button>
             </div>

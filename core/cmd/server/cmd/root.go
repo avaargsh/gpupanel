@@ -6,9 +6,9 @@ import (
 	"path"
 	"time"
 
+	"github.com/avaargsh/GPUPanel/core/global"
 	"github.com/avaargsh/GPUPanel/core/server"
 	"github.com/avaargsh/GPUPanel/core/utils/common"
-	"github.com/avaargsh/GPUPanel/core/utils/ctl_conf"
 	"github.com/spf13/cobra"
 	"gorm.io/gorm"
 )
@@ -50,14 +50,13 @@ func loadDBConn(dbName string) (*gorm.DB, error) {
 }
 
 func loadBaseDir() (string, error) {
-	baseDir, err := ctl_conf.LoadFromFile("/usr/local/bin/pctl", "BASE_DIR")
-	if err != nil {
-		return "", fmt.Errorf("handle load `BASE_DIR` failed, err: %v", err)
+	// BASE_DIR no longer read from inherited /usr/local/bin/pctl.
+	// Use the configured InstallDir from embedded app.yaml defaults (/opt),
+	// falling back to /opt when CONF is not yet initialized (CLI commands).
+	if global.CONF.Base.InstallDir != "" {
+		return global.CONF.Base.InstallDir, nil
 	}
-	if len(baseDir) == 0 {
-		return "", fmt.Errorf("error `BASE_DIR` find in /usr/local/bin/pctl")
-	}
-	return baseDir, nil
+	return "/opt", nil
 }
 
 func getSettingByKey(db *gorm.DB, key string) string {

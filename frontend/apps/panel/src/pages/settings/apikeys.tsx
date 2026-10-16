@@ -1,21 +1,20 @@
-import { useState } from 'react';
-import {
-    Button,
-    DatePicker,
-    Input,
-    InputNumber,
-    Modal,
-    Radio,
-    RadioGroup,
-    SideSheet,
-    Switch,
-    Table,
-    Tag,
-    TextArea,
-    Toast,
-    Typography,
-} from '@douyinfe/semi-ui';
-import { useTranslation } from 'react-i18next';
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { FieldGroup } from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Spinner } from "@/components/ui/spinner";
+import { Switch } from "@/components/ui/switch";
+import { Textarea } from "@/components/ui/textarea";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { useConfirmAction } from "@/components/use-confirm-action";
+import { useState } from "react";
+import { toast } from "sonner";
+import { APIKeyTable } from "./apikey-table";
+import { formatDateTime, isAnyIP, normalizeIPs } from "./apikey-values";
+import { localDateTime } from "./date-input";
+
+import { useGenerateApiKeyMutation, useLazyGetCurrentUserQuery } from "@/api/authApi";
 import {
     useCreateAPIKeyMutation,
     useRevokeAPIKeyMutation,
@@ -24,46 +23,22 @@ import {
     useUpdateAPIKeyMutation,
     type APIKeyEditable,
     type APIKeyItem,
-} from '@/api/settingsApi';
-import { useGenerateApiKeyMutation, useLazyGetCurrentUserQuery } from '@/api/authApi';
-import { SettingRow, Field, errText } from './shared';
+} from "@/api/settingsApi";
+import { useTranslation } from "react-i18next";
+import { Field, SettingRow, errText } from "./shared";
 
-const { Text } = Typography;
-
-const ANY_KEY_IP = '0.0.0.0/0\n::/0';
-
-function normalizeIPs(value: string): string {
-    return value
-        .split(/[\s,]+/)
-        .filter(Boolean)
-        .join('\n');
-}
-
-function isAnyIP(value: string): boolean {
-    const entries = new Set(normalizeIPs(value).split('\n'));
-    return entries.has('0.0.0.0/0') && entries.has('::/0');
-}
+const ANY_KEY_IP = "0.0.0.0/0\n::/0";
 
 function defaultExpiry(): string {
     return new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString();
 }
 
-function formatDateTime(value?: string | null): string {
-    if (!value) return '-';
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) return '-';
-    const pad = (n: number) => String(n).padStart(2, '0');
-    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(
-        date.getMinutes(),
-    )}`;
-}
-
 function emptyForm(): APIKeyEditable {
     return {
-        name: '',
-        description: '',
-        ipWhiteList: '',
-        apiTrustedProxies: '',
+        name: "",
+        description: "",
+        ipWhiteList: "",
+        apiTrustedProxies: "",
         apiKeyValidityTime: 120,
         expiresAt: defaultExpiry(),
         allowAppBinding: false,
@@ -71,6 +46,7 @@ function emptyForm(): APIKeyEditable {
 }
 
 export default function APIKeysTab() {
+    const { confirm, dialog: confirmationDialog } = useConfirmAction();
     const { t } = useTranslation();
     const [page, setPage] = useState(1);
     const [pageSize, setPageSize] = useState(20);
@@ -86,14 +62,14 @@ export default function APIKeysTab() {
     const [editorOpen, setEditorOpen] = useState(false);
     const [editing, setEditing] = useState<string | null>(null);
     const [form, setForm] = useState<APIKeyEditable>(emptyForm());
-    const [ipMode, setIpMode] = useState<'restricted' | 'any'>('restricted');
+    const [ipMode, setIpMode] = useState<"restricted" | "any">("restricted");
     const [neverExpires, setNeverExpires] = useState(false);
 
-    const [secret, setSecret] = useState('');
-    const [secretName, setSecretName] = useState('');
+    const [secret, setSecret] = useState("");
+    const [secretName, setSecretName] = useState("");
 
     const [detail, setDetail] = useState<string | null>(null);
-    const [legacySecret, setLegacySecret] = useState('');
+    const [legacySecret, setLegacySecret] = useState("");
 
     const rows = data?.items ?? [];
     const detailItem = rows.find((r) => r.id === detail) ?? null;
@@ -101,7 +77,7 @@ export default function APIKeysTab() {
     const openCreate = () => {
         setEditing(null);
         setForm(emptyForm());
-        setIpMode('restricted');
+        setIpMode("restricted");
         setNeverExpires(false);
         setEditorOpen(true);
     };
@@ -109,7 +85,7 @@ export default function APIKeysTab() {
     const openEdit = (item: APIKeyItem) => {
         setEditing(item.id);
         setForm({
-            name: item.kind === 'legacy' ? t('settings.apikeys.legacy') : item.name,
+            name: item.kind === "legacy" ? t("settings.apikeys.legacy") : item.name,
             description: item.description,
             ipWhiteList: normalizeIPs(item.ipWhiteList),
             apiTrustedProxies: normalizeIPs(item.apiTrustedProxies),
@@ -117,20 +93,21 @@ export default function APIKeysTab() {
             expiresAt: item.expiresAt,
             allowAppBinding: item.allowAppBinding,
         });
-        setIpMode(isAnyIP(item.ipWhiteList) ? 'any' : 'restricted');
+        setIpMode(isAnyIP(item.ipWhiteList) ? "any" : "restricted");
         setNeverExpires(!item.expiresAt);
         setEditorOpen(true);
     };
 
     const submit = async () => {
+        if (creating || updating) return;
         if (!form.name.trim()) {
-            Toast.warning(t('settings.apikeys.nameRequired'));
+            toast.warning(t("settings.apikeys.nameRequired"));
             return;
         }
         const payload: APIKeyEditable = {
             name: form.name.trim(),
             description: form.description,
-            ipWhiteList: ipMode === 'any' ? ANY_KEY_IP : normalizeIPs(form.ipWhiteList),
+            ipWhiteList: ipMode === "any" ? ANY_KEY_IP : normalizeIPs(form.ipWhiteList),
             apiTrustedProxies: normalizeIPs(form.apiTrustedProxies),
             apiKeyValidityTime: form.apiKeyValidityTime,
             expiresAt: neverExpires ? null : form.expiresAt,
@@ -140,7 +117,7 @@ export default function APIKeysTab() {
             if (editing) {
                 const current = rows.find((r) => r.id === editing);
                 await updateAPIKey({ ...payload, id: editing, revision: current?.revision ?? 0 }).unwrap();
-                Toast.success(t('settings.saved'));
+                toast.success(t("settings.saved"));
             } else {
                 const res = await createAPIKey({ ...payload, requestID: crypto.randomUUID() }).unwrap();
                 setSecret(res.apiKey);
@@ -149,39 +126,42 @@ export default function APIKeysTab() {
             setEditorOpen(false);
             void refetch();
         } catch (e) {
-            Toast.error(errText(e));
+            toast.error(errText(e));
         }
     };
 
-    const changeStatus = (item: APIKeyItem, next: 'Enable' | 'Disable') => {
-        Modal.confirm({
-            title: t('settings.apikeys.title'),
-            content: next === 'Enable' ? t('settings.apikeys.enableConfirm', { name: item.name }) : t('settings.apikeys.disableConfirm', { name: item.name }),
-            okText: t('common.confirm'),
-            cancelText: t('common.cancel'),
-            onOk: async () => {
+    const changeStatus = (item: APIKeyItem, next: "Enable" | "Disable") => {
+        confirm({
+            title: t("settings.apikeys.title"),
+            description:
+                next === "Enable"
+                    ? t("settings.apikeys.enableConfirm", { name: item.name })
+                    : t("settings.apikeys.disableConfirm", { name: item.name }),
+            confirmLabel: t("common.confirm"),
+            cancelLabel: t("common.cancel"),
+            run: async () => {
                 try {
                     await setStatus({ id: item.id, revision: item.revision, status: next }).unwrap();
-                    Toast.success(t('settings.saved'));
+                    toast.success(t("settings.saved"));
                 } catch (e) {
-                    Toast.error(errText(e));
+                    toast.error(errText(e));
                 }
             },
         });
     };
 
     const doRevoke = (item: APIKeyItem) => {
-        Modal.confirm({
-            title: t('settings.apikeys.title'),
-            content: t('settings.apikeys.revokeConfirm', { name: item.name }),
-            okText: t('common.confirm'),
-            cancelText: t('common.cancel'),
-            onOk: async () => {
+        confirm({
+            title: t("settings.apikeys.title"),
+            description: t("settings.apikeys.revokeConfirm", { name: item.name }),
+            confirmLabel: t("common.confirm"),
+            cancelLabel: t("common.cancel"),
+            run: async () => {
                 try {
                     await revoke({ id: item.id, revision: item.revision }).unwrap();
-                    Toast.success(t('settings.saved'));
+                    toast.success(t("settings.saved"));
                 } catch (e) {
-                    Toast.error(errText(e));
+                    toast.error(errText(e));
                 }
             },
         });
@@ -192,7 +172,7 @@ export default function APIKeysTab() {
             const res = await loadCurrentUser().unwrap();
             setLegacySecret(res.apiKey);
         } catch (e) {
-            Toast.error(errText(e));
+            toast.error(errText(e));
         }
     };
 
@@ -200,278 +180,311 @@ export default function APIKeysTab() {
         try {
             const key = await generateApiKey().unwrap();
             setLegacySecret(key);
-            Toast.success(t('settings.saved'));
+            toast.success(t("settings.saved"));
             void refetch();
         } catch (e) {
-            Toast.error(errText(e));
+            toast.error(errText(e));
         }
     };
 
     const copy = async (value: string) => {
         try {
             await navigator.clipboard.writeText(value);
-            Toast.success(t('settings.apikeys.copied'));
+            toast.success(t("settings.apikeys.copied"));
         } catch {
-            Toast.error(t('settings.apikeys.copyFailed'));
+            toast.error(t("settings.apikeys.copyFailed"));
         }
     };
 
-    const columns = [
-        {
-            title: t('settings.apikeys.name'),
-            dataIndex: 'name',
-            render: (_: unknown, row: APIKeyItem) => (
-                <div style={{ display: 'flex', flexDirection: 'column' }}>
-                    <Button theme="borderless" onClick={() => setDetail(row.id)} style={{ padding: 0, height: 'auto' }}>
-                        {row.kind === 'legacy' ? t('settings.apikeys.legacy') : row.name}
-                    </Button>
-                    <Text type="tertiary" size="small">
-                        {row.keyHint}
-                    </Text>
-                </div>
-            ),
-        },
-        {
-            title: t('settings.apikeys.status'),
-            dataIndex: 'status',
-            width: 110,
-            render: (_: unknown, row: APIKeyItem) => (
-                <Tag color={row.status === 'Enable' ? 'green' : row.status === 'Disable' ? 'orange' : 'grey'}>
-                    {t(`settings.apikeys.statusLabel.${row.status}`)}
-                </Tag>
-            ),
-        },
-        {
-            title: t('settings.apikeys.ipWhiteList'),
-            dataIndex: 'ipWhiteList',
-            render: (_: unknown, row: APIKeyItem) =>
-                isAnyIP(row.ipWhiteList) ? t('settings.apikeys.anyIp') : normalizeIPs(row.ipWhiteList).split('\n').filter(Boolean).join(', ') || '-',
-        },
-        {
-            title: t('settings.apikeys.expiresAt'),
-            dataIndex: 'expiresAt',
-            width: 170,
-            render: (_: unknown, row: APIKeyItem) => (row.expiresAt ? formatDateTime(row.expiresAt) : t('settings.apikeys.never')),
-        },
-        {
-            title: t('settings.apikeys.allowAppBinding'),
-            dataIndex: 'allowAppBinding',
-            width: 130,
-            render: (_: unknown, row: APIKeyItem) => (row.allowAppBinding ? t('settings.apikeys.yes') : t('settings.apikeys.no')),
-        },
-        {
-            title: t('settings.apikeys.operate'),
-            key: 'operate',
-            width: 240,
-            render: (_: unknown, row: APIKeyItem) => (
-                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                    <Button theme="borderless" size="small" onClick={() => setDetail(row.id)}>
-                        {t('settings.apikeys.view')}
-                    </Button>
-                    {row.status !== 'Revoked' ? (
-                        <Button theme="borderless" size="small" onClick={() => openEdit(row)}>
-                            {t('settings.apikeys.edit')}
-                        </Button>
-                    ) : null}
-                    {row.status === 'Enable' ? (
-                        <Button theme="borderless" size="small" onClick={() => changeStatus(row, 'Disable')}>
-                            {t('settings.apikeys.disable')}
-                        </Button>
-                    ) : null}
-                    {row.status === 'Disable' ? (
-                        <Button theme="borderless" size="small" onClick={() => changeStatus(row, 'Enable')}>
-                            {t('settings.apikeys.enable')}
-                        </Button>
-                    ) : null}
-                    {row.status !== 'Revoked' ? (
-                        <Button type="danger" theme="borderless" size="small" onClick={() => doRevoke(row)}>
-                            {t('settings.apikeys.revoke')}
-                        </Button>
-                    ) : null}
-                </div>
-            ),
-        },
-    ];
-
     return (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-                <Button type="primary" onClick={openCreate}>
-                    {t('settings.apikeys.create')}
-                </Button>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <Text>{t('settings.apikeys.showRevoked')}</Text>
-                    <Switch checked={!excludeRevoked} onChange={(v) => { setExcludeRevoked(!v); setPage(1); }} />
-                </div>
-            </div>
-
-            <Table
-                rowKey="id"
-                columns={columns}
-                dataSource={rows}
-                loading={isFetching}
-                empty={<Text type="tertiary">{t('common.empty')}</Text>}
-                pagination={{
-                    currentPage: page,
-                    pageSize,
-                    total: data?.total ?? 0,
-                    onPageChange: setPage,
-                    onPageSizeChange: (size: number) => {
-                        setPageSize(size);
-                        setPage(1);
-                    },
-                }}
-            />
-
-            <Modal
-                title={editing ? t('settings.apikeys.edit') : t('settings.apikeys.create')}
-                visible={editorOpen}
-                onCancel={() => setEditorOpen(false)}
-                onOk={submit}
-                confirmLoading={creating || updating}
-                width={560}
-            >
-                <Field label={t('settings.apikeys.name')}>
-                    <Input
-                        value={form.name}
-                        onChange={(v) => setForm((f) => ({ ...f, name: v }))}
-                        maxLength={64}
-                        disabled={editing !== null && rows.find((r) => r.id === editing)?.kind === 'legacy'}
-                    />
-                </Field>
-                <Field label={t('settings.apikeys.description')}>
-                    <TextArea
-                        value={form.description}
-                        onChange={(v) => setForm((f) => ({ ...f, description: v }))}
-                        rows={2}
-                        maxLength={256}
-                    />
-                </Field>
-                <div style={{ marginBottom: 12 }}>
-                    <div style={{ marginBottom: 6 }}>
-                        <Text strong>{t('settings.apikeys.ipWhiteList')}</Text>
-                    </div>
-                    <RadioGroup type="button" value={ipMode} onChange={(e) => setIpMode(String(e.target.value) === 'any' ? 'any' : 'restricted')}>
-                        <Radio value="restricted">{t('settings.apikeys.specifiedIPs')}</Radio>
-                        <Radio value="any">{t('settings.apikeys.anyIp')}</Radio>
-                    </RadioGroup>
-                    {ipMode === 'restricted' ? (
-                        <TextArea
-                            style={{ marginTop: 8 }}
-                            value={form.ipWhiteList}
-                            onChange={(v) => setForm((f) => ({ ...f, ipWhiteList: v }))}
-                            rows={4}
-                            maxLength={4096}
-                            placeholder={'192.168.1.0/24\n10.0.0.1'}
-                        />
-                    ) : null}
-                </div>
-                <Field label={t('settings.apikeys.trustedProxies')}>
-                    <TextArea
-                        value={form.apiTrustedProxies}
-                        onChange={(v) => setForm((f) => ({ ...f, apiTrustedProxies: v }))}
-                        rows={2}
-                        maxLength={4096}
-                    />
-                </Field>
-                <Field label={t('settings.apikeys.validityTime')}>
-                    <InputNumber
-                        value={form.apiKeyValidityTime}
-                        min={0}
-                        max={1440}
-                        onChange={(v) => setForm((f) => ({ ...f, apiKeyValidityTime: Number(v ?? 0) }))}
-                    />
-                    <Text style={{ marginLeft: 8 }}>{t('settings.apikeys.minute')}</Text>
-                </Field>
-                <div style={{ marginBottom: 12 }}>
-                    <div style={{ marginBottom: 6 }}>
-                        <Text strong>{t('settings.apikeys.expiresAt')}</Text>
-                    </div>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-                        <input type="checkbox" checked={neverExpires} onChange={(e) => setNeverExpires(e.target.checked)} />
-                        {t('settings.apikeys.never')}
-                    </label>
-                    {!neverExpires ? (
-                        <DatePicker
-                            type="dateTime"
-                            value={form.expiresAt ? new Date(form.expiresAt) : undefined}
-                            style={{ width: '100%' }}
-                            onChange={(date) => setForm((f) => ({ ...f, expiresAt: date ? new Date(date as Date).toISOString() : null }))}
-                        />
-                    ) : null}
-                </div>
-                <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <input
-                        type="checkbox"
-                        checked={form.allowAppBinding}
-                        onChange={(e) => setForm((f) => ({ ...f, allowAppBinding: e.target.checked }))}
-                    />
-                    {t('settings.apikeys.allowAppBinding')}
-                </label>
-            </Modal>
-
-            <Modal
-                title={t('settings.apikeys.createdTitle')}
-                visible={secret !== ''}
-                onCancel={() => setSecret('')}
-                footer={
-                    <Button type="primary" onClick={() => setSecret('')}>
-                        {t('common.confirm')}
-                    </Button>
-                }
-            >
-                <p>{t('settings.apikeys.createdTip')}</p>
-                <SettingRow
-                    label={t('settings.apikeys.name')}
-                    value={secretName}
-                    action={
-                        <Button theme="light" onClick={() => void copy(secret)}>
-                            {t('settings.apikeys.copy')}
+        <>
+            {confirmationDialog}
+            {
+                <div className="flex flex-col gap-3">
+                    <div className="flex items-center justify-between gap-3">
+                        <Button onClick={openCreate} type="button" variant="default">
+                            {t("settings.apikeys.create")}
                         </Button>
-                    }
-                />
-                <TextArea value={secret} rows={2} readOnly style={{ marginTop: 8 }} />
-            </Modal>
-
-            <SideSheet
-                title={t('settings.apikeys.details')}
-                visible={detail !== null}
-                onCancel={() => {
-                    setDetail(null);
-                    setLegacySecret('');
-                }}
-                width={560}
-            >
-                {detailItem ? (
-                    <div>
-                        <SettingRow label={t('settings.apikeys.name')} value={detailItem.name} />
-                        <SettingRow label={t('settings.apikeys.status')} value={t(`settings.apikeys.statusLabel.${detailItem.status}`)} />
-                        <SettingRow label={t('settings.apikeys.keyHint')} value={detailItem.keyHint} />
-                        <SettingRow label={t('settings.apikeys.ipWhiteList')} value={isAnyIP(detailItem.ipWhiteList) ? t('settings.apikeys.anyIp') : normalizeIPs(detailItem.ipWhiteList).split('\n').filter(Boolean).join(', ') || '-'} />
-                        <SettingRow label={t('settings.apikeys.trustedProxies')} value={normalizeIPs(detailItem.apiTrustedProxies).split('\n').filter(Boolean).join(', ') || '-'} />
-                        <SettingRow label={t('settings.apikeys.validityTime')} value={`${detailItem.apiKeyValidityTime} ${t('settings.apikeys.minute')}`} />
-                        <SettingRow label={t('settings.apikeys.expiresAt')} value={detailItem.expiresAt ? formatDateTime(detailItem.expiresAt) : t('settings.apikeys.never')} />
-                        <SettingRow label={t('settings.apikeys.createdAt')} value={formatDateTime(detailItem.createdAt)} />
-                        {detailItem.kind === 'legacy' && detailItem.status !== 'Revoked' ? (
-                            <div style={{ marginTop: 16, display: 'flex', flexDirection: 'column', gap: 8 }}>
-                                <Text type="tertiary" size="small">
-                                    {t('settings.apikeys.legacyHelp')}
-                                </Text>
-                                <div style={{ display: 'flex', gap: 8 }}>
-                                    <Button theme="light" onClick={() => void revealLegacy()}>
-                                        {t('settings.apikeys.showLegacy')}
-                                    </Button>
-                                    <Button onClick={() => void resetLegacy()}>{t('settings.apikeys.resetLegacy')}</Button>
-                                </div>
-                                {legacySecret ? (
-                                    <TextArea value={legacySecret} rows={2} readOnly />
-                                ) : null}
-                            </div>
-                        ) : null}
+                        <div className="flex items-center gap-2">
+                            <span>{t("settings.apikeys.showRevoked")}</span>
+                            <Switch
+                                checked={!excludeRevoked}
+                                onCheckedChange={(v) => {
+                                    setExcludeRevoked(!v);
+                                    setPage(1);
+                                }}
+                            />
+                        </div>
                     </div>
-                ) : null}
-            </SideSheet>
-        </div>
+
+                    <APIKeyTable
+                        rows={rows}
+                        isFetching={isFetching}
+                        page={page}
+                        pageSize={pageSize}
+                        total={data?.total ?? 0}
+                        onPage={setPage}
+                        onPageSize={(size) => {
+                            setPageSize(size);
+                            setPage(1);
+                        }}
+                        onView={setDetail}
+                        onEdit={openEdit}
+                        onStatus={changeStatus}
+                        onRevoke={doRevoke}
+                    />
+
+                    <Dialog
+                        open={editorOpen}
+                        onOpenChange={(open) => {
+                            if (!open && !(creating || updating)) setEditorOpen(false);
+                        }}
+                    >
+                        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-3xl">
+                            <form
+                                className="flex flex-col gap-4"
+                                onSubmit={(event) => {
+                                    event.preventDefault();
+                                    if (!(creating || updating)) void submit();
+                                }}
+                            >
+                                <DialogHeader>
+                                    <DialogTitle>{editing ? t("settings.apikeys.edit") : t("settings.apikeys.create")}</DialogTitle>
+                                </DialogHeader>
+                                <FieldGroup>
+                                    <Field label={t("settings.apikeys.name")}>
+                                        <Input
+                                            required
+                                            maxLength={64}
+                                            disabled={editing !== null && rows.find((r) => r.id === editing)?.kind === "legacy"}
+                                            value={form.name ?? ""}
+                                            onChange={(event) => setForm((f) => ({ ...f, name: event.target.value }))}
+                                        />
+                                    </Field>
+                                    <Field label={t("settings.apikeys.description")}>
+                                        <Textarea
+                                            rows={2}
+                                            maxLength={256}
+                                            value={form.description ?? ""}
+                                            onChange={(event) => setForm((f) => ({ ...f, description: event.target.value }))}
+                                        />
+                                    </Field>
+                                    <div className="mb-3">
+                                        <div className="mb-1.5">
+                                            <strong>{t("settings.apikeys.ipWhiteList")}</strong>
+                                        </div>
+                                        <ToggleGroup
+                                            value={ipMode}
+                                            type="single"
+                                            onValueChange={(value) => {
+                                                if (value) setIpMode(String(value) === "any" ? "any" : "restricted");
+                                            }}
+                                        >
+                                            <ToggleGroupItem value={"restricted"}>{t("settings.apikeys.specifiedIPs")}</ToggleGroupItem>
+                                            <ToggleGroupItem value={"any"}>{t("settings.apikeys.anyIp")}</ToggleGroupItem>
+                                        </ToggleGroup>
+                                        {ipMode === "restricted" ? (
+                                            <Textarea
+                                                className="mt-2"
+                                                rows={4}
+                                                maxLength={4096}
+                                                placeholder={"192.168.1.0/24\n10.0.0.1"}
+                                                value={form.ipWhiteList ?? ""}
+                                                onChange={(event) => setForm((f) => ({ ...f, ipWhiteList: event.target.value }))}
+                                            />
+                                        ) : null}
+                                    </div>
+                                    <Field label={t("settings.apikeys.trustedProxies")}>
+                                        <Textarea
+                                            rows={2}
+                                            maxLength={4096}
+                                            value={form.apiTrustedProxies ?? ""}
+                                            onChange={(event) => setForm((f) => ({ ...f, apiTrustedProxies: event.target.value }))}
+                                        />
+                                    </Field>
+                                    <Field label={t("settings.apikeys.validityTime")}>
+                                        <Input
+                                            min={0}
+                                            max={1440}
+                                            value={form.apiKeyValidityTime ?? ""}
+                                            type="number"
+                                            required
+                                            onChange={(event) =>
+                                                setForm((f) => ({
+                                                    ...f,
+                                                    apiKeyValidityTime: Number(
+                                                        (event.target.value === "" ? undefined : Number(event.target.value)) ?? 0,
+                                                    ),
+                                                }))
+                                            }
+                                        />
+                                        <span className="ml-2">{t("settings.apikeys.minute")}</span>
+                                    </Field>
+                                    <div className="mb-3">
+                                        <div className="mb-1.5">
+                                            <strong>{t("settings.apikeys.expiresAt")}</strong>
+                                        </div>
+                                        <label className="flex items-center gap-2 mb-2">
+                                            <input
+                                                type="checkbox"
+                                                checked={neverExpires}
+                                                onChange={(e) => setNeverExpires(e.target.checked)}
+                                            />
+                                            {t("settings.apikeys.never")}
+                                        </label>
+                                        {!neverExpires ? (
+                                            <Input
+                                                type="datetime-local"
+                                                value={localDateTime(form.expiresAt ? new Date(form.expiresAt) : undefined)}
+                                                onChange={(event) =>
+                                                    setForm((f) => ({
+                                                        ...f,
+                                                        expiresAt: (event.target.value ? new Date(event.target.value) : undefined)
+                                                            ? new Date(
+                                                                  (event.target.value ? new Date(event.target.value) : undefined) as Date,
+                                                              ).toISOString()
+                                                            : null,
+                                                    }))
+                                                }
+                                            />
+                                        ) : null}
+                                    </div>
+                                    <label className="flex items-center gap-2">
+                                        <input
+                                            type="checkbox"
+                                            checked={form.allowAppBinding}
+                                            onChange={(e) => setForm((f) => ({ ...f, allowAppBinding: e.target.checked }))}
+                                        />
+                                        {t("settings.apikeys.allowAppBinding")}
+                                    </label>
+                                </FieldGroup>
+                                <DialogFooter>
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        disabled={creating || updating}
+                                        onClick={() => setEditorOpen(false)}
+                                    >
+                                        {t("common.cancel")}
+                                    </Button>
+                                    <Button type="submit" disabled={creating || updating}>
+                                        {creating || updating ? <Spinner data-icon="inline-start" /> : null}
+                                        {t("common.confirm")}
+                                    </Button>
+                                </DialogFooter>
+                            </form>
+                        </DialogContent>
+                    </Dialog>
+
+                    <Dialog
+                        open={secret !== ""}
+                        onOpenChange={(open) => {
+                            if (!open && true) setSecret("");
+                        }}
+                    >
+                        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-3xl">
+                            <div className="flex flex-col gap-4">
+                                <DialogHeader>
+                                    <DialogTitle>{t("settings.apikeys.createdTitle")}</DialogTitle>
+                                </DialogHeader>
+                                <FieldGroup>
+                                    <p>{t("settings.apikeys.createdTip")}</p>
+                                    <SettingRow
+                                        label={t("settings.apikeys.name")}
+                                        value={secretName}
+                                        action={
+                                            <Button onClick={() => void copy(secret)} type="button" variant="secondary">
+                                                {t("settings.apikeys.copy")}
+                                            </Button>
+                                        }
+                                    />
+                                    <Textarea rows={2} readOnly className="mt-2" value={secret ?? ""} />
+                                </FieldGroup>
+                                {
+                                    <Button onClick={() => setSecret("")} type="button" variant="default">
+                                        {t("common.confirm")}
+                                    </Button>
+                                }
+                            </div>
+                        </DialogContent>
+                    </Dialog>
+
+                    <Sheet
+                        open={detail !== null}
+                        onOpenChange={(open) => {
+                            if (!open && true)
+                                (() => {
+                                    setDetail(null);
+                                    setLegacySecret("");
+                                })();
+                        }}
+                    >
+                        <SheetContent className="max-h-[90vh] overflow-y-auto sm:max-w-4xl">
+                            <div className="flex flex-col gap-4">
+                                <SheetHeader>
+                                    <SheetTitle>{t("settings.apikeys.details")}</SheetTitle>
+                                </SheetHeader>
+                                <FieldGroup>
+                                    {detailItem ? (
+                                        <div>
+                                            <SettingRow label={t("settings.apikeys.name")} value={detailItem.name} />
+                                            <SettingRow
+                                                label={t("settings.apikeys.status")}
+                                                value={t(`settings.apikeys.statusLabel.${detailItem.status}`)}
+                                            />
+                                            <SettingRow label={t("settings.apikeys.keyHint")} value={detailItem.keyHint} />
+                                            <SettingRow
+                                                label={t("settings.apikeys.ipWhiteList")}
+                                                value={
+                                                    isAnyIP(detailItem.ipWhiteList)
+                                                        ? t("settings.apikeys.anyIp")
+                                                        : normalizeIPs(detailItem.ipWhiteList).split("\n").filter(Boolean).join(", ") || "-"
+                                                }
+                                            />
+                                            <SettingRow
+                                                label={t("settings.apikeys.trustedProxies")}
+                                                value={
+                                                    normalizeIPs(detailItem.apiTrustedProxies).split("\n").filter(Boolean).join(", ") || "-"
+                                                }
+                                            />
+                                            <SettingRow
+                                                label={t("settings.apikeys.validityTime")}
+                                                value={`${detailItem.apiKeyValidityTime} ${t("settings.apikeys.minute")}`}
+                                            />
+                                            <SettingRow
+                                                label={t("settings.apikeys.expiresAt")}
+                                                value={
+                                                    detailItem.expiresAt
+                                                        ? formatDateTime(detailItem.expiresAt)
+                                                        : t("settings.apikeys.never")
+                                                }
+                                            />
+                                            <SettingRow
+                                                label={t("settings.apikeys.createdAt")}
+                                                value={formatDateTime(detailItem.createdAt)}
+                                            />
+                                            {detailItem.kind === "legacy" && detailItem.status !== "Revoked" ? (
+                                                <div className="mt-4 flex flex-col gap-2">
+                                                    <span className="text-muted-foreground">{t("settings.apikeys.legacyHelp")}</span>
+                                                    <div className="flex gap-2">
+                                                        <Button onClick={() => void revealLegacy()} type="button" variant="secondary">
+                                                            {t("settings.apikeys.showLegacy")}
+                                                        </Button>
+                                                        <Button onClick={() => void resetLegacy()} type="button" variant="outline">
+                                                            {t("settings.apikeys.resetLegacy")}
+                                                        </Button>
+                                                    </div>
+                                                    {legacySecret ? <Textarea rows={2} readOnly value={legacySecret ?? ""} /> : null}
+                                                </div>
+                                            ) : null}
+                                        </div>
+                                    ) : null}
+                                </FieldGroup>
+                            </div>
+                        </SheetContent>
+                    </Sheet>
+                </div>
+            }
+        </>
     );
 }
-

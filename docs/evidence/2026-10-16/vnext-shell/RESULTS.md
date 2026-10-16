@@ -53,3 +53,89 @@ M0 G3–G6 与产品 10 项整体验收不因这次 Shell 改动解除阻塞。
 
 本轮无业务数据迁移；如需回退，可回退此 UI 提交并重新构建前端嵌入产物。
 没有更改已安装服务、宿主机目录或运行中 VM，未声称执行过部署回退测试。
+
+---
+
+# 第二轮：BioAI 工作站视觉语言重构（工作区快照，未提交）
+
+> 本页上方章节保留其原版本含义（远程 main `c237280d`）。以下为第二轮的**工作区**结果：
+> 记录时 HEAD 为 `bd0ebc50604b551f6ba5c86fe4a27b990475a415`，改动尚在工作区，
+> 以[源码指纹](source.sha256)（91 个改动文件）标识；提交后以 PR 精确 HEAD 关联，
+> 届时本节的指纹只表示记录时的快照，不代表提交内容。
+
+## 已实现（仅外观与信息呈现，API/鉴权/状态管理未变）
+
+- 主题令牌重写：品牌蓝保持不变（浅色 `#306FE6`、深色 `#7aa5ff`），浅色墙面 `#f5f7fa`、
+  深色 `#0a0c12`，卡片 `#ffffff` / `#131822`；去掉渐变洗与全大写分组标题。
+- 11 个模块入口统一为 `module-shell` / `module-tabs` / `module-tab-content` 外壳；
+  表格卡片、工具条、分页、空状态在全站收敛为同一组原语。
+- 页面内联样式清空：仅保留真正动态的四处（`descriptions` 网格列数、ECharts 高度、
+  StatCard 颜色、shadcn 原语内部）。静态壳层样式移入 `layout/workspace.css` 与 `pages/workbench.css`。
+- 修复三轮前遗留缺陷：`workbench.css` 未挂载、主页失效导入、`.workspace-nav-heading` 大写。
+- **修复全站字体回退缺陷**：Eric Meyer reset（未分层）的 `html { font: inherit }` 盖过了
+  分层内的 `font-sans`，整个界面回退到浏览器默认衬线字体。字体声明移出层并补齐 Linux CJK 字族。
+- **修复 27 个缺失文案键**：`t()` 使用的键在 zh/en 中均未定义，界面直接显示原始 key
+  （例：`settings.panel.languageHelper`、`host.monitor.disk`、`cronjob.library.empty`、
+  `database.redis.*`、`settings.apikeys.*`）。现 zh/en 各 1949 键、双向零差集。
+- 修正错键引用（`cronjob.day` → `cronjob.operate.day`、监控页选择器改用已有的
+  `networkLabel`/`diskLabel`，`all` 哨兵值本地化），并把应用商店的硬编码双语串改为 i18n。
+- 统一分页：5 处手写分页改用共享 `TablePagination`，同时修掉「每页条数选择无效」的真实缺陷。
+- 清理失效 CSS（`host-operations-output`、`app-detail-readme`、`container-log-output` 等）
+  与死代码比较（`false || x`、`(a ? 'x' : 'y') === 'x'`）。
+- 主页 GPU 快捷入口由半宽悬挂卡片改为整行；顶栏主机作用域去掉与模式芯片重复的一行。
+
+## 本地执行
+
+| 检查 | 结果 |
+| --- | --- |
+| `pnpm --filter @gpupanel/panel typecheck` | 通过 |
+| `pnpm --filter @gpupanel/panel build` | 通过（index 1368.53 kB / gzip 379.50 kB，CSS 128.09 kB） |
+| `pnpm --filter @gpupanel/panel test` | 20 项通过 |
+| 无头 Chromium 走查（模拟 core） | 14 条路由 × 浅/深色，0 页面异常 |
+| `pnpm-workspace` 依赖变更 | 无（未新增依赖） |
+| `python3 scripts/gpupanel-evidence-budget.py` | 通过 |
+
+浏览器走查使用本机 `9998` 上的**只读模拟 core**（真实响应信封，夹具数据）加注入的登录态，
+覆盖 `/`、`/host`、`/host?tab=monitor`、`/containers`、`/databases`、`/websites`、`/openresty`、
+`/apps`、`/ai`、`/gpu`、`/cronjobs`、`/toolbox`、`/logs`、`/settings`。走查中发现并修复了
+原始 key、双语硬编码、监控页标签与主页悬挂卡片四类问题。保留一张 `home-dark.png`：
+**图中主机名、百分比与设备数为夹具数据，不是本机或真实 GPU 测量。**
+
+## 未完成与证据边界
+
+- 未连接真实 core 登录会话（无凭据），未执行真实终端/GPU/容器操作；模拟夹具的
+  `apps/tags`、`ai/accounts/providers`、`databases/db/list` 初期返回了错误 JSON 形状，
+  属夹具问题、非应用缺陷，已在夹具侧修正。
+- 本轮未改 Go/API/DB/Docker/宿主目录，因此未跑 Go 套件，也未做 VM 安装或升级回退演练；
+  未做键盘/读屏自动化（仅人工确认标签与 aria 属性未移除）。
+- 未提交：改动仍在工作区。回退方式为丢弃前端工作区改动并重新构建；无 schema、迁移、
+  业务数据或运行中服务受影响。
+
+## OpenCode 修复与独立集成复验（2026-10-16）
+
+本节更新上文“未提交”状态：原工作区完整保存为 `c67bc597ca83`，
+OpenCode 修复为 `ed228acac439`，独立浏览器复验基线为
+`8ef8abb5713a20be4e824e8e42b3da2a6bb5e7ba`。修复五处迁移后失效的断言：
+恢复按钮语言、GPU 快捷入口数量、深色卡片颜色、Host 名称位置、窄屏 Host 标识。
+保留安装防重、UNKNOWN 拒绝、MFA、脱敏与作用域切换行为断言。
+
+协调者独立执行（均退出 0）：
+- `cd frontend && pnpm install --frozen-lockfile && pnpm typecheck && pnpm test && pnpm build`：20 项单元测试通过，生产构建通过。
+- `python3 scripts/browser/run-react-tests.py`：三组模拟浏览器检查通过；覆盖键盘、深浅色、中英文、1440/1280/1024/640 布局、会话与安装负向场景。
+- `python3 -m unittest discover -s scripts/tests -p 'test_gpupanel_*.py' -v`：246 项通过。
+- Core、Agent 各 `go test ./... -count=1 -timeout=120s`，backend `go test -race ./...`：命令通过；受环境门槛保护的测试不代表真实 Docker/Agent 验收。后端源码自基线未变。
+- `python3 scripts/gpupanel-evidence-budget.py`：通过。
+
+最终清除 Header 文件末尾空行并同步文件指纹；不改变行为。完整任务日志及交接保留在
+忽略的 `.local/bugfix-integration/`，不新增证据附件。
+NOT RUN：远程 CI、真实安装/升级/恢复、线上业务操作与人工读屏审查。
+回退：撤销本轮集成/修复提交后重新构建；原始补丁和恢复 stash 保留，未改 schema 或服务。
+
+推送前发现远程新增 #92 squash（`283ad4b242e1`）和 #96（`147b7aabead6`）。
+核对远程 #92 与其原分支树相同；本地已有其工作台实现并完成 shadcn 迁移。
+独立引入 #96 的 10 个文件变更，NOTICE 合并保留完整 shadcn MIT 声明，
+再保留远程与许可证原分支历史；未用旧 Semi 树覆盖当前前端。
+整合基线 `9fa6e4b5cc2821c4d2159c4d7e845eb5c51f11ec` 上重跑 Python 全套：
+256 项通过；`python3 scripts/gpupanel-pnpm-license-evidence.py --output .local/bugfix-integration/pnpm-license-evidence.json` 退出 0。
+审计成功仅表示证据采集完成，`rights_clearance=false`，不表示许可证审查完成。
+证据预算和 `git diff --check bd0ebc50604b` 通过。

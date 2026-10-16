@@ -22,7 +22,7 @@ const (
 	nginxHTTPConfDir = "http.d"
 
 	nginxHTTPConfigPrefix = "gpupanel-http-"
-	nginxHTTPConfigHeader = "# Managed by 1Panel. Manual changes will be overwritten.\n"
+	nginxHTTPConfigHeader = "# Managed by GPUPanel. Manual changes will be overwritten.\n"
 
 	// nginxHTTPIncludeDirective is the include line that loads the managed
 	// directory. Fresh installs carry it in the shipped nginx.conf; existing

@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Input, Modal } from '@douyinfe/semi-ui';
-import { IconSearch } from '@douyinfe/semi-icons';
+import { Search } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { cn } from '@/lib/utils';
 import { flatNav } from '@/config/nav';
 import { setCommandOpen } from '@/features/ui/uiSlice';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
@@ -26,8 +28,6 @@ export default function CommandPalette() {
         if (open) {
             setQuery('');
             setActive(0);
-            // 等待 Modal 挂载后聚焦搜索框
-            setTimeout(() => inputRef.current?.focus(), 40);
         }
     }, [open]);
 
@@ -59,78 +59,56 @@ export default function CommandPalette() {
     };
 
     return (
-        <Modal
-            visible={open}
-            onCancel={() => close()}
-            footer={null}
-            header={null}
-            width={560}
-            centered
-            bodyStyle={{ padding: 0 }}
-            style={{ borderRadius: 14, overflow: 'hidden', top: '16vh' }}
-        >
-            <div
-                style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 10,
-                    padding: '12px 16px',
-                    borderBottom: '1px solid var(--semi-color-border)',
-                }}
+        <Dialog open={open} onOpenChange={(next) => { if (!next) close(); }}>
+            <DialogContent
+                data-command-palette
+                aria-label={t('command.title')}
+                className="top-[16vh] translate-y-0 gap-0 overflow-hidden p-0 sm:max-w-[560px]"
+                onOpenAutoFocus={(e) => { e.preventDefault(); inputRef.current?.focus(); }}
             >
-                <IconSearch style={{ color: 'var(--semi-color-text-2)' }} />
-                <Input
-                    ref={inputRef}
-                    borderless
-                    value={query}
-                    placeholder={t('command.placeholder')}
-                    onChange={(v) => setQuery(v)}
-                    onKeyDown={onKeyDown}
-                    style={{ flex: 1 }}
-                />
-            </div>
+                <DialogTitle className="sr-only">{t('command.title')}</DialogTitle>
+                <div className="flex items-center gap-2.5 border-b border-border px-4 py-3">
+                    <Search className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+                    <Input
+                        ref={inputRef}
+                        value={query}
+                        placeholder={t('command.placeholder')}
+                        onChange={(e) => setQuery(e.target.value)}
+                        onKeyDown={onKeyDown}
+                        className="h-auto flex-1 border-0 bg-transparent px-0 py-0 shadow-none focus-visible:ring-0 dark:bg-transparent"
+                    />
+                </div>
 
-            <div style={{ maxHeight: 380, overflowY: 'auto', padding: 8 }}>
-                {items.length === 0 && (
-                    <div style={{ padding: '28px 16px', textAlign: 'center', color: 'var(--semi-color-text-2)', fontSize: 13 }}>
-                        {t('command.empty')}
-                    </div>
-                )}
-                {items.map((item, index) => (
-                    <div
-                        key={item.path}
-                        role="button"
-                        tabIndex={-1}
-                        onMouseEnter={() => setActive(index)}
-                        onClick={() => go(item.path)}
-                        style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 12,
-                            padding: '10px 12px',
-                            borderRadius: 10,
-                            cursor: 'pointer',
-                            color: index === active ? 'var(--semi-color-primary)' : 'var(--semi-color-text-0)',
-                            backgroundColor: index === active ? 'var(--semi-color-primary-light-default)' : 'transparent',
-                        }}
-                    >
-                        <span style={{ display: 'inline-flex', alignItems: 'center' }}>{item.icon}</span>
-                        <span style={{ fontSize: 14, fontWeight: 550 }}>{t(item.labelKey)}</span>
-                        <span style={{ marginLeft: 'auto', fontSize: 11, color: 'inherit', opacity: 0.7 }}>{item.path}</span>
-                    </div>
-                ))}
-            </div>
+                <div role="listbox" aria-label={t('command.title')} className="max-h-[380px] overflow-y-auto p-2">
+                    {items.length === 0 && (
+                        <div className="px-4 py-7 text-center text-[13px] text-muted-foreground">
+                            {t('command.empty')}
+                        </div>
+                    )}
+                    {items.map((item, index) => (
+                        <div
+                            key={item.path}
+                            role="option"
+                            aria-selected={index === active}
+                            tabIndex={-1}
+                            onMouseEnter={() => setActive(index)}
+                            onClick={() => go(item.path)}
+                            className={cn(
+                                'flex cursor-pointer items-center gap-3 rounded-[10px] px-3 py-2.5',
+                                index === active ? 'bg-accent text-primary' : 'text-foreground',
+                            )}
+                        >
+                            <span className="inline-flex items-center">{item.icon}</span>
+                            <span className="text-sm font-medium">{t(item.labelKey)}</span>
+                            <span className="ml-auto text-[11px] opacity-70">{item.path}</span>
+                        </div>
+                    ))}
+                </div>
 
-            <div
-                style={{
-                    padding: '8px 14px',
-                    fontSize: 11,
-                    color: 'var(--semi-color-text-2)',
-                    borderTop: '1px solid var(--semi-color-border)',
-                }}
-            >
-                {t('command.hint')}
-            </div>
-        </Modal>
+                <div className="border-t border-border px-3.5 py-2 text-[11px] text-muted-foreground">
+                    {t('command.hint')}
+                </div>
+            </DialogContent>
+        </Dialog>
     );
 }

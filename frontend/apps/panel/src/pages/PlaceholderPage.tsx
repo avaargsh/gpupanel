@@ -1,11 +1,16 @@
-import { Empty } from '@douyinfe/semi-ui';
+import { Empty, EmptyDescription, EmptyMedia, EmptyTitle } from '@/components/ui/empty';
+import { InboxIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 export default function PlaceholderPage() {
     const { t } = useTranslation();
     return (
-        <div style={{ minHeight: '60vh', display: 'grid', placeItems: 'center' }}>
-            <Empty title={t('placeholder.title')} description={t('placeholder.desc')} style={{ padding: '48px 0' }} />
+        <div className="grid min-h-[60vh] place-items-center">
+            <Empty className="p-0 py-12">
+                <EmptyMedia variant="icon"><InboxIcon /></EmptyMedia>
+                <EmptyTitle>{t('placeholder.title')}</EmptyTitle>
+                <EmptyDescription>{t('placeholder.desc')}</EmptyDescription>
+            </Empty>
         </div>
     );
 }

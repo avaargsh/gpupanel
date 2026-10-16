@@ -16,7 +16,6 @@ import (
 	"github.com/avaargsh/GPUPanel/core/global"
 	"github.com/avaargsh/GPUPanel/core/init/migration/helper"
 	"github.com/avaargsh/GPUPanel/core/utils/common"
-	"github.com/avaargsh/GPUPanel/core/utils/ctl_conf"
 	"github.com/avaargsh/GPUPanel/core/utils/encrypt"
 	"github.com/avaargsh/GPUPanel/core/utils/menutree"
 	"github.com/go-gormigrate/gormigrate/v2"
@@ -57,7 +56,7 @@ var InitSetting = &gormigrate.Migration{
 				return err
 			}
 		}
-		_ = ctl_conf.UpdateInFile("/usr/local/bin/pctl", "ORIGINAL_PASSWORD", "**********")
+		// ORIGINAL_PASSWORD is no longer persisted to inherited /usr/local/bin/pctl.
 		if err := tx.Create(&model.Setting{Key: "Theme", Value: "light"}).Error; err != nil {
 			return err
 		}
@@ -160,7 +159,7 @@ var InitSetting = &gormigrate.Migration{
 		if err := tx.Create(&model.Setting{Key: "SystemStatus", Value: "Free"}).Error; err != nil {
 			return err
 		}
-		bindAddress, err := initialBindAddress(ctl_conf.LoadWithoutPanic("ORIGINAL_BIND_ADDRESS"))
+		bindAddress, err := initialBindAddress(global.CONF.Conn.BindAddress)
 		if err != nil {
 			return err
 		}

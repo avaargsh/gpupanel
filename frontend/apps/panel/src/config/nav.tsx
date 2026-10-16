@@ -1,32 +1,49 @@
 import type { ReactNode } from 'react';
-import { IconApps, IconArticle, IconBox, IconClock, IconGlobe, IconHome, IconLayers, IconServer, IconSetting, IconWrench, IconCode, IconFolder } from '@douyinfe/semi-icons';
+import {
+    Box,
+    Clock,
+    Code,
+    Component,
+    FileText,
+    Folder,
+    Globe,
+    Home,
+    Layers,
+    LayoutGrid,
+    Server,
+    Settings,
+    Wrench,
+} from 'lucide-react';
 
 export interface NavItem { path: string; labelKey: string; icon: ReactNode; unavailable?: boolean }
 export interface NavSection { titleKey: string; items: NavItem[] }
 
+/** Decorative icons; the owning link/option already exposes the accessible label. */
+const navIcon = (Icon: typeof Component) => <Icon className="size-4" aria-hidden="true" />;
+
 // Only connected capabilities navigate. Project/environment lifecycle needs a backend contract.
 export const navSections: NavSection[] = [
     { titleKey: 'workbench.personal', items: [
-        { path: '/', labelKey: 'workbench.title', icon: <IconHome /> },
-        { path: '/projects', labelKey: 'workbench.projects', icon: <IconFolder />, unavailable: true },
-        { path: '/environments', labelKey: 'workbench.environments', icon: <IconLayers />, unavailable: true },
-        { path: '/apps', labelKey: 'workbench.apps', icon: <IconApps /> },
-        { path: '/host?tab=terminal', labelKey: 'workbench.terminal', icon: <IconCode /> },
+        { path: '/', labelKey: 'workbench.title', icon: navIcon(Home) },
+        { path: '/projects', labelKey: 'workbench.projects', icon: navIcon(Folder), unavailable: true },
+        { path: '/environments', labelKey: 'workbench.environments', icon: navIcon(Layers), unavailable: true },
+        { path: '/apps', labelKey: 'workbench.apps', icon: navIcon(LayoutGrid) },
+        { path: '/host?tab=terminal', labelKey: 'workbench.terminal', icon: navIcon(Code) },
     ] },
     { titleKey: 'workbench.infrastructure', items: [
-        { path: '/host', labelKey: 'nav.host', icon: <IconServer /> },
-        { path: '/gpu', labelKey: 'workbench.gpu', icon: <IconLayers /> },
-        { path: '/containers', labelKey: 'nav.container', icon: <IconBox /> },
-        { path: '/databases', labelKey: 'nav.database', icon: <IconLayers /> },
-        { path: '/websites', labelKey: 'nav.website', icon: <IconGlobe /> },
-        { path: '/openresty', labelKey: 'workbench.proxy', icon: <IconGlobe /> },
+        { path: '/host', labelKey: 'nav.host', icon: navIcon(Server) },
+        { path: '/gpu', labelKey: 'workbench.gpu', icon: navIcon(Layers) },
+        { path: '/containers', labelKey: 'nav.container', icon: navIcon(Box) },
+        { path: '/databases', labelKey: 'nav.database', icon: navIcon(Layers) },
+        { path: '/websites', labelKey: 'nav.website', icon: navIcon(Globe) },
+        { path: '/openresty', labelKey: 'workbench.proxy', icon: navIcon(Globe) },
     ] },
     { titleKey: 'workbench.operations', items: [
-        { path: '/cronjobs', labelKey: 'nav.cronjob', icon: <IconClock /> },
-        { path: '/toolbox', labelKey: 'nav.toolbox', icon: <IconWrench /> },
-        { path: '/logs', labelKey: 'nav.logs', icon: <IconArticle /> },
-        { path: '/settings', labelKey: 'nav.settings', icon: <IconSetting /> },
-        { path: '/ai', labelKey: 'workbench.advancedAI', icon: <IconSetting /> },
+        { path: '/cronjobs', labelKey: 'nav.cronjob', icon: navIcon(Clock) },
+        { path: '/toolbox', labelKey: 'nav.toolbox', icon: navIcon(Wrench) },
+        { path: '/logs', labelKey: 'nav.logs', icon: navIcon(FileText) },
+        { path: '/settings', labelKey: 'nav.settings', icon: navIcon(Settings) },
+        { path: '/ai', labelKey: 'workbench.advancedAI', icon: navIcon(Settings) },
     ] },
 ];
 export const flatNav = navSections.flatMap((section) => section.items).filter((item) => !item.unavailable);

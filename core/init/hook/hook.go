@@ -9,7 +9,6 @@ import (
 	"github.com/avaargsh/GPUPanel/core/constant"
 	"github.com/avaargsh/GPUPanel/core/global"
 	"github.com/avaargsh/GPUPanel/core/utils/common"
-	"github.com/avaargsh/GPUPanel/core/utils/ctl_conf"
 	"github.com/avaargsh/GPUPanel/core/utils/encrypt"
 	"github.com/avaargsh/GPUPanel/core/utils/xpack"
 )
@@ -44,12 +43,11 @@ func handleUserInfo(tags string, settingRepo repo.ISettingRepo) {
 	}
 	settingMap := make(map[string]string)
 	if tags == "use_existing" {
-		settingMap["ServerPort"] = ctl_conf.Load("ORIGINAL_PORT")
-		global.CONF.Conn.Port = settingMap["ServerPort"]
+		settingMap["ServerPort"] = global.CONF.Conn.Port
 		settingMap["UserName"] = global.CONF.Base.Username
 		settingMap["Password"] = global.CONF.Base.Password
 		settingMap["SecurityEntrance"] = global.CONF.Conn.Entrance
-		settingMap["SystemVersion"] = ctl_conf.Load("ORIGINAL_VERSION")
+		settingMap["SystemVersion"] = global.CONF.Base.Version
 		global.CONF.Base.Version = settingMap["SystemVersion"]
 		settingMap["Language"] = global.CONF.Base.Language
 	}
@@ -88,8 +86,8 @@ func handleUserInfo(tags string, settingRepo repo.ISettingRepo) {
 		}
 	}
 
-	_ = ctl_conf.RemoveValueFromFile("/usr/local/bin/pctl", "CHANGE_USER_INFO", global.CONF.Base.ChangeUserInfo)
-	_ = ctl_conf.UpdateInFile("/usr/local/bin/pctl", "ORIGINAL_PASSWORD", "**********")
+	// CHANGE_USER_INFO and ORIGINAL_PASSWORD are no longer persisted to the inherited
+	// /usr/local/bin/pctl; user settings live in the settings table instead.
 }
 
 func generateKey() {

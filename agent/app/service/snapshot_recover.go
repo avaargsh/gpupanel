@@ -323,11 +323,7 @@ func backupBeforeRecover(name string, itemHelper *snapRecoverHelper) error {
 	}
 
 	if global.IsMaster {
-		err = itemHelper.FileOp.CopyFile("/usr/local/bin/pctl", baseDir)
-		itemHelper.Task.LogWithStatus(i18n.GetWithName("SnapCopy", "/usr/local/bin/pctl"), err)
-		if err != nil {
-			return err
-		}
+		// pctl is no longer part of the GPUPanel runtime; skip restoring legacy ctl binary.
 		err = itemHelper.FileOp.CopyFile("/usr/local/bin/gpupanel-core", baseDir)
 		itemHelper.Task.LogWithStatus(i18n.GetWithName("SnapCopy", "/usr/local/bin/gpupanel-core"), err)
 		if err != nil {
@@ -413,12 +409,8 @@ func recoverBaseData(src string, itemHelper *snapRecoverHelper) error {
 	itemHelper.Task.Log("---------------------- 6 / 11 ----------------------")
 	itemHelper.Task.LogStart(i18n.GetMsgByKey("SnapBaseInfo"))
 	if global.IsMaster {
-		err := itemHelper.FileOp.CopyFile(path.Join(src, "pctl"), "/usr/local/bin")
-		itemHelper.Task.LogWithStatus(i18n.GetWithName("SnapCopy", "/usr/local/bin/pctl"), err)
-		if err != nil {
-			return err
-		}
-		err = itemHelper.FileOp.CopyFile(path.Join(src, "gpupanel-core"), "/usr/local/bin")
+		// pctl is no longer part of the GPUPanel runtime; skip restoring legacy ctl binary.
+		err := itemHelper.FileOp.CopyFile(path.Join(src, "gpupanel-core"), "/usr/local/bin")
 		itemHelper.Task.LogWithStatus(i18n.GetWithName("SnapCopy", "/usr/local/bin/gpupanel-core"), err)
 		if err != nil {
 			return err

@@ -4,12 +4,10 @@ import (
 	"bytes"
 	"fmt"
 	"path"
-	"strconv"
 
 	"github.com/avaargsh/GPUPanel/agent/cmd/server/conf"
 	"github.com/avaargsh/GPUPanel/agent/global"
 	"github.com/avaargsh/GPUPanel/agent/utils/files"
-	"github.com/avaargsh/GPUPanel/agent/utils/xpack"
 	"github.com/fsnotify/fsnotify"
 	"github.com/spf13/viper"
 	"gopkg.in/yaml.v3"
@@ -57,15 +55,7 @@ func Init() {
 }
 
 func initBaseInfo() {
-	nodeInfo, err := xpack.MultiNodeProvider.LoadNodeInfo(true)
-	if err != nil {
-		panic(err)
-	}
-	global.CONF.Base.InstallDir = nodeInfo.BaseDir
-	if !global.IsMaster {
-		global.CONF.Base.Port = strconv.FormatUint(uint64(nodeInfo.NodePort), 10)
-		if nodeInfo.NodePort == 0 {
-			global.CONF.Base.Port = "9999"
-		}
-	}
+	// InstallDir already set from embedded app.yaml; do not read inherited node provider contract.
+	// Single-host development runs as master agent.
+	global.IsMaster = true
 }

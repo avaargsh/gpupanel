@@ -1,32 +1,40 @@
 import { useSearchParams } from 'react-router-dom';
-import { Tabs, TabPane } from '@douyinfe/semi-ui';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useTranslation } from 'react-i18next';
 import AppStoreTab from './store';
 import InstalledTab from './installed';
 import AppSettingsTab from './settings';
 
+const TABS = ['store', 'installed', 'upgrade', 'settings'] as const;
+
 export default function AppsPage() {
     const { t } = useTranslation();
     const [query, setQuery] = useSearchParams();
     const requested = query.get('tab') || 'store';
-    const tab = ['store', 'installed', 'upgrade', 'settings'].includes(requested) ? requested : 'store';
+    const tab = (TABS as readonly string[]).includes(requested) ? requested : 'store';
     const setTab = (value: string) => setQuery({ tab: value });
-
     return (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            <Tabs type="line" activeKey={tab} onChange={(k) => setTab(String(k))}>
-                <TabPane tab={t('apps.tabs.store')} itemKey="store">
+        <div className="module-shell">
+            <Tabs value={tab} onValueChange={setTab}>
+                <TabsList variant="line" className="module-tabs">
+                    {TABS.map((key) => (
+                        <TabsTrigger key={key} value={key}>
+                            {t(`apps.tabs.${key}`)}
+                        </TabsTrigger>
+                    ))}
+                </TabsList>
+                <TabsContent value="store" className="module-tab-content">
                     <AppStoreTab />
-                </TabPane>
-                <TabPane tab={t('apps.tabs.installed')} itemKey="installed">
+                </TabsContent>
+                <TabsContent value="installed" className="module-tab-content">
                     <InstalledTab />
-                </TabPane>
-                <TabPane tab={t('apps.tabs.upgrade')} itemKey="upgrade">
+                </TabsContent>
+                <TabsContent value="upgrade" className="module-tab-content">
                     <InstalledTab upgradeOnly />
-                </TabPane>
-                <TabPane tab={t('apps.tabs.settings')} itemKey="settings">
+                </TabsContent>
+                <TabsContent value="settings" className="module-tab-content">
                     <AppSettingsTab />
-                </TabPane>
+                </TabsContent>
             </Tabs>
         </div>
     );

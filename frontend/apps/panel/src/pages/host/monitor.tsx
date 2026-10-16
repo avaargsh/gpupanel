@@ -1,19 +1,19 @@
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
+import { Button } from '@/components/ui/button';
+import { RefreshCw } from 'lucide-react';
+import { Empty, EmptyHeader, EmptyTitle } from '@/components/ui/empty';
+import { Skeleton } from '@/components/ui/skeleton';
 import { useMemo, useState } from 'react';
-import { Button, Card, Empty, RadioGroup, Radio, Select, Skeleton, Space } from '@douyinfe/semi-ui';
-import { IconRefresh } from '@douyinfe/semi-icons';
 import { useTranslation } from 'react-i18next';
 import type { EChartsOption } from 'echarts';
 import EChart from '@/components/EChart';
-import {
-    useGetIOOptionsQuery,
-    useGetNetworkOptionsQuery,
-    useMonitorSearchQuery,
-    type MonitorSeries,
-} from '@/api/hostApi';
+import { useGetIOOptionsQuery, useGetNetworkOptionsQuery, useMonitorSearchQuery, type MonitorSeries } from '@/api/hostApi';
 import { getTokens } from '@/theme';
 import { useAppSelector } from '@/store/hooks';
 import { useResolvedMode } from '@/utils/useResolvedMode';
-
 const RANGES = [
     { key: '1h', ms: 60 * 60 * 1000 },
     { key: '6h', ms: 6 * 60 * 60 * 1000 },
@@ -21,21 +21,25 @@ const RANGES = [
     { key: '1d', ms: 24 * 60 * 60 * 1000 },
     { key: '7d', ms: 7 * 24 * 60 * 60 * 1000 },
 ] as const;
-
 const fmtTime = (iso: string): string => {
     const d = new Date(iso);
     if (Number.isNaN(d.getTime())) return iso;
     const pad = (n: number) => String(n).padStart(2, '0');
     return `${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 };
-
-const seriesOf = (data: MonitorSeries[] | undefined, param: string): MonitorSeries | undefined =>
-    data?.find((s) => s.param === param);
-
+const seriesOf = (data: MonitorSeries[] | undefined, param: string): MonitorSeries | undefined => data?.find((s) => s.param === param);
 function lineOption(opts: {
     xData: string[];
-    series: Array<{ name: string; data: Array<number | string>; yAxisIndex?: number }>;
-    yAxis: Array<{ name?: string; axisLabel?: Record<string, boolean | number>; splitNumber?: number }>;
+    series: Array<{
+        name: string;
+        data: Array<number | string>;
+        yAxisIndex?: number;
+    }>;
+    yAxis: Array<{
+        name?: string;
+        axisLabel?: Record<string, boolean | number>;
+        splitNumber?: number;
+    }>;
     colors: string[];
 }): EChartsOption {
     return {
@@ -66,21 +70,17 @@ function lineOption(opts: {
         })),
     };
 }
-
 /** 监控页签：负载 / CPU / 内存 / 网络 / 磁盘 I/O 时序图 */
 export default function HostMonitor() {
     const { t } = useTranslation();
     const mode = useAppSelector((s) => s.ui.themeMode);
     const resolvedMode = useResolvedMode(mode);
     const tokens = getTokens(resolvedMode);
-
     const [rangeKey, setRangeKey] = useState<(typeof RANGES)[number]['key']>('1h');
     const [network, setNetwork] = useState('all');
     const [io, setIo] = useState('all');
-
     const netOptions = useGetNetworkOptionsQuery();
     const ioOptions = useGetIOOptionsQuery();
-
     const rangeMs = RANGES.find((r) => r.key === rangeKey)!.ms;
     const endTime = useMemo(() => new Date(), [rangeKey]);
     const monitor = useMonitorSearchQuery(
@@ -93,16 +93,13 @@ export default function HostMonitor() {
         },
         { skip: netOptions.isError || ioOptions.isError },
     );
-
     const selectNetwork = netOptions.data?.length ? netOptions.data : ['all'];
     const selectIo = ioOptions.data?.length ? ioOptions.data : ['all'];
     const effectiveNetwork = network && selectNetwork.includes(network) ? network : selectNetwork[0];
     const effectiveIo = io && selectIo.includes(io) ? io : selectIo[0];
-
     const base = seriesOf(monitor.data, 'base');
     const netSeries = seriesOf(monitor.data, 'network');
     const ioSeries = seriesOf(monitor.data, 'io');
-
     const loadOption = useMemo(() => {
         const dates = (base?.date ?? []).map(fmtTime);
         return lineOption({
@@ -117,7 +114,6 @@ export default function HostMonitor() {
             ],
         });
     }, [base, tokens, t]);
-
     const cpuOption = useMemo(() => {
         return lineOption({
             xData: (base?.date ?? []).map(fmtTime),
@@ -126,7 +122,6 @@ export default function HostMonitor() {
             series: [{ name: t('host.monitor.cpu'), data: (base?.value ?? []).map((v) => v.cpu?.toFixed(2) ?? 0) }],
         });
     }, [base, tokens, t]);
-
     const memoryOption = useMemo(() => {
         return lineOption({
             xData: (base?.date ?? []).map(fmtTime),
@@ -135,7 +130,6 @@ export default function HostMonitor() {
             series: [{ name: t('host.monitor.memory'), data: (base?.value ?? []).map((v) => v.memory?.toFixed(2) ?? 0) }],
         });
     }, [base, tokens, t]);
-
     const networkOption = useMemo(() => {
         return lineOption({
             xData: (netSeries?.date ?? []).map(fmtTime),
@@ -147,14 +141,10 @@ export default function HostMonitor() {
             ],
         });
     }, [netSeries, tokens, t]);
-
     const ioOption = useMemo(() => {
         return lineOption({
             xData: (ioSeries?.date ?? []).map(fmtTime),
-            yAxis: [
-                { name: 'KB/s' },
-                { name: t('host.monitor.time'), axisLabel: { show: false }, splitNumber: 2 },
-            ],
+            yAxis: [{ name: 'KB/s' }, { name: t('host.monitor.time'), axisLabel: { show: false }, splitNumber: 2 }],
             colors: [tokens.primary, tokens.warning, tokens.info],
             series: [
                 { name: t('host.monitor.read'), data: (ioSeries?.value ?? []).map((v) => Number((v.read / 1024).toFixed(2))) },
@@ -163,10 +153,8 @@ export default function HostMonitor() {
             ],
         });
     }, [ioSeries, tokens, t]);
-
-    const offline = netOptions.isError || ioOptions.isError;
+    const offline = netOptions.isError || ioOptions.isError || monitor.isError;
     const loading = netOptions.isLoading || ioOptions.isLoading || (monitor.isFetching && !monitor.data);
-
     const chartCards = [
         { title: t('host.monitor.load'), option: loadOption },
         { title: t('host.monitor.cpu'), option: cpuOption },
@@ -174,66 +162,140 @@ export default function HostMonitor() {
         { title: t('host.monitor.network'), option: networkOption },
         { title: t('host.monitor.diskIO'), option: ioOption },
     ];
-
     return (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            <Card bodyStyle={{ padding: '12px 16px' }}>
-                <Space wrap style={{ width: '100%', justifyContent: 'space-between' }}>
-                    <Space wrap spacing="loose">
-                        <RadioGroup
-                            type="button"
-                            value={rangeKey}
-                            onChange={(e) => {
-                                const evt = e as { detail?: { value?: unknown }; target?: { value?: unknown } };
-                                const v = evt.detail?.value ?? evt.target?.value;
-                                setRangeKey(String(v) as typeof rangeKey);
-                            }}
-                        >
-                            {RANGES.map((r) => (
-                                <Radio key={r.key} value={r.key}>
-                                    {r.key}
-                                </Radio>
-                            ))}
-                        </RadioGroup>
-                        <span style={{ fontSize: 13, color: 'var(--semi-color-text-2)' }}>{t('host.monitor.network')}</span>
-                        <Select
-                            value={effectiveNetwork}
-                            onChange={(v) => setNetwork(String(v))}
-                            style={{ width: 120 }}
-                            optionList={selectNetwork.map((o) => ({ label: o, value: o }))}
-                        />
-                        <span style={{ fontSize: 13, color: 'var(--semi-color-text-2)' }}>{t('host.monitor.disk')}</span>
-                        <Select
-                            value={effectiveIo}
-                            onChange={(v) => setIo(String(v))}
-                            style={{ width: 120 }}
-                            optionList={selectIo.map((o) => ({ label: o, value: o }))}
-                        />
-                    </Space>
-                    <Button icon={<IconRefresh />} onClick={() => monitor.refetch()}>
-                        {t('home.refresh')}
-                    </Button>
-                </Space>
+        <div className="host-monitor">
+            <Card className="host-monitor-controls-card">
+                <CardContent className="host-monitor-controls">
+                    <div className="flex flex-row flex-wrap gap-3 items-center w-full justify-between">
+                        <div className="flex flex-row flex-wrap gap-3 items-center">
+                            <ToggleGroup
+                                type="single"
+                                value={rangeKey}
+                                onValueChange={(value) => {
+                                    if (value)
+                                        ((e) => {
+                                            const evt = e as {
+                                                detail?: {
+                                                    value?: unknown;
+                                                };
+                                                target?: {
+                                                    value?: unknown;
+                                                };
+                                            };
+                                            const v = evt.detail?.value ?? evt.target?.value;
+                                            setRangeKey(String(v) as typeof rangeKey);
+                                        })({ target: { value } });
+                                }}
+                                className="flex flex-wrap"
+                            >
+                                {RANGES.map((r) => (
+                                    <ToggleGroupItem key={r.key} value={r.key}>
+                                        {r.key}
+                                    </ToggleGroupItem>
+                                ))}
+                            </ToggleGroup>
+                            <span className="text-sm text-muted-foreground">{t('host.monitor.networkLabel')}</span>
+                            <NativeSelect
+                                aria-label={t('host.monitor.networkLabel')}
+                                value={effectiveNetwork}
+                                className="w-[120px]"
+                                onChange={(event) =>
+                                    setNetwork(
+                                        String(
+                                            selectNetwork
+                                                .map((o) => ({ label: o, value: o }))
+                                                .find((option) => String(option.value) === event.target.value)?.value ?? event.target.value,
+                                        ),
+                                    )
+                                }
+                            >
+                                <NativeSelectOption value="" disabled>
+                                    {'—'}
+                                </NativeSelectOption>
+                                {selectNetwork
+                                    .map((o) => ({ label: o === 'all' ? t('common.all') : o, value: o }))
+                                    .map((option) => (
+                                        <NativeSelectOption key={String(option.value)} value={option.value}>
+                                            {option.label}
+                                        </NativeSelectOption>
+                                    ))}
+                            </NativeSelect>
+                            <span className="text-sm text-muted-foreground">{t('host.monitor.diskLabel')}</span>
+                            <NativeSelect
+                                aria-label={t('host.monitor.diskLabel')}
+                                value={effectiveIo}
+                                className="w-[120px]"
+                                onChange={(event) =>
+                                    setIo(
+                                        String(
+                                            selectIo
+                                                .map((o) => ({ label: o, value: o }))
+                                                .find((option) => String(option.value) === event.target.value)?.value ?? event.target.value,
+                                        ),
+                                    )
+                                }
+                            >
+                                <NativeSelectOption value="" disabled>
+                                    {'—'}
+                                </NativeSelectOption>
+                                {selectIo
+                                    .map((o) => ({ label: o === 'all' ? t('common.all') : o, value: o }))
+                                    .map((option) => (
+                                        <NativeSelectOption key={String(option.value)} value={option.value}>
+                                            {option.label}
+                                        </NativeSelectOption>
+                                    ))}
+                            </NativeSelect>
+                        </div>
+                        <Button onClick={() => monitor.refetch()} variant={'outline'} type={'button'}>
+                            {<RefreshCw />}
+                            {t('home.refresh')}
+                        </Button>
+                    </div>
+                </CardContent>
             </Card>
 
             {offline ? (
-                <Card>
-                    <Empty title={t('host.overview.noData')} style={{ padding: '24px 0' }} />
+                <Card className="host-monitor-offline-card">
+                    <CardContent className="host-monitor-offline">
+                        <Empty className="py-6">
+                            <EmptyHeader>
+                                <EmptyTitle>{t('host.overview.noData')}</EmptyTitle>
+                            </EmptyHeader>
+                        </Empty>
+                        <Button
+                            variant="outline"
+                            onClick={() => {
+                                void netOptions.refetch();
+                                void ioOptions.refetch();
+                                if (!netOptions.isError && !ioOptions.isError) void monitor.refetch();
+                            }}
+                        >
+                            {t('common.refresh')}
+                        </Button>
+                    </CardContent>
                 </Card>
             ) : loading ? (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 16 }}>
+                <div className="host-monitor-skeleton-grid">
                     {chartCards.map((c) => (
-                        <Card key={c.title} bodyStyle={{ padding: 12 }}>
-                            <Skeleton.Title style={{ width: 120, marginBottom: 12 }} />
-                            <Skeleton.Paragraph rows={5} />
+                        <Card key={c.title} className="host-monitor-skeleton-card">
+                            <CardContent className="host-monitor-skeleton-content">
+                                <Skeleton className="h-6 w-full w-[120px] mb-3" />
+                                <Skeleton className="h-24 w-full" />
+                            </CardContent>
                         </Card>
                     ))}
                 </div>
             ) : (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 16 }}>
+                <div className="host-monitor-chart-grid">
                     {chartCards.map((c) => (
-                        <Card key={c.title} title={c.title} bodyStyle={{ padding: 12 }}>
-                            <EChart option={c.option} height={230} themeKey={resolvedMode} />
+                        <Card key={c.title} className="host-monitor-chart-card">
+                            <CardHeader>
+                                <CardTitle>{c.title}</CardTitle>
+                            </CardHeader>
+                            <CardContent className="host-monitor-chart-content">
+                                <EChart option={c.option} height={230} themeKey={resolvedMode} />
+                            </CardContent>
                         </Card>
                     ))}
                 </div>

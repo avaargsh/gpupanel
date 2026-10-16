@@ -1,28 +1,40 @@
-import { useState } from 'react';
-import { Banner, Button, Input, Modal, Select, Space, Table, Tag, Toast, Tooltip, Typography } from '@douyinfe/semi-ui';
-import { IconDelete, IconSearch } from '@douyinfe/semi-icons';
-import { useTranslation } from 'react-i18next';
-import { useDebouncedValue } from '@/pages/database/shared';
-import { useCleanSSHLogsMutation, useSearchSSHLogsQuery, type SSHHistory } from '@/api/logsApi';
-import { authModeLabel, formatDateTime } from './shared';
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Empty, EmptyDescription } from "@/components/ui/empty";
+import { Input } from "@/components/ui/input";
+import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select";
+import { Spinner } from "@/components/ui/spinner";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { useConfirmAction } from "@/components/use-confirm-action";
+import { SearchIcon, Trash2Icon } from "lucide-react";
+import { useState } from "react";
+import { toast } from "sonner";
+import { TablePager } from "../settings/table-pager";
 
-const { Text } = Typography;
+import { useCleanSSHLogsMutation, useSearchSSHLogsQuery } from "@/api/logsApi";
+import { useDebouncedValue } from "@/pages/database/shared";
+import { useTranslation } from "react-i18next";
+import { authModeLabel, formatDateTime } from "./shared";
+
 const errText = (e: unknown) => (e as { data?: { message?: string } }).data?.message ?? String(e);
 
 const STATUS_OPTIONS = [
-    { labelKey: 'logs.status.all', value: 'All' },
-    { labelKey: 'logs.status.success', value: 'Success' },
-    { labelKey: 'logs.status.failed', value: 'Failed' },
+    { labelKey: "logs.status.all", value: "All" },
+    { labelKey: "logs.status.success", value: "Success" },
+    { labelKey: "logs.status.failed", value: "Failed" },
 ];
 
 export default function SSHLogTab() {
+    const { confirm, dialog: confirmationDialog } = useConfirmAction();
     const { t } = useTranslation();
 
     const [page, setPage] = useState(1);
     const [pageSize, setPageSize] = useState(20);
-    const [searchInput, setSearchInput] = useState('');
+    const [searchInput, setSearchInput] = useState("");
     const info = useDebouncedValue(searchInput);
-    const [status, setStatus] = useState('All');
+    const [status, setStatus] = useState("All");
 
     const { data, isFetching } = useSearchSSHLogsQuery({ page, pageSize, info, status });
     const [cleanSSHLogs, { isLoading: cleaning }] = useCleanSSHLogsMutation();
@@ -30,101 +42,144 @@ export default function SSHLogTab() {
     const rows = data?.items ?? [];
 
     const onClean = () => {
-        Modal.confirm({
-            title: t('logs.ssh.clean'),
-            content: t('logs.ssh.cleanConfirm'),
-            okText: t('common.confirm'),
-            cancelText: t('common.cancel'),
-            onOk: async () => {
+        confirm({
+            title: t("logs.ssh.clean"),
+            description: t("logs.ssh.cleanConfirm"),
+            confirmLabel: t("common.confirm"),
+            cancelLabel: t("common.cancel"),
+            run: async () => {
                 try {
                     await cleanSSHLogs().unwrap();
-                    Toast.success(t('logs.ssh.cleaned'));
+                    toast.success(t("logs.ssh.cleaned"));
                     setPage(1);
                 } catch (e) {
-                    Toast.error(errText(e));
+                    toast.error(errText(e));
                 }
             },
         });
     };
 
-    const columns = [
-        { title: t('logs.ssh.ip'), dataIndex: 'address', key: 'address', width: 160, render: (v: string) => v || '-' },
-        { title: t('logs.ssh.area'), dataIndex: 'area', key: 'area', width: 140, render: (v: string) => v || '-' },
-        { title: t('logs.ssh.port'), dataIndex: 'port', key: 'port', width: 90, render: (v: string) => v || '-' },
-        {
-            title: t('logs.ssh.authMode'),
-            key: 'authMode',
-            width: 120,
-            render: (_: unknown, row: SSHHistory) => authModeLabel(t, row.authMode),
-        },
-        { title: t('logs.ssh.user'), dataIndex: 'user', key: 'user', width: 120, render: (v: string) => v || '-' },
-        {
-            title: t('logs.ssh.status'),
-            key: 'status',
-            width: 120,
-            render: (_: unknown, row: SSHHistory) =>
-                row.status === 'Success' ? (
-                    <Tag color="green">{t('logs.status.success')}</Tag>
-                ) : (
-                    <Tooltip content={row.message || ''}>
-                        <Tag color="red">{t('logs.status.failed')}</Tag>
-                    </Tooltip>
-                ),
-        },
-        {
-            title: t('logs.ssh.date'),
-            key: 'date',
-            width: 180,
-            render: (_: unknown, row: SSHHistory) => formatDateTime(row.date || row.dateStr),
-        },
-    ];
-
     return (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            <Banner type="info" description={t('logs.ssh.alert')} closeIcon={null} />
-            <Banner type="info" description={t('logs.ssh.alert2')} closeIcon={null} />
+        <>
+            {confirmationDialog}
+            {
+                <div className="flex flex-col gap-3">
+                    <Alert>
+                        <AlertDescription>{t("logs.ssh.alert")}</AlertDescription>
+                    </Alert>
+                    <Alert>
+                        <AlertDescription>{t("logs.ssh.alert2")}</AlertDescription>
+                    </Alert>
 
-            <Space wrap>
-                <Input
-                    prefix={<IconSearch />}
-                    placeholder={t('logs.ssh.searchPlaceholder')}
-                    value={searchInput}
-                    onChange={setSearchInput}
-                    style={{ width: 220 }}
-                    showClear
-                />
-                <Select
-                    value={status}
-                    placeholder={t('logs.ssh.status')}
-                    style={{ width: 140 }}
-                    optionList={STATUS_OPTIONS.map((o) => ({ label: t(o.labelKey), value: o.value }))}
-                    onChange={(v) => {
-                        setStatus(String(v));
-                        setPage(1);
-                    }}
-                />
-                <Button type="danger" theme="light" icon={<IconDelete />} loading={cleaning} onClick={onClean}>
-                    {t('logs.ssh.clean')}
-                </Button>
-            </Space>
+                    <div className="flex flex-wrap items-center gap-2">
+                        <div className="flex items-center gap-2">
+                            <span className="shrink-0 text-muted-foreground">{<SearchIcon />}</span>
+                            <Input
+                                placeholder={t("logs.ssh.searchPlaceholder")}
+                                className="w-[220px]"
+                                value={searchInput ?? ""}
+                                onChange={(event) => setSearchInput(event.target.value)}
+                            />
+                        </div>
+                        <NativeSelect
+                            className="w-[140px]"
+                            value={status ?? ""}
+                            aria-label={t("logs.ssh.status")}
+                            onChange={(event) =>
+                                ((v) => {
+                                    setStatus(String(v));
+                                    setPage(1);
+                                })(event.target.value)
+                            }
+                        >
+                            <NativeSelectOption value="">{t("logs.ssh.status")}</NativeSelectOption>
+                            {STATUS_OPTIONS.map((o) => ({ label: t(o.labelKey), value: o.value })).map((option) => (
+                                <NativeSelectOption key={String(option.value)} value={String(option.value)}>
+                                    {option.label}
+                                </NativeSelectOption>
+                            ))}
+                        </NativeSelect>
+                        <Button onClick={onClean} type="button" variant="destructive" disabled={cleaning}>
+                            {cleaning ? <Spinner data-icon="inline-start" /> : <Trash2Icon data-icon="inline-start" />}
+                            {t("logs.ssh.clean")}
+                        </Button>
+                    </div>
 
-            <Table
-                rowKey={(row) => `${row?.date ?? ''}-${row?.address ?? ''}-${row?.user ?? ''}-${row?.status ?? ''}`}
-                columns={columns}
-                dataSource={rows}
-                loading={isFetching}
-                empty={<Text type="tertiary">{t('logs.ssh.empty')}</Text>}
-                pagination={{
-                    currentPage: page,
-                    pageSize,
-                    total: data?.total ?? 0,
-                    onPageChange: setPage,
-                    onPageSizeChange: (size: number) => {
-                        setPageSize(size);
-                        setPage(1);
-                    },
-                }}
-            />
-        </div>
+                    <div className="flex flex-col gap-3">
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>{t("logs.ssh.ip")}</TableHead>
+                                    <TableHead>{t("logs.ssh.area")}</TableHead>
+                                    <TableHead>{t("logs.ssh.port")}</TableHead>
+                                    <TableHead>{t("logs.ssh.authMode")}</TableHead>
+                                    <TableHead>{t("logs.ssh.user")}</TableHead>
+                                    <TableHead>{t("logs.ssh.status")}</TableHead>
+                                    <TableHead>{t("logs.ssh.date")}</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {isFetching ? (
+                                    <TableRow>
+                                        <TableCell colSpan={7}>
+                                            <Spinner className="mx-auto" />
+                                        </TableCell>
+                                    </TableRow>
+                                ) : rows.length === 0 ? (
+                                    <TableRow>
+                                        <TableCell colSpan={7}>
+                                            <Empty>
+                                                <EmptyDescription>
+                                                    {<span className="text-muted-foreground">{t("logs.ssh.empty")}</span>}
+                                                </EmptyDescription>
+                                            </Empty>
+                                        </TableCell>
+                                    </TableRow>
+                                ) : (
+                                    rows.map((row, rowIndex) => (
+                                        <TableRow key={`${row?.date ?? ""}-${row?.address ?? ""}-${row?.user ?? ""}-${row?.status ?? ""}`}>
+                                            <TableCell>{row["address"] || "-"}</TableCell>
+                                            <TableCell>{row["area"] || "-"}</TableCell>
+                                            <TableCell>{row["port"] || "-"}</TableCell>
+                                            <TableCell>{authModeLabel(t, row.authMode)}</TableCell>
+                                            <TableCell>{row["user"] || "-"}</TableCell>
+                                            <TableCell>
+                                                {row.status === "Success" ? (
+                                                    <Badge variant={["red"].includes("green") ? "destructive" : "secondary"}>
+                                                        {t("logs.status.success")}
+                                                    </Badge>
+                                                ) : (
+                                                    <Tooltip>
+                                                        <TooltipTrigger asChild>
+                                                            <span tabIndex={0}>
+                                                                <Badge variant={["red"].includes("red") ? "destructive" : "secondary"}>
+                                                                    {t("logs.status.failed")}
+                                                                </Badge>
+                                                            </span>
+                                                        </TooltipTrigger>
+                                                        <TooltipContent>{row.message || ""}</TooltipContent>
+                                                    </Tooltip>
+                                                )}
+                                            </TableCell>
+                                            <TableCell>{formatDateTime(row.date || row.dateStr)}</TableCell>
+                                        </TableRow>
+                                    ))
+                                )}
+                            </TableBody>
+                        </Table>
+                        <TablePager
+                            page={page}
+                            pageSize={pageSize}
+                            total={data?.total ?? 0}
+                            onPageChange={setPage}
+                            onPageSizeChange={(size: number) => {
+                                setPageSize(size);
+                                setPage(1);
+                            }}
+                        />
+                    </div>
+                </div>
+            }
+        </>
     );
 }

@@ -8,7 +8,6 @@ import (
 
 	"github.com/avaargsh/GPUPanel/core/cmd/server/conf"
 	"github.com/avaargsh/GPUPanel/core/global"
-	"github.com/avaargsh/GPUPanel/core/utils/ctl_conf"
 	"github.com/fsnotify/fsnotify"
 	"github.com/spf13/viper"
 	"gopkg.in/yaml.v3"
@@ -38,14 +37,15 @@ func Init() {
 			panic(fmt.Errorf("fatal error config file: %s", err))
 		}
 	} else {
-		baseDir = ctl_conf.Load("BASE_DIR")
-		port = ctl_conf.Load("ORIGINAL_PORT")
-		version = ctl_conf.Load("ORIGINAL_VERSION")
-		username = ctl_conf.Load("ORIGINAL_USERNAME")
-		password = ctl_conf.Load("ORIGINAL_PASSWORD")
-		entrance = ctl_conf.Load("ORIGINAL_ENTRANCE")
-		language = ctl_conf.Load("LANGUAGE")
-		edition = ctl_conf.LoadWithoutPanic("PANEL_EDITION")
+		// Non-dev mode: use embedded app.yaml defaults, not inherited /usr/local/bin/pctl.
+		baseDir = config.Base.InstallDir
+		port = config.Conn.Port
+		version = config.Base.Version
+		username = config.Base.Username
+		password = config.Base.Password
+		entrance = config.Conn.Entrance
+		language = config.Base.Language
+		edition = config.Base.Edition
 
 		reader := bytes.NewReader(conf.AppYaml)
 		if err := v.ReadConfig(reader); err != nil {
@@ -104,5 +104,7 @@ func Init() {
 }
 
 func loadChangeInfo() string {
-	return ctl_conf.LoadWithoutPanic("CHANGE_USER_INFO")
+	// CHANGE_USER_INFO is no longer read from the inherited /usr/local/bin/pctl.
+	// User info changes are handled through the settings API instead.
+	return ""
 }

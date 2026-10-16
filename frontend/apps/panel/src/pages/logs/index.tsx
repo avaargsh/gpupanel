@@ -1,11 +1,13 @@
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useSearchParams } from 'react-router-dom';
-import { Tabs, TabPane } from '@douyinfe/semi-ui';
 import { useTranslation } from 'react-i18next';
-import OperationLogTab from './operation';
 import LoginLogTab from './login';
+import OperationLogTab from './operation';
+import SSHLogTab from './ssh';
 import SystemLogTab from './system';
 import TaskLogTab from './task';
-import SSHLogTab from './ssh';
+
+const TABS = ['operation', 'login', 'system', 'task', 'ssh'] as const;
 
 /**
  * 日志模块对应旧版 `frontend/src/views/log`：五个页签统一收拢到一个路由，
@@ -16,27 +18,34 @@ export default function LogsPage() {
     const { t } = useTranslation();
     const [query, setQuery] = useSearchParams();
     const requested = query.get('tab') || 'operation';
-    const tab = ['operation', 'login', 'system', 'task', 'ssh'].includes(requested) ? requested : 'operation';
+    const tab = (TABS as readonly string[]).includes(requested) ? requested : 'operation';
     const setTab = (value: string) => setQuery({ tab: value });
 
     return (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            <Tabs type="line" activeKey={tab} onChange={(k) => setTab(String(k))} lazyRender>
-                <TabPane tab={t('logs.tabs.operation')} itemKey="operation">
+        <div className="module-shell">
+            <Tabs value={tab} onValueChange={setTab}>
+                <TabsList variant="line" className="module-tabs">
+                    {TABS.map((key) => (
+                        <TabsTrigger key={key} value={key}>
+                            {t(`logs.tabs.${key}`)}
+                        </TabsTrigger>
+                    ))}
+                </TabsList>
+                <TabsContent value="operation" className="module-tab-content">
                     <OperationLogTab />
-                </TabPane>
-                <TabPane tab={t('logs.tabs.login')} itemKey="login">
+                </TabsContent>
+                <TabsContent value="login" className="module-tab-content">
                     <LoginLogTab />
-                </TabPane>
-                <TabPane tab={t('logs.tabs.system')} itemKey="system">
+                </TabsContent>
+                <TabsContent value="system" className="module-tab-content">
                     <SystemLogTab />
-                </TabPane>
-                <TabPane tab={t('logs.tabs.task')} itemKey="task">
+                </TabsContent>
+                <TabsContent value="task" className="module-tab-content">
                     <TaskLogTab />
-                </TabPane>
-                <TabPane tab={t('logs.tabs.ssh')} itemKey="ssh">
+                </TabsContent>
+                <TabsContent value="ssh" className="module-tab-content">
                     <SSHLogTab />
-                </TabPane>
+                </TabsContent>
             </Tabs>
         </div>
     );

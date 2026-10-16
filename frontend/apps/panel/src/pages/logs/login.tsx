@@ -1,28 +1,38 @@
-import { useState } from 'react';
-import { Button, Input, Modal, Select, Space, Table, Tag, Toast, Typography } from '@douyinfe/semi-ui';
-import { IconDelete, IconSearch } from '@douyinfe/semi-icons';
-import { useTranslation } from 'react-i18next';
-import { useDebouncedValue } from '@/pages/database/shared';
-import { useCleanLogsMutation, useSearchLoginLogsQuery, type LoginLog } from '@/api/logsApi';
-import { formatDateTime } from './shared';
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Empty, EmptyDescription } from "@/components/ui/empty";
+import { Input } from "@/components/ui/input";
+import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select";
+import { Spinner } from "@/components/ui/spinner";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { useConfirmAction } from "@/components/use-confirm-action";
+import { SearchIcon, Trash2Icon } from "lucide-react";
+import { useState } from "react";
+import { toast } from "sonner";
+import { TablePager } from "../settings/table-pager";
 
-const { Text } = Typography;
+import { useCleanLogsMutation, useSearchLoginLogsQuery, type LoginLog } from "@/api/logsApi";
+import { useDebouncedValue } from "@/pages/database/shared";
+import { useTranslation } from "react-i18next";
+import { formatDateTime } from "./shared";
+
 const errText = (e: unknown) => (e as { data?: { message?: string } }).data?.message ?? String(e);
 
 const STATUS_OPTIONS = [
-    { labelKey: 'logs.status.all', value: '' },
-    { labelKey: 'logs.status.success', value: 'Success' },
-    { labelKey: 'logs.status.failed', value: 'Failed' },
+    { labelKey: "logs.status.all", value: "" },
+    { labelKey: "logs.status.success", value: "Success" },
+    { labelKey: "logs.status.failed", value: "Failed" },
 ];
 
 export default function LoginLogTab() {
+    const { confirm, dialog: confirmationDialog } = useConfirmAction();
     const { t } = useTranslation();
 
     const [page, setPage] = useState(1);
     const [pageSize, setPageSize] = useState(20);
-    const [searchInput, setSearchInput] = useState('');
+    const [searchInput, setSearchInput] = useState("");
     const info = useDebouncedValue(searchInput);
-    const [status, setStatus] = useState('');
+    const [status, setStatus] = useState("");
 
     const { data, isFetching } = useSearchLoginLogsQuery({ page, pageSize, info, status });
     const [cleanLogs, { isLoading: cleaning }] = useCleanLogsMutation();
@@ -30,99 +40,136 @@ export default function LoginLogTab() {
     const rows = data?.items ?? [];
 
     const messageText = (row: LoginLog) => {
-        if (row.message === 'ErrAuth') return t('logs.login.errorAuth');
-        if (row.message === 'ErrMFA') return t('logs.login.errorMfa');
-        return row.message || '-';
+        if (row.message === "ErrAuth") return t("logs.login.errorAuth");
+        if (row.message === "ErrMFA") return t("logs.login.errorMfa");
+        return row.message || "-";
     };
 
     const onClean = () => {
-        Modal.confirm({
-            title: t('logs.login.clean'),
-            content: t('logs.login.cleanConfirm'),
-            okText: t('common.confirm'),
-            cancelText: t('common.cancel'),
-            onOk: async () => {
+        confirm({
+            title: t("logs.login.clean"),
+            description: t("logs.login.cleanConfirm"),
+            confirmLabel: t("common.confirm"),
+            cancelLabel: t("common.cancel"),
+            run: async () => {
                 try {
-                    await cleanLogs({ logType: 'login' }).unwrap();
-                    Toast.success(t('logs.login.cleaned'));
+                    await cleanLogs({ logType: "login" }).unwrap();
+                    toast.success(t("logs.login.cleaned"));
                     setPage(1);
                 } catch (e) {
-                    Toast.error(errText(e));
+                    toast.error(errText(e));
                 }
             },
         });
     };
 
-    const columns = [
-        { title: t('logs.login.ip'), dataIndex: 'ip', key: 'ip', width: 160 },
-        { title: t('logs.login.user'), dataIndex: 'user', key: 'user', width: 140, render: (v: string) => v || '-' },
-        { title: t('logs.login.address'), dataIndex: 'address', key: 'address', width: 160, render: (v: string) => v || '-' },
-        {
-            title: t('logs.login.agent'),
-            dataIndex: 'agent',
-            key: 'agent',
-            ellipsis: true,
-            render: (v: string) => v || '-',
-        },
-        {
-            title: t('logs.login.status'),
-            key: 'status',
-            width: 140,
-            render: (_: unknown, row: LoginLog) => (
-                <Tag color={row.status === 'Success' ? 'green' : 'red'}>{messageText(row)}</Tag>
-            ),
-        },
-        {
-            title: t('logs.login.date'),
-            key: 'createdAt',
-            width: 180,
-            render: (_: unknown, row: LoginLog) => formatDateTime(row.createdAt),
-        },
-    ];
-
     return (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            <Space wrap>
-                <Input
-                    prefix={<IconSearch />}
-                    placeholder={t('logs.login.searchPlaceholder')}
-                    value={searchInput}
-                    onChange={setSearchInput}
-                    style={{ width: 220 }}
-                    showClear
-                />
-                <Select
-                    value={status}
-                    placeholder={t('logs.login.status')}
-                    style={{ width: 140 }}
-                    optionList={STATUS_OPTIONS.map((o) => ({ label: t(o.labelKey), value: o.value }))}
-                    onChange={(v) => {
-                        setStatus(String(v));
-                        setPage(1);
-                    }}
-                />
-                <Button type="danger" theme="light" icon={<IconDelete />} loading={cleaning} onClick={onClean}>
-                    {t('logs.login.clean')}
-                </Button>
-            </Space>
+        <>
+            {confirmationDialog}
+            {
+                <div className="flex flex-col gap-3">
+                    <div className="flex flex-wrap items-center gap-2">
+                        <div className="flex items-center gap-2">
+                            <span className="shrink-0 text-muted-foreground">{<SearchIcon />}</span>
+                            <Input
+                                placeholder={t("logs.login.searchPlaceholder")}
+                                className="w-[220px]"
+                                value={searchInput ?? ""}
+                                onChange={(event) => setSearchInput(event.target.value)}
+                            />
+                        </div>
+                        <NativeSelect
+                            className="w-[140px]"
+                            value={status ?? ""}
+                            aria-label={t("logs.login.status")}
+                            onChange={(event) =>
+                                ((v) => {
+                                    setStatus(String(v));
+                                    setPage(1);
+                                })(event.target.value)
+                            }
+                        >
+                            <NativeSelectOption value="">{t("logs.login.status")}</NativeSelectOption>
+                            {STATUS_OPTIONS.map((o) => ({ label: t(o.labelKey), value: o.value })).map((option) => (
+                                <NativeSelectOption key={String(option.value)} value={String(option.value)}>
+                                    {option.label}
+                                </NativeSelectOption>
+                            ))}
+                        </NativeSelect>
+                        <Button onClick={onClean} type="button" variant="destructive" disabled={cleaning}>
+                            {cleaning ? <Spinner data-icon="inline-start" /> : <Trash2Icon data-icon="inline-start" />}
+                            {t("logs.login.clean")}
+                        </Button>
+                    </div>
 
-            <Table
-                rowKey="id"
-                columns={columns}
-                dataSource={rows}
-                loading={isFetching}
-                empty={<Text type="tertiary">{t('logs.login.empty')}</Text>}
-                pagination={{
-                    currentPage: page,
-                    pageSize,
-                    total: data?.total ?? 0,
-                    onPageChange: setPage,
-                    onPageSizeChange: (size: number) => {
-                        setPageSize(size);
-                        setPage(1);
-                    },
-                }}
-            />
-        </div>
+                    <div className="flex flex-col gap-3">
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>{t("logs.login.ip")}</TableHead>
+                                    <TableHead>{t("logs.login.user")}</TableHead>
+                                    <TableHead>{t("logs.login.address")}</TableHead>
+                                    <TableHead>{t("logs.login.agent")}</TableHead>
+                                    <TableHead>{t("logs.login.status")}</TableHead>
+                                    <TableHead>{t("logs.login.date")}</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {isFetching ? (
+                                    <TableRow>
+                                        <TableCell colSpan={6}>
+                                            <Spinner className="mx-auto" />
+                                        </TableCell>
+                                    </TableRow>
+                                ) : rows.length === 0 ? (
+                                    <TableRow>
+                                        <TableCell colSpan={6}>
+                                            <Empty>
+                                                <EmptyDescription>
+                                                    {<span className="text-muted-foreground">{t("logs.login.empty")}</span>}
+                                                </EmptyDescription>
+                                            </Empty>
+                                        </TableCell>
+                                    </TableRow>
+                                ) : (
+                                    rows.map((row, rowIndex) => (
+                                        <TableRow key={row["id"]}>
+                                            <TableCell>{row["ip"]}</TableCell>
+                                            <TableCell>{row["user"] || "-"}</TableCell>
+                                            <TableCell>{row["address"] || "-"}</TableCell>
+                                            <TableCell>{row["agent"] || "-"}</TableCell>
+                                            <TableCell>
+                                                {
+                                                    <Badge
+                                                        variant={
+                                                            ["red"].includes(row.status === "Success" ? "green" : "red")
+                                                                ? "destructive"
+                                                                : "secondary"
+                                                        }
+                                                    >
+                                                        {messageText(row)}
+                                                    </Badge>
+                                                }
+                                            </TableCell>
+                                            <TableCell>{formatDateTime(row.createdAt)}</TableCell>
+                                        </TableRow>
+                                    ))
+                                )}
+                            </TableBody>
+                        </Table>
+                        <TablePager
+                            page={page}
+                            pageSize={pageSize}
+                            total={data?.total ?? 0}
+                            onPageChange={setPage}
+                            onPageSizeChange={(size: number) => {
+                                setPageSize(size);
+                                setPage(1);
+                            }}
+                        />
+                    </div>
+                </div>
+            }
+        </>
     );
 }

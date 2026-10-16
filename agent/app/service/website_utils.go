@@ -1590,11 +1590,11 @@ func UpdateSSLConfig(websiteSSL model.WebsiteSSL) error {
 		fileOp := files.NewFileOp()
 		secretDir := path.Join(global.Dir.DataDir, "secret")
 		if err := fileOp.WriteFile(path.Join(secretDir, "server.crt"), strings.NewReader(websiteSSL.Pem), 0600); err != nil {
-			global.LOG.Errorf("Failed to update the SSL certificate File for 1Panel System domain [%s] , err:%s", websiteSSL.PrimaryDomain, err.Error())
+			global.LOG.Errorf("Failed to update the SSL certificate File for GPUPanel System domain [%s] , err:%s", websiteSSL.PrimaryDomain, err.Error())
 			return err
 		}
 		if err := fileOp.WriteFile(path.Join(secretDir, "server.key"), strings.NewReader(websiteSSL.PrivateKey), 0600); err != nil {
-			global.LOG.Errorf("Failed to update the SSL certificate for 1Panel System domain [%s] , err:%s", websiteSSL.PrimaryDomain, err.Error())
+			global.LOG.Errorf("Failed to update the SSL certificate for GPUPanel System domain [%s] , err:%s", websiteSSL.PrimaryDomain, err.Error())
 			return err
 		}
 	}

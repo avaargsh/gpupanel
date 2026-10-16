@@ -1,34 +1,41 @@
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useState } from 'react';
-import { Tabs, TabPane } from '@douyinfe/semi-ui';
 import { useTranslation } from 'react-i18next';
-import DeviceTab from './device';
+import ClamTab from './clam';
 import CleanTab from './clean';
+import DeviceTab from './device';
 import Fail2banTab from './fail2ban';
 import FtpTab from './ftp';
-import ClamTab from './clam';
 
 export default function ToolboxPage() {
     const { t } = useTranslation();
     const [tab, setTab] = useState('device');
 
     return (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            <Tabs type="line" activeKey={tab} onChange={(k) => setTab(String(k))} lazyRender>
-                <TabPane tab={t('toolbox.tabs.device')} itemKey="device">
+        <div className="module-shell">
+            <Tabs value={tab} onValueChange={setTab}>
+                <TabsList variant="line" className="module-tabs">
+                    <TabsTrigger value="device">{t('toolbox.tabs.device')}</TabsTrigger>
+                    <TabsTrigger value="clean">{t('toolbox.tabs.clean')}</TabsTrigger>
+                    <TabsTrigger value="fail2ban">{t('toolbox.tabs.fail2ban')}</TabsTrigger>
+                    <TabsTrigger value="ftp">{t('toolbox.tabs.ftp')}</TabsTrigger>
+                    <TabsTrigger value="clam">{t('toolbox.tabs.clam')}</TabsTrigger>
+                </TabsList>
+                <TabsContent value="device" className="module-tab-content">
                     <DeviceTab />
-                </TabPane>
-                <TabPane tab={t('toolbox.tabs.clean')} itemKey="clean">
+                </TabsContent>
+                <TabsContent value="clean" className="module-tab-content">
                     <CleanTab />
-                </TabPane>
-                <TabPane tab={t('toolbox.tabs.fail2ban')} itemKey="fail2ban">
+                </TabsContent>
+                <TabsContent value="fail2ban" className="module-tab-content">
                     <Fail2banTab />
-                </TabPane>
-                <TabPane tab={t('toolbox.tabs.ftp')} itemKey="ftp">
+                </TabsContent>
+                <TabsContent value="ftp" className="module-tab-content">
                     <FtpTab />
-                </TabPane>
-                <TabPane tab={t('toolbox.tabs.clam')} itemKey="clam">
+                </TabsContent>
+                <TabsContent value="clam" className="module-tab-content">
                     <ClamTab />
-                </TabPane>
+                </TabsContent>
             </Tabs>
         </div>
     );

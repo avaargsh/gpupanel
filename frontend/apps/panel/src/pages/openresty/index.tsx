@@ -1,46 +1,67 @@
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
+import { Spinner } from '@/components/ui/spinner';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useState } from 'react';
-import { Banner, Spin, TabPane, Tabs } from '@douyinfe/semi-ui';
 import { useTranslation } from 'react-i18next';
 import ModulesTab from './modules';
 import OtherTab from './other';
 import PerformanceTab from './performance';
+import { useOpenrestyInstalled } from './shared';
 import SourceTab from './source';
 import StatusTab from './status';
-import { useOpenrestyInstalled } from './shared';
+
+const TABS = ['status', 'source', 'performance', 'modules', 'other'] as const;
 
 export default function OpenrestyPage() {
     const { t } = useTranslation();
     const [tab, setTab] = useState('status');
     const { query, installed, running } = useOpenrestyInstalled();
-
     return (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            {query.isLoading ? <Spin /> : null}
+        <div className="module-shell">
+            {query.isLoading ? <Spinner /> : null}
             {query.isError ? (
-                <Banner type="danger" closeIcon={null} title={t('openresty.checkFailed')} />
+                <Alert variant="destructive">
+                    <AlertTitle>{t('openresty.checkFailed')}</AlertTitle>
+                    <Button variant="outline" onClick={() => query.refetch()}>
+                        {t('common.retry')}
+                    </Button>
+                </Alert>
             ) : null}
             {!query.isLoading && !query.isError && !installed ? (
-                <Banner type="warning" closeIcon={null} title={t('openresty.notInstalled')} description={t('openresty.notInstalledHelper')} />
+                <Alert>
+                    <AlertTitle>{t('openresty.notInstalled')}</AlertTitle>
+                    <AlertDescription>{t('openresty.notInstalledHelper')}</AlertDescription>
+                </Alert>
             ) : null}
             {installed && !running ? (
-                <Banner type="info" closeIcon={null} title={t('openresty.notRunning')} />
+                <Alert>
+                    <AlertTitle>{t('openresty.notRunning')}</AlertTitle>
+                </Alert>
             ) : null}
-            <Tabs type="button" activeKey={tab} onChange={(k) => setTab(String(k))} lazyRender>
-                <TabPane tab={t('openresty.tabs.status')} itemKey="status">
+            <Tabs value={tab} onValueChange={setTab}>
+                <TabsList variant="line" className="module-tabs">
+                    {TABS.map((key) => (
+                        <TabsTrigger key={key} value={key}>
+                            {t(`openresty.tabs.${key}`)}
+                        </TabsTrigger>
+                    ))}
+                </TabsList>
+                <TabsContent value="status" className="module-tab-content">
                     <StatusTab running={running} />
-                </TabPane>
-                <TabPane tab={t('openresty.tabs.source')} itemKey="source">
+                </TabsContent>
+                <TabsContent value="source" className="module-tab-content">
                     <SourceTab />
-                </TabPane>
-                <TabPane tab={t('openresty.tabs.performance')} itemKey="performance">
+                </TabsContent>
+                <TabsContent value="performance" className="module-tab-content">
                     <PerformanceTab />
-                </TabPane>
-                <TabPane tab={t('openresty.tabs.modules')} itemKey="modules">
+                </TabsContent>
+                <TabsContent value="modules" className="module-tab-content">
                     <ModulesTab />
-                </TabPane>
-                <TabPane tab={t('openresty.tabs.other')} itemKey="other">
+                </TabsContent>
+                <TabsContent value="other" className="module-tab-content">
                     <OtherTab running={running} />
-                </TabPane>
+                </TabsContent>
             </Tabs>
         </div>
     );

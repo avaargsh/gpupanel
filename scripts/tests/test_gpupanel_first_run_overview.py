@@ -64,7 +64,12 @@ class FirstRunOverviewTest(unittest.TestCase):
         self.assertFalse(report["readyForProduction"])
         self.assertFalse(report["mutationPerformed"])
         self.assertFalse(report["systemServiceInstalled"])
-        self.assertGreater(report["systemRuntime"]["namespaceRisks"], 0)
+        # Blocked namespace risks cleared by migration; remaining risks are
+        # unknown and require independent verification before installation.
+        self.assertEqual(report["systemRuntime"]["namespaceRisks"], 0)
+        self.assertGreater(report["systemRuntime"]["unknownIsolationRisks"], 0)
+        self.assertGreater(report["systemRuntime"]["namespaceRisks"] +
+                           report["systemRuntime"]["unknownIsolationRisks"], 0)
         self.assertTrue(report["catalog"]["approvedUserWorkflows"])
         self.assertTrue(all(not x["systemInstall"] for x in report["catalog"]["approvedUserWorkflows"]))
 

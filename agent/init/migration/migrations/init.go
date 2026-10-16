@@ -25,7 +25,6 @@ import (
 	"github.com/avaargsh/GPUPanel/agent/utils/encrypt"
 	"github.com/avaargsh/GPUPanel/agent/utils/firewall"
 	"github.com/avaargsh/GPUPanel/agent/utils/ssh"
-	"github.com/avaargsh/GPUPanel/agent/utils/xpack"
 
 	"github.com/go-gormigrate/gormigrate/v2"
 	"github.com/google/uuid"
@@ -103,9 +102,18 @@ var InitSetting = &gormigrate.Migration{
 	ID: "20240722-init-setting",
 	Migrate: func(tx *gorm.DB) error {
 		global.CONF.Base.EncryptKey = common.RandStr(16)
-		nodeInfo, err := xpack.MultiNodeProvider.LoadNodeInfo(true)
-		if err != nil {
-			return err
+		// BaseDir/NodePort/Version are configured via embedded app.yaml; do not read inherited node provider contract.
+		nodeInfo := model.NodeInfo{
+			BaseDir:  global.CONF.Base.InstallDir,
+			Scope:    "master",
+			NodePort: 0,
+			Version:  global.CONF.Base.Version,
+		}
+		if nodeInfo.BaseDir == "" {
+			nodeInfo.BaseDir = "/opt"
+		}
+		if nodeInfo.Version == "" {
+			nodeInfo.Version = "v2.0.0"
 		}
 		if err := tx.Create(&model.Setting{Key: "BaseDir", Value: nodeInfo.BaseDir}).Error; err != nil {
 			return err
@@ -137,8 +145,8 @@ var InitSetting = &gormigrate.Migration{
 		if err := tx.Create(&model.Setting{Key: "SystemStatus", Value: "Free"}).Error; err != nil {
 			return err
 		}
-		lang := common.LoadParamsWithoutPanic("LANGUAGE")
-		if err := tx.Create(&model.Setting{Key: "Language", Value: lang}).Error; err != nil {
+		// Language is configured via embedded app.yaml; do not read inherited pctl.
+		if err := tx.Create(&model.Setting{Key: "Language", Value: ""}).Error; err != nil {
 			return err
 		}
 		if err := tx.Create(&model.Setting{Key: "SystemIP", Value: ""}).Error; err != nil {
@@ -1206,7 +1214,8 @@ var AddEditionSetting = &gormigrate.Migration{
 	ID: "20260224-add-edition-setting",
 	Migrate: func(tx *gorm.DB) error {
 		var setting model.Setting
-		edition := common.LoadParamsWithoutPanic("PANEL_EDITION")
+		// Edition is configured via embedded app.yaml; do not read inherited pctl.
+		edition := ""
 		if err := tx.Where("key = ?", "Edition").First(&setting).Error; err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
 				return tx.Create(&model.Setting{Key: "Edition", Value: edition}).Error

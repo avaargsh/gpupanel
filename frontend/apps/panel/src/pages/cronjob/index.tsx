@@ -1,5 +1,5 @@
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useState } from 'react';
-import { Tabs, TabPane } from '@douyinfe/semi-ui';
 import { useTranslation } from 'react-i18next';
 import CronjobTab from './cronjob';
 import ScriptLibraryTab from './library';
@@ -9,14 +9,18 @@ export default function CronjobPage() {
     const [tab, setTab] = useState('cronjob');
 
     return (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            <Tabs type="line" activeKey={tab} onChange={(k) => setTab(String(k))}>
-                <TabPane tab={t('cronjob.tabs.cronjob')} itemKey="cronjob">
+        <div className="module-shell">
+            <Tabs value={tab} onValueChange={setTab}>
+                <TabsList variant="line" className="module-tabs">
+                    <TabsTrigger value="cronjob">{t('cronjob.tabs.cronjob')}</TabsTrigger>
+                    <TabsTrigger value="library">{t('cronjob.tabs.library')}</TabsTrigger>
+                </TabsList>
+                <TabsContent value="cronjob" className="module-tab-content">
                     <CronjobTab />
-                </TabPane>
-                <TabPane tab={t('cronjob.tabs.library')} itemKey="library">
+                </TabsContent>
+                <TabsContent value="library" className="module-tab-content">
                     <ScriptLibraryTab />
-                </TabPane>
+                </TabsContent>
             </Tabs>
         </div>
     );

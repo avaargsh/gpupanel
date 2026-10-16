@@ -1,13 +1,15 @@
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useState } from 'react';
-import { Tabs, TabPane } from '@douyinfe/semi-ui';
 import { useTranslation } from 'react-i18next';
-import PanelSettingsTab from './panel';
-import SafeSettingsTab from './safe';
-import BackupAccountSettingsTab from './backup';
-import SnapshotSettingsTab from './snapshot';
+import AboutTab from './about';
 import AlertSettingsTab from './alert';
 import APIKeysTab from './apikeys';
-import AboutTab from './about';
+import BackupAccountSettingsTab from './backup';
+import PanelSettingsTab from './panel';
+import SafeSettingsTab from './safe';
+import SnapshotSettingsTab from './snapshot';
+
+const TABS = ['panel', 'safe', 'backup', 'snapshot', 'alert', 'apikeys', 'about'] as const;
 
 /**
  * 设置模块对应旧版 `frontend/src/views/setting`：将原先「面板设置 / 安全 / 备份账号 /
@@ -20,29 +22,36 @@ export default function SettingsPage() {
     const [tab, setTab] = useState('panel');
 
     return (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            <Tabs type="line" activeKey={tab} onChange={(k) => setTab(String(k))} lazyRender>
-                <TabPane tab={t('settings.tabs.panel')} itemKey="panel">
+        <div className="module-shell">
+            <Tabs value={tab} onValueChange={setTab}>
+                <TabsList variant="line" className="module-tabs">
+                    {TABS.map((key) => (
+                        <TabsTrigger key={key} value={key}>
+                            {t(`settings.tabs.${key}`)}
+                        </TabsTrigger>
+                    ))}
+                </TabsList>
+                <TabsContent value="panel" className="module-tab-content">
                     <PanelSettingsTab />
-                </TabPane>
-                <TabPane tab={t('settings.tabs.safe')} itemKey="safe">
+                </TabsContent>
+                <TabsContent value="safe" className="module-tab-content">
                     <SafeSettingsTab />
-                </TabPane>
-                <TabPane tab={t('settings.tabs.backup')} itemKey="backup">
+                </TabsContent>
+                <TabsContent value="backup" className="module-tab-content">
                     <BackupAccountSettingsTab />
-                </TabPane>
-                <TabPane tab={t('settings.tabs.snapshot')} itemKey="snapshot">
+                </TabsContent>
+                <TabsContent value="snapshot" className="module-tab-content">
                     <SnapshotSettingsTab />
-                </TabPane>
-                <TabPane tab={t('settings.tabs.alert')} itemKey="alert">
+                </TabsContent>
+                <TabsContent value="alert" className="module-tab-content">
                     <AlertSettingsTab />
-                </TabPane>
-                <TabPane tab={t('settings.tabs.apikeys')} itemKey="apikeys">
+                </TabsContent>
+                <TabsContent value="apikeys" className="module-tab-content">
                     <APIKeysTab />
-                </TabPane>
-                <TabPane tab={t('settings.tabs.about')} itemKey="about">
+                </TabsContent>
+                <TabsContent value="about" className="module-tab-content">
                     <AboutTab />
-                </TabPane>
+                </TabsContent>
             </Tabs>
         </div>
     );

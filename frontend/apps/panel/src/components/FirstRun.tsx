@@ -1,4 +1,4 @@
-import { Button } from '@douyinfe/semi-ui';
+import { Button } from '@/components/ui/button';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { useGetContainerStatusQuery, useGetDockerStatusQuery } from '@/api/containerApi';
@@ -38,7 +38,7 @@ export default function FirstRun() {
                 <Link to="/host?tab=overview">{t('nav.host')}</Link>
                 <Link to="/containers">{t('nav.container')}</Link>
                 {daemon.isError || containers.isError
-                    ? <Button size="small" onClick={() => { void daemon.refetch(); if (daemon.currentData?.isActive) void containers.refetch(); }}>{t('common.retry')}</Button>
+                    ? <Button type="button" size="sm" variant="outline" onClick={() => { void daemon.refetch(); if (daemon.currentData?.isActive) void containers.refetch(); }}>{t('common.retry')}</Button>
                     : null}
             </div>
         </div>

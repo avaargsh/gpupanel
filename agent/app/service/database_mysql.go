@@ -628,7 +628,7 @@ func (u *MysqlService) CreateUser(req dto.MysqlUserCreate) error {
 			return buserr.New("ErrCmdIllegal")
 		}
 		if db == "*" {
-			return errors.New("global mysql privileges must be managed outside 1Panel")
+			return errors.New("global mysql privileges must be managed outside GPUPanel")
 		}
 		if _, ok := dbSet[db]; ok {
 			continue
@@ -941,7 +941,7 @@ func (u *MysqlService) GrantUser(req dto.MysqlGrantCreate) error {
 		return buserr.New("ErrCmdIllegal")
 	}
 	if req.DB == "*" {
-		return errors.New("global mysql privileges must be managed outside 1Panel")
+		return errors.New("global mysql privileges must be managed outside GPUPanel")
 	}
 	if err := checkMysqlNormalUser(req.Username); err != nil {
 		return err
@@ -975,7 +975,7 @@ func (u *MysqlService) RevokeGrant(req dto.MysqlGrantDelete) error {
 		return buserr.New("ErrCmdIllegal")
 	}
 	if req.DB == "*" {
-		return errors.New("global mysql privileges must be managed outside 1Panel")
+		return errors.New("global mysql privileges must be managed outside GPUPanel")
 	}
 	if err := checkMysqlNormalUser(req.Username); err != nil {
 		return err

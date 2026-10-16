@@ -10,7 +10,6 @@ import (
 	"github.com/avaargsh/GPUPanel/agent/app/model"
 	"github.com/avaargsh/GPUPanel/agent/buserr"
 	"github.com/avaargsh/GPUPanel/agent/global"
-	"github.com/avaargsh/GPUPanel/agent/utils/common"
 	"github.com/avaargsh/GPUPanel/agent/utils/xpack/providers"
 	"github.com/gin-gonic/gin"
 )
@@ -29,8 +28,15 @@ func (m *multiNodeHelper) StartClam(startClam *model.Clam, isUpdate bool) (int, 
 
 func (m *multiNodeHelper) LoadNodeInfo(isBase bool) (model.NodeInfo, error) {
 	var info model.NodeInfo
-	info.BaseDir = common.LoadParams("BASE_DIR")
-	info.Version = common.LoadParams("ORIGINAL_VERSION")
+	// BaseDir/Version are configured via embedded app.yaml; do not read inherited pctl.
+	info.BaseDir = global.CONF.Base.InstallDir
+	if info.BaseDir == "" {
+		info.BaseDir = "/opt"
+	}
+	info.Version = global.CONF.Base.Version
+	if info.Version == "" {
+		info.Version = "v2.0.0"
+	}
 	info.Scope = "master"
 	global.IsMaster = true
 	return info, nil

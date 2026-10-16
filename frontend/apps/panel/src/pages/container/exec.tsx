@@ -1,12 +1,14 @@
-import { useEffect, useMemo, useState } from 'react';
-import { Button, Card, Empty, Input, Select, Space, Typography } from '@douyinfe/semi-ui';
-import { IconTerminal } from '@douyinfe/semi-icons';
-import { useTranslation } from 'react-i18next';
 import { useListContainersQuery, type ContainerInfo } from '@/api/containerApi';
 import Terminal from '@/components/Terminal';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from '@/components/ui/empty';
+import { InputGroup, InputGroupAddon, InputGroupInput } from '@/components/ui/input-group';
 import { useAppSelector } from '@/store/hooks';
-
-const { Text } = Typography;
+import { TerminalIcon } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { Combobox } from './combobox';
 
 interface ContainerExecProps {
     target: ContainerInfo | null;
@@ -51,63 +53,78 @@ export default function ContainerExec({ target }: ContainerExecProps) {
 
     if (listQuery.isError) {
         return (
-            <Card title={t('container.exec.title')}>
-                <Empty title={t('container.overview.noData')} description={t('container.overview.backendOffline')} style={{ padding: '24px 0' }} />
+            <Card>
+                <CardHeader>
+                    <CardTitle>{t('container.exec.title')}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <Empty>
+                        <EmptyHeader>
+                            <EmptyTitle>{t('container.overview.noData')}</EmptyTitle>
+                            <EmptyDescription>{t('container.overview.backendOffline')}</EmptyDescription>
+                        </EmptyHeader>
+                    </Empty>
+                </CardContent>
             </Card>
         );
     }
 
     return (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            <Card title={t('container.exec.title')}>
-                <Space spacing={12} wrap>
-                    <Select
-                        placeholder={t('container.exec.selectContainer')}
-                        value={containerName || undefined}
-                        optionList={options}
-                        filter
-                        style={{ width: 260 }}
-                        onChange={(v) => setContainerName(String(v))}
-                    />
-                    <Input
-                        value={command}
-                        onChange={setCommand}
-                        style={{ width: 200 }}
-                        prefix={<Text type="tertiary">{t('container.exec.command')}</Text>}
-                    />
-                    <Input
-                        value={user}
-                        onChange={setUser}
-                        style={{ width: 160 }}
-                        placeholder={t('container.exec.userPlaceholder')}
-                        prefix={<Text type="tertiary">{t('container.exec.user')}</Text>}
-                    />
-                    <Button type="primary" icon={<IconTerminal />} disabled={!containerName} onClick={connect}>
-                        {t('container.exec.connect')}
-                    </Button>
-                </Space>
-                <Text type="tertiary" size="small" style={{ display: 'block', marginTop: 8 }}>
-                    {t('container.exec.hint')}
-                </Text>
+        <div className="module-section">
+            <Card>
+                <CardHeader>
+                    <CardTitle>{t('container.exec.title')}</CardTitle>
+                </CardHeader>
+                <CardContent className="flex flex-col gap-3">
+                    <div className="flex flex-wrap items-center gap-3">
+                        <Combobox
+                            className="w-[260px]"
+                            options={options}
+                            value={containerName || undefined}
+                            onChange={setContainerName}
+                            placeholder={t('container.exec.selectContainer')}
+                            emptyText={t('container.overview.noData')}
+                        />
+                        <InputGroup className="w-[200px]">
+                            <InputGroupAddon>{t('container.exec.command')}</InputGroupAddon>
+                            <InputGroupInput value={command} onChange={(e) => setCommand(e.target.value)} />
+                        </InputGroup>
+                        <InputGroup className="w-[160px]">
+                            <InputGroupAddon>{t('container.exec.user')}</InputGroupAddon>
+                            <InputGroupInput
+                                value={user}
+                                placeholder={t('container.exec.userPlaceholder')}
+                                onChange={(e) => setUser(e.target.value)}
+                            />
+                        </InputGroup>
+                        <Button disabled={!containerName} onClick={connect}>
+                            <TerminalIcon data-icon="inline-start" />
+                            {t('container.exec.connect')}
+                        </Button>
+                    </div>
+                    <p className="text-sm text-muted-foreground">{t('container.exec.hint')}</p>
+                </CardContent>
             </Card>
 
             {session && (
-                <Card
-                    title={`${t('container.exec.terminal')} · ${session.name}`}
-                    bodyStyle={{ padding: 12 }}
-                >
-                    <Terminal
-                        key={session.id}
-                        endpoint="/hosts/terminal/container"
-                        operateNode={currentNode || 'local'}
-                        queryParams={{
-                            source: 'container',
-                            containerid: session.name,
-                            command: session.command || '/bin/sh',
-                            user: session.user,
-                        }}
-                        height="46vh"
-                    />
+                <Card>
+                    <CardHeader>
+                        <CardTitle>{`${t('container.exec.terminal')} · ${session.name}`}</CardTitle>
+                    </CardHeader>
+                    <CardContent className="p-3">
+                        <Terminal
+                            key={session.id}
+                            endpoint="/hosts/terminal/container"
+                            operateNode={currentNode || 'local'}
+                            queryParams={{
+                                source: 'container',
+                                containerid: session.name,
+                                command: session.command || '/bin/sh',
+                                user: session.user,
+                            }}
+                            height="46vh"
+                        />
+                    </CardContent>
                 </Card>
             )}
         </div>

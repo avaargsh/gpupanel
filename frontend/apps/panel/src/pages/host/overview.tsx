@@ -1,10 +1,8 @@
-import { Card, Descriptions, Empty, Skeleton } from '@douyinfe/semi-ui';
-import {
-    IconArchive,
-    IconLayers,
-    IconPulse,
-    IconServer,
-} from '@douyinfe/semi-icons';
+import { Button } from '@/components/ui/button';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { Empty, EmptyHeader, EmptyTitle, EmptyDescription } from '@/components/ui/empty';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Server, Layers, Archive, Activity } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useGetBaseInfoQuery, useGetOsInfoQuery } from '@/api/dashboardApi';
 import StatCard from '@/components/StatCard';
@@ -17,41 +15,52 @@ export default function HostOverview() {
     const { t } = useTranslation();
     const os = useGetOsInfoQuery();
     const base = useGetBaseInfoQuery({ ioOption: 'all', netOption: 'all' });
-
     const loading = os.isLoading || base.isLoading;
     const failed = os.isError || base.isError;
-
     if (failed) {
         return (
-            <Card title={t('host.overview.title')}>
-                <Empty
-                    title={t('host.overview.noData')}
-                    description={t('host.overview.noDataDesc')}
-                    style={{ padding: '32px 0' }}
-                />
+            <Card className="host-overview-card">
+                <CardHeader>
+                    <CardTitle>{t('host.overview.title')}</CardTitle>
+                </CardHeader>
+                <CardContent className="host-overview-empty">
+                    <Empty className="py-8">
+                        <EmptyHeader>
+                            <EmptyTitle>{t('host.overview.noData')}</EmptyTitle>
+                            <EmptyDescription>{t('host.overview.noDataDesc')}</EmptyDescription>
+                        </EmptyHeader>
+                    </Empty>
+                    <Button
+                        variant="outline"
+                        onClick={() => {
+                            void os.refetch();
+                            void base.refetch();
+                        }}
+                    >
+                        {t('common.refresh')}
+                    </Button>
+                </CardContent>
             </Card>
         );
     }
-
     if (loading || !os.data || !base.data) {
         return (
-            <Card title={t('host.overview.title')}>
-                <Skeleton
-                    placeholder={
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
-                            <Skeleton.Title style={{ width: '100%', height: 72 }} />
-                            <Skeleton.Title style={{ width: '100%', height: 72 }} />
-                            <Skeleton.Title style={{ width: '100%', height: 72 }} />
-                            <Skeleton.Title style={{ width: '100%', height: 72 }} />
-                        </div>
-                    }
-                    loading
-                />
-                <Skeleton.Paragraph rows={3} style={{ marginTop: 20 }} />
+            <Card className="host-overview-card">
+                <CardHeader>
+                    <CardTitle>{t('host.overview.title')}</CardTitle>
+                </CardHeader>
+                <CardContent className="host-overview-skeleton">
+                    <div className="grid gap-3 sm:grid-cols-2">
+                        <Skeleton className="h-6 w-full w-full h-[72px]" />
+                        <Skeleton className="h-6 w-full w-full h-[72px]" />
+                        <Skeleton className="h-6 w-full w-full h-[72px]" />
+                        <Skeleton className="h-6 w-full w-full h-[72px]" />
+                    </div>
+                    <Skeleton className="h-24 w-full mt-5" />
+                </CardContent>
             </Card>
         );
     }
-
     const b = base.data;
     const infoItems = [
         { key: t('home.hostname'), value: b.hostname },
@@ -60,44 +69,45 @@ export default function HostOverview() {
         { key: t('home.kernel'), value: os.data.kernelVersion },
         { key: t('home.uptime'), value: b.timeSinceUptime },
     ];
-
     return (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            <Card title={t('host.overview.title')}>
-                <Descriptions
-                    data={infoItems}
-                    row
-                    size="small"
-                    style={{ maxWidth: 900 }}
-                />
+        <div className="host-overview">
+            <Card className="host-overview-card">
+                <CardHeader>
+                    <CardTitle>{t('host.overview.title')}</CardTitle>
+                </CardHeader>
+                <CardContent className="host-overview-info">
+                    <dl className="grid gap-3 sm:grid-cols-2">
+                        {infoItems.map((item, index) => (
+                            <div key={index}>
+                                <dt className="text-sm text-muted-foreground">{item.key}</dt>
+                                <dd className="text-sm break-all">{item.value}</dd>
+                            </div>
+                        ))}
+                    </dl>
+                </CardContent>
             </Card>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16 }}>
+            <div className="host-overview-stats">
                 <StatCard
                     title={t('home.cpu')}
                     value={`${(b.cpuUsedPercent ?? 0).toFixed(1)} %`}
                     percent={b.cpuUsedPercent}
-                    icon={<IconServer size="large" />}
+                    icon={<Server />}
                 />
                 <StatCard
                     title={t('home.memory')}
                     value={`${(b.memoryUsedPercent ?? 0).toFixed(1)} %`}
                     percent={b.memoryUsedPercent}
-                    icon={<IconLayers size="large" />}
-                    color="var(--semi-color-success)"
+                    icon={<Layers />}
+                    color="var(--primary)"
                 />
                 <StatCard
                     title={t('home.disk')}
                     value={`${(b.diskUsedPercent ?? 0).toFixed(1)} %`}
                     percent={b.diskUsedPercent}
-                    icon={<IconArchive size="large" />}
-                    color="var(--semi-color-warning)"
+                    icon={<Archive />}
+                    color="var(--primary)"
                 />
-                <StatCard
-                    title={t('home.load')}
-                    value={`${(b.load1 ?? 0).toFixed(2)}`}
-                    icon={<IconPulse size="large" />}
-                    color="var(--semi-color-info)"
-                />
+                <StatCard title={t('home.load')} value={`${(b.load1 ?? 0).toFixed(2)}`} icon={<Activity />} color="var(--primary)" />
             </div>
         </div>
     );

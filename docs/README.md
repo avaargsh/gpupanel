@@ -1,6 +1,7 @@
 # GPUPanel 文档入口
 
-当前工程使用 React 19 / Semi Design / pnpm，以及独立 Go Core、Agent 模块。
+当前工程使用 React 19 / pnpm，以及独立 Go Core、Agent 模块。
+前端已完成 [shadcn/ui + Tailwind 迁移](engineering/SHADCN_MIGRATION.md)，不再依赖 Semi Design。
 日常开发从下表进入；验收结论以对应日期、文件指纹或产物摘要为准。
 
 | 用途 | 文档 |
@@ -18,6 +19,8 @@
 | 当前真机安装结果 | [真实主机/终端/Docker链路](evidence/2026-10-16/host-install/RESULTS.md) |
 | 上一轮 VM 安装结果 | [本轮证据](evidence/2026-10-16/local-install/RESULTS.md) |
 | 1Panel 优化与本地 React 整合 | [整合说明](gpupanel/LOCAL_REMOTE_INTEGRATION.md) |
+| Apache 后端替换调研 | [agentaliyun / HolmesGPT 复用、缺口与迁移顺序](gpupanel/APACHE_BACKEND_REPLACEMENT_RESEARCH.md) |
+| Apache 后端替换执行 | [OpenCode 首批任务、隔离所有权与验收契约](engineering/APACHE_BACKEND_MIGRATION.md) |
 | 上一轮源码整合证据 | [历史证据](evidence/2026-10-15/remote-integration/RESULTS.md) |
 | 产品与后续门槛 | [ROADMAP](gpupanel/ROADMAP.md)、[GOLDEN_PATH](gpupanel/GOLDEN_PATH.md) |
 | 工程契约与贡献 | [AGENTS](../AGENTS.md)、[CONTRIBUTING](../CONTRIBUTING.md) |

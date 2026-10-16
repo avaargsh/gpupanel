@@ -8,7 +8,6 @@ import (
 
 	"github.com/avaargsh/GPUPanel/core/app/repo"
 	"github.com/avaargsh/GPUPanel/core/global"
-	"github.com/avaargsh/GPUPanel/core/utils/ctl_conf"
 	"github.com/gin-gonic/gin"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 	"golang.org/x/text/language"
@@ -211,14 +210,9 @@ func getLanguageFromDBInternal() string {
 	return lang
 }
 func getLanguageFrompctl() string {
-	info, err := ctl_conf.LoadFromFile("/usr/local/bin/pctl", "LANGUAGE")
-	if err != nil {
-		panic(err)
-	}
-	if len(info) == 0 || info == `""` {
-		panic("error `LANGUAGE` find in /usr/local/bin/pctl")
-	}
-	return info
+	// LANGUAGE is no longer read from inherited /usr/local/bin/pctl.
+	// Language is configured via embedded app.yaml or the settings API.
+	return ""
 }
 
 var cachedDBLang atomic.Value

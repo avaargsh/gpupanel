@@ -324,11 +324,7 @@ func snapBaseData(snap snapHelper, targetDir string, withDockerConf bool) error 
 		if err != nil {
 			return err
 		}
-		err = snap.FileOp.CopyFile("/usr/local/bin/pctl", targetDir)
-		snap.Task.LogWithStatus(i18n.GetWithName("SnapCopy", "/usr/local/bin/pctl"), err)
-		if err != nil {
-			return err
-		}
+	// pctl is no longer part of the GPUPanel runtime; skip backing up legacy ctl binary.
 	}
 
 	err := snap.FileOp.CopyFile("/usr/local/bin/gpupanel-agent", targetDir)
@@ -518,7 +514,7 @@ func snapPanelData(snap snapHelper, req dto.SnapshotCreate, targetDir string) er
 	excludes = append(excludes, "./db")
 	excludes = append(excludes, "./tmp")
 	if !req.WithSystemLog {
-		excludes = append(excludes, "./log/1Panel*")
+		excludes = append(excludes, "./log/1Panel*", "./log/GPUPanel*")
 	}
 	if !req.WithTaskLog {
 		excludes = append(excludes, "./log/task")

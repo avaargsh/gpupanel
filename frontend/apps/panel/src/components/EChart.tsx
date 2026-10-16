@@ -25,7 +25,9 @@ export default function EChart({ option, height = 260, themeKey }: EChartProps) 
         if (!el) return;
         if (chartRef.current) return;
         if (!el.clientWidth || !el.clientHeight) return;
-        const chart = echarts.init(el, undefined, { renderer: 'canvas' });
+        // 使用 themeKey（'light' | 'dark'）切换 ECharts 内置主题，避免暗色模式下图表仍用亮色画布。
+        const theme = themeKey === 'dark' ? 'dark' : undefined;
+        const chart = echarts.init(el, theme, { renderer: 'canvas' });
         chart.setOption(optionRef.current, true);
         chartRef.current = chart;
     };

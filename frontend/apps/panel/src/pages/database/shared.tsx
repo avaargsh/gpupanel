@@ -1,9 +1,10 @@
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Field, FieldLabel } from '@/components/ui/field';
+import { Input } from '@/components/ui/input';
+import { PencilIcon } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { Button, Modal, Typography } from '@douyinfe/semi-ui';
-import { IconEdit } from '@douyinfe/semi-icons';
 import { useTranslation } from 'react-i18next';
-
-const { Text } = Typography;
 
 /** 输入防抖：用于搜索框，避免每次按键都触发请求 */
 export function useDebouncedValue<T>(value: T, delay = 300): T {
@@ -28,6 +29,7 @@ export function DescriptionCell({ value, onSave }: DescriptionCellProps) {
     const { t } = useTranslation();
     const [open, setOpen] = useState(false);
     const [draft, setDraft] = useState(value ?? '');
+    const [saving, setSaving] = useState(false);
 
     const openEditor = () => {
         setDraft(value ?? '');
@@ -35,33 +37,52 @@ export function DescriptionCell({ value, onSave }: DescriptionCellProps) {
     };
 
     const handleOk = async () => {
-        await onSave(draft.trim());
-        setOpen(false);
+        setSaving(true);
+        try {
+            await onSave(draft.trim());
+            setOpen(false);
+        } catch {
+            // 保存失败时保持弹窗打开；调用方已负责错误提示
+        } finally {
+            setSaving(false);
+        }
     };
 
     return (
-        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-            <Text size="small" type={value ? 'primary' : 'tertiary'}>
-                {value || '-'}
-            </Text>
-            <Button size="small" theme="borderless" icon={<IconEdit />} onClick={openEditor} />
-            <Modal
-                title={t('database.common.description')}
-                visible={open}
-                onOk={handleOk}
-                onCancel={() => setOpen(false)}
-                okText={t('common.confirm')}
-                cancelText={t('common.cancel')}
-                width={420}
+        <span className="inline-flex items-center gap-1.5">
+            <span className={value ? 'text-sm text-primary' : 'text-sm text-muted-foreground'}>{value || '-'}</span>
+            <Button variant="ghost" size="icon-sm" onClick={openEditor} aria-label={t('database.common.description')}>
+                <PencilIcon />
+            </Button>
+            <Dialog
+                open={open}
+                onOpenChange={(next) => {
+                    if (!saving) setOpen(next);
+                }}
             >
-                <input
-                    className="semi-input semi-input-default"
-                    style={{ width: '100%', height: 32, padding: '0 12px', borderRadius: 4 }}
-                    value={draft}
-                    maxLength={256}
-                    onChange={(e) => setDraft(e.target.value)}
-                />
-            </Modal>
+                <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>{t('database.common.description')}</DialogTitle>
+                    </DialogHeader>
+                    <Field>
+                        <FieldLabel htmlFor="resource-description">{t('database.common.description')}</FieldLabel>
+                        <Input
+                            id="resource-description"
+                            value={draft}
+                            maxLength={256}
+                            onChange={(e) => setDraft(e.target.value)}
+                        />
+                    </Field>
+                    <DialogFooter>
+                        <Button variant="outline" disabled={saving} onClick={() => setOpen(false)}>
+                            {t('common.cancel')}
+                        </Button>
+                        <Button onClick={handleOk} disabled={saving}>
+                            {t('common.confirm')}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </span>
     );
 }

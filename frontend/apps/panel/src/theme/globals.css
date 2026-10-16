@@ -1,0 +1,159 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+/* GPUPanel vNext: 本地优先工作站视觉。
+   保留品牌蓝 #306FE6，在浅/深两模式下以“墨色墙面 + 白墙卡片 + 蓝色主动”区分层级，
+   避免渐变洗、统一圆角与 ALL-CAPS 标签等通用 SaaS 默认。 */
+@theme inline {
+    --font-heading: var(--font-sans);
+    --font-sans: Inter, system-ui, -apple-system, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Noto Sans CJK SC', 'Source Han Sans SC', 'Microsoft YaHei', sans-serif;
+    --color-sidebar-ring: var(--sidebar-ring);
+    --color-sidebar-border: var(--sidebar-border);
+    --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+    --color-sidebar-accent: var(--sidebar-accent);
+    --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+    --color-sidebar-primary: var(--sidebar-primary);
+    --color-sidebar-foreground: var(--sidebar-foreground);
+    --color-sidebar: var(--sidebar);
+    --color-chart-5: var(--chart-5);
+    --color-chart-4: var(--chart-4);
+    --color-chart-3: var(--chart-3);
+    --color-chart-2: var(--chart-2);
+    --color-chart-1: var(--chart-1);
+    --color-ring: var(--ring);
+    --color-input: var(--input);
+    --color-border: var(--border);
+    --color-destructive: var(--destructive);
+    --color-accent-foreground: var(--accent-foreground);
+    --color-accent: var(--accent);
+    --color-muted-foreground: var(--muted-foreground);
+    --color-muted: var(--muted);
+    --color-secondary-foreground: var(--secondary-foreground);
+    --color-secondary: var(--secondary);
+    --color-primary-foreground: var(--primary-foreground);
+    --color-primary: var(--primary);
+    --color-popover-foreground: var(--popover-foreground);
+    --color-popover: var(--popover);
+    --color-card-foreground: var(--card-foreground);
+    --color-card: var(--card);
+    --color-foreground: var(--foreground);
+    --color-background: var(--background);
+    --radius-sm: calc(var(--radius) * 0.6);
+    --radius-md: calc(var(--radius) * 0.8);
+    --radius-lg: var(--radius);
+    --radius-xl: calc(var(--radius) * 1.4);
+    --radius-2xl: calc(var(--radius) * 1.8);
+    --radius-3xl: calc(var(--radius) * 2.2);
+    --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+/* 浅色：白墙卡片置于淡灰墙面，品牌蓝作为唯一饱和主动色。 */
+:root {
+    --background: #f5f7fa;
+    --foreground: #171c24;
+    --card: #ffffff;
+    --card-foreground: #171c24;
+    --popover: #ffffff;
+    --popover-foreground: #171c24;
+    --primary: #306fe6;
+    --primary-foreground: #ffffff;
+    --secondary: #eef0f4;
+    --secondary-foreground: #171c24;
+    --muted: #eef0f4;
+    --muted-foreground: #6b7280;
+    --accent: #e9eef9;
+    --accent-foreground: #171c24;
+    --destructive: #b84f56;
+    --border: #e4e7ec;
+    --input: #d6dbe4;
+    --ring: #306fe6;
+    --chart-1: oklch(0.87 0 0);
+    --chart-2: oklch(0.556 0 0);
+    --chart-3: oklch(0.439 0 0);
+    --chart-4: oklch(0.371 0 0);
+    --chart-5: oklch(0.269 0 0);
+    --radius: 0.625rem;
+    --sidebar: #ffffff;
+    --sidebar-foreground: #171c24;
+    --sidebar-primary: #306fe6;
+    --sidebar-primary-foreground: #ffffff;
+    --sidebar-accent: #eef0f4;
+    --sidebar-accent-foreground: #171c24;
+    --sidebar-border: #e4e7ec;
+    --sidebar-ring: #306fe6;
+}
+
+/* 深色：墨色墙面，卡片稍亮，品牌蓝变为更明亮的 #7aa5ff，避免纯黑。 */
+.dark {
+    --background: #0a0c12;
+    --foreground: #edf0f7;
+    --card: #131822;
+    --card-foreground: #edf0f7;
+    --popover: #131822;
+    --popover-foreground: #edf0f7;
+    --primary: #7aa5ff;
+    --primary-foreground: #0a0c12;
+    --secondary: #252b37;
+    --secondary-foreground: #edf0f7;
+    --muted: #252b37;
+    --muted-foreground: #a7b0c1;
+    --accent: #252b37;
+    --accent-foreground: #edf0f7;
+    --destructive: #f0969b;
+    --border: #2a3040;
+    --input: #3b4558;
+    --ring: #7aa5ff;
+    --chart-1: oklch(0.87 0 0);
+    --chart-2: oklch(0.556 0 0);
+    --chart-3: oklch(0.439 0 0);
+    --chart-4: oklch(0.371 0 0);
+    --chart-5: oklch(0.269 0 0);
+    --sidebar: #131822;
+    --sidebar-foreground: #edf0f7;
+    --sidebar-primary: #7aa5ff;
+    --sidebar-primary-foreground: #0a0c12;
+    --sidebar-accent: #252b37;
+    --sidebar-accent-foreground: #edf0f7;
+    --sidebar-border: #2a3040;
+    --sidebar-ring: #7aa5ff;
+}
+
+@layer base {
+    * {
+        @apply border-border outline-ring/50;
+    }
+    body {
+        @apply bg-background text-foreground;
+    }
+}
+
+/* 字体必须写在分层之外：Eric Meyer reset（reset-css）未分层，其 `html { font: inherit }`
+   会盖过分层规则，使整个界面回退到浏览器默认字体（本机为衬线）。 */
+html {
+    font-family: var(--font-sans);
+}
+@layer base {
+    html, body, #root { width: 100%; min-height: 100%; margin: 0; }
+    body { -webkit-font-smoothing: antialiased; }
+    button:not(:disabled), [role="button"]:not(:disabled) { cursor: pointer; }
+}
+
+/* 页面级排版：左对齐，行长受控，句式大小写，禁止 ALL-CAPS 标签。 */
+@layer base {
+    h1, h2, h3, h4, h5, h6 {
+        @apply text-foreground font-semibold tracking-tight;
+    }
+    h1 { @apply text-2xl lg:text-3xl leading-tight; }
+    h2 { @apply text-xl lg:text-2xl leading-snug; }
+    h3 { @apply text-lg leading-snug; }
+    p, li, td, th, label, span, div {
+        @apply text-foreground;
+    }
+    .text-muted { @apply text-muted-foreground; }
+    .text-sm { @apply text-sm; }
+    .text-xs { @apply text-xs; }
+    .leading-relaxed { @apply leading-relaxed; }
+}

@@ -1,5 +1,5 @@
 import { useSearchParams } from 'react-router-dom';
-import { Tabs, TabPane } from '@douyinfe/semi-ui';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useTranslation } from 'react-i18next';
 import AccountsTab from './accounts';
 import LocalTab from './local';
@@ -7,30 +7,39 @@ import McpTab from './mcp';
 import GpuTab from './gpu';
 import AgentsTab from './agents';
 
+const TABS = ['accounts', 'local', 'mcp', 'gpu', 'agents'] as const;
+
 export default function AiPage() {
     const { t } = useTranslation();
     const [query, setQuery] = useSearchParams();
-    const tab = query.get('tab') || 'accounts';
+    const requested = query.get('tab') || 'accounts';
+    const tab = (TABS as readonly string[]).includes(requested) ? requested : 'accounts';
     const setTab = (value: string) => setQuery({ tab: value });
-
     return (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            <Tabs type="line" activeKey={tab} onChange={(k) => setTab(String(k))}>
-                <TabPane tab={t('ai.tabs.accounts')} itemKey="accounts">
+        <div className="module-shell">
+            <Tabs value={tab} onValueChange={setTab}>
+                <TabsList variant="line" className="module-tabs">
+                    {TABS.map((key) => (
+                        <TabsTrigger key={key} value={key}>
+                            {t(`ai.tabs.${key}`)}
+                        </TabsTrigger>
+                    ))}
+                </TabsList>
+                <TabsContent value="accounts" className="module-tab-content">
                     <AccountsTab />
-                </TabPane>
-                <TabPane tab={t('ai.tabs.local')} itemKey="local">
+                </TabsContent>
+                <TabsContent value="local" className="module-tab-content">
                     <LocalTab />
-                </TabPane>
-                <TabPane tab={t('ai.tabs.mcp')} itemKey="mcp">
+                </TabsContent>
+                <TabsContent value="mcp" className="module-tab-content">
                     <McpTab />
-                </TabPane>
-                <TabPane tab={t('ai.tabs.gpu')} itemKey="gpu">
+                </TabsContent>
+                <TabsContent value="gpu" className="module-tab-content">
                     <GpuTab />
-                </TabPane>
-                <TabPane tab={t('ai.tabs.agents')} itemKey="agents">
+                </TabsContent>
+                <TabsContent value="agents" className="module-tab-content">
                     <AgentsTab />
-                </TabPane>
+                </TabsContent>
             </Tabs>
         </div>
     );
