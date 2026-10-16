@@ -1,6 +1,29 @@
 import type { LocaleResource } from './zh';
 
 const en: LocaleResource = {
+    hostOps: {
+        "title": "Diagnostics & operations",
+        "localOnly": "Local host only. Remote execution is unavailable.",
+        "description": "Preview a fixed operation, inspect the exact target and impact, then confirm. No arbitrary shell commands.",
+        "operation": "Operation",
+        "diagnose": "Diagnose this host",
+        "restart": "Restart one container",
+        "containerId": "Full 64-character container ID",
+        "preview": "Preview operation",
+        "target": "Target host and resource",
+        "expires": "Confirmation expires",
+        "confirm": "Confirm and execute",
+        "receipts": "Operation receipts",
+        "retention": "Last 50 receipts for this login session. Records persist across Agent restarts; capacity is 500 globally.",
+        "loading": "Loading receipts…",
+        "loadError": "Receipts unavailable. Retry querying; do not repeat execution.",
+        "empty": "No operation receipts for this session.",
+        "noOutput": "No execution output recorded.",
+        "review": "Review this plan",
+        "planError": "Unable to prepare this operation. Verify the target and retry the preview.",
+        "uncertain": "Outcome is not confirmed. Query this receipt and inspect the target; do not repeat execution automatically."
+},
+
     workbench: {
         assistantLauncher: "AI assistant",
         assistantUnavailable: "Chat is not connected yet",

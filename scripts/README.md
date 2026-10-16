@@ -14,7 +14,7 @@
 | 来源与依赖清单 | `gpupanel-license-audit.py`、`gpupanel-artifact-license-audit.py`、`gpupanel-binary-buildinfo.py`、`gpupanel-dependency-audit.py` |
 | 旧商店来源审计 | `gpupanel-legacy-catalog-audit.py` |
 | 远程分支维护 | `gpupanel-prune-merged-branches.py`，默认 dry-run |
-| 模拟浏览器测试 | `browser/run-react-tests.py` |
+| 模拟浏览器测试 | `browser/run-react-tests.py`（含受控运维预览/确认/未知状态） |
 | 本机一次性 VM | `install-test/vm.py`；[安装手册](../docs/operations/local-install-test.md) |
 | GeoIP VM 修复复核 | `install-test/geoip.py`；[前提与范围](../docs/operations/geoip.md) |
 | 真机验收（限定本次主机） | `host-install/prepare.py`、`browser.py`、`runtime.py`；[操作边界](../docs/operations/host-install.md) |

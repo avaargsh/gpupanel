@@ -1,4 +1,27 @@
 const zh = {
+    hostOps: {
+        "title": "诊断与运维",
+        "localOnly": "仅支持本机，远程执行尚不可用。",
+        "description": "先预览固定操作，核对完整目标和影响，再确认执行。不接受任意 Shell 命令。",
+        "operation": "操作类型",
+        "diagnose": "诊断本机",
+        "restart": "重启指定容器",
+        "containerId": "完整的 64 位容器 ID",
+        "preview": "预览操作",
+        "target": "目标主机与资源",
+        "expires": "确认有效期至",
+        "confirm": "确认并执行",
+        "receipts": "操作回执",
+        "retention": "显示当前登录会话最近 50 条回执。Agent 重启后保留，全局最多 500 条。",
+        "loading": "正在读取回执…",
+        "loadError": "回执暂不可用，请重新查询，不要重复执行。",
+        "empty": "当前登录会话暂无操作回执。",
+        "noOutput": "暂无已记录的执行输出。",
+        "review": "查看并核对计划",
+        "planError": "无法准备操作，请检查目标后重新预览。",
+        "uncertain": "执行结果尚未确认。请查询该回执并核对目标，不要自动重复执行。"
+},
+
     workbench: {
         assistantLauncher: "AI 助手",
         assistantUnavailable: "聊天服务尚未接通",

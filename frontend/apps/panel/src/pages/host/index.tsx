@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import HostOverview from './overview';
 import HostMonitor from './monitor';
 import HostTerminal from './terminal';
+import HostOperations from './operations';
 
 /**
  * 主机模块（迁移自旧版 frontend/ 的 host 模块）。
@@ -25,6 +26,9 @@ export default function HostPage() {
                     <div style={{ paddingTop: 16 }}>
                         <HostMonitor />
                     </div>
+                </TabPane>
+                <TabPane itemKey="operations" tab={t('hostOps.title')}>
+                    <div style={{ paddingTop: 16 }}><HostOperations /></div>
                 </TabPane>
                 <TabPane itemKey="terminal" tab={t('host.tabs.terminal')}>
                     <div style={{ paddingTop: 16 }}>
