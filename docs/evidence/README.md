@@ -11,6 +11,7 @@ workflow run 承载；本地调试输出放已忽略的 `.local/`，不逐轮复
 | GeoIP | [摘要](2026-10-16/geoip/RESULTS.md)、文件/产物摘要、VM 回执 | 单项下载与查询 |
 | vNext 界面 | [摘要](2026-10-16/vnext-shell/RESULTS.md)、源码指纹、模拟回执、一张示例 | 模拟 API，非真实设备数据 |
 | 真机安装 | [摘要](2026-10-16/host-install/RESULTS.md)、运行/保留回执、产物摘要、一张截图 | 7599fd56c5cd 的历史终端与 Docker 验收 |
+| 本地主机诊断与受控运维 | [摘要](2026-10-16/host-operations/RESULTS.md)、安装核对与自有容器回执 | 私有 API/真实执行已测，已登录真机浏览器未测 |
 | Intel GPU | [摘要](2026-10-16/intel-gpu/RESULTS.md)、真实设备响应、更新核对 | a74e4c51b9e2 的设备识别；浏览器受验证码阻挡 |
 
 ## 新增与替换

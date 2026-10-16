@@ -1,0 +1,27 @@
+{
+  "kind": "LIVE installed private Agent diagnostics and public Core anonymous denials; not authenticated browser acceptance",
+  "runtimeSource": "d90a8c9be6eb442dcec8b33efdca5c2add95139f",
+  "checks": {
+    "public_anonymous_and_spoof_denied": true,
+    "strict_private_identity": true,
+    "plan_without_execution": true,
+    "unconfirmed_denied": true,
+    "real_host_diagnosis": true,
+    "repeated_confirmation_returns_same_receipt": true,
+    "foreign_session_receipt_denied": true,
+    "view_omits_owner_key_deadline": true,
+    "credentials_preserved": true,
+    "existing_task_rows_preserved": true,
+    "receipt_persisted": true,
+    "restored_backup_task_db_integrity": true
+  },
+  "binarySha256": {
+    "core": "efd1e277f82e53afa7250bf5fb226eb4d6d003c22c2d95f0f736207e1572328c",
+    "agent": "ae72c53e0948f652f9fed2f5707e2a260088dcae13880f06df1106568f0ec43b"
+  },
+  "backup": "/var/backups/gpupanel/installed-20261016T010722Z",
+  "diagnosticSummary": {
+    "hostnameMatchesMachine": true,
+    "acceleratorCount": 1
+  }
+}

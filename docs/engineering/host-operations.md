@@ -85,3 +85,5 @@ python3 scripts/browser/run-react-tests.py
 1024px 布局，不能代表安装中的浏览器→Core→Agent 通过。真实 Docker 用例为
 `TestOwnedDockerRestartLifecycle`，默认 SKIP；仅接受显式提供的本轮专用、无网络、
 无挂载、非特权 canary 的完整 ID 与匹配标签。不要向该用例传入业务容器。
+
+本轮固定源码、真实安装与 canary 结果见 [验收摘要](../evidence/2026-10-16/host-operations/RESULTS.md)。
