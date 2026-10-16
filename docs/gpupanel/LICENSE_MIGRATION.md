@@ -22,13 +22,15 @@ The scope of a derivative/combined work and any separate-process/service boundar
 | Gate | Goal | Evidence / acceptance | Current status |
 | --- | --- | --- | --- |
 | L0 | Preserve truthful licenses and upstream attribution | Root `LICENSE` stays GPLv3; `NOTICE.md` retains 1Panel credit and baseline; no claims of Apache-only project licensing | **PASS (document check only)** |
-| L1 | Establish file-level provenance | Inventory all shipped source/assets/generated files, origin SHA and copyright holder; mark copied/derived/modified/independent/third-party/unknown; audit every exception | **NOT STARTED** |
-| L2 | Introduce clearly owned independent components | File-level Apache-2.0 declaration **only after** provenance + contributor authority + dependency review; preserve prior third-party license texts; include official Apache license copy when used | **NOT STARTED** |
+| L1 | Establish file-level provenance | Inventory all shipped source/assets/generated files, origin SHA and copyright holder; mark copied/derived/modified/independent/third-party/unknown; audit every exception | **PARTIAL: Git provenance + Go/pnpm lock + installed pnpm license-hash evidence; rights and final artifact not cleared** |
+| L2 | Introduce clearly owned independent components | File-level Apache-2.0 declaration **only after** provenance + contributor authority + dependency review; preserve prior third-party license texts; include official Apache license copy when used | **PILOT: six independently authored audit files only; no Core/Agent/React rights grant** |
 | L3 | Remove inherited GPL implementation from intended Apache distribution | Replace or omit GPL-derived components with independently authored, reviewed code or secure explicit rights-holder permissions; review linking, packaging and process boundaries | **NOT STARTED** |
-| L4 | Scan the actual release artifact | Source + dependency/asset/SBOM inventory, license/NOTICE completeness, packaged binaries/static frontend, reproducible CI report with no unresolved restricted content | **NOT STARTED** |
+| L4 | Scan the actual release artifact | Source + dependency/asset/SBOM inventory, license/NOTICE completeness, packaged binaries/static frontend, reproducible CI report with no unresolved restricted content | **PARTIAL: preview notice checks; actual installable bundle licenses/SBOM not accepted** |
 | L5 | Change release-wide license declarations | Written sign-off on all rights, code and artifacts; legal review; only then change root `LICENSE`, README, package metadata, badges and release claims in a dedicated PR | **BLOCKED until L1–L4** |
 
 Do not treat `L0` as evidence of conversion. A passing build or a file's presence in a fork-specific Git diff does not prove independent copyright ownership.
+
+Current actionable dependency review and real pinned CI evidence: [2026-10-16 dependency gaps](APACHE_DEPENDENCY_GAPS_2026-10-16.md). The file-scoped Apache pilot is defined in [APACHE_FILE_SCOPE.md](APACHE_FILE_SCOPE.md).
 
 ## File classification and decision rubric
 
@@ -51,7 +53,7 @@ Do not assume any `added` file in `git diff upstream..HEAD` is Apache-eligible: 
 
 | Area | Immediate handling | Why |
 | --- | --- | --- |
-| `core/`, `agent/`, inherited `frontend/` | KEEP_GPL until reviewed/replaced | Existing fork relies on 1Panel Core, Linux Agent, Vue views, API behavior and module imports |
+| `core/`, `agent/`, derived/reused frontend code | KEEP_GPL until reviewed/replaced | Current fork retains 1Panel-derived Core and Linux Agent alongside independently evolved React 19/Semi frontend; review copied/adapted API and assets per file |
 | `frontend/src/assets/` and branding | THIRD_PARTY_REVIEW / CANDIDATE_APACHE | Confirm each image/font/logo's origin and creator; product trademarks are a separate matter |
 | `catalog/`, `profiles/`, `scripts/`, `docs/gpupanel/` | CANDIDATE_APACHE *per file only* | Newer project-specific material exists, but Git-added status does not prove all rights |
 | Future separately authored desktop tooling, SDKs, provider integrations | Prefer independent Apache-2.0 deliverables after review | Can establish clean ownership early without promising the original 1Panel-based binary is Apache-only |
