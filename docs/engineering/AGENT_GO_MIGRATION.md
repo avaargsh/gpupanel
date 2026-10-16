@@ -21,7 +21,7 @@
 
 运行状态、PID、完整提示和日志保存在已忽略的 `.local/agent-go-migration/`。
 monitor 已提交 `1acab29ad169`，operations 已提交 `96442b68fe48`，交接齐全；
-协调者在各自提交独立执行 race 测试及 vet 均通过，独立源码审查进行中。
+协调者在各自提交独立执行 race 测试及 vet 均通过，独立源码审查中，operation 已收到 REQUEST_CHANGES。
 迁移清单经独立审查 ACCEPT 后修正为 `f5ef92e14b4a`，已纳入
 `integration/agent-go-20261016`。主分支未变，Go 包尚未集成或运行接线。
 
@@ -50,3 +50,12 @@ security 中特权扫描、内核/eBPF、GPL 规则和云端协议按来源单�
 
 恢复：仅回退本轮源码提交；不部署、不删除现有数据或备份。执行完成后更新本文件
 及能力清单的真实状态，不复用旧任务的历史 PASS。
+
+## 独立审查返工
+
+operation `96442b68fe48` 的独立审查回执已生成（本地 reviewer worktree
+`.local/review.json`），结论 REQUEST_CHANGES：清除/重启后幂等记忆丢失，必须明确
+禁止在缺少持久结果依据时自动重执行；owner 离开后全局容量回收责任须冻结。
+原作者继续在同一 worktree 修订包内契约/设计记录、Reconcile owner 输入界限、
+unknown 观测语义及其回归测试。另须检查超时 unknown 超过旧 TTL 后是否仍可查询。
+新提交尚未返回；旧提交不予集成。monitor 最终源码审查回执尚未返回，不记为通过。
