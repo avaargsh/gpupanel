@@ -1,7 +1,7 @@
 import { newInstallTaskID } from './InstallModal';
 import EvidenceSheet from './EvidenceSheet';
 import { useAppSelector } from '@/store/hooks';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
     Banner,
     Button,
@@ -485,6 +485,10 @@ export default function InstalledTab({ upgradeOnly = false }: { upgradeOnly?: bo
     const [nameInput, setNameInput] = useState('');
     const name = useDebouncedValue(nameInput);
     const node = useAppSelector((state) => state.ui.currentNode) || 'local';
+    const nodeRef = useRef(node);
+    nodeRef.current = node;
+    // All dialogs are scoped to their opening Host; closing on a switch is not authorization.
+    const [dialogNode, setDialogNode] = useState(node);
     const [evidenceId, setEvidenceId] = useState<number | null>(null);
     const [uninstallRow, setUninstallRow] = useState<AppInstallDto | null>(null);
     const [upgradeRow, setUpgradeRow] = useState<AppInstallDto | null>(null);
@@ -497,11 +501,30 @@ export default function InstalledTab({ upgradeOnly = false }: { upgradeOnly?: bo
         setPage(1);
     }, [name]);
 
-    const listQuery = useSearchInstalledQuery({ page, pageSize, name, tags: [], update: upgradeOnly, sync: false });
-    const rows = listQuery.currentData?.items ?? [];
+    useEffect(() => {
+        setDialogNode(node);
+        setPage(1);
+        setEvidenceId(null);
+        setUninstallRow(null);
+        setUpgradeRow(null);
+        setParamsRow(null);
+        setIgnoreRow(null);
+        setIgnoredOpen(false);
+        setSortOpen(false);
+    }, [node]);
+
+    const listQuery = useSearchInstalledQuery(
+        { scopeNode: node, page, pageSize, name, tags: [], update: upgradeOnly, sync: false },
+        { refetchOnMountOrArgChange: true },
+    );
+    // During host switch/refresh, do not expose stale entries as actionable rows.
+    const rows = listQuery.isError || listQuery.isFetching ? [] : (listQuery.currentData?.items ?? []);
     const [op, { isLoading: operating }] = useInstalledOpMutation();
 
     const doOperate = (row: AppInstallDto, operate: string) => {
+        if (nodeRef.current !== node || listQuery.isError || listQuery.isFetching) {
+            return Toast.warning('主机已切换或列表过期，请刷新 / Host changed or list is stale; refresh first');
+        }
         if (row.status.toUpperCase() === 'UNKNOWN') return Toast.warning('先核对未知安装状态 / Review UNKNOWN installation first');
         const label = operate === 'delete' ? 'uninstall' : operate;
         Modal.confirm({
@@ -511,6 +534,10 @@ export default function InstalledTab({ upgradeOnly = false }: { upgradeOnly?: bo
             cancelText: t('common.cancel'),
 
             onOk: async () => {
+                if (nodeRef.current !== node) {
+                    Toast.warning('主机已切换，操作已取消 / Host changed; operation cancelled');
+                    return;
+                }
                 try {
                     await op({ installId: row.id, operate, taskID: uuid() }).unwrap();
                     Toast.success(t('apps.install.success'));
@@ -584,7 +611,14 @@ export default function InstalledTab({ upgradeOnly = false }: { upgradeOnly?: bo
                 {!upgradeOnly && <Button onClick={() => setSortOpen(true)}>{t('apps.actions.sort')}</Button>}
             </Space>
 
-            {listQuery.isError ? <Banner type="danger" description="列表加载失败，请重试 / List failed; retry" /> : null}
+            {listQuery.isError ? (
+                <Banner type="danger" description={
+                    <Space>
+                        <Text>列表加载失败，数据未确认 / Installed list unavailable; data unverified</Text>
+                        <Button size="small" onClick={() => listQuery.refetch()}>重试 / Retry</Button>
+                    </Space>
+                } />
+            ) : null}
             <Table
                 rowKey="id"
                 columns={columns}
@@ -598,18 +632,18 @@ export default function InstalledTab({ upgradeOnly = false }: { upgradeOnly?: bo
                     onPageSizeChange: setPageSize,
                     pageSizeOpts: [10, 20, 50],
                 }}
-                empty={<Text type="tertiary">{t('apps.installed.empty')}</Text>}
+                empty={<Text type="tertiary">{listQuery.isError ? '读取失败，请重试 / Load failed; retry' : t('apps.installed.empty')}</Text>}
             />
 
-            {evidenceId !== null && <EvidenceSheet key={`${node}:${evidenceId}`} id={evidenceId} onClose={() => setEvidenceId(null)} />}
-            {uninstallRow && <UninstallModal row={uninstallRow} onClose={() => setUninstallRow(null)} />}
-            {upgradeRow && <UpgradeModal row={upgradeRow} onClose={() => setUpgradeRow(null)} />}
-            {paramsRow && <ParamsModal row={paramsRow} onClose={() => setParamsRow(null)} />}
-            {ignoreRow && (
+            {dialogNode === node && evidenceId !== null && <EvidenceSheet key={`${node}:${evidenceId}`} id={evidenceId} onClose={() => setEvidenceId(null)} />}
+            {dialogNode === node && uninstallRow && <UninstallModal row={uninstallRow} onClose={() => setUninstallRow(null)} />}
+            {dialogNode === node && upgradeRow && <UpgradeModal row={upgradeRow} onClose={() => setUpgradeRow(null)} />}
+            {dialogNode === node && paramsRow && <ParamsModal row={paramsRow} onClose={() => setParamsRow(null)} />}
+            {dialogNode === node && ignoreRow && (
                 <IgnoreModal row={ignoreRow} onClose={() => setIgnoreRow(null)} onSaved={() => listQuery.refetch()} />
             )}
-            {ignoredOpen && <IgnoredListModal onClose={() => setIgnoredOpen(false)} />}
-            {sortOpen && (
+            {dialogNode === node && ignoredOpen && <IgnoredListModal onClose={() => setIgnoredOpen(false)} />}
+            {dialogNode === node && sortOpen && (
                 <SortModal
                     rows={rows}
                     onClose={() => {
