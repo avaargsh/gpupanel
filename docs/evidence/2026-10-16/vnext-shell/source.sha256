@@ -4,7 +4,7 @@ f8b08dff52e4c492d3fad2112bbaa51d73da94e0ed0f158c29d87ba82710ab91  frontend/apps/
 f9e51f8ef5d2ddb6b720d7ccf67a1b9ebb53f3fb85ea485c882d6a386e1061ef  frontend/apps/panel/src/i18n/locales/en.ts
 0420a4db30c80958ed6c9ef4e08dc11b1291f1f39e97c1d947b97c622dc20d1f  frontend/apps/panel/src/i18n/locales/zh.ts
 280a09e03489209d0a7ab7e0916bf23a252f9047bf0f03addf1604ac5775e369  frontend/apps/panel/src/layout/AppLayout.tsx
-089d8ea74897d73586a1c81b0718946caec981c2bdb3ba7d72aa261f834458fa  frontend/apps/panel/src/layout/Header.tsx
+d443ce5ee5f5217f3bbab584b289b4f7c7042fc32d9dad02bdc28d318e9474ba  frontend/apps/panel/src/layout/Header.tsx
 adb333f02653757cc86e254edc87d62f1c78f5e385224a6dc9d230f06480a0cd  frontend/apps/panel/src/layout/HostScope.tsx
 329f9b44f3524e96a6f502c36bf92bd41fe53a799b1ef66fc424dcb27c54c2af  frontend/apps/panel/src/layout/workspace.css
 779b8cf7b8750b5d4d845fd5e8ae455352d9a56fbf75bf2839388265b2c32bd0  frontend/apps/panel/src/main.tsx

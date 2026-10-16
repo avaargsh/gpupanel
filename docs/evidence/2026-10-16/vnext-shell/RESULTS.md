@@ -110,3 +110,23 @@ M0 G3–G6 与产品 10 项整体验收不因这次 Shell 改动解除阻塞。
   未做键盘/读屏自动化（仅人工确认标签与 aria 属性未移除）。
 - 未提交：改动仍在工作区。回退方式为丢弃前端工作区改动并重新构建；无 schema、迁移、
   业务数据或运行中服务受影响。
+
+## OpenCode 修复与独立集成复验（2026-10-16）
+
+本节更新上文“未提交”状态：原工作区完整保存为 `c67bc597ca83`，
+OpenCode 修复为 `ed228acac439`，独立浏览器复验基线为
+`8ef8abb5713a20be4e824e8e42b3da2a6bb5e7ba`。修复五处迁移后失效的断言：
+恢复按钮语言、GPU 快捷入口数量、深色卡片颜色、Host 名称位置、窄屏 Host 标识。
+保留安装防重、UNKNOWN 拒绝、MFA、脱敏与作用域切换行为断言。
+
+协调者独立执行（均退出 0）：
+- `cd frontend && pnpm install --frozen-lockfile && pnpm typecheck && pnpm test && pnpm build`：20 项单元测试通过，生产构建通过。
+- `python3 scripts/browser/run-react-tests.py`：三组模拟浏览器检查通过；覆盖键盘、深浅色、中英文、1440/1280/1024/640 布局、会话与安装负向场景。
+- `python3 -m unittest discover -s scripts/tests -p 'test_gpupanel_*.py' -v`：246 项通过。
+- Core、Agent 各 `go test ./... -count=1 -timeout=120s`，backend `go test -race ./...`：命令通过；受环境门槛保护的测试不代表真实 Docker/Agent 验收。后端源码自基线未变。
+- `python3 scripts/gpupanel-evidence-budget.py`：通过。
+
+最终清除 Header 文件末尾空行并同步文件指纹；不改变行为。完整任务日志及交接保留在
+忽略的 `.local/bugfix-integration/`，不新增证据附件。
+NOT RUN：远程 CI、真实安装/升级/恢复、线上业务操作与人工读屏审查。
+回退：撤销本轮集成/修复提交后重新构建；原始补丁和恢复 stash 保留，未改 schema 或服务。

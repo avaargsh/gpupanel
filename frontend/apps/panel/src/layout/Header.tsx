@@ -164,5 +164,3 @@ export function LocalModeChip({ node }: { node: string }) {
         </span>
     );
 }
-
-
