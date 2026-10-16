@@ -25,12 +25,27 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 RED=$'\033[0;31m'; GREEN=$'\033[0;32m'; YELLOW=$'\033[0;33m'; BLUE=$'\033[0;34m'; NC=$'\033[0m'
-LOG_FILE="$SCRIPT_DIR/install.log"
-[ ! -L "$LOG_FILE" ] || { printf "refuse symlinked install log\n" >&2; exit 1; }
-: >> "$LOG_FILE"
-chmod 0600 "$LOG_FILE"
-
-log()  { printf '%s\n' "$*" | tee -a "$LOG_FILE"; }
+# No payload/source writes before argument and collision validation.
+LOG_FILE=""
+LOG_READY=0
+log() {
+    if [ "$LOG_READY" = "1" ]; then
+        printf '%s\n' "$*" | tee -a "$LOG_FILE"
+    else
+        printf '%s\n' "$*"
+    fi
+}
+init_install_log() {
+    LOG_FILE="$PANEL_DIR/log/install.log"
+    [ ! -L "$PANEL_DIR" ] && [ ! -L "$PANEL_DIR/log" ] && [ ! -L "$LOG_FILE" ] \
+        || die "refuse symlinked installation log path"
+    mkdir -p "$PANEL_DIR/log"
+    [ ! -L "$PANEL_DIR/log" ] && [ ! -L "$LOG_FILE" ] \
+        || die "refuse redirected installation log"
+    : >> "$LOG_FILE"
+    chmod 0600 "$LOG_FILE"
+    LOG_READY=1
+}
 info() { log "$(printf '%b' "${BLUE}[GPUPanel]${NC} $*")"; }
 ok()   { log "$(printf '%b' "${GREEN}[GPUPanel]${NC} $*")"; }
 warn() { log "$(printf '%b' "${YELLOW}[GPUPanel]${NC} $*")"; }
@@ -286,7 +301,7 @@ fi
 [ -n "$ENTRANCE" ] || ENTRANCE="$(gen_hex 10)"
 ENTRANCE="${ENTRANCE#/}"
 case "$ENTRANCE" in
-    *[!A-Za-z0-9_-]*|"") die "invalid entrance '$ENTRANCE' (use 3-30 chars of A-Za-z0-9_-)" ;;
+    *[!A-Za-z0-9_-]*|"") die "invalid entrance (use 3-30 chars of A-Za-z0-9_-; input omitted)" ;;
 esac
 
 # pctl is both a bash script and a KEY=VALUE file read by the Go binaries, so a
@@ -294,9 +309,9 @@ esac
 # readers (or the sed that writes it).
 assert_kv_safe() {
     case "$2" in
-        *[[:space:]]*) die "$1 may not contain whitespace: $2" ;;
+        *[[:space:]]*) die "$1 may not contain whitespace (input omitted)" ;;
         *"'"*|*'"'*|*"\\"*|*"$"*|*"\`"*|*";"*|*"&"*|*"|"*|*"("*|*")"*|*"<"*|*">"*)
-            die "$1 may not contain quotes or shell metacharacters: $2" ;;
+            die "$1 may not contain quotes or shell metacharacters (input omitted)" ;;
     esac
 }
 assert_kv_safe BASE_DIR "$BASE_DIR"
@@ -307,6 +322,8 @@ assert_kv_safe PASSWORD  "$PASSWORD"
 VERSION="$(read_kv "$PCTL_SRC" ORIGINAL_VERSION)"
 [ -n "$VERSION" ] || VERSION="${old_version:-v0.1.0}"
 
+# First durable write is after read-only preflight and secret-safe validation.
+init_install_log
 banner
 info "installing GPUPanel $VERSION to $PANEL_DIR"
 [ -n "$PAYLOAD" ] && info "payload: $PAYLOAD"
