@@ -186,9 +186,9 @@ class LocalRunnerTest(unittest.TestCase):
         self.assertEqual(claim["intentId"], bound["intentId"])
         self.assertEqual(claim["planDigest"], bound["planDigest"])
         self.assertEqual(len(claim["receiptDigest"]), 64)
-        digest = hashlib.sha256(("GPUPanel-local-evidence-v1\\n" +
-            claim["intentId"] + "\\n" + claim["planDigest"] + "\\n" +
-            claim["receiptDigest"] + "\\n").encode()).hexdigest()
+        digest = hashlib.sha256(("GPUPanel-local-evidence-v1\n" +
+            claim["intentId"] + "\n" + claim["planDigest"] + "\n" +
+            claim["receiptDigest"] + "\n").encode()).hexdigest()
         self.assertEqual(claim["evidenceDigest"], digest)
         target = local.workspace_target(self.home, bound["workspaceId"])
         self.assertEqual(local.uv.status(target, self.home)["status"], "VERIFIED")
