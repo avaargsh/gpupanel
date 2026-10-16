@@ -3,7 +3,7 @@
 状态：**源码评审候选，未接入任何运行服务**。本模块是 Apache 后端替换方向的
 首个独立实现切片（见 [APACHE_BACKEND_MIGRATION](../docs/engineering/APACHE_BACKEND_MIGRATION.md)、
 [替换调研](../docs/gpupanel/APACHE_BACKEND_REPLACEMENT_RESEARCH.md)），
-当前仅包含两个只读 Host 采集器包（`hostobserve`、`hostmetrics`），
+当前包含两个只读 Host 采集器（`hostobserve`、`hostmetrics`）及内存操作状态机 `operation`，
 不包含 HTTP 服务、登录、路由、安装器或数据库，也未接入任何运行服务。
 
 - 模块路径：`github.com/avaargsh/GPUPanel/backend`
@@ -107,8 +107,8 @@ overflow/NaN/Inf/负数/非整数；恰好等于上限与超过上限的输入�
   见 [AGENT_GO_MIGRATION](../docs/engineering/AGENT_GO_MIGRATION.md)，接线时必须使用
   固定系统路径。`internal/hostobserve/` 亦已接收（`8ff4a2b58e46` + 审查修订
   `a8d0e6187f82`）。
-- **operation 状态机不在本模块当前树内**：`backend/internal/operation/` 候选
-  `6b600eaf9409` 已完成首轮返工，正在独立复审，**blocked、未集成**；不得据其存在宣称账本已交付。
+- **operation 状态机已在集成树内**：`backend/internal/operation/` 候选
+  `6b600eaf9409` 独立功能复审 ACCEPT；变更用途仍受 D1/D2 门槛约束；不得据其存在宣称账本已交付。
 
 ## 来源与许可限制
 
