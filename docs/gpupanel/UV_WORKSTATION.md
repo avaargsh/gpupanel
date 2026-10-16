@@ -54,6 +54,21 @@ Defaults to `~/GPUPanel/projects/uv-python-starter`. To select another destinati
 
 The source contract does not include a trusted locked **PyTorch/Jupyter** dependency profile, pre-populated wheel cache or local mirror. `uv run --offline` may fail for projects that subsequently add dependencies unless they are already available from a trusted local cache. That absence must not be concealed as success. A future template step should add curated version-specific locks and verified offline artifacts without creating another installer.
 
+## 查看当前用户的已有项目（只读）
+
+已支持对 `~/GPUPanel/projects` 下**直接子目录**中的两类已知回执进行统一发现：
+
+```bash
+python3 scripts/gpupanel-project-inventory.py list
+python3 scripts/gpupanel-project-inventory.py list --json
+```
+
+- uv starter：`VERIFIED` 表示初始锁与文件摘要匹配；用户修改后的 `MODIFIED` 不是自动删除/恢复指令。
+- 本地 Catalog starter：`INSTALLED` 表示审核模板与当前文件摘要吻合；更改后的 `DRIFT` 表示需要人工检查，不覆盖代码。
+- 同目录两个回执为 `CONFLICT`；无法完整验证的回执不视为可信项目。普通无回执目录完全不列出。
+- 只扫描最多 1000 个直接子目录，拒绝目录符号链接与越过用户 Home 的路径；不会执行用户代码、调用 uv、启动容器或重写任何项目。结果仅是当前用户的**本地回执发现**，不是多租户 Project ID、Core 的持久数据库、运行会话、资源配额或 Web 授权。
+- `--projects-dir` 可指定当前用户 Home 内的另一目录；机器读取使用 `--json`。不要把可写入的目标路径直接从浏览器透传给 Agent。
+
 ## Check locked dependencies before offline setup
 
 GPUPanel adds **two distinct operations** for a Python uv project that contains `pyproject.toml` and `uv.lock`. These do not install anything into the original project:
