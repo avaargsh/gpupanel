@@ -46,4 +46,10 @@ worktree。保留外部 /api/v1 和持久模式；无兼容 facade、双写或�
 主分支 `5fd75f8403ba` 的 Python 契约：
 `python3 -m unittest discover -s scripts/tests -p 'test_gpupanel_*.py'`，
 退出码 0，256 项通过；只证明本机 Python 契约，不覆盖其他门禁。
-frontend/Core/Agent 在集成分支的基线检查已启动，结果待记录。
+在集成分支 `58dfb2f4d673`（仅治理文档比冻结基线新增）执行：
+
+- frontend：`pnpm install --frozen-lockfile && pnpm typecheck && pnpm test && pnpm build`，退出 0，20 项测试通过。
+- Agent：`go test ./... -count=1 -timeout=120s`，退出 0；普通测试不能证明环境门控的真实 Docker/socket 用例。
+- Core：相同命令第一次退出 1，缺少 `go:embed all:assets` 构建前置产物；将本轮真实 React build 的 assets/index 放入隔离 worktree 的忽略生成目录后复跑，退出 0。未覆盖跟踪源码或填入假页面。
+
+这些是本机源码/单元契约检查，不证明远程 CI、浏览器业务、安装、升级或回滚通过。
