@@ -94,6 +94,17 @@ const en: LocaleResource = {
     "observations": "Readiness checks"
 },
     projectRegistry: {
+        preparation: "Workspace preparation intent",
+        preparationWarning: "This saves an approved intent only. No non-root Host runner is wired; no files, packages, containers or GPU sessions are started.",
+        planUnavailable: "Plan unavailable or Workspace state changed.",
+        profile: "Pinned offline profile",
+        runner: "Runner",
+        runnerNotBound: "Not bound (not executing)",
+        planDigest: "Plan digest",
+        intentRecorded: "Intent persisted (not executed)",
+        requestPreparation: "Confirm and record intent",
+        requestUnknown: "Save outcome unknown. Refresh the durable status before retrying.",
+
         detail: "Project details",
         back: "Back to projects",
         detailUnavailable: "Project not found, unauthorized, or unavailable; cached details are hidden.",

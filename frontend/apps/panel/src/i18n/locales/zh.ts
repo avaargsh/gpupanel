@@ -92,6 +92,17 @@ const zh = {
     "observations": "就绪检查"
 },
     projectRegistry: {
+        preparation: "Workspace 准备意图",
+        preparationWarning: "这只保存经过授权的准备意图。还没有普通用户 Host 执行器，不会创建目录、安装软件或启动 GPU 环境。",
+        planUnavailable: "计划不可读取或 Workspace 状态已变更。",
+        profile: "固定离线模板",
+        runner: "执行器",
+        runnerNotBound: "尚未绑定（不会执行）",
+        planDigest: "计划摘要",
+        intentRecorded: "意图已持久化（没有执行）",
+        requestPreparation: "确认并记录准备意图",
+        requestUnknown: "保存结果不确定，请先刷新查看状态，不要直接重复提交。",
+
         detail: "项目详情",
         back: "返回项目列表",
         detailUnavailable: "项目不存在、当前会话无权限或读取失败；不会显示缓存详情。",

@@ -26,8 +26,46 @@ export type ProjectRegistration = {
     sourceHint: 'uv' | 'catalog' | 'manual';
 };
 
+
+export interface ProvisionIntent {
+    id: string;
+    projectId: string;
+    workspaceId: string;
+    state: 'AwaitingHostBinding';
+    planDigest: string;
+    profile: string;
+}
+
+export interface ProvisionPlan {
+    projectId: string;
+    workspaceId: string;
+    profile: 'uv-python-stdlib-offline-v1';
+    planDigest: string;
+    workspaceState: 'NotProvisioned';
+    executionAvailable: false;
+    blocker: 'HostRunnerUnbound';
+    intent: ProvisionIntent | null;
+}
+
+export type WorkspaceRef = { projectId: string; workspaceId: string };
+
 export const projectApi = baseApi.injectEndpoints({
     endpoints: (build) => ({
+        getProvisionPlan: build.query<ProvisionPlan, WorkspaceRef>({
+            query: ({ projectId, workspaceId }) => ({
+                url: `/core/projects/${encodeURIComponent(projectId)}/workspaces/${encodeURIComponent(workspaceId)}/provision-plan`,
+                method: 'GET',
+            }),
+            providesTags: ['Project'],
+        }),
+        requestProvisionIntent: build.mutation<ProvisionPlan, WorkspaceRef & { planDigest: string }>({
+            query: ({ projectId, workspaceId, planDigest }) => ({
+                url: `/core/projects/${encodeURIComponent(projectId)}/workspaces/${encodeURIComponent(workspaceId)}/provision-intent`,
+                method: 'POST',
+                body: { planDigest },
+            }),
+            invalidatesTags: ['Project'],
+        }),
         getProject: build.query<RegisteredProject, string>({
             query: (id) => ({ url: `/core/projects/${encodeURIComponent(id)}`, method: 'GET' }),
             providesTags: ['Project'],
@@ -43,4 +81,4 @@ export const projectApi = baseApi.injectEndpoints({
     }),
 });
 
-export const { useGetProjectsQuery, useGetProjectQuery, useRegisterProjectMutation } = projectApi;
+export const { useGetProjectsQuery, useGetProjectQuery, useRegisterProjectMutation, useGetProvisionPlanQuery, useRequestProvisionIntentMutation } = projectApi;
