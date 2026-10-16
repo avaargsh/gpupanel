@@ -14,5 +14,6 @@ func (s *ProjectRouter) InitRouter(root *gin.RouterGroup) {
 		Use(middleware.PasswordExpired())
 	api := v1.ApiGroupApp.BaseApi
 	group.GET("", api.ListProjects)
+	group.GET("/:id", api.GetProject)
 	group.POST("", api.CreateProject)
 }
