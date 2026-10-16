@@ -12,7 +12,6 @@ import (
 	cmdUtils "github.com/avaargsh/GPUPanel/core/utils/cmd"
 	"github.com/avaargsh/GPUPanel/core/utils/common"
 	"github.com/avaargsh/GPUPanel/core/utils/controller"
-	"github.com/avaargsh/GPUPanel/core/utils/ctl_conf"
 	"github.com/avaargsh/GPUPanel/core/utils/files"
 
 	"github.com/spf13/cobra"
@@ -30,9 +29,9 @@ var restoreCmd = &cobra.Command{
 			fmt.Println(i18n.GetMsgWithMapForCmd("SudoHelper", map[string]interface{}{"cmd": "sudo pctl restore"}))
 			return nil
 		}
-		baseDir, err := ctl_conf.LoadFromFile("/usr/local/bin/pctl", "BASE_DIR")
-		if err != nil {
-			return fmt.Errorf("handle load `BASE_DIR` failed, err: %v", err)
+		baseDir := global.CONF.Base.InstallDir
+		if baseDir == "" {
+			return fmt.Errorf("error `BASE_DIR` not configured")
 		}
 		upgradeDir := path.Join(baseDir, "gpupanel", "tmp", "upgrade")
 
@@ -60,12 +59,10 @@ var restoreCmd = &cobra.Command{
 			return err
 		}
 		_, _ = cmdUtils.NewCommandMgr().RunWithStdout("chmod", "755", "/usr/local/bin/gpupanel-agent", "/usr/local/bin/gpupanel-core")
+	// pctl is no longer part of the GPUPanel runtime.
 
 		fmt.Println(i18n.GetMsgByKeyForCmd("RestoreStep2"))
-		if err := files.CopyItem(false, true, path.Join(tmpPath, "pctl"), "/usr/local/bin"); err != nil {
-			return err
-		}
-		_, _ = cmdUtils.NewCommandMgr().RunWithStdout("chmod", "755", "/usr/local/bin/pctl")
+		// pctl is no longer part of the GPUPanel runtime; skip restoring legacy ctl binary.
 		_, _ = cmdUtils.NewCommandMgr().RunWithStdout("cp", "-r", path.Join(tmpPath, "lang"), "/usr/local/bin")
 		geoPath := path.Join(global.CONF.Base.InstallDir, "gpupanel/geo")
 		_ = os.MkdirAll(geoPath, os.ModePerm)
@@ -140,14 +137,8 @@ func loadRestorePath(upgradeDir string) (string, error) {
 }
 
 func loadRollbackVersion(upgradeDir string) string {
-	info, err := ctl_conf.LoadFromFile(path.Join(upgradeDir, "pctl"), "ORIGINAL_VERSION")
-	if err != nil {
-		return "-"
-	}
-	if len(info) == 0 || info == `""` {
-		return "-"
-	}
-	return info
+	// Version is no longer read from inherited /usr/local/bin/pctl.
+	return "-"
 }
 
 func cleanOrphanSQLiteSidecars(dbDir string) error {

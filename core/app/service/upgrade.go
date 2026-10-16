@@ -21,7 +21,6 @@ import (
 	"github.com/avaargsh/GPUPanel/core/utils/cmd"
 	"github.com/avaargsh/GPUPanel/core/utils/common"
 	"github.com/avaargsh/GPUPanel/core/utils/controller"
-	"github.com/avaargsh/GPUPanel/core/utils/ctl_conf"
 	"github.com/avaargsh/GPUPanel/core/utils/files"
 	"github.com/avaargsh/GPUPanel/core/utils/req_helper"
 	upgradeUtil "github.com/avaargsh/GPUPanel/core/utils/upgrade"
@@ -176,7 +175,6 @@ func (u *UpgradeService) Upgrade(req dto.Upgrade) error {
 	fileName := fmt.Sprintf("gpupanel-%s-%s-%s.tar.gz", req.Version, "linux", itemArch)
 	_ = settingRepo.Update("SystemStatus", "Upgrading")
 	go func() {
-		oldLang := ctl_conf.Load("LANGUAGE")
 		if err := files.DownloadFileWithProxyStream(downloadPath+"/"+fileName, downloadDir+"/"+fileName); err != nil {
 			global.LOG.Errorf("download service file failed, err: %v", err)
 			_ = settingRepo.Update("SystemStatus", "Free")
@@ -216,22 +214,7 @@ func (u *UpgradeService) Upgrade(req dto.Upgrade) error {
 			return
 		}
 
-		if err := files.CopyFileWithRename(path.Join(tmpDir, "pctl"), "/usr/local/bin/pctl"); err != nil {
-			global.LOG.Errorf("upgrade pctl failed, err: %v", err)
-			_ = settingRepo.Update("SystemStatus", "Free")
-			u.handleRollback(originalDir, 2, svcInfo)
-			return
-		}
-		if err := ctl_conf.UpdateInFile("/usr/local/bin/pctl", "BASE_DIR", global.CONF.Base.InstallDir); err != nil {
-			global.LOG.Errorf("upgrade basedir in pctl failed, err: %v", err)
-			u.handleRollback(originalDir, 2, svcInfo)
-			return
-		}
-		if err := ctl_conf.UpdateInFile("/usr/local/bin/pctl", "LANGUAGE", oldLang); err != nil {
-			global.LOG.Errorf("upgrade basedir in pctl failed, err: %v", err)
-			u.handleRollback(originalDir, 2, svcInfo)
-			return
-		}
+		// pctl is no longer part of the GPUPanel runtime; skip copying/updating the legacy ctl binary.
 		initScriptPath := path.Join(tmpDir, "initscript")
 
 		if err := files.CopyItem(false, true, path.Join(initScriptPath, svcInfo.selCoreName), svcInfo.basePath); err != nil {
@@ -470,9 +453,7 @@ func (u *UpgradeService) handleBackup(originalDir string, svcInfo serviceInfo) e
 	if err := files.CopyItem(false, true, "/usr/local/bin/gpupanel-agent", originalDir); err != nil {
 		return err
 	}
-	if err := files.CopyItem(false, true, "/usr/local/bin/pctl", originalDir); err != nil {
-		return err
-	}
+	// pctl is no longer part of the GPUPanel runtime; skip backing up the legacy ctl binary.
 	if err := files.CopyItem(true, true, "/usr/local/bin/lang", originalDir); err != nil {
 		return err
 	}
@@ -510,9 +491,7 @@ func (u *UpgradeService) handleRollback(originalDir string, errStep int, svcInfo
 	if errStep == 1 {
 		return
 	}
-	if err := files.CopyFileWithRename(path.Join(originalDir, "pctl"), "/usr/local/bin/pctl"); err != nil {
-		global.LOG.Errorf("rollback pctl failed, err: %v", err)
-	}
+	// pctl is no longer part of the GPUPanel runtime; skip restoring the legacy ctl binary.
 	if errStep == 2 {
 		return
 	}

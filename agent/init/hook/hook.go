@@ -13,7 +13,6 @@ import (
 	"github.com/avaargsh/GPUPanel/agent/constant"
 	"github.com/avaargsh/GPUPanel/agent/global"
 	"github.com/avaargsh/GPUPanel/agent/utils/alert_push"
-	"github.com/avaargsh/GPUPanel/agent/utils/xpack"
 	"gorm.io/gorm"
 )
 
@@ -60,11 +59,7 @@ func initGlobalData() {
 	if err := settingRepo.Update("SystemStatus", "Free"); err != nil {
 		global.LOG.Fatalf("init service before start failed, err: %v", err)
 	}
-	node, _ := xpack.MultiNodeProvider.LoadNodeInfo(false)
-	if len(node.Version) != 0 {
-		_ = settingRepo.Update("SystemVersion", node.Version)
-	}
-	global.CONF.Base.Version = node.Version
+	// Node version is configured via embedded app.yaml; do not read inherited node provider contract.
 	global.CONF.Base.Edition, _ = settingRepo.GetValueByKey("Edition")
 	global.CONF.Base.EncryptKey, _ = settingRepo.GetValueByKey("EncryptKey")
 }

@@ -37,13 +37,7 @@ func (u *SnapshotService) SnapshotRollback(req dto.SnapshotRecover) error {
 		baseDir := path.Join(rootDir, "base")
 
 		FileOp := files.NewFileOp()
-		taskItem.AddSubTask(
-			i18n.GetWithName("SnapCopy", "/usr/local/bin/pctl"),
-			func(t *task.Task) error {
-				return FileOp.CopyFile(path.Join(baseDir, "pctl"), "/usr/local/bin")
-			},
-			nil,
-		)
+		// pctl is no longer part of the GPUPanel runtime; skip backing up legacy ctl binary.
 		if global.IsMaster {
 			taskItem.AddSubTask(
 				i18n.GetWithName("SnapCopy", "/usr/local/bin/gpupanel-core"),

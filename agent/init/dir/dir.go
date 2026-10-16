@@ -30,7 +30,7 @@ func Init() {
 	global.Dir.CustomAppResourceDir, _ = fileOp.CreateDirWithPath(true, path.Join(baseDir, "gpupanel/resource/apps/custom"))
 	global.Dir.OfflineAppResourceDir, _ = fileOp.CreateDirWithPath(true, path.Join(baseDir, "gpupanel/resource/offline"))
 	global.Dir.RuntimeDir, _ = fileOp.CreateDirWithPath(true, path.Join(baseDir, "gpupanel/runtime"))
-	global.Dir.RecycleBinDir, _ = fileOp.CreateDirWithPath(true, "/.gpupanel_clash")
+	global.Dir.RecycleBinDir, _ = fileOp.CreateDirWithPath(true, path.Join(baseDir, "gpupanel", ".gpupanel_clash"))
 	global.Dir.SSLLogDir, _ = fileOp.CreateDirWithPath(true, path.Join(baseDir, "gpupanel/log/ssl"))
 	global.Dir.McpDir, _ = fileOp.CreateDirWithPath(true, path.Join(baseDir, "gpupanel/mcp"))
 	global.Dir.ConvertLogDir, _ = fileOp.CreateDirWithPath(true, path.Join(baseDir, "gpupanel/log/convert"))

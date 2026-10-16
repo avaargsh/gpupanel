@@ -18,7 +18,6 @@ import (
 
 	"github.com/avaargsh/GPUPanel/agent/buserr"
 	"github.com/avaargsh/GPUPanel/agent/utils/cmd"
-	"github.com/avaargsh/GPUPanel/agent/utils/ctl_conf"
 	"github.com/avaargsh/GPUPanel/agent/utils/re"
 	"golang.org/x/net/idna"
 )
@@ -445,9 +444,4 @@ func GetDockerComposeCommand() string {
 	return ""
 }
 
-func LoadParams(param string) string {
-	return ctl_conf.Load(param)
-}
-func LoadParamsWithoutPanic(param string) string {
-	return ctl_conf.LoadWithoutPanic(param)
-}
+
