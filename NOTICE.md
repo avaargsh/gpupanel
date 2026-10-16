@@ -12,4 +12,4 @@ The original name and upstream URLs remain where needed for attribution, compati
 
 ## Narrow file-level Apache-2.0 scope
 
-Only the four independently authored Python audit utilities/tests enumerated in [docs/gpupanel/APACHE_FILE_SCOPE.md](docs/gpupanel/APACHE_FILE_SCOPE.md) carry Apache-2.0 file-level SPDX terms (text: `LICENSES/Apache-2.0.txt`). This does not relicense any upstream 1Panel code or the complete GPUPanel GPL-3.0 fork/distribution; no ASF endorsement is claimed.
+Only the six independently authored Python audit utilities/tests enumerated in [docs/gpupanel/APACHE_FILE_SCOPE.md](docs/gpupanel/APACHE_FILE_SCOPE.md) carry Apache-2.0 file-level SPDX terms (text: `LICENSES/Apache-2.0.txt`). This does not relicense any upstream 1Panel code or the complete GPUPanel GPL-3.0 fork/distribution; no ASF endorsement is claimed.
