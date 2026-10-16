@@ -89,3 +89,21 @@ pnpm build
 预审已发现确认框异步等待/重复提交、分页状态和标签关联问题，记录在私有
 `infrastructure-review-notes.txt`，必须在该任务提交后修正复核。禁止仅按代理
 交接中的 PASS 自动合并；需核对文件范围、编译、业务负向检查与实际差异。
+
+### 接续（服务限流后）
+
+最初四个 OpenCode 会话均因服务 `429 FreeUsageLimitError` 退出，没有完成提交，
+不能作为已交付任务。已保留全部工作区和原会话。再次连通测试返回 READY 后，
+门户工作拆为两个更小的 OpenCode 任务，避免重复全面勘察消耗额度：
+
+| 当前唯一写入者 | 范围 |
+| --- | --- |
+| OpenCode chrome | App/main/theme index、layout、config/nav、ProtectedRoute |
+| OpenCode shell-components | 公共业务组件（不含 primitives/use-confirm-action）、顶层页面与 workbench.css |
+| 接续代理 workstation | 原主机、应用、AI 工作区 |
+| 接续代理 infrastructure | 原容器、数据库、网站、OpenResty 工作区 |
+| 接续代理 administration | 原设置、工具箱、定时任务、日志工作区 |
+
+原 shell 工作区仅保留旧改动，不再作为并行写入者恢复。新 OpenCode 工作区使用
+文件系统只读边界保护协调目录；同一目录始终只有一个写入者。业务组提交后可
+安排 OpenCode 以只读任务复审，不同时开启第二个实现者。

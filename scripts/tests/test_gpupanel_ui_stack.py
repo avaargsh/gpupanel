@@ -28,7 +28,7 @@ class NativeUIStackContract(unittest.TestCase):
         for path in (PANEL / 'src').rglob('*'):
             if path.is_file() and path.suffix in ('.ts', '.tsx', '.css'):
                 text = path.read_text()
-                if re.search(r'@douyinfe/semi-|--semi-|className=[\'\"]semi-', text):
+                if re.search(r'@douyinfe/semi-|--semi-|\bsemi-[a-z]', text):
                     violations.append(str(path.relative_to(PANEL)))
         self.assertEqual(violations, [], 'Legacy UI remains: ' + ', '.join(violations))
 
