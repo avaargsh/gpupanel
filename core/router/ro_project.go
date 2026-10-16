@@ -1,0 +1,18 @@
+package router
+
+import (
+	v1 "github.com/avaargsh/GPUPanel/core/app/api/v1"
+	"github.com/avaargsh/GPUPanel/core/middleware"
+	"github.com/gin-gonic/gin"
+)
+
+type ProjectRouter struct{}
+
+func (s *ProjectRouter) InitRouter(root *gin.RouterGroup) {
+	group := root.Group("projects").
+		Use(middleware.SessionAuth()).
+		Use(middleware.PasswordExpired())
+	api := v1.ApiGroupApp.BaseApi
+	group.GET("", api.ListProjects)
+	group.POST("", api.CreateProject)
+}

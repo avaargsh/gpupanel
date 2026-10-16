@@ -53,3 +53,19 @@
 本次只合并已接受源码。API 路由、存储模式和运行服务不切换；全产物许可核权、
 真实认证接线、7 库迁移和同版本 VM 门槛仍未完成。合并验收的命令与精确 SHA 见本次交接，
 旧测试不自动覆盖新提交。接口与迁移表见 [Core/Agent 重写契约](engineering/CORE_AGENT_REWRITE.md)。
+
+
+## 当前增量：Core Project / Workspace 元数据注册（源码阶段）
+
+新增经 Core **真实 Session/CSRF** 保护的 `GET/POST /api/v1/core/projects`，
+项目条目及默认 Workspace 一次事务写入现有 `core.db`，支持 SQLite
+关闭重启后恢复、用户作用域限制、重复注册冲突、输入约束与回滚回归。
+此入口当前只允许本机超级管理员 Session，拒绝 API Token、LOCAL_REQUEST
+和伪造身份头。只存储 `Registered` Project 和 `NotProvisioned` Workspace
+元数据，用户提交的 `sourceHint` **不代表项目目录已被验证**。
+不扫描项目路径、不写文件、不创建 Notebook/容器，也没有可运行 Session。
+`gpupanel-project-inventory.py` 的真实用户目录只读发现仍是另一个独立入口；
+后续要做受身份授权的安全导入/验证，不得凭自报 `sourceHint` 认领目录。
+
+迁移为附加表，不更改旧表。需要在真实 Ubuntu 升级/回滚场景下进行 G3–G6
+单版本验收；新 API 的源码/CI 不构成发布许可。
