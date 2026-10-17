@@ -45,6 +45,11 @@ def api(route):
         data = {'hostname': 'observed-fixture-host' if node == 'local' else 'observed-fixture-remote', 'currentInfo': {'cpuUsedPercent': 24 if node == 'local' else 61, 'memoryUsedPercent': 38, 'diskData': [], 'timeSinceUptime': 'fixture uptime'}}
     elif path == '/ai/gpu/load':
         data = {'gpu': [], 'npu': [], 'xpu': []}
+    elif path == '/containers/list/stats':
+        data = []
+    elif path == '/containers/status':
+        data = {'containerCount': 0, 'running': 0, 'exited': 0,
+                'created': 0, 'paused': 0, 'restarting': 0, 'dead': 0}
     elif path == '/containers/docker/status':
         data = {'isActive': False, 'isExist': True}
     elif path.startswith('/apps/tags'):
@@ -141,6 +146,9 @@ with sync_playwright() as p:
     page.goto(URL + '/containers')
     page.wait_for_load_state('networkidle')
     page.get_by_role('tab', name='Containers', exact=True).click()
+    expect(page.locator('.container-list-card')).to_be_visible()
+    expect(page.locator('.container-list-card [data-slot="table"]')).to_be_visible()
+    assert not page.get_by_text('Unexpected Application Error!', exact=False).count()
     expect(page.locator('.container-selection-toolbar')).to_have_count(0)
     assert page.evaluate('document.documentElement.scrollWidth <= innerWidth')
     page.screenshot(path=str(OUTPUT / 'container-list-actions.png'), full_page=True)
