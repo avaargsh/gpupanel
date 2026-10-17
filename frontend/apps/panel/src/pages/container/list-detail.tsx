@@ -79,7 +79,7 @@ export function ContainerDetailSheet({ container, onClose }: { container: Contai
                 if (!open) onClose();
             }}
         >
-            <SheetContent className="w-full gap-0 overflow-y-auto sm:max-w-[560px]">
+            <SheetContent className="management-detail-sheet w-full gap-0 overflow-y-auto sm:max-w-[560px]">
                 <SheetHeader>
                     <SheetTitle>{container ? `${t('container.detail.title')} - ${container.name}` : ''}</SheetTitle>
                 </SheetHeader>
