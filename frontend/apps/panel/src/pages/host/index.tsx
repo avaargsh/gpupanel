@@ -1,4 +1,5 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import ManagementPageHeader from '@/components/ManagementPageHeader';
 import { useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import HostOverview from './overview';
@@ -16,7 +17,8 @@ export default function HostPage() {
     const tab = query.get('tab') || 'overview';
     const setTab = (value: string) => setQuery({ tab: value });
     return (
-        <div className="module-shell">
+        <div className="module-shell management-shell">
+            <ManagementPageHeader title={t('nav.host')} />
             <Tabs value={tab} onValueChange={setTab}>
                 <TabsList variant="line" className="module-tabs">
                     <TabsTrigger value="overview">{t('host.tabs.overview')}</TabsTrigger>
