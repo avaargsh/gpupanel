@@ -8,6 +8,10 @@
 #                   [--password PASS] [--entrance PATH] [--language CODE]
 #                   [--no-systemd] [--skip-config] [--bind-address 127.0.0.1|0.0.0.0]
 #                   [--experimental-ubuntu-26] [--no-auto-provision]
+#                   [--approve-disposable-vm-install]
+#
+# Without explicit disposable-VM acceptance, this installer diagnoses but does
+# NOT install. This is a laboratory override, never production release approval.
 #
 # Self-contained: works from a source checkout (deploy/install.sh) and from an
 # extracted release tarball (gpupanel-<version>-<os>-<arch>/install.sh).
@@ -79,11 +83,13 @@ USE_SYSTEMD=1
 SKIP_CONFIG=0
 BIND_ADDRESS="0.0.0.0"
 AUTO_PROVISION=enabled
+APPROVE_DISPOSABLE_VM_INSTALL=0
 PREFLIGHT_ARGS=()
 
 while [ $# -gt 0 ]; do
     case "$1" in
         --no-auto-provision) AUTO_PROVISION=disabled; shift ;;
+        --approve-disposable-vm-install) APPROVE_DISPOSABLE_VM_INSTALL=1; shift ;;
         --bind-address) BIND_ADDRESS="${2:-}"; shift 2 ;;
         --experimental-ubuntu-26) PREFLIGHT_ARGS+=(--experimental-ubuntu-26); shift ;;
         --base-dir)  BASE_DIR="${2:-}"; shift 2 ;;
@@ -225,7 +231,53 @@ detect_ip() {
 PREFLIGHT="$(pick gpupanel-install-preflight.py "$ROOT/scripts/gpupanel-install-preflight.py")"
 [ -f "$PREFLIGHT" ] || die "missing reviewed collision preflight"
 command -v python3 >/dev/null || die "Python 3 is required for read-only preflight"
-python3 "$PREFLIGHT" --json "${PREFLIGHT_ARGS[@]}" || die "preflight blocked; installation was not started"
+# Diagnostic exit 0 means only no *known* blocker was found, never install
+# authorization. Capture a single report, validate its complete conservative
+# contract, then require an explicit opt-in for a disposable Ubuntu 24.04 VM.
+# The override cannot downgrade any BLOCKED/UNKNOWN required safety check.
+PREFLIGHT_JSON="$(python3 "$PREFLIGHT" --json "${PREFLIGHT_ARGS[@]}")" || die "preflight blocked; installation was not started"
+printf '%s\n' "$PREFLIGHT_JSON"
+GPUPANEL_PREFLIGHT_JSON="$PREFLIGHT_JSON" python3 - "$APPROVE_DISPOSABLE_VM_INSTALL" <<'PY_INSTALL_APPROVAL' || die "GPUPanel install authorization denied; no host mutation"
+import json
+import os
+import sys
+
+def deny(reason):
+    raise SystemExit("GPUPanel install denied: " + reason)
+
+try:
+    report = json.loads(os.environ["GPUPANEL_PREFLIGHT_JSON"])
+    if not isinstance(report, dict) or report.get("product") != "GPUPanel" or report.get("phase") != "pre-install-diagnostics-only":
+        deny("unrecognized preflight report")
+    if report.get("installable") is not False or report.get("safe_to_install") is not False:
+        deny("preflight diagnosis was incorrectly presented as installation approval")
+    checks = report["checks"]
+    blockers = report["blockers"]
+    if not isinstance(checks, list) or not isinstance(blockers, list) or blockers:
+        deny("blocked or malformed diagnostic result")
+    states = {}
+    for item in checks:
+        if not isinstance(item, dict) or not isinstance(item.get("code"), str) or item.get("state") not in ("PASS", "BLOCKED", "UNKNOWN"):
+            deny("malformed safety check")
+        if item["code"] in states:
+            deny("duplicate safety check")
+        states[item["code"]] = item
+    if any(item["state"] == "BLOCKED" for item in checks):
+        deny("blocked safety check without consistent blockers list")
+    # No unsupported OS, experimental 26.04, unknown capacity or collision
+    # ambiguity may silently become an installer PASS.
+    required = ("operating_system", "runtime_collision", "runtime_path_symlink", "disk_space")
+    if any(states.get(code, {}).get("state") != "PASS" for code in required):
+        deny("OS/collision/disk checks are not all PASS")
+    if states["operating_system"].get("detail") != "Ubuntu 24.04":
+        deny("only a disposable Ubuntu 24.04 VM is in scope")
+    # Future scanners may add strong collision checks. If present, a definite
+    # BLOCKED result is rejected above; UNKNOWN remains diagnostic, not proof.
+    if sys.argv[1] != "1":
+        deny("provide --approve-disposable-vm-install after independently verifying VM isolation, ownership and rollback")
+except (ValueError, KeyError, TypeError) as exc:
+    deny("invalid preflight JSON or missing safety fields")
+PY_INSTALL_APPROVAL
 python3 - "$BASE_DIR" <<'PYCODE'
 import pathlib, sys
 base = pathlib.Path(sys.argv[1])
