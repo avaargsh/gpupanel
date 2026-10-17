@@ -25,7 +25,6 @@ import { Spinner } from '@/components/ui/spinner';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { formatPercent } from '@/utils/format';
 import { useAppSelector } from '@/store/hooks';
-import { useAppSelector } from '@/store/hooks';
 import { readPendingContainerOperation, savePendingContainerOperation, clearPendingContainerOperation, unresolvedContainerOperationExists } from '@/utils/container-operation-pending';
 import { FileTextIcon, MoreHorizontalIcon, PlusIcon, RefreshCwIcon, TerminalIcon } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
