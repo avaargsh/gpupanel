@@ -12,6 +12,18 @@ python3 scripts/gpupanel-release.py verify dist/gpupanel-preview.tar.gz
 
 Important: PASS means the limited metadata checks succeeded; it does not mean the current binaries will run standalone or are safe for production. Docker CLI/socket presence is not Docker daemon health.
 
+## Developer-only system installation gate (not a public installer)
+
+`deploy/install.sh` is **not** a released safe installer. It previously accepted a read-only diagnostic's process exit status 0 as permission to start mutating host state, even though the JSON explicitly has `installable=false` and `safe_to_install=false`. The install script now treats that status as diagnostics **only**:
+
+- Default invocation performs preflight but stops **before any install log, service, path or data mutation**, whether diagnostics found blockers or not.
+- For a **disposable, isolated Ubuntu 24.04 VM only**, after separate human review of VM identity, target/data ownership, trusted payload and snapshot/recovery procedure, the experimental `--approve-disposable-vm-install` flag allows the existing installer to proceed **only** when the diagnostic report has the required clean PASS states and no blockers. This is an operator declaration, **not** independently verified VM isolation, package authenticity or release acceptance.
+- Unexpected/missing/malformed report fields, any BLOCKED check, UNKNOWN OS/disk/path checks or Ubuntu 26.04 experimental diagnostics **never** authorize installation. `--experimental-ubuntu-26` remains a diagnostics option, not a second write-authority flag.
+- Historical/ongoing 1Panel or GPUPanel ownership, in-place upgrades and partial installs remain **NO-GO**. Do not run the developer flag on a real work or production host. This flag does not validate installer rollback, first-user identity, HTTPS, Core/Agent/Kubernetes or app lifecycle.
+- `deploy/build.sh` and package/source pipelines can be used to inspect artifacts, but running unverified source or payload as root is inherently unsafe. Record exact SHA, manifest/hash, VM snapshot and complete G3–G6 release evidence before promotion.
+
+The parser and installer shell-order contract are tested without root or system installation in `scripts/tests/test_gpupanel_local_deploy_contract.py`; such source-level tests are **not** evidence of a successful Ubuntu install/rollback.
+
 Next engineering gate: a **reviewed fork-first runtime path/service ownership plan** (inherited or new paths), explicitly approved migration when existing state is found, signed/reproducible package, reviewed systemd units, backup/rollback, first-admin initialization, HTTPS/auth, Core/Agent health checks and Docker lifecycle verified through authenticated GPUPanel APIs on disposable Ubuntu 24.04. A fully separate namespace is not mandatory for source development, but neither a clean metadata preflight nor a new service name authorizes touching existing 1Panel data.
 
 No GPU vendor-specific work belongs to this milestone.
