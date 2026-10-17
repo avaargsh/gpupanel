@@ -21,10 +21,15 @@ export default function HostOperations() {
     const { t } = useTranslation();
     const [params] = useSearchParams();
     // A deep link may select an intention but must never plan or execute it.
-    const requested = params.get('restartTarget') || '';
-    const restartTarget = /^[a-f0-9]{64}$/.test(requested) ? requested : '';
+    const requestedTarget = params.get('operationTarget') || params.get('restartTarget') || '';
+    const target = /^[a-f0-9]{64}$/.test(requestedTarget) ? requestedTarget : '';
+    const requestedKind = params.get('operationKind');
+    const kind = target
+        ? (requestedKind === 'container.start' || requestedKind === 'container.stop' || requestedKind === 'container.restart'
+            ? requestedKind : 'container.restart')
+        : 'host.diagnose';
     return node === 'local' ? (
-        <LocalOperations key={`${node}:${restartTarget}`} initialRestartTarget={restartTarget} />
+        <LocalOperations key={`${node}:${kind}:${target}`} initialKind={kind} initialTarget={target} />
     ) : (
         <Empty className="host-operations-empty">
             <EmptyHeader>
@@ -33,10 +38,10 @@ export default function HostOperations() {
         </Empty>
     );
 }
-function LocalOperations({ initialRestartTarget }: { initialRestartTarget: string }) {
+function LocalOperations({ initialKind, initialTarget }: { initialKind: string; initialTarget: string }) {
     const { t } = useTranslation();
-    const [kind, setKind] = useState(initialRestartTarget ? 'container.restart' : 'host.diagnose');
-    const [target, setTarget] = useState(initialRestartTarget);
+    const [kind, setKind] = useState(initialKind);
+    const [target, setTarget] = useState(initialTarget);
     const [preview, setPreview] = useState<HostOperation | null>(null);
     const [error, setError] = useState('');
     const [plan, planning] = usePlanHostOperationMutation();
@@ -105,6 +110,8 @@ function LocalOperations({ initialRestartTarget }: { initialRestartTarget: strin
                                         [
                                             { value: 'host.diagnose', label: t('hostOps.diagnose') },
                                             { value: 'container.restart', label: t('hostOps.restart') },
+                                            { value: 'container.start', label: t('hostOps.start') },
+                                            { value: 'container.stop', label: t('hostOps.stop') },
                                         ].find((option) => String(option.value) === event.target.value)?.value ?? event.target.value,
                                     ),
                                 )
@@ -116,13 +123,15 @@ function LocalOperations({ initialRestartTarget }: { initialRestartTarget: strin
                             {[
                                 { value: 'host.diagnose', label: t('hostOps.diagnose') },
                                 { value: 'container.restart', label: t('hostOps.restart') },
+                                            { value: 'container.start', label: t('hostOps.start') },
+                                            { value: 'container.stop', label: t('hostOps.stop') },
                             ].map((option) => (
                                 <NativeSelectOption key={String(option.value)} value={option.value}>
                                     {option.label}
                                 </NativeSelectOption>
                             ))}
                         </NativeSelect>
-                        {kind === 'container.restart' && (
+                        {kind !== 'host.diagnose' && (
                             <Input
                                 value={target}
                                 disabled={busy}
@@ -136,7 +145,7 @@ function LocalOperations({ initialRestartTarget }: { initialRestartTarget: strin
                             onClick={() => void createPlan()}
                             variant={'outline'}
                             type={'button'}
-                            disabled={busy || (kind === 'container.restart' && !/^[a-f0-9]{64}$/.test(target.trim())) || planning.isLoading}
+                            disabled={busy || (kind !== 'host.diagnose' && !/^[a-f0-9]{64}$/.test(target.trim())) || planning.isLoading}
                         >
                             {planning.isLoading ? <Spinner data-icon="inline-start" /> : null}
                             {t('hostOps.preview')}
