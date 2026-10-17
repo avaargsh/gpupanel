@@ -39,22 +39,38 @@ function AssistantPanel({ node }: { node: string }) {
                     <WandSparklesIcon />
                 </Button>
             </SheetTrigger>
-            <SheetContent side="right" showCloseButton={false} className="w-full gap-0 overflow-y-auto sm:max-w-[440px]">
+            <SheetContent side="right" showCloseButton={false} className="w-full gap-0 overflow-hidden p-0 sm:max-w-[460px]">
                 <div className="assistant-heading">
                     <SheetTitle>GPUPanel Assistant</SheetTitle>
                     <Button type="button" variant="ghost" aria-label={t('common.close')} onClick={() => setOpen(false)}>{t('common.close')}</Button>
                 </div>
                 <SheetDescription className="sr-only">{t('workbench.assistantContext')}</SheetDescription>
                 <div className="assistant-body">
-                    <div className="assistant-context"><small>{t('workbench.assistantContext')}</small><strong>{t(page?.labelKey || 'workbench.title')}</strong><span>{node === 'local' ? t('workbench.local') : node}</span></div>
-                    <p role="status">{t('workbench.assistantUnavailable', 'Chat is not connected yet')}</p>
-                    <p className="assistant-description">{t('workbench.assistantDescription')}</p>
-                    <label htmlFor="assistant-draft">{t('workbench.assistantDraft')}</label>
-                    <Textarea id="assistant-draft" value={draft} maxLength={2000} rows={7} onChange={(event) => setDraft(event.target.value)} />
-                    <Button type="button" variant="outline" disabled={!draft.trim()} onClick={copyDraft}>{t('workbench.assistantCopy')}</Button>
-                    <span role="status">{feedback}</span>
-                    <p className="assistant-description">{t('workbench.assistantPrivacy')}</p>
-                    <div className="flex flex-wrap items-center gap-4">{workstationLinks.map((link) => <Link key={link.path} className="text-sm text-primary underline underline-offset-4" to={link.path} onClick={() => setOpen(false)}>{t(link.labelKey)}</Link>)}</div>
+                    <div className="assistant-conversation">
+                        <div className="assistant-context">
+                            <small>{t('workbench.assistantContext')}</small>
+                            <strong>{t(page?.labelKey || 'workbench.title')}</strong>
+                            <span>{node === 'local' ? t('workbench.local') : node}</span>
+                        </div>
+                        <div className="assistant-intro">
+                            <span className="assistant-intro-icon" aria-hidden="true"><WandSparklesIcon className="size-5" /></span>
+                            <p className="assistant-intro-title" role="status">{t('workbench.assistantUnavailable', 'Chat is not connected yet')}</p>
+                            <p className="assistant-description">{t('workbench.assistantDescription')}</p>
+                        </div>
+                        <nav className="assistant-links" aria-label={t('workbench.tools')}>
+                            {workstationLinks.map((link) => <Link key={link.path} to={link.path} onClick={() => setOpen(false)}>{t(link.labelKey)}</Link>)}
+                        </nav>
+                    </div>
+                    <div className="assistant-composer">
+                        <label htmlFor="assistant-draft">{t('workbench.assistantDraft')}</label>
+                        <Textarea className="assistant-textarea" id="assistant-draft" value={draft} maxLength={2000} rows={4}
+                            onChange={(event) => { setDraft(event.target.value); if (feedback) setFeedback(''); }} />
+                        <div className="assistant-composer-actions">
+                            <span role="status" aria-live="polite">{feedback}</span>
+                            <Button type="button" size="sm" disabled={!draft.trim()} onClick={copyDraft}>{t('workbench.assistantCopy')}</Button>
+                        </div>
+                        <p className="assistant-description">{t('workbench.assistantPrivacy')}</p>
+                    </div>
                 </div>
             </SheetContent>
         </Sheet>
