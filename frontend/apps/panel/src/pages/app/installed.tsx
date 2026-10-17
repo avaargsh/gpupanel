@@ -182,7 +182,7 @@ export default function InstalledTab({ upgradeOnly = false }: { upgradeOnly?: bo
                                 rows.map((row, rowIndex) => (
                                     <TableRow key={row['id'] ?? rowIndex}>
                                         <TableCell>
-                                            <div className="flex gap-8 align-items-center">
+                                            <div className="flex min-w-0 items-center gap-2.5">
                                                 <img src={getAppIconUrl(row.appKey)} alt={row.appName} className="app-installed-icon" />
                                                 <span className="text-sm">{row['name']}</span>
                                             </div>
