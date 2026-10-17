@@ -5,7 +5,7 @@ from playwright.sync_api import sync_playwright, expect
 
 URL = 'http://127.0.0.1:4189'
 CANARY = 'a' * 64
-state = {'plans': [], 'confirms': 0, 'lost': False, 'container_mutations': 0}
+state = {'plans': [], 'confirms': 0, 'lost': False, 'container_mutations': 0, 'canary_running': True}
 
 
 def api(route):
@@ -17,7 +17,7 @@ def api(route):
         intent = route.request.post_data_json
         assert 'command' not in intent
         assert ((intent['kind'] == 'host.diagnose' and intent['target'] == 'local') or
-                (intent['kind'] == 'container.restart' and intent['target'] == CANARY))
+                (intent['kind'] in ('container.restart', 'container.start', 'container.stop') and intent['target'] == CANARY))
         data = {'id': 'fixture-operation-' + str(len(state['plans'])), 'kind': intent['kind'], 'target': intent['target'],
                 'host': 'local', 'impact': 'Read local OS only. No changes.', 'expected': 'read-only',
                 'hash': 'fixture-bound-hash', 'state': 'planned', 'output': '', 'error': '',
@@ -38,7 +38,8 @@ def api(route):
     elif path == '/containers/search':
         data = {'items': [{'containerID': CANARY, 'name': 'fixture-canary',
                            'imageName': 'fixture:local', 'createTime': '2026-10-17',
-                           'state': 'running', 'runTime': '1m', 'network': [], 'ports': [],
+                           'state': 'running' if state['canary_running'] else 'exited',
+                           'runTime': '1m', 'network': [], 'ports': [],
                            'isFromApp': False, 'isFromCompose': False}], 'total': 1}
     elif path == '/containers/list/stats':
         data = []
@@ -91,7 +92,7 @@ with sync_playwright() as p:
     expect(row).to_be_visible()
     row.get_by_role('button', name='Actions', exact=True).click()
     page.get_by_role('menuitem', name='Review restart', exact=True).click()
-    expect(page).to_have_url(re.compile(r'/host\?tab=operations&restartTarget=' + CANARY))
+    expect(page).to_have_url(re.compile(r'/host\?tab=operations&operationKind=container.restart&operationTarget=' + CANARY))
     expect(page.get_by_role('textbox', name='Full 64-character container ID', exact=True)).to_have_value(CANARY)
     assert len(state['plans']) == planned and state['confirms'] == confirmed
     assert state['container_mutations'] == 0
@@ -99,8 +100,26 @@ with sync_playwright() as p:
     expect(page.get_by_role('button', name='Confirm and execute', exact=True)).to_be_enabled()
     assert len(state['plans']) == planned + 1 and state['confirms'] == confirmed
     # Do not confirm: only an authorized human confirms a real Docker operation.
+    # Start and stop use the same verified HostOperations path; browsing never mutates.
+    for operation, running in [('stop', True), ('start', False)]:
+        state['canary_running'] = running
+        page.goto(URL + '/containers')
+        page.get_by_role('tab', name='Containers', exact=True).click()
+        row = page.get_by_role('row').filter(has_text='fixture-canary')
+        expect(row).to_be_visible()
+        planned, confirmed = len(state['plans']), state['confirms']
+        row.get_by_role('button', name=operation.capitalize(), exact=True).click()
+        expect(page).to_have_url(re.compile(r'/host\?tab=operations&operationKind=container.' +
+                                           operation + r'&operationTarget=' + CANARY))
+        expect(page.get_by_role('textbox', name='Full 64-character container ID', exact=True)).to_have_value(CANARY)
+        assert len(state['plans']) == planned and state['confirms'] == confirmed
+        assert state['container_mutations'] == 0
+        page.get_by_role('button', name='Preview operation', exact=True).click()
+        expect(page.get_by_role('button', name='Confirm and execute', exact=True)).to_be_enabled()
+        assert state['plans'][-1]['kind'] == 'container.' + operation
+        assert len(state['plans']) == planned + 1 and state['confirms'] == confirmed
     page.set_viewport_size({'width': 1024, 'height': 900})
     assert page.evaluate('document.documentElement.scrollWidth <= innerWidth')
     assert not errors, errors
     browser.close()
-print(json.dumps({'kind': 'SIMULATED API, not deployment', 'checks': ['preview without execution', 'explicit confirmation', 'refresh restores receipts without replay', 'unknown outcome queries only', '1024 layout', 'container deep-link requests preview only, no legacy mutation'], 'page_errors': errors}))
+print(json.dumps({'kind': 'SIMULATED API, not deployment', 'checks': ['preview without execution', 'explicit confirmation', 'refresh restores receipts without replay', 'unknown outcome queries only', '1024 layout', 'container restart/start/stop deep links preview only, no legacy mutation'], 'page_errors': errors}))
