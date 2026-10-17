@@ -72,6 +72,12 @@ export default function ContainerList({ onOpenLogs, onOpenExec }: ContainerListP
     const [order, setOrder] = useState<Order>('descending');
     const [selected, setSelected] = useState<string[]>([]);
 
+    // A selection belongs to the visible query, never to a previous page,
+    // filter, or ordering. Clear it before new rows become actionable.
+    useEffect(() => {
+        setSelected([]);
+    }, [page, pageSize, name, state, orderBy, order]);
+
     useEffect(() => {
         const timer = window.setTimeout(() => {
             setName(nameInput);
@@ -254,7 +260,7 @@ export default function ContainerList({ onOpenLogs, onOpenExec }: ContainerListP
 
                         </div>
 
-                            {selectedNames.length > 0 && (
+                            {!listQuery.isFetching && !listQuery.isError && selectedNames.length > 0 && (
                                 <div className="container-selection-toolbar" role="region" aria-label={t('container.list.selected', { count: selectedNames.length })}>
                                     <span className="text-sm text-muted-foreground">
                                         {t('container.list.selected', { count: selectedNames.length })}
