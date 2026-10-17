@@ -8,6 +8,21 @@
 .workbench-heading p { color: var(--muted-foreground); font-size: 13px; line-height: 1.6; margin-top: 8px; }
 .workbench-heading > div { min-width: 0; }
 
+/* Secondary buttons are neutral in both themes; avoid high-luminance outlines
+   against the charcoal canvas, including shadcn Slot-as-link buttons. */
+.workbench [data-slot="button"][data-variant="outline"] {
+    background: var(--card);
+    color: var(--foreground);
+    border-color: var(--border);
+}
+.workbench [data-slot="button"][data-variant="outline"]:hover {
+    background: var(--muted);
+}
+.workbench [data-slot="button"][data-variant="outline"]:focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+}
+
 /* The three actual entry points stand on the open page, not inside a giant card. */
 .workbench-start { background: var(--background); padding: 2px 0 0; }
 .workbench-start-heading { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
