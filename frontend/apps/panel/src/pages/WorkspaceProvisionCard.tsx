@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import {
     useGetProvisionPlanQuery, useRequestProvisionIntentMutation,
     useGetLocalEvidenceQuery, useReportLocalEvidenceMutation,
+    usePreflightLinuxPrincipalMutation,
     type LocalEvidenceInput,
 } from '@/api/projectApi';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -54,6 +55,7 @@ export default function WorkspaceProvisionCard({ projectId, workspaceId, state }
                     : <Button disabled={pending.isLoading} type="button" onClick={() => { void record(); }}>
                         {t('projectRegistry.requestPreparation')}
                     </Button>}
+                {plan.intent && <LinuxPrincipalPanel />}
                 {plan.intent && <LocalEvidencePanel projectId={projectId} workspaceId={workspaceId}
                     intentId={plan.intent.id} planDigest={plan.planDigest} />}
                 {unknown && <Alert variant="destructive">
@@ -131,5 +133,43 @@ function LocalEvidencePanel({ projectId, workspaceId, intentId, planDigest }: Ev
             onClick={() => { setUnknown(false); void query.refetch(); }}>
             <RefreshCw data-icon="inline-start" />{t('common.refresh')}
         </Button>
+    </div>;
+}
+
+function LinuxPrincipalPanel() {
+    const { t } = useTranslation();
+    const [uid, setUid] = useState('');
+    const [preflight, result] = usePreflightLinuxPrincipalMutation();
+    const valid = /^[1-9][0-9]{3,4}$/.test(uid) && Number(uid) >= 1000 && Number(uid) <= 60000;
+    const candidate = result.isSuccess ? result.data : undefined;
+
+    const check = async () => {
+        if (!valid || result.isLoading) return;
+        try {
+            await preflight({ uid: Number(uid) }).unwrap();
+        } catch {
+            // A failed identity observation is not an authorization result.
+        }
+    };
+
+    return <div className="space-y-2 rounded-lg border border-border p-3">
+        <p className="font-medium">{t('projectRegistry.linuxPrincipal')}</p>
+        <p className="text-xs text-muted-foreground">{t('projectRegistry.linuxPrincipalWarning')}</p>
+        <label className="block text-xs" htmlFor="workspace-linux-uid">{t('projectRegistry.linuxUID')}</label>
+        <input id="workspace-linux-uid" inputMode="numeric" type="text"
+            className="w-full max-w-40 rounded-md border border-input bg-background p-2 text-sm"
+            value={uid} maxLength={5} onChange={event => {
+                setUid(event.target.value);
+                result.reset();
+            }} />
+        <Button type="button" variant="outline" disabled={!valid || result.isLoading}
+            onClick={() => { void check(); }}>{t('projectRegistry.checkLinuxPrincipal')}</Button>
+        {result.isError && <p role="alert">{t('projectRegistry.identityCheckFailed')}</p>}
+        {candidate && !result.isLoading && <p role="status" className="text-xs">
+            {candidate.requirementsMet
+                ? t('projectRegistry.linuxCandidateUnbound')
+                : t('projectRegistry.linuxCandidateRejected')}
+            {' · '}{candidate.blocker}
+        </p>}
     </div>;
 }

@@ -92,6 +92,14 @@ const zh = {
     "observations": "就绪检查"
 },
     projectRegistry: {
+        linuxPrincipal: "Linux 本地用户候选检查",
+        linuxPrincipalWarning: "仅读取 Host 账户与运行目录；不绑定当前登录会话，也不允许执行用户进程。",
+        linuxUID: "Linux UID（1000–60000）",
+        checkLinuxPrincipal: "检查候选用户",
+        identityCheckFailed: "无法验证本机身份条件。未授予执行权限。",
+        linuxCandidateUnbound: "本机条件满足，但尚未绑定 Web 会话，禁止执行",
+        linuxCandidateRejected: "候选用户不符合当前安全约束",
+
         localEvidence: "本机观察记录",
         untrustedEvidence: "仅保存操作员报告的摘要，不是独立 Host/OS 身份认证；即使有记录，Workspace 仍未配置。",
         evidenceUnavailable: "本地证据无法读取或当前身份无权限。",

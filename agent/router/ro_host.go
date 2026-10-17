@@ -15,6 +15,7 @@ func (s *HostRouter) InitRouter(Router *gin.RouterGroup) {
 	{
 		hostRouter.GET("/operations", baseApi.ListHostOperations)
 		hostRouter.POST("/operations/plan", baseApi.PlanHostOperation)
+		hostRouter.POST("/operations/workspace-principal/preflight", baseApi.PreflightWorkspaceLinuxUser)
 		hostRouter.GET("/operations/:operationId", baseApi.GetHostOperation)
 		hostRouter.POST("/operations/:operationId/confirm", baseApi.ConfirmHostOperation)
 		hostRouter.POST("", baseApi.CreateHost)

@@ -52,7 +52,7 @@ func TestHostOperationsRequireLocalAdminSession(t *testing.T) {
 			}
 		})
 	}
-	for _, p := range []string{"/api/v1/hosts/operations", "/api/v1/hosts/operations/id/confirm", "/api/v1/hosts/a/../operations/plan"} {
+	for _, p := range []string{"/api/v1/hosts/operations", "/api/v1/hosts/operations/id/confirm", "/api/v1/hosts/operations/workspace-principal/preflight", "/api/v1/hosts/a/../operations/plan"} {
 		if !isHostOperationPath(p) {
 			t.Fatal("unguarded path", p)
 		}
