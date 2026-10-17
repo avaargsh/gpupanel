@@ -16,7 +16,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { currentNav } from '@/config/nav';
 import { clearCredentials } from '@/features/auth/authSlice';
-import { setCommandOpen, setCurrentNode, setLanguage, setThemeMode, setSidebarCollapsed, type ThemeMode } from '@/features/ui/uiSlice';
+import { setCommandOpen, setLanguage, setThemeMode, setSidebarCollapsed, type ThemeMode } from '@/features/ui/uiSlice';
 import { SUPPORTED_LANGUAGES } from '@/i18n';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { isBlockingDialogOpen } from './dialogOpen';
@@ -143,19 +143,14 @@ export default function Header() {
     );
 }
 
-/** 轻量本地模式芯片：显示当前连接模式，轻量可点击，不承担导航（对应参考页“本地模式”标识）。 */
+/** Read-only current scope: never a fake selector and never a claim of host readiness. */
 export function LocalModeChip({ node }: { node: string }) {
     const { t } = useTranslation();
-    const dispatch = useAppDispatch();
     const isLocal = node === 'local' || node === '';
     return (
         <span
             className="local-mode-chip"
-            data-state={isLocal ? 'ok' : 'unknown'}
-            role="button"
-            tabIndex={0}
-            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); dispatch(setCurrentNode(node)); } }}
-            onClick={() => void dispatch(setCurrentNode(node))}
+            data-state={isLocal ? 'local' : 'remote'}
             aria-label={t('workbench.scope')}
             title={t('workbench.scope')}
         >
