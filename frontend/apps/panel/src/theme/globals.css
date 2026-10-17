@@ -4,9 +4,7 @@
 
 @custom-variant dark (&:is(.dark *));
 
-/* GPUPanel vNext: 本地优先工作站视觉。
-   保留品牌蓝 #306FE6，在浅/深两模式下以“墨色墙面 + 白墙卡片 + 蓝色主动”区分层级，
-   避免渐变洗、统一圆角与 ALL-CAPS 标签等通用 SaaS 默认。 */
+/* GPUPanel workstation typography and theme tokens. */
 @theme inline {
     --font-heading: var(--font-sans);
     --font-sans: Inter, system-ui, -apple-system, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Noto Sans CJK SC', 'Source Han Sans SC', 'Microsoft YaHei', sans-serif;
@@ -50,75 +48,74 @@
     --radius-4xl: calc(var(--radius) * 2.6);
 }
 
-/* 浅色：白墙卡片置于淡灰墙面，品牌蓝作为唯一饱和主动色。 */
+/* ChatGPT-inspired visual principles: quiet chrome, readable neutral surfaces, one
+   unmistakable brand action color. This is GPUPanel's own token system. */
 :root {
-    --background: #f5f7fa;
-    --foreground: #171c24;
+    --background: #ffffff;
+    --foreground: #1d1d1f;
     --card: #ffffff;
-    --card-foreground: #171c24;
+    --card-foreground: #1d1d1f;
     --popover: #ffffff;
-    --popover-foreground: #171c24;
+    --popover-foreground: #1d1d1f;
     --primary: #306fe6;
     --primary-foreground: #ffffff;
-    --secondary: #eef0f4;
-    --secondary-foreground: #171c24;
-    --muted: #eef0f4;
-    --muted-foreground: #6b7280;
-    --accent: #e9eef9;
-    --accent-foreground: #171c24;
+    --secondary: #f4f4f5;
+    --secondary-foreground: #242426;
+    --muted: #f6f6f7;
+    --muted-foreground: #68686c;
+    --accent: #ededee;
+    --accent-foreground: #1d1d1f;
     --destructive: #b84f56;
-    --border: #e4e7ec;
-    --input: #d6dbe4;
+    --border: #e7e7e9;
+    --input: #dadadd;
     --ring: #306fe6;
     --chart-1: oklch(0.87 0 0);
     --chart-2: oklch(0.556 0 0);
     --chart-3: oklch(0.439 0 0);
     --chart-4: oklch(0.371 0 0);
     --chart-5: oklch(0.269 0 0);
-    --radius: 0.625rem;
-    --sidebar: #ffffff;
-    --sidebar-foreground: #171c24;
+    --radius: 0.875rem;
+    --sidebar: #f8f8f8;
+    --sidebar-foreground: #28282b;
     --sidebar-primary: #306fe6;
     --sidebar-primary-foreground: #ffffff;
-    --sidebar-accent: #eef0f4;
-    --sidebar-accent-foreground: #171c24;
-    --sidebar-border: #e4e7ec;
+    --sidebar-accent: #eaeaec;
+    --sidebar-accent-foreground: #1d1d1f;
+    --sidebar-border: #ebebed;
     --sidebar-ring: #306fe6;
 }
-
-/* 深色：墨色墙面，卡片稍亮，品牌蓝变为更明亮的 #7aa5ff，避免纯黑。 */
 .dark {
-    --background: #0a0c12;
-    --foreground: #edf0f7;
-    --card: #131822;
-    --card-foreground: #edf0f7;
-    --popover: #131822;
-    --popover-foreground: #edf0f7;
-    --primary: #7aa5ff;
-    --primary-foreground: #0a0c12;
-    --secondary: #252b37;
-    --secondary-foreground: #edf0f7;
-    --muted: #252b37;
-    --muted-foreground: #a7b0c1;
-    --accent: #252b37;
-    --accent-foreground: #edf0f7;
+    --background: #171717;
+    --foreground: #f3f3f3;
+    --card: #212121;
+    --card-foreground: #f3f3f3;
+    --popover: #262626;
+    --popover-foreground: #f3f3f3;
+    --primary: #92b5ff;
+    --primary-foreground: #171717;
+    --secondary: #303030;
+    --secondary-foreground: #f3f3f3;
+    --muted: #272727;
+    --muted-foreground: #b4b4b6;
+    --accent: #353535;
+    --accent-foreground: #fafafa;
     --destructive: #f0969b;
-    --border: #2a3040;
-    --input: #3b4558;
-    --ring: #7aa5ff;
+    --border: #383838;
+    --input: #464646;
+    --ring: #92b5ff;
     --chart-1: oklch(0.87 0 0);
     --chart-2: oklch(0.556 0 0);
     --chart-3: oklch(0.439 0 0);
     --chart-4: oklch(0.371 0 0);
     --chart-5: oklch(0.269 0 0);
-    --sidebar: #131822;
-    --sidebar-foreground: #edf0f7;
-    --sidebar-primary: #7aa5ff;
-    --sidebar-primary-foreground: #0a0c12;
-    --sidebar-accent: #252b37;
-    --sidebar-accent-foreground: #edf0f7;
-    --sidebar-border: #2a3040;
-    --sidebar-ring: #7aa5ff;
+    --sidebar: #202020;
+    --sidebar-foreground: #ececec;
+    --sidebar-primary: #92b5ff;
+    --sidebar-primary-foreground: #171717;
+    --sidebar-accent: #303030;
+    --sidebar-accent-foreground: #fafafa;
+    --sidebar-border: #343434;
+    --sidebar-ring: #92b5ff;
 }
 
 @layer base {
