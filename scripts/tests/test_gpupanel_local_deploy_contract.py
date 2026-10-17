@@ -18,6 +18,13 @@ class LocalDeployContract(unittest.TestCase):
         self.assertLess(src.index('python3 "$PREFLIGHT" --json'), start)
         self.assertLess(src.index("\nPY_INSTALL_APPROVAL\n"), start)
         self.assertIn('--approve-disposable-vm-install)', src)
+        # No package-supplied Python can execute as root on a default call.
+        self.assertLess(
+            src.index('[ "$APPROVE_DISPOSABLE_VM_INSTALL" = "1" ] || die'),
+            src.index('CORE_SRC="$(pick gpupanel-core'))
+        self.assertLess(
+            src.index('[ "$APPROVE_DISPOSABLE_VM_INSTALL" = "1" ] || die'),
+            src.index('PREFLIGHT="$(pick gpupanel-install-preflight.py'))
         self.assertNotIn('PREFLIGHT_JSON="$(python3 "$PREFLIGHT" --json', src[start:])
         self.assertLess(src.index('assert_kv_safe PASSWORD'), start)
         self.assertLess(start, src.index('mkdir -p "$PANEL_DIR" "$CONF_DIR"'))
@@ -122,10 +129,14 @@ class LocalDeployContract(unittest.TestCase):
             env["PATH"] = str(mock_bin) + os.pathsep + env.get("PATH", "")
             target = root / "target"
             checker = payload / "gpupanel-install-preflight.py"
+            checker_marker = root / "package-python-was-executed"
 
             def denied(report, *, approved=False, checker_exit=0):
+                checker_marker.unlink(missing_ok=True)
                 checker.write_text(
-                    "import sys\nprint(" + repr(json.dumps(report)) + ")\nsys.exit(" +
+                    "from pathlib import Path\nPath(" + repr(str(checker_marker)) +
+                    ").write_text('executed')\nimport sys\nprint(" +
+                    repr(json.dumps(report)) + ")\nsys.exit(" +
                     str(checker_exit) + ")\n", encoding="utf-8",
                 )
                 args = [
@@ -139,6 +150,9 @@ class LocalDeployContract(unittest.TestCase):
                 self.assertFalse(target.exists(), "denied installation mutated the target")
                 self.assertFalse((root / "install.log").exists())
                 self.assertFalse((payload / "log").exists())
+                # Without opt-in, even a tampered release-supplied checker
+                # must never be executed with the installer's root identity.
+                self.assertEqual(checker_marker.exists(), approved)
                 return run
 
             good = self._preflight_report()
