@@ -34,6 +34,24 @@ func (runner LocalRunner) Prepare(ctx context.Context, kind, target string) (str
 	switch kind {
 	case Diagnose:
 		return "read-only", "Read local OS, root filesystem and accelerator inventory. No system changes.", nil
+	case Start, Stop:
+		cli, err := runner.client()
+		if err != nil {
+			return "", "", err
+		}
+		defer cli.Close()
+		info, err := cli.ContainerInspect(ctx, target)
+		if err != nil {
+			return "", "", err
+		}
+		if err := checkContainerTransition(kind, target, info); err != nil {
+			return "", "", err
+		}
+		expected, err := snapshotContainerState(info)
+		if err != nil {
+			return "", "", err
+		}
+		return expected, fmt.Sprintf("%s container %s (%s) on local /var/run/docker.sock. This changes container process state; no automatic rollback.", kind, info.Name, target), nil
 	case Restart:
 		cli, err := runner.client()
 		if err != nil {
@@ -56,7 +74,7 @@ func (runner LocalRunner) Execute(ctx context.Context, r Receipt) (Result, error
 	if r.Kind == Diagnose {
 		return diagnose(ctx)
 	}
-	if r.Kind != Restart {
+	if r.Kind != Restart && r.Kind != Start && r.Kind != Stop {
 		return Result{}, ErrDenied
 	}
 	cli, err := runner.client()
@@ -65,6 +83,48 @@ func (runner LocalRunner) Execute(ctx context.Context, r Receipt) (Result, error
 	}
 	defer cli.Close()
 	before, err := cli.ContainerInspect(ctx, r.Target)
+	if r.Kind == Start || r.Kind == Stop {
+		if err != nil {
+			return Result{}, errors.New("container unavailable before mutation; no operation attempted")
+		}
+		expected, snapshotErr := snapshotContainerState(before)
+		if snapshotErr != nil || expected != r.Expected || checkContainerTransition(r.Kind, r.Target, before) != nil {
+			return Result{}, errors.New("container state changed since preview; no operation attempted")
+		}
+		if err := ctx.Err(); err != nil {
+			return Result{}, err
+		}
+		if r.Kind == Start {
+			err = cli.ContainerStart(ctx, r.Target, container.StartOptions{})
+		} else {
+			timeout := 5
+			err = cli.ContainerStop(ctx, r.Target, container.StopOptions{Timeout: &timeout})
+		}
+		if err != nil {
+			return Result{Unknown: true}, errors.New("container mutation response uncertain; inspect Docker before planning another operation")
+		}
+		// Only an independent inspect with the expected transition can produce
+		// Verified. This is an observed state fact, not operation ownership proof.
+		for {
+			observed, observeErr := cli.ContainerInspect(ctx, r.Target)
+			if observeErr != nil {
+				return Result{Unknown: true}, errors.New("container mutation acknowledged but observation unavailable")
+			}
+			if observedContainerTransition(r.Kind, before, observed) {
+				output, _ := json.Marshal(map[string]interface{}{
+					"id": observed.ID, "operation": r.Kind, "observedStatus": observed.State.Status,
+					"startedAt": observed.State.StartedAt, "finishedAt": observed.State.FinishedAt,
+					"priorStartedAt": before.State.StartedAt, "priorFinishedAt": before.State.FinishedAt,
+				})
+				return Result{Verified: true, Output: string(output)}, nil
+			}
+			select {
+			case <-ctx.Done():
+				return Result{Unknown: true}, ctx.Err()
+			case <-time.After(200 * time.Millisecond):
+			}
+		}
+	}
 	if err != nil || before.ID != r.Target || before.State == nil || !before.State.Running || before.State.StartedAt != r.Expected || before.HostConfig == nil || before.HostConfig.AutoRemove {
 		return Result{}, errors.New("container changed since preview; no restart attempted")
 	}
