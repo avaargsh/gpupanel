@@ -85,6 +85,7 @@ SKIP_CONFIG=0
 BIND_ADDRESS="0.0.0.0"
 AUTO_PROVISION=enabled
 APPROVE_DISPOSABLE_VM_INSTALL=0
+EXPLICIT_PAYLOAD=0
 PREFLIGHT_ARGS=()
 
 while [ $# -gt 0 ]; do
@@ -94,7 +95,7 @@ while [ $# -gt 0 ]; do
         --bind-address) BIND_ADDRESS="${2:-}"; shift 2 ;;
         --experimental-ubuntu-26) PREFLIGHT_ARGS+=(--experimental-ubuntu-26); shift ;;
         --base-dir)  BASE_DIR="${2:-}"; shift 2 ;;
-        --payload)   PAYLOAD="${2:-}"; shift 2 ;;
+        --payload)   PAYLOAD="${2:-}"; EXPLICIT_PAYLOAD=1; shift 2 ;;
         --port)      PORT="${2:-}"; shift 2 ;;
         --username)  USERNAME="${2:-}"; shift 2 ;;
         --password)  PASSWORD="${2:-}"; shift 2 ;;
@@ -139,6 +140,10 @@ UNIT_DIR="/etc/systemd/system"
 # 2. this script's own directory (extracted tarball, or a flattened payload)
 # 3. the newest build/release/gpupanel-* from a source checkout
 # 4. the raw build/ binaries from a source checkout
+# Full release payloads are atomic: never silently use repo fallbacks when
+# their required files are absent. Only implicit raw build/ source mode may
+# combine locally compiled binaries with source-controlled config/units.
+SOURCE_BUILD_MODE=0
 if [ -z "$PAYLOAD" ]; then
     if [ -f "$SCRIPT_DIR/gpupanel-core" ]; then
         PAYLOAD="$SCRIPT_DIR"
@@ -148,17 +153,34 @@ if [ -z "$PAYLOAD" ]; then
             PAYLOAD="$_cand"
         elif [ -f "$ROOT/build/gpupanel-core" ]; then
             PAYLOAD="$ROOT/build"
+            SOURCE_BUILD_MODE=1
         fi
     fi
 fi
 [ -n "$PAYLOAD" ] || die "no release payload found; pass --payload DIR or run deploy/build.sh first"
 
-# In payload mode use $PAYLOAD/<name>; otherwise fall back to the repo files.
+# A supplied or auto-discovered release must be complete and not symlinked.
+# Otherwise pick() would splice release binaries together with unrelated
+# source-checkout pctl, units and Python preflight (a provenance violation).
+if [ "$SOURCE_BUILD_MODE" = "0" ]; then
+    [ -d "$PAYLOAD" ] && [ ! -L "$PAYLOAD" ] || die "release payload directory must be an ordinary directory"
+    [ ! -L "$PAYLOAD/initscript" ] || die "release unit directory must not be a symlink"
+    for rel in gpupanel-core gpupanel-agent pctl app.yaml gpupanel-install-preflight.py \
+               initscript/gpupanel-core.service initscript/gpupanel-agent.service; do
+        [ -f "$PAYLOAD/$rel" ] && [ ! -L "$PAYLOAD/$rel" ] \
+            || die "incomplete or redirected release payload: $rel"
+    done
+fi
+
+# Source fallback is allowed only for an *implicit* raw source build. A
+# complete release never falls back to another checkout or package.
 pick() {
-    if [ -n "$PAYLOAD" ] && [ -f "$PAYLOAD/$1" ]; then
-        echo "$PAYLOAD/$1"
+    if [ "$SOURCE_BUILD_MODE" = "0" ]; then
+        printf '%s\\n' "$PAYLOAD/$1"
+    elif [ -f "$PAYLOAD/$1" ]; then
+        printf '%s\\n' "$PAYLOAD/$1"
     else
-        echo "$2"
+        printf '%s\\n' "$2"
     fi
 }
 
