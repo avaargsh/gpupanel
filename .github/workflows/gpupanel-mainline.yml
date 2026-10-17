@@ -4,6 +4,7 @@ on:
     branches: [main, dev-v2]
   push:
     branches: [main]
+    tags: ['v*']
   workflow_dispatch:
 permissions:
   contents: read
@@ -45,13 +46,6 @@ jobs:
         working-directory: frontend
       - run: pnpm test
         working-directory: frontend
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-      - run: python -m pip install playwright==1.63.0
-      - run: python -m playwright install --with-deps chromium
-      - name: Simulated API browser negative controls (not live Host acceptance)
-        run: python scripts/browser/run-react-tests.py
   backend-safety:
     runs-on: ubuntu-24.04
     timeout-minutes: 25
@@ -78,3 +72,32 @@ jobs:
         working-directory: core
       - run: go build -o /tmp/gpupanel-agent ./cmd/server
         working-directory: agent
+
+  browser-negatives-on-demand:
+    # Real Chromium is useful for integration/release validation but not a
+    # prerequisite for every small development PR; frontend build, tests and
+    # backend authorization safety checks remain in normal PR CI.
+    if: ${{ github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/v') }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: '12.8.1'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+        working-directory: frontend
+      - run: pnpm build
+        working-directory: frontend
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install playwright==1.63.0
+      - run: python -m playwright install --with-deps chromium
+      - name: Simulated API browser negative controls (not live Host acceptance)
+        run: python scripts/browser/run-react-tests.py

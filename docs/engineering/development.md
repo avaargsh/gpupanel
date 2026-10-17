@@ -78,3 +78,14 @@ sudo/pctl 拉起已安装后端，因此不作为默认开发入口。源码改�
 [证据索引](../evidence/README.md) 的 historical/source/live 分级阅读，
 当前交付状态、整改所有权与 NOT RUN 清单见 [GOVERNANCE_STATUS](../STATUS.md)。
 未执行的命令一律记为 NOT RUN，不改写为 PASS。
+
+## DEV / TEST / RELEASE 分层
+
+- **DEV 快速迭代**：PR 默认运行 Python 合约/单测、React build/typecheck/test、
+  Core/Agent Go 安全回归。不得依赖已部署的生产实例来为当前源码背书。
+- **TEST 系统联调**：在 `GPUPanel mainline baseline` 里点击
+  `workflow_dispatch` 手动跑 Chromium 浏览器负向测试；真实 Host/Docker
+  实验继续用现有独立可复现的 Canaries，不作为改文案的前置条件。
+- **RELEASE 发布**：创建 `v*` 标签时重新运行完整 baseline + Chromium；
+  源码许可、GPL 继承、安装包和环境安全审查仍按发布路径执行。
+  CI 模拟通过不能写成真机或发布验收。
