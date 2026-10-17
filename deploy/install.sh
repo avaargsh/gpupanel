@@ -10,8 +10,9 @@
 #                   [--experimental-ubuntu-26] [--no-auto-provision]
 #                   [--approve-disposable-vm-install]
 #
-# Without explicit disposable-VM acceptance, this installer diagnoses but does
-# NOT install. This is a laboratory override, never production release approval.
+# Without explicit disposable-VM acceptance, this installer exits BEFORE
+# running any artifact-supplied code. Run preflight separately as non-root.
+# This is a laboratory override, never production release approval.
 #
 # Self-contained: works from a source checkout (deploy/install.sh) and from an
 # extracted release tarball (gpupanel-<version>-<os>-<arch>/install.sh).
@@ -113,6 +114,13 @@ case "$BASE_DIR" in
     *) die "--base-dir must be an absolute path (got: $BASE_DIR)" ;;
 esac
 BASE_DIR="${BASE_DIR%/}"
+[ -n "$BASE_DIR" ] || die "refuse the filesystem root as installation base-dir"
+
+# The payload may contain a Python checker. Never execute package-controlled
+# code as root merely because a caller tried the install command without
+# authorizing a disposable VM. A separate non-root preflight invocation is
+# the diagnostic entrypoint, NOT install.sh's default behavior.
+[ "$APPROVE_DISPOSABLE_VM_INSTALL" = "1" ] || die "GPUPanel install authorization denied before running any payload or preflight code. First run the read-only GPUPanel preflight separately as a normal user; only use --approve-disposable-vm-install on an isolated, snapshotted Ubuntu 24.04 test VM."
 
 [ "$(id -u)" = "0" ] || die "install.sh must run as root (try: sudo $0 $*)"
 
@@ -231,10 +239,9 @@ detect_ip() {
 PREFLIGHT="$(pick gpupanel-install-preflight.py "$ROOT/scripts/gpupanel-install-preflight.py")"
 [ -f "$PREFLIGHT" ] || die "missing reviewed collision preflight"
 command -v python3 >/dev/null || die "Python 3 is required for read-only preflight"
-# Diagnostic exit 0 means only no *known* blocker was found, never install
-# authorization. Capture a single report, validate its complete conservative
-# contract, then require an explicit opt-in for a disposable Ubuntu 24.04 VM.
-# The override cannot downgrade any BLOCKED/UNKNOWN required safety check.
+# The explicitly approved VM path still must validate the complete
+# conservative diagnostic JSON before writing to any host path. Exit 0 alone
+# is never sufficient; required BLOCKED/UNKNOWN cannot be overridden.
 PREFLIGHT_JSON="$(python3 "$PREFLIGHT" --json "${PREFLIGHT_ARGS[@]}")" || die "preflight blocked; installation was not started"
 printf '%s\n' "$PREFLIGHT_JSON"
 GPUPANEL_PREFLIGHT_JSON="$PREFLIGHT_JSON" python3 - "$APPROVE_DISPOSABLE_VM_INSTALL" <<'PY_INSTALL_APPROVAL' || die "GPUPanel install authorization denied; no host mutation"
