@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Read-only collision preflight for future GPUPanel Ubuntu single-host installer.
 
-This checker does not install or modify any services. Even a PASS is not a
-production installer approval: runtime namespace isolation is not yet done.
+This checker does not install or modify any services. Even a PASS is not
+installation approval: real VM rollback and host ownership remain unverified.
 """
 from __future__ import annotations
 
@@ -26,7 +26,24 @@ GPUPANEL_PATHS = ("usr/local/bin/pctl", "usr/local/bin/gpupanel-core",
                   "etc/gpupanel", "opt/gpupanel", "var/lib/gpupanel",
                   "etc/systemd/system/gpupanel.service",
                   "etc/systemd/system/gpupanel-agent.service")
-RUNTIME_PATHS = OLD_PATHS + GPUPANEL_PATHS
+# A panel can be installed as a vendor unit, generated in /run, or enabled
+# through a *.wants symlink even when /etc/systemd/system/<name> is absent.
+# This is only a bounded on-disk inventory, not a live systemctl state check.
+PANEL_UNIT_NAMES = (
+    "1panel.service", "1panel-agent.service",
+    "gpupanel.service", "gpupanel-core.service", "gpupanel-agent.service",
+)
+SYSTEMD_UNIT_LOCATIONS = (
+    "usr/lib/systemd/system", "run/systemd/system",
+    "etc/systemd/system/multi-user.target.wants",
+    "etc/systemd/system/default.target.wants",
+    "etc/systemd/system/sockets.target.wants",
+)
+RUNTIME_PATHS = OLD_PATHS + GPUPANEL_PATHS + tuple(
+    f"{directory}/{name}"
+    for directory in SYSTEMD_UNIT_LOCATIONS
+    for name in PANEL_UNIT_NAMES
+)
 
 
 def unsafe_runtime_path_parents(root: Path) -> list[str]:
