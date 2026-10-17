@@ -2,6 +2,7 @@ import 'reset-css/reset.css';
 import '@/theme/globals.css';
 // 工作区共用的页面级样式（workbench / host / app / container / database / website）。
 import '@/pages/workbench.css';
+import '@/pages/management.css';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import '@/i18n';

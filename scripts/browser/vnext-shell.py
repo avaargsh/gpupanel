@@ -108,6 +108,37 @@ with sync_playwright() as p:
     assert page.locator('.workspace-header').bounding_box()['x'] == 240
     page.locator('#workspace-content').evaluate('(el) => { el.scrollTop = 0; el.blur(); }')
     page.screenshot(path=str(OUTPUT / 'home-light.png'), full_page=True)
+    # SIMULATED management screens: consistent headers/tabs across actual routes.
+    # Do not claim live Host/Docker/GPU acceptance from these screenshots.
+    for route, snap in [
+        ('/host?tab=overview', 'management-host.png'),
+        ('/containers', 'management-containers.png'),
+        ('/apps?tab=installed', 'management-apps-installed.png'),
+    ]:
+        page.goto(URL + route)
+        page.wait_for_load_state('networkidle')
+        expect(page.locator('.management-page-heading h1')).to_be_visible()
+        expect(page.locator('.management-shell .module-tabs')).to_be_visible()
+        assert page.locator('.management-shell .module-tabs [role="tab"]').count() >= 3
+        assert page.evaluate('document.documentElement.scrollWidth <= innerWidth')
+        if route.startswith('/host') or route == '/containers':
+            # Card headings must not collide with the clipped card top edge.
+            title = page.locator('.management-shell [data-slot="card-title"]').first
+            header_card = title.locator('xpath=ancestor::*[@data-slot="card"][1]')
+            title_box = title.bounding_box()
+            card_box = header_card.bounding_box()
+            assert title_box and card_box and title_box['y'] >= card_box['y'] + 10, (
+                'management card heading has insufficient top padding'
+            )
+            cards = page.locator('.host-overview-stats [data-slot="card"]' if route.startswith('/host')
+                                 else '.container-overview-stats [data-slot="card"]')
+            expect(cards).to_have_count(4)
+            assert all((item.bounding_box() or {}).get('height', 0) >= 100 for item in cards.all()), (
+                'resource metrics must have space for label, value and progress'
+            )
+        page.screenshot(path=str(OUTPUT / snap), full_page=True)
+    page.goto(URL)
+    page.wait_for_load_state('networkidle')
     page.get_by_role('button', name='Switch theme', exact=True).click()
     expect(page.locator('html')).to_have_class(re.compile(r'(^|\s)dark(\s|$)'))
     # Neutral, quiet surfaces: dark workspace #171717 and sidebar labels #ececec.
@@ -240,7 +271,7 @@ with sync_playwright() as p:
     page.screenshot(path=str(OUTPUT / 'home-640.png'), full_page=True)
     assert not errors, errors
     result = {'kind': 'SIMULATED API; not real device or deployment acceptance', 'page_errors': errors,
-              'checks': ['light/dark', '1440/1280/1024/640 layout', 'Chinese/English', 'collapse persistence', 'keyboard skip/search/escape',
+              'checks': ['light/dark', '1440/1280/1024/640 layout', 'Host Containers Apps shared headers and tab layout (simulated)', 'Chinese/English', 'collapse persistence', 'keyboard skip/search/escape',
                          'registered project metadata (simulated)', 'failed refresh clears metrics', 'scope resets draft',
                          'terminal HTTP and WebSocket select remote scope', 'installed deep link'],
               'terminal_scope_requests': len(terminal_requests)}
