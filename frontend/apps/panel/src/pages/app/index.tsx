@@ -1,5 +1,6 @@
 import { useSearchParams } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import ManagementPageHeader from '@/components/ManagementPageHeader';
 import { useTranslation } from 'react-i18next';
 import AppStoreTab from './store';
 import InstalledTab from './installed';
@@ -14,7 +15,8 @@ export default function AppsPage() {
     const tab = (TABS as readonly string[]).includes(requested) ? requested : 'store';
     const setTab = (value: string) => setQuery({ tab: value });
     return (
-        <div className="module-shell">
+        <div className="module-shell management-shell">
+            <ManagementPageHeader title={t('workbench.apps')} />
             <Tabs value={tab} onValueChange={setTab}>
                 <TabsList variant="line" className="module-tabs">
                     {TABS.map((key) => (
