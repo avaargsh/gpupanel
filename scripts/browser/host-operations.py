@@ -1,9 +1,11 @@
 """SIMULATED API: operation preview, explicit consent and uncertain outcome UX."""
 import json
+import re
 from playwright.sync_api import sync_playwright, expect
 
 URL = 'http://127.0.0.1:4189'
-state = {'plans': [], 'confirms': 0, 'lost': False}
+CANARY = 'a' * 64
+state = {'plans': [], 'confirms': 0, 'lost': False, 'container_mutations': 0}
 
 
 def api(route):
@@ -13,8 +15,10 @@ def api(route):
         data = {'name': 'fixture', 'role': 'ADMIN'}
     elif path == '/hosts/operations/plan':
         intent = route.request.post_data_json
-        assert 'command' not in intent and intent['target'] == 'local'
-        data = {'id': 'fixture-operation-' + str(len(state['plans'])), 'kind': intent['kind'], 'target': 'local',
+        assert 'command' not in intent
+        assert ((intent['kind'] == 'host.diagnose' and intent['target'] == 'local') or
+                (intent['kind'] == 'container.restart' and intent['target'] == CANARY))
+        data = {'id': 'fixture-operation-' + str(len(state['plans'])), 'kind': intent['kind'], 'target': intent['target'],
                 'host': 'local', 'impact': 'Read local OS only. No changes.', 'expected': 'read-only',
                 'hash': 'fixture-bound-hash', 'state': 'planned', 'output': '', 'error': '',
                 'createdAt': '2026-10-16T00:00:00Z', 'expiresAt': '2099-01-01T00:00:00Z', 'verified': False}
@@ -31,6 +35,20 @@ def api(route):
         data['output'] = '{"hostname":"observed-fixture"}'
     elif path == '/hosts/operations':
         data = state['plans']
+    elif path == '/containers/search':
+        data = {'items': [{'containerID': CANARY, 'name': 'fixture-canary',
+                           'imageName': 'fixture:local', 'createTime': '2026-10-17',
+                           'state': 'running', 'runTime': '1m', 'network': [], 'ports': [],
+                           'isFromApp': False, 'isFromCompose': False}], 'total': 1}
+    elif path == '/containers/list/stats':
+        data = []
+    elif path == '/containers/status':
+        data = {'containerCount': 1, 'running': 1}
+    elif path == '/containers/docker/status':
+        data = {'isExist': True, 'isActive': True}
+    elif path == '/containers/operate':
+        state['container_mutations'] += 1
+        raise AssertionError('UI restart must not use unverified legacy /containers/operate')
     route.fulfill(status=200, content_type='application/json', body=json.dumps({'code': 200, 'data': data}))
 
 
@@ -64,8 +82,25 @@ with sync_playwright() as p:
     page.get_by_role('button', name='Refresh', exact=True).click()
     expect(page.locator('summary').filter(has_text='unknown')).to_be_visible()
     assert state['confirms'] == 2
+
+    # Container -> HostOps bridge: full ID selects a plan intention, not execution.
+    planned, confirmed = len(state['plans']), state['confirms']
+    page.goto(URL + '/containers')
+    page.get_by_role('tab', name='Containers', exact=True).click()
+    row = page.get_by_role('row').filter(has_text='fixture-canary')
+    expect(row).to_be_visible()
+    row.get_by_role('button', name='Actions', exact=True).click()
+    page.get_by_role('menuitem', name='Review restart', exact=True).click()
+    expect(page).to_have_url(re.compile(r'/host\\?tab=operations&restartTarget=' + CANARY))
+    expect(page.get_by_role('textbox', name='Full container ID', exact=True)).to_have_value(CANARY)
+    assert len(state['plans']) == planned and state['confirms'] == confirmed
+    assert state['container_mutations'] == 0
+    page.get_by_role('button', name='Preview operation', exact=True).click()
+    expect(page.get_by_role('button', name='Confirm and execute', exact=True)).to_be_enabled()
+    assert len(state['plans']) == planned + 1 and state['confirms'] == confirmed
+    # Do not confirm: only an authorized human confirms a real Docker operation.
     page.set_viewport_size({'width': 1024, 'height': 900})
     assert page.evaluate('document.documentElement.scrollWidth <= innerWidth')
     assert not errors, errors
     browser.close()
-print(json.dumps({'kind': 'SIMULATED API, not deployment', 'checks': ['preview without execution', 'explicit confirmation', 'refresh restores receipts without replay', 'unknown outcome queries only', '1024 layout'], 'page_errors': errors}))
+print(json.dumps({'kind': 'SIMULATED API, not deployment', 'checks': ['preview without execution', 'explicit confirmation', 'refresh restores receipts without replay', 'unknown outcome queries only', '1024 layout', 'container deep-link requests preview only, no legacy mutation'], 'page_errors': errors}))
