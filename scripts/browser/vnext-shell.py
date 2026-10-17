@@ -122,6 +122,14 @@ with sync_playwright() as p:
         assert page.locator('.management-shell .module-tabs [role="tab"]').count() >= 3
         assert page.evaluate('document.documentElement.scrollWidth <= innerWidth')
         if route.startswith('/host') or route == '/containers':
+            # Card headings must not collide with the clipped card top edge.
+            title = page.locator('.management-shell [data-slot="card-title"]').first
+            header_card = title.locator('xpath=ancestor::*[@data-slot="card"][1]')
+            title_box = title.bounding_box()
+            card_box = header_card.bounding_box()
+            assert title_box and card_box and title_box['y'] >= card_box['y'] + 10, (
+                'management card heading has insufficient top padding'
+            )
             cards = page.locator('.host-overview-stats [data-slot="card"]' if route.startswith('/host')
                                  else '.container-overview-stats [data-slot="card"]')
             expect(cards).to_have_count(4)
