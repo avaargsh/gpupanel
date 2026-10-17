@@ -67,10 +67,12 @@ export default function ContainerList({ onOpenLogs, onOpenExec }: ContainerListP
     const { t } = useTranslation();
     const navigate = useNavigate();
     const currentNode = useAppSelector((state) => state.ui.currentNode) || 'local';
-    const eligibleForControlledRestart = (id: string) => currentNode === 'local' && /^[a-f0-9]{64}$/.test(id) && !pendingOperation;
-    const openControlledRestart = (id: string) => {
-        if (!eligibleForControlledRestart(id)) return;
-        navigate(`/host?tab=operations&restartTarget=${id}`);
+    const eligibleForControlledOperation = (id: string) =>
+        currentNode === 'local' && /^[a-f0-9]{64}$/.test(id) &&
+        !pendingOperation && !unresolvedContainerOperationExists();
+    const openControlledOperation = (kind: 'start' | 'stop' | 'restart', id: string) => {
+        if (!eligibleForControlledOperation(id)) return;
+        navigate(`/host?tab=operations&operationKind=container.${kind}&operationTarget=${id}`);
     };
     const node = useAppSelector((s) => s.ui.currentNode) || 'local';
     const [pendingOperation, setPendingOperation] = useState(readPendingContainerOperation);
@@ -345,25 +347,35 @@ export default function ContainerList({ onOpenLogs, onOpenExec }: ContainerListP
                                     <Button
                                         size="sm"
                                         variant="outline"
-                                        onClick={() => runOperate('start', selectedNames)}
+                                        disabled={selected.length !== 1 || !rows.some((row) => selected.includes(row.containerID) &&
+                                            (row.state === 'created' || row.state === 'exited') && eligibleForControlledOperation(row.containerID))}
+                                        onClick={() => {
+                                            const match = rows.find((row) => selected.includes(row.containerID));
+                                            if (match && selected.length === 1 && (match.state === 'created' || match.state === 'exited')) openControlledOperation('start', match.containerID);
+                                        }}
                                     >
                                         {t('container.actions.start')}
                                     </Button>
                                     <Button
                                         size="sm"
                                         variant="outline"
-                                        onClick={() => runOperate('stop', selectedNames)}
+                                        disabled={selected.length !== 1 || !rows.some((row) => selected.includes(row.containerID) &&
+                                            row.state === 'running' && eligibleForControlledOperation(row.containerID))}
+                                        onClick={() => {
+                                            const match = rows.find((row) => selected.includes(row.containerID));
+                                            if (match && selected.length === 1 && match.state === 'running') openControlledOperation('stop', match.containerID);
+                                        }}
                                     >
                                         {t('container.actions.stop')}
                                     </Button>
                                     <Button
                                         size="sm"
                                         variant="outline"
-                                        disabled={selected.length !== 1 || !rows.some((row) => selected.includes(row.containerID) && eligibleForControlledRestart(row.containerID))}
+                                        disabled={selected.length !== 1 || !rows.some((row) => selected.includes(row.containerID) && eligibleForControlledOperation(row.containerID))}
                                         title={t('container.reconcile.restartSingleHint')}
                                         onClick={() => {
                                             const match = rows.find((row) => selected.includes(row.containerID));
-                                            if (match && selected.length === 1) openControlledRestart(match.containerID);
+                                            if (match && selected.length === 1) openControlledOperation('restart', match.containerID);
                                         }}
                                     >
                                         {t('container.reconcile.controlledRestart')}
@@ -473,17 +485,19 @@ export default function ContainerList({ onOpenLogs, onOpenExec }: ContainerListP
                                                             <Button
                                                                 size="sm"
                                                                 variant="outline"
-                                                                onClick={() => runOperate('stop', [row.name])}
+                                                                disabled={!eligibleForControlledOperation(row.containerID)}
+                                                                onClick={() => openControlledOperation('stop', row.containerID)}
                                                             >
                                                                 {t('container.actions.stop')}
                                                             </Button>
                                                         )}
                                                         {(row.state === 'exited' ||
                                                             row.state === 'created' ||
-                                                            row.state === 'dead') && (
+                                                            row.state === 'exited') && (
                                                             <Button
                                                                 size="sm"
-                                                                onClick={() => runOperate('start', [row.name])}
+                                                                disabled={!eligibleForControlledOperation(row.containerID)}
+                                                                onClick={() => openControlledOperation('start', row.containerID)}
                                                             >
                                                                 {t('container.actions.start')}
                                                             </Button>
@@ -531,7 +545,7 @@ export default function ContainerList({ onOpenLogs, onOpenExec }: ContainerListP
                                                                     {isRunning && (
                                                                         <DropdownMenuItem
                                                                             disabled={!eligibleForControlledRestart(row.containerID)}
-                                                                            onSelect={() => openControlledRestart(row.containerID)}
+                                                                            onSelect={() => openControlledOperation('restart', row.containerID)}
                                                                         >
                                                                             {t('container.reconcile.controlledRestart')}
                                                                         </DropdownMenuItem>
