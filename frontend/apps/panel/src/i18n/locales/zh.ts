@@ -6,6 +6,8 @@ const zh = {
         "operation": "操作类型",
         "diagnose": "诊断本机",
         "restart": "重启指定容器",
+        "start": "启动指定容器",
+        "stop": "停止指定容器",
         "containerId": "完整的 64 位容器 ID",
         "preview": "预览操作",
         "target": "目标主机与资源",
@@ -288,6 +290,8 @@ const zh = {
     },
     container: {
         reconcile: {
+            controlledStart: '审核后启动',
+            controlledStop: '审核后停止',
             controlledRestart: '审核后重启',
             restartSingleHint: '仅支持本机单个运行中容器，需管理员及 Docker 完整 64 位 ID。前往主机运维预览并确认。',
             title: '容器操作待核对',

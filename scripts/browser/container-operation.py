@@ -34,7 +34,7 @@ def api(route):
         data = {'isExist': True, 'isActive': True}
     elif path == '/containers/operate':
         body = route.request.post_data_json
-        assert body == {'names': ['fixture-nginx'], 'operation': 'stop'}
+        assert body == {'names': ['fixture-nginx'], 'operation': 'pause'}
         calls['operate'] += 1
         route.abort('failed')  # Docker could have acted; ACK was lost.
         return
@@ -56,19 +56,21 @@ with sync_playwright() as p:
     page.wait_for_load_state('networkidle')
     page.get_by_role('tab', name='Containers', exact=True).click()
     expect(page.get_by_role('row').filter(has_text='fixture-nginx')).to_be_visible()
-    page.get_by_role('row').filter(has_text='fixture-nginx').get_by_role('button', name='Stop', exact=True).click()
+    page.get_by_role('row').filter(has_text='fixture-nginx').get_by_role('button', name='Actions', exact=True).click()
+    page.get_by_role('menuitem', name='Pause', exact=True).click()
     expect(page.get_by_role('status', name='Container operation requires review')).to_be_visible()
     expect(page.get_by_role('status', name='Container operation requires review').get_by_text('Request outcome unknown.', exact=False)).to_be_visible()
     assert calls['operate'] == 1
     receipt = page.evaluate(f"JSON.parse(sessionStorage.getItem('{KEY}'))")
     assert set(receipt) == {'node', 'operation', 'names', 'createdAt'}
-    assert receipt['node'] == 'local' and receipt['names'] == ['fixture-nginx']
+    assert receipt['node'] == 'local' and receipt['names'] == ['fixture-nginx'] and receipt['operation'] == 'pause'
 
     page.reload()
     page.wait_for_load_state('networkidle')
     page.get_by_role('tab', name='Containers', exact=True).click()
     expect(page.get_by_role('status', name='Container operation requires review')).to_be_visible()
-    page.get_by_role('row').filter(has_text='fixture-nginx').get_by_role('button', name='Stop', exact=True).click()
+    page.get_by_role('row').filter(has_text='fixture-nginx').get_by_role('button', name='Actions', exact=True).click()
+    page.get_by_role('menuitem', name='Pause', exact=True).click()
     assert calls['operate'] == 1, 'unreviewed reload must never resend a mutation'
     page.get_by_role('button', name='Refresh observations', exact=True).click()
     assert calls['operate'] == 1, 'read-only refresh must not retry mutation'

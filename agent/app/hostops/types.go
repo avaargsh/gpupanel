@@ -9,6 +9,8 @@ import (
 
 const Diagnose = "host.diagnose"
 const Restart = "container.restart"
+const Start = "container.start"
+const Stop = "container.stop"
 
 // Receipt is additive storage in task.db, not an existing Task schema change.
 // Owner includes the authenticated session hash and is never returned to clients.
