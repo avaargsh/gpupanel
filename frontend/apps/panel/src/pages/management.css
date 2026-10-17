@@ -35,7 +35,20 @@
 .management-shell .module-tabs [data-slot="tabs-trigger"]:focus-visible {
     outline: 2px solid var(--ring); outline-offset: -2px;
 }
-.management-shell .module-tab-content { min-width: 0; }
+.management-shell .module-tab-content { min-width: 0; padding-top: 6px; }
+
+/* Stats must remain readable even when nested Card utilities request h-full.
+   The compact cards contain labels, observed values and sometimes progress bars. */
+.management-shell .host-overview-stats [data-slot="card"],
+.management-shell .container-overview-stats [data-slot="card"] {
+    height: auto; min-height: 112px; padding-top: 12px; padding-bottom: 12px;
+}
+.management-shell .host-overview-card { height: auto; }
+.management-shell .host-overview-stats [data-slot="card-content"],
+.management-shell .container-overview-stats [data-slot="card-content"] {
+    display: flex; flex-direction: column; justify-content: center; min-height: 78px;
+}
+
 
 /* One spacing scale for headers, toolbars, cards and data grids. */
 .management-shell .module-toolbar {
@@ -54,7 +67,7 @@
 .management-shell .container-list-card,
 .management-shell .app-store-card {
     border-radius: 16px;
-    box-shadow: none;
+    box-shadow: 0 0 0 1px var(--border);
 }
 .management-shell [data-slot="card-title"] { font-size: 14px; font-weight: 600; letter-spacing: -.01em; }
 .management-shell [data-slot="card-header"] { align-items: center; }
