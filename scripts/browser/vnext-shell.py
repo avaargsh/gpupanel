@@ -153,6 +153,10 @@ with sync_playwright() as p:
     page.screenshot(path=str(OUTPUT / 'host-terminal-status.png'), full_page=True)
     page.goto(URL)
     page.wait_for_load_state('networkidle')
+    # Keep the screenshot's local-shell observation separate from the later
+    # remote-scope invariants. Never weaken the remote authorization assertion.
+    state['requests'][:] = [entry for entry in state['requests'] if entry[0] != '/hosts/terminal/local']
+    state['sockets'].clear()
     page.get_by_role('button', name='Switch theme', exact=True).click()
     expect(page.locator('html')).to_have_class(re.compile(r'(^|\s)dark(\s|$)'))
     # Neutral, quiet surfaces: dark workspace #171717 and sidebar labels #ececec.
