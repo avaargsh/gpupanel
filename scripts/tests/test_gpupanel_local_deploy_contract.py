@@ -16,7 +16,7 @@ class LocalDeployContract(unittest.TestCase):
         src = INSTALLER.read_text(encoding="utf-8")
         start = src.index("\ninit_install_log\nbanner")
         self.assertLess(src.index('python3 "$PREFLIGHT" --json'), start)
-        self.assertLess(src.index("\\nPY_INSTALL_APPROVAL\\n"), start)
+        self.assertLess(src.index("\nPY_INSTALL_APPROVAL\n"), start)
         self.assertIn('--approve-disposable-vm-install)', src)
         self.assertNotIn('PREFLIGHT_JSON="$(python3 "$PREFLIGHT" --json', src[start:])
         self.assertLess(src.index('assert_kv_safe PASSWORD'), start)
@@ -50,7 +50,7 @@ class LocalDeployContract(unittest.TestCase):
 
     def _authorize(self, report, approved="1"):
         src = INSTALLER.read_text(encoding="utf-8")
-        code = src.split("<<'PY_INSTALL_APPROVAL' || die", 1)[1].split("\\n", 1)[1].split("\\nPY_INSTALL_APPROVAL\\n", 1)[0]
+        code = src.split("<<'PY_INSTALL_APPROVAL' || die", 1)[1].split("\n", 1)[1].split("\nPY_INSTALL_APPROVAL\n", 1)[0]
         env = os.environ.copy()
         env["GPUPANEL_PREFLIGHT_JSON"] = json.dumps(report)
         # Exercise precisely the code executed by bash, not a reimplementation.
