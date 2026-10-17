@@ -25,10 +25,12 @@ import { Spinner } from '@/components/ui/spinner';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { formatPercent } from '@/utils/format';
 import { useAppSelector } from '@/store/hooks';
+import { useAppSelector } from '@/store/hooks';
 import { readPendingContainerOperation, savePendingContainerOperation, clearPendingContainerOperation, unresolvedContainerOperationExists } from '@/utils/container-operation-pending';
 import { FileTextIcon, MoreHorizontalIcon, PlusIcon, RefreshCwIcon, TerminalIcon } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { ConfirmDialog } from './confirm-dialog';
 import { ContainerCreateDialog } from './list-create';
@@ -64,6 +66,13 @@ type Order = 'ascending' | 'descending';
  */
 export default function ContainerList({ onOpenLogs, onOpenExec }: ContainerListProps) {
     const { t } = useTranslation();
+    const navigate = useNavigate();
+    const currentNode = useAppSelector((state) => state.ui.currentNode) || 'local';
+    const eligibleForControlledRestart = (id: string) => currentNode === 'local' && /^[a-f0-9]{64}$/.test(id) && !pendingOperation;
+    const openControlledRestart = (id: string) => {
+        if (!eligibleForControlledRestart(id)) return;
+        navigate(`/host?tab=operations&restartTarget=${id}`);
+    };
     const node = useAppSelector((s) => s.ui.currentNode) || 'local';
     const [pendingOperation, setPendingOperation] = useState(readPendingContainerOperation);
     const [submissionState, setSubmissionState] = useState<'unverified' | 'accepted' | 'unknown'>('unverified');
@@ -351,9 +360,14 @@ export default function ContainerList({ onOpenLogs, onOpenExec }: ContainerListP
                                     <Button
                                         size="sm"
                                         variant="outline"
-                                        onClick={() => runOperate('restart', selectedNames)}
+                                        disabled={selected.length !== 1 || !rows.some((row) => selected.includes(row.containerID) && eligibleForControlledRestart(row.containerID))}
+                                        title={t('container.reconcile.restartSingleHint')}
+                                        onClick={() => {
+                                            const match = rows.find((row) => selected.includes(row.containerID));
+                                            if (match && selected.length === 1) openControlledRestart(match.containerID);
+                                        }}
                                     >
-                                        {t('container.actions.restart')}
+                                        {t('container.reconcile.controlledRestart')}
                                     </Button>
                                     <Button
                                         size="sm"
@@ -517,11 +531,10 @@ export default function ContainerList({ onOpenLogs, onOpenExec }: ContainerListP
                                                                     </DropdownMenuItem>
                                                                     {isRunning && (
                                                                         <DropdownMenuItem
-                                                                            onClick={() =>
-                                                                                runOperate('restart', [row.name])
-                                                                            }
+                                                                            disabled={!eligibleForControlledRestart(row.containerID)}
+                                                                            onSelect={() => openControlledRestart(row.containerID)}
                                                                         >
-                                                                            {t('container.actions.restart')}
+                                                                            {t('container.reconcile.controlledRestart')}
                                                                         </DropdownMenuItem>
                                                                     )}
                                                                     {isRunning && (
