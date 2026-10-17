@@ -1,5 +1,6 @@
 import type { ContainerInfo } from '@/api/containerApi';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import ManagementPageHeader from '@/components/ManagementPageHeader';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import ContainerExec from './exec';
@@ -31,7 +32,8 @@ export default function ContainersPage() {
     };
 
     return (
-        <div className="module-shell">
+        <div className="module-shell management-shell">
+            <ManagementPageHeader title={t('nav.container')} />
             <Tabs value={activeKey} onValueChange={setActiveKey}>
                 <TabsList variant="line" className="module-tabs">
                     <TabsTrigger value="overview">{t('container.tabs.overview')}</TabsTrigger>
