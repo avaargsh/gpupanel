@@ -59,3 +59,9 @@ export function clearPendingContainerOperation(expectedCreatedAt: number): boole
         return false;
     }
 }
+
+/** An unreadable existing key must still block new mutation submissions. */
+export function unresolvedContainerOperationExists(): boolean {
+    try { return window.sessionStorage.getItem(PENDING_CONTAINER_OPERATION_KEY) !== null; }
+    catch { return true; }
+}
