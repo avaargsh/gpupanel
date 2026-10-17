@@ -251,10 +251,13 @@ export default function ContainerList({ onOpenLogs, onOpenExec }: ContainerListP
                             >
                                 {order === 'ascending' ? t('container.list.ascending') : t('container.list.descending')}
                             </Button>
-                            {selected.length > 0 && (
-                                <>
+
+                        </div>
+
+                            {selectedNames.length > 0 && (
+                                <div className="container-selection-toolbar" role="region" aria-label={t('container.list.selected', { count: selectedNames.length })}>
                                     <span className="text-sm text-muted-foreground">
-                                        {t('container.list.selected', { count: selected.length })}
+                                        {t('container.list.selected', { count: selectedNames.length })}
                                     </span>
                                     <Button
                                         size="sm"
@@ -284,9 +287,8 @@ export default function ContainerList({ onOpenLogs, onOpenExec }: ContainerListP
                                     >
                                         {t('container.actions.remove')}
                                     </Button>
-                                </>
+                                </div>
                             )}
-                        </div>
 
                         {listQuery.isFetching ? (
                             <span className="inline-flex items-center gap-2 text-sm text-muted-foreground">
