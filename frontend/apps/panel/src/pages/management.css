@@ -69,6 +69,15 @@
     border-radius: 16px;
     box-shadow: 0 0 0 1px var(--border);
 }
+/* Explicit padding: do not depend solely on custom Tailwind spacing utilities.
+   Without this, card headings touch the clipping edge in the bundled runtime. */
+.management-shell [data-slot="card"] { padding-block: 18px; }
+.management-shell [data-slot="card-header"] { padding-inline: 20px; }
+.management-shell [data-slot="card-content"] { padding-inline: 20px; }
+.management-shell .host-overview-stats [data-slot="card"],
+.management-shell .container-overview-stats [data-slot="card"] { padding-block: 14px; }
+.management-shell .host-overview-stats [data-slot="card-content"],
+.management-shell .container-overview-stats [data-slot="card-content"] { padding-inline: 16px; }
 .management-shell [data-slot="card-title"] { font-size: 14px; font-weight: 600; letter-spacing: -.01em; }
 .management-shell [data-slot="card-header"] { align-items: center; }
 .management-shell .container-list-content { gap: 14px; }
