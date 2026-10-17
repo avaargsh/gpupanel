@@ -211,14 +211,16 @@ export default function ContainerList({ onOpenLogs, onOpenExec }: ContainerListP
                                 <Button
                                     key={chip.key}
                                     size="sm"
-                                    variant={state === chip.key ? 'default' : 'outline'}
+                                    className="container-state-chip"
+                                    aria-pressed={state === chip.key}
+                                    variant="outline"
                                     onClick={() => {
                                         setState(chip.key);
                                         setPage(1);
                                     }}
                                 >
-                                    {chip.key === 'all' ? t('container.state.all') : t(`container.state.${chip.key}`)} *{' '}
-                                    {chip.count}
+                                    {chip.key === 'all' ? t('container.state.all') : t(`container.state.${chip.key}`)}{' '}
+                                    <span className="tabular-nums text-muted-foreground">{chip.count}</span>
                                 </Button>
                             ))}
                         </div>
