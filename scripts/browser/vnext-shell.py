@@ -113,6 +113,8 @@ with sync_playwright() as p:
     # Neutral, quiet surfaces: dark workspace #171717 and sidebar labels #ececec.
     expect(page.locator('.workbench-start')).to_have_css('background-color', 'rgb(23, 23, 23)')
     expect(page.locator('.workspace-brand')).to_have_css('color', 'rgb(236, 236, 236)')
+    # Secondary actions must not become white pills on the dark canvas.
+    expect(page.locator('.workbench-heading [data-slot="button"][data-variant="outline"]')).to_have_css('background-color', 'rgb(33, 33, 33)')
     page.screenshot(path=str(OUTPUT / 'home-dark.png'), full_page=True)
     page.get_by_role('button', name='Collapse sidebar', exact=True).first.click()
     expect(page.locator('.workspace-sidebar')).to_have_css('width', '64px')
