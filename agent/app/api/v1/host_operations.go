@@ -91,3 +91,24 @@ func (b *BaseApi) ListHostOperations(c *gin.Context) {
 	}
 	operationResponse(c, views, err)
 }
+
+type principalPreflightRequest struct {
+	UID int64 `json:"uid"`
+}
+
+// PreflightWorkspaceLinuxUser shares the already protected local-only
+// HostOperations Core proxy boundary. It does not bind a Workspace or
+// authorize worker execution and never changes an OS account.
+func (b *BaseApi) PreflightWorkspaceLinuxUser(c *gin.Context) {
+	if _, ok := operationOwner(c); !ok {
+		return
+	}
+	var req principalPreflightRequest
+	if !decodeOperation(c, &req) {
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{
+		"code": 200, "message": "",
+		"data": hostops.InspectLinuxPrincipal(req.UID),
+	})
+}

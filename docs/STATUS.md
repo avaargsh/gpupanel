@@ -143,3 +143,18 @@ root/suid、目录链接、覆盖已存在项目和下载网络依赖。
 见 [用户态 Worker 操作与故障恢复](gpupanel/WORKSPACE_LOCAL_RUNNER.md)。
 离真正的 Core→Agent→OS Principal 委托仍差身份映射与独立认证，
 M0 G3–G6 均不受此源码切片替代。
+
+## Agent Linux UID 候选预检查（只读，不颁发执行权）
+
+复用已有 `/hosts/operations` Core local-only、SuperAdmin Session
+及禁止 API Key/Remote 的代理门禁，新增
+`POST /api/v1/hosts/operations/workspace-principal/preflight`，
+仅接受 `{"uid":1000}` 形式的有限输入。Agent 读取本机 OS 账户、
+`/home/<username>` 及 `/run/user/<uid>` 的真实 UID、目录类型、
+归属与权限；拒绝 root、系统账户、Home 链接与不安全权限、
+不存在的桌面用户 runtime。返回 `CandidateUnbound`
+或明确拒绝原因；**始终** `executionAuthorized=false`。
+没有调用 sudo/setuid、修改主机、执行 Worker、写 Core 数据库、
+授予 Capability 或把当前 Core 管理员会话猜成某个 Linux UID。
+Core 登录身份到 OS 主体的明确绑定、一次性授权及独立 Agent
+结果证据仍是后续独立切片；M0 G3–G6 维持 NO-GO。

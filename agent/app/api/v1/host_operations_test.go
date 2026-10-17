@@ -33,6 +33,7 @@ func TestHostOperationsPrivateHTTPIntentValidation(t *testing.T) {
 	r := gin.New()
 	api := &BaseApi{}
 	r.POST("/plan", api.PlanHostOperation)
+	r.POST("/principal", api.PreflightWorkspaceLinuxUser)
 	r.GET("/list", api.ListHostOperations)
 	for _, test := range []struct {
 		body, owner string
@@ -67,5 +68,42 @@ func TestHostOperationsPrivateHTTPIntentValidation(t *testing.T) {
 		if _, ok := result.Data[0][k]; ok {
 			t.Fatal("private identity leaked")
 		}
+	}
+}
+
+func TestLinuxPrincipalPreflightHTTPHasNoExecutionAuthority(t *testing.T) {
+	router := gin.New()
+	router.POST("/principal", (&BaseApi{}).PreflightWorkspaceLinuxUser)
+	for _, tc := range []struct {
+		name, body, auth string
+		code int
+	}{
+		{"anonymous", `{"uid":1000}`, "", 403},
+		{"untrusted shell fields", `{"uid":1000,"command":"sh"}`, "session", 400},
+		{"multiple objects", `{"uid":1000}{}`, "session", 400},
+		{"nonlocal root", `{"uid":0}`, "session", 200},
+		{"principal suitability only", `{"uid":1000}`, "session", 200},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			request := httptest.NewRequest("POST", "/principal", bytes.NewBufferString(tc.body))
+			if tc.auth != "" {
+				request.Header.Set(terminal.HeaderUserID, "__super_admin__")
+				request.Header.Set(terminal.HeaderAuthSessionID, tc.auth)
+			}
+			rec := httptest.NewRecorder()
+			router.ServeHTTP(rec, request)
+			if rec.Code != tc.code {
+				t.Fatalf("preflight HTTP status=%d want=%d", rec.Code, tc.code)
+			}
+			if rec.Code == 200 {
+				var data struct {
+					Data hostops.LinuxPrincipalPreflight `json:"data"`
+				}
+				if err := json.Unmarshal(rec.Body.Bytes(), &data); err != nil { t.Fatal(err) }
+				if data.Data.ExecutionAuthorized || data.Data.Blocker == "" {
+					t.Fatalf("read-only host candidate became execution grant: %+v", data.Data)
+				}
+			}
+		})
 	}
 }
