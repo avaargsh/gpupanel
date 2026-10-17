@@ -37,6 +37,8 @@ def api(route):
         assert route.request.post_data_json['sessionId'] == 'mfa-fixture'
         assert route.request.post_data_json['code'] == '654321'
         data = {'name': 'admin', 'role': 'ADMIN', 'token': '', 'mfaStatus': 'Disable', 'mfaSession': ''}
+    elif path == '/core/projects':
+        data = []
     elif path == '/apps/installed/search':
         data = {'total': 1, 'items': [{'id': 7, 'name': 'Uncertain app', 'appKey': 'localdemo', 'status': 'Unknown', 'version': '1.0'}]}
     elif path == '/apps/installed/evidence/7':
@@ -82,6 +84,7 @@ with sync_playwright() as playwright:
     page.locator('input[autocomplete="one-time-code"]').fill('654321')
     page.locator('button[type="submit"]').click()
     expect(page.get_by_text('Readiness checks', exact=True)).to_be_visible()
+    assert not page.get_by_text('Unexpected Application Error!', exact=False).count(), 'dashboard must not crash on valid project response'
     assert state['mfa'] == 1
     page.goto(URL + '/apps'); page.wait_for_load_state('networkidle')
     page.get_by_role('button', name=re.compile('^(安装|Install)$')).first.click()

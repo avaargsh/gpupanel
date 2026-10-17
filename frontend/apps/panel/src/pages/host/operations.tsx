@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAppSelector } from '@/store/hooks';
+import { useSearchParams } from 'react-router-dom';
 import {
     useGetHostOperationsQuery,
     usePlanHostOperationMutation,
@@ -18,8 +19,12 @@ import {
 export default function HostOperations() {
     const node = useAppSelector((state) => state.ui.currentNode) || 'local';
     const { t } = useTranslation();
+    const [params] = useSearchParams();
+    // A deep link may select an intention but must never plan or execute it.
+    const requested = params.get('restartTarget') || '';
+    const restartTarget = /^[a-f0-9]{64}$/.test(requested) ? requested : '';
     return node === 'local' ? (
-        <LocalOperations key={node} />
+        <LocalOperations key={`${node}:${restartTarget}`} initialRestartTarget={restartTarget} />
     ) : (
         <Empty className="host-operations-empty">
             <EmptyHeader>
@@ -28,10 +33,10 @@ export default function HostOperations() {
         </Empty>
     );
 }
-function LocalOperations() {
+function LocalOperations({ initialRestartTarget }: { initialRestartTarget: string }) {
     const { t } = useTranslation();
-    const [kind, setKind] = useState('host.diagnose');
-    const [target, setTarget] = useState('');
+    const [kind, setKind] = useState(initialRestartTarget ? 'container.restart' : 'host.diagnose');
+    const [target, setTarget] = useState(initialRestartTarget);
     const [preview, setPreview] = useState<HostOperation | null>(null);
     const [error, setError] = useState('');
     const [plan, planning] = usePlanHostOperationMutation();

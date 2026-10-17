@@ -290,6 +290,8 @@ const en: LocaleResource = {
     },
     container: {
         reconcile: {
+            controlledRestart: 'Review restart',
+            restartSingleHint: 'Single running container only; local admin and a full 64-character Docker ID required. Preview and confirm in Host Operations.',
             title: 'Container operation requires review',
             scope: 'Host',
             blocked: 'An operation is unresolved. Review its actual state before another request.',

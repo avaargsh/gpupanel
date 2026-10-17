@@ -288,6 +288,8 @@ const zh = {
     },
     container: {
         reconcile: {
+            controlledRestart: '审核后重启',
+            restartSingleHint: '仅支持本机单个运行中容器，需管理员及 Docker 完整 64 位 ID。前往主机运维预览并确认。',
             title: '容器操作待核对',
             scope: '主机',
             blocked: '存在未核对的操作。请检查真实状态后再提交其他操作。',
