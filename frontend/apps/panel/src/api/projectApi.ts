@@ -64,8 +64,23 @@ export interface LocalEvidenceResult {
     blocker: 'IndependentHostAttestationRequired';
 }
 
+export interface LinuxPrincipalPreflight {
+    uid: number;
+    state: 'CandidateUnbound' | 'CandidateRejected';
+    requirementsMet: boolean;
+    executionAuthorized: false;
+    blocker: string;
+}
+
 export const projectApi = baseApi.injectEndpoints({
     endpoints: (build) => ({
+        preflightLinuxPrincipal: build.mutation<LinuxPrincipalPreflight, { uid: number }>({
+            query: (body) => ({
+                url: '/hosts/operations/workspace-principal/preflight',
+                method: 'POST',
+                body,
+            }),
+        }),
         getLocalEvidence: build.query<LocalEvidenceResult, WorkspaceRef>({
             query: ({ projectId, workspaceId }) => ({
                 url: `/core/projects/${encodeURIComponent(projectId)}/workspaces/${encodeURIComponent(workspaceId)}/local-evidence`,
@@ -111,4 +126,4 @@ export const projectApi = baseApi.injectEndpoints({
     }),
 });
 
-export const { useGetProjectsQuery, useGetProjectQuery, useRegisterProjectMutation, useGetProvisionPlanQuery, useRequestProvisionIntentMutation, useGetLocalEvidenceQuery, useReportLocalEvidenceMutation } = projectApi;
+export const { useGetProjectsQuery, useGetProjectQuery, useRegisterProjectMutation, useGetProvisionPlanQuery, useRequestProvisionIntentMutation, useGetLocalEvidenceQuery, useReportLocalEvidenceMutation, usePreflightLinuxPrincipalMutation } = projectApi;

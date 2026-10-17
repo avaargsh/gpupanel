@@ -94,6 +94,14 @@ const en: LocaleResource = {
     "observations": "Readiness checks"
 },
     projectRegistry: {
+        linuxPrincipal: "Linux user candidate preflight",
+        linuxPrincipalWarning: "Read-only host account check. Does not bind this web session or authorize executing user processes.",
+        linuxUID: "Linux UID (1000–60000)",
+        checkLinuxPrincipal: "Check local candidate",
+        identityCheckFailed: "Host identity check unavailable. No execution permission granted.",
+        linuxCandidateUnbound: "Local prerequisites match, but session is unbound; execution forbidden",
+        linuxCandidateRejected: "Candidate does not satisfy the local safety requirements",
+
         localEvidence: "Local observation record",
         untrustedEvidence: "Operator-reported hash only, not independently verified Host/OS identity. Workspace remains unprovisioned.",
         evidenceUnavailable: "Observation unavailable or session unauthorized.",
