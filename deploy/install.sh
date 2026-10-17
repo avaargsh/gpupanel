@@ -140,6 +140,7 @@ UNIT_DIR="/etc/systemd/system"
 # 2. this script's own directory (extracted tarball, or a flattened payload)
 # 3. the newest build/release/gpupanel-* from a source checkout
 # 4. the raw build/ binaries from a source checkout
+[ "$EXPLICIT_PAYLOAD" = "0" ] || [ -n "$PAYLOAD" ] || die "--payload requires a non-empty directory"
 # Full release payloads are atomic: never silently use repo fallbacks when
 # their required files are absent. Only implicit raw build/ source mode may
 # combine locally compiled binaries with source-controlled config/units.
