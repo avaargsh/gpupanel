@@ -171,6 +171,38 @@ class LocalDeployContract(unittest.TestCase):
             denied(experimental, approved=True)
             denied(good, approved=True, checker_exit=2)
 
+    def test_integrated_preflight_process_and_unit_collisions_reach_installer_denial(self):
+        # This is an integrated source contract across both previously
+        # separate PRs, using a real preflight report, not hand-crafted JSON.
+        import importlib.util
+        source = ROOT / "scripts/gpupanel-install-preflight.py"
+        spec = importlib.util.spec_from_file_location("combined_install_preflight", source)
+        self.assertIsNotNone(spec)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        with tempfile.TemporaryDirectory() as td:
+            host = Path(td)
+            (host / "etc").mkdir()
+            (host / "etc/os-release").write_text('ID=ubuntu\nVERSION_ID="24.04"\n')
+            clean = module.inspect_host(host, free_bytes=module.MIN_FREE_BYTES)
+            self.assertEqual(clean["blockers"], [])
+            # This asserts parser compatibility, NOT permission to install on
+            # a real host: no installer, root, or service code is executed.
+            self.assertEqual(self._authorize(clean).returncode, 0)
+            process = host / "proc/321"
+            process.mkdir(parents=True)
+            (process / "comm").write_text("gpupanel-core\n")
+            running = module.inspect_host(host, free_bytes=module.MIN_FREE_BYTES)
+            self.assertIn("running_panel_process", running["blockers"])
+            self.assertNotEqual(self._authorize(running).returncode, 0)
+            (process / "comm").unlink()
+            vendor = host / "usr/lib/systemd/system/1panel.service"
+            vendor.parent.mkdir(parents=True)
+            vendor.write_text("[Unit]\nDescription=Legacy panel\n")
+            occupied = module.inspect_host(host, free_bytes=module.MIN_FREE_BYTES)
+            self.assertIn("runtime_collision", occupied["blockers"])
+            self.assertNotEqual(self._authorize(occupied).returncode, 0)
+
     def test_install_script_bash_syntax(self):
         result = subprocess.run(["bash", "-n", str(INSTALLER)],
                                 capture_output=True, text=True, check=False)
