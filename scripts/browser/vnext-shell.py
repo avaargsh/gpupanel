@@ -137,6 +137,20 @@ with sync_playwright() as p:
                 'resource metrics must have space for label, value and progress'
             )
         page.screenshot(path=str(OUTPUT / snap), full_page=True)
+    # SIMULATED action UI: selected rows are contextual, without an empty bulk toolbar.
+    page.goto(URL + '/containers')
+    page.wait_for_load_state('networkidle')
+    page.get_by_role('tab', name='Containers', exact=True).click()
+    expect(page.locator('.container-selection-toolbar')).to_have_count(0)
+    assert page.evaluate('document.documentElement.scrollWidth <= innerWidth')
+    page.screenshot(path=str(OUTPUT / 'container-list-actions.png'), full_page=True)
+    # Real xterm UI stays a terminal with explicit connection status (no fake AI send).
+    page.goto(URL + '/host?tab=terminal')
+    page.wait_for_load_state('networkidle')
+    expect(page.locator('.term-shell')).to_be_visible()
+    expect(page.locator('.term-status')).to_be_visible()
+    assert not page.locator('.host-terminal [data-testid="ai-send-command"]').count()
+    page.screenshot(path=str(OUTPUT / 'host-terminal-status.png'), full_page=True)
     page.goto(URL)
     page.wait_for_load_state('networkidle')
     page.get_by_role('button', name='Switch theme', exact=True).click()
@@ -271,7 +285,7 @@ with sync_playwright() as p:
     page.screenshot(path=str(OUTPUT / 'home-640.png'), full_page=True)
     assert not errors, errors
     result = {'kind': 'SIMULATED API; not real device or deployment acceptance', 'page_errors': errors,
-              'checks': ['light/dark', '1440/1280/1024/640 layout', 'Host Containers Apps shared headers and tab layout (simulated)', 'Chinese/English', 'collapse persistence', 'keyboard skip/search/escape',
+              'checks': ['light/dark', '1440/1280/1024/640 layout', 'Host Containers Apps shared headers and tab layout (simulated)', 'contextual bulk toolbar and terminal status (simulated)', 'Chinese/English', 'collapse persistence', 'keyboard skip/search/escape',
                          'registered project metadata (simulated)', 'failed refresh clears metrics', 'scope resets draft',
                          'terminal HTTP and WebSocket select remote scope', 'installed deep link'],
               'terminal_scope_requests': len(terminal_requests)}
