@@ -139,3 +139,46 @@
 @media (prefers-reduced-motion: reduce) {
     .management-shell [data-slot="table-row"] { transition: none; }
 }
+
+/* Action hierarchy: filters stay quiet, current-page bulk operations are contextual. */
+.management-shell .container-selection-toolbar {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
+    padding: 12px 14px; border: 1px solid var(--border);
+    border-radius: 12px; background: var(--muted);
+}
+.management-shell .container-selection-toolbar > span { margin-right: auto; font-weight: 600; }
+.management-shell .container-selection-toolbar button { min-height: 32px; }
+.management-shell .container-list-content > .flex:has([data-slot="input"]) { gap: 10px; }
+
+/* Every installed application retains an unresolved-outcome receipt rather
+   than implying a successful installation from HTTP acceptance. */
+.install-receipt {
+    display: flex; flex-direction: column; gap: 14px;
+    min-width: 0; border: 1px solid var(--border);
+    background: var(--muted); border-radius: 14px; padding: 16px;
+}
+.install-receipt-heading { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.install-receipt-label, .install-receipt-meta dt {
+    color: var(--muted-foreground); font-size: 11px; line-height: 1.5;
+}
+.install-receipt-id { font-size: 12px; line-height: 1.6; overflow-wrap: anywhere; }
+.install-receipt-meta { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.install-receipt-meta dd { margin: 3px 0 0; font-size: 12px; overflow-wrap: anywhere; }
+.install-receipt-status { border-top: 1px solid var(--border); padding-top: 13px; }
+.install-receipt-observation { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
+.install-receipt-log { max-height: 220px; white-space: pre-wrap; overflow-wrap: anywhere; }
+/* Terminal remains a real shell, not a fake AI composer. Connection status,
+   selected target and retry should remain visible but not dominate the editor. */
+.management-shell .host-terminal [data-slot="card-header"] { gap: 12px; }
+.management-shell .host-terminal [data-slot="card-action"] { min-width: 0; }
+.management-shell .host-terminal [data-slot="card-action"] > div { flex-wrap: wrap; gap: 8px; }
+.management-shell .host-terminal [data-slot="card-title"] > div { gap: 9px; flex-wrap: wrap; }
+.management-shell .term-shell { border-radius: 12px; border-color: var(--border); }
+.management-shell .term-status { padding: 8px 12px; min-height: 40px; gap: 10px; }
+.management-shell .term-status > span:nth-child(2) { font-size: 12px; }
+.management-shell .term-body { padding: 10px; }
+@media (max-width: 760px) {
+    .management-shell .container-selection-toolbar { padding: 10px; }
+    .install-receipt { padding: 12px; }
+    .install-receipt-meta { grid-template-columns: 1fr; }
+}
