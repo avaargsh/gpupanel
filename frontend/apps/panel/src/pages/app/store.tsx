@@ -40,7 +40,7 @@ function AppDetailSheet({ appKey, onClose, onInstall }: { appKey: string; onClos
                 if (!open) onClose();
             }}
         >
-            <SheetContent aria-describedby={undefined} className="overflow-y-auto app-detail-sheet max-w-[560px]">
+            <SheetContent aria-describedby={undefined} className="management-detail-sheet overflow-y-auto app-detail-sheet max-w-[560px]">
                 <SheetHeader>
                     <SheetTitle>{t('apps.detail.title')}</SheetTitle>
                 </SheetHeader>
