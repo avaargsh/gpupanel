@@ -6,6 +6,7 @@ import { Server, Layers, Archive, Activity } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useGetBaseInfoQuery, useGetOsInfoQuery } from '@/api/dashboardApi';
 import StatCard from '@/components/StatCard';
+import { observedPercent } from '@/utils/observations';
 
 /**
  * 主机概览：主机信息 + 资源使用率。
@@ -51,10 +52,10 @@ export default function HostOverview() {
                 </CardHeader>
                 <CardContent className="host-overview-skeleton">
                     <div className="grid gap-3 sm:grid-cols-2">
-                        <Skeleton className="h-6 w-full w-full h-[72px]" />
-                        <Skeleton className="h-6 w-full w-full h-[72px]" />
-                        <Skeleton className="h-6 w-full w-full h-[72px]" />
-                        <Skeleton className="h-6 w-full w-full h-[72px]" />
+                        <Skeleton className="h-[72px] w-full" />
+                        <Skeleton className="h-[72px] w-full" />
+                        <Skeleton className="h-[72px] w-full" />
+                        <Skeleton className="h-[72px] w-full" />
                     </div>
                     <Skeleton className="h-24 w-full mt-5" />
                 </CardContent>
@@ -80,7 +81,7 @@ export default function HostOverview() {
                         {infoItems.map((item, index) => (
                             <div key={index}>
                                 <dt className="text-sm text-muted-foreground">{item.key}</dt>
-                                <dd className="text-sm break-all">{item.value}</dd>
+                                <dd className="text-sm break-all">{item.value || '--'}</dd>
                             </div>
                         ))}
                     </dl>
@@ -89,25 +90,25 @@ export default function HostOverview() {
             <div className="host-overview-stats">
                 <StatCard
                     title={t('home.cpu')}
-                    value={`${(b.cpuUsedPercent ?? 0).toFixed(1)} %`}
+                    value={observedPercent(b.cpuUsedPercent)}
                     percent={b.cpuUsedPercent}
                     icon={<Server />}
                 />
                 <StatCard
                     title={t('home.memory')}
-                    value={`${(b.memoryUsedPercent ?? 0).toFixed(1)} %`}
+                    value={observedPercent(b.memoryUsedPercent)}
                     percent={b.memoryUsedPercent}
                     icon={<Layers />}
                     color="var(--primary)"
                 />
                 <StatCard
                     title={t('home.disk')}
-                    value={`${(b.diskUsedPercent ?? 0).toFixed(1)} %`}
+                    value={observedPercent(b.diskUsedPercent)}
                     percent={b.diskUsedPercent}
                     icon={<Archive />}
                     color="var(--primary)"
                 />
-                <StatCard title={t('home.load')} value={`${(b.load1 ?? 0).toFixed(2)}`} icon={<Activity />} color="var(--primary)" />
+                <StatCard title={t('home.load')} value={typeof b.load1 === 'number' && Number.isFinite(b.load1) && b.load1 >= 0 ? b.load1.toFixed(2) : '--'} icon={<Activity />} color="var(--primary)" />
             </div>
         </div>
     );
