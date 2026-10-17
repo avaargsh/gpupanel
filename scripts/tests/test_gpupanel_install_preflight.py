@@ -59,6 +59,39 @@ class InstallPreflightTests(unittest.TestCase):
         self.assertIn("/etc/systemd/system", next(
             x["detail"] for x in result["checks"] if x["code"] == "runtime_path_symlink"))
 
+    def test_vendor_systemd_unit_blocks_without_etc_unit(self):
+        unit = self.root / "usr/lib/systemd/system/1panel.service"
+        unit.parent.mkdir(parents=True)
+        unit.write_text("[Unit]\\nDescription=Legacy panel\\n")
+        result = mod.inspect_host(self.root, free_bytes=mod.MIN_FREE_BYTES)
+        self.assertIn("runtime_collision", result["blockers"])
+        self.assertIn("/usr/lib/systemd/system/1panel.service", next(
+            x["detail"] for x in result["checks"] if x["code"] == "runtime_collision"))
+        self.assertFalse(result["safe_to_install"])
+
+    def test_dangling_enabled_service_symlink_blocks(self):
+        unit = self.root / "etc/systemd/system/multi-user.target.wants/gpupanel-core.service"
+        unit.parent.mkdir(parents=True)
+        unit.symlink_to("/missing-or-removed-gpupanel-unit")
+        result = mod.inspect_host(self.root, free_bytes=mod.MIN_FREE_BYTES)
+        self.assertIn("runtime_collision", result["blockers"])
+        self.assertFalse(result["installable"])
+
+    def test_runtime_systemd_unit_blocks(self):
+        unit = self.root / "run/systemd/system/gpupanel-agent.service"
+        unit.parent.mkdir(parents=True)
+        unit.write_text("[Unit]\\nDescription=Panel agent\\n")
+        self.assertIn("runtime_collision", mod.inspect_host(
+            self.root, free_bytes=mod.MIN_FREE_BYTES)["blockers"])
+
+    def test_vendor_unit_parent_redirect_blocks_without_leaf(self):
+        parent = self.root / "usr/lib"
+        parent.mkdir(parents=True)
+        (parent / "systemd").symlink_to("/missing-systemd-parent")
+        result = mod.inspect_host(self.root, free_bytes=mod.MIN_FREE_BYTES)
+        self.assertIn("runtime_path_symlink", result["blockers"])
+        self.assertFalse(result["safe_to_install"])
+
     def test_symlink_dangling_collision_blocks(self):
         (self.root / "etc/1panel").symlink_to("/missing-link-on-purpose")
         result = mod.inspect_host(self.root, free_bytes=mod.MIN_FREE_BYTES)
