@@ -62,7 +62,7 @@ class InstallPreflightTests(unittest.TestCase):
     def test_vendor_systemd_unit_blocks_without_etc_unit(self):
         unit = self.root / "usr/lib/systemd/system/1panel.service"
         unit.parent.mkdir(parents=True)
-        unit.write_text("[Unit]\\nDescription=Legacy panel\\n")
+        unit.write_text("[Unit]\nDescription=Legacy panel\n")
         result = mod.inspect_host(self.root, free_bytes=mod.MIN_FREE_BYTES)
         self.assertIn("runtime_collision", result["blockers"])
         self.assertIn("/usr/lib/systemd/system/1panel.service", next(
@@ -80,7 +80,7 @@ class InstallPreflightTests(unittest.TestCase):
     def test_runtime_systemd_unit_blocks(self):
         unit = self.root / "run/systemd/system/gpupanel-agent.service"
         unit.parent.mkdir(parents=True)
-        unit.write_text("[Unit]\\nDescription=Panel agent\\n")
+        unit.write_text("[Unit]\nDescription=Panel agent\n")
         self.assertIn("runtime_collision", mod.inspect_host(
             self.root, free_bytes=mod.MIN_FREE_BYTES)["blockers"])
 
