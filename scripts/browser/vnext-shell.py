@@ -121,6 +121,13 @@ with sync_playwright() as p:
         expect(page.locator('.management-shell .module-tabs')).to_be_visible()
         assert page.locator('.management-shell .module-tabs [role="tab"]').count() >= 3
         assert page.evaluate('document.documentElement.scrollWidth <= innerWidth')
+        if route.startswith('/host') or route == '/containers':
+            cards = page.locator('.host-overview-stats [data-slot="card"]' if route.startswith('/host')
+                                 else '.container-overview-stats [data-slot="card"]')
+            expect(cards).to_have_count(4)
+            assert all((item.bounding_box() or {}).get('height', 0) >= 100 for item in cards.all()), (
+                'resource metrics must have space for label, value and progress'
+            )
         page.screenshot(path=str(OUTPUT / snap), full_page=True)
     page.goto(URL)
     page.wait_for_load_state('networkidle')
