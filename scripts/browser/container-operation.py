@@ -58,7 +58,7 @@ with sync_playwright() as p:
     expect(page.get_by_role('row').filter(has_text='fixture-nginx')).to_be_visible()
     page.get_by_role('row').filter(has_text='fixture-nginx').get_by_role('button', name='Stop', exact=True).click()
     expect(page.get_by_role('status', name='Container operation requires review')).to_be_visible()
-    expect(page.get_by_text('Request outcome unknown.', exact=False)).to_be_visible()
+    expect(page.get_by_role('status', name='Container operation requires review').get_by_text('Request outcome unknown.', exact=False)).to_be_visible()
     assert calls['operate'] == 1
     receipt = page.evaluate(f"JSON.parse(sessionStorage.getItem('{KEY}'))")
     assert set(receipt) == {'node', 'operation', 'names', 'createdAt'}
