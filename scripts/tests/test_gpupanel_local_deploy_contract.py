@@ -112,11 +112,11 @@ class LocalDeployContract(unittest.TestCase):
             for name in ("gpupanel-core", "gpupanel-agent", "pctl", "app.yaml"):
                 (payload / name).write_text("synthetic placeholder, never run", encoding="utf-8")
             for name in ("gpupanel-core.service", "gpupanel-agent.service"):
-                (units / name).write_text("[Service]\\nType=simple\\n", encoding="utf-8")
+                (units / name).write_text("[Service]\nType=simple\n", encoding="utf-8")
             mock_bin = root / "mock-bin"
             mock_bin.mkdir()
             fake_id = mock_bin / "id"
-            fake_id.write_text("#!/bin/sh\\nprintf '0\\\\n'\\n", encoding="utf-8")
+            fake_id.write_text("#!/bin/sh\nprintf '0\\n'\n", encoding="utf-8")
             fake_id.chmod(0o755)
             env = os.environ.copy()
             env["PATH"] = str(mock_bin) + os.pathsep + env.get("PATH", "")
@@ -125,8 +125,8 @@ class LocalDeployContract(unittest.TestCase):
 
             def denied(report, *, approved=False, checker_exit=0):
                 checker.write_text(
-                    "import sys\\nprint(" + repr(json.dumps(report)) + ")\\nsys.exit(" +
-                    str(checker_exit) + ")\\n", encoding="utf-8",
+                    "import sys\nprint(" + repr(json.dumps(report)) + ")\nsys.exit(" +
+                    str(checker_exit) + ")\n", encoding="utf-8",
                 )
                 args = [
                     "bash", str(script), "--payload", str(payload),
