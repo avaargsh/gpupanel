@@ -25,7 +25,7 @@ import { Spinner } from '@/components/ui/spinner';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { formatPercent } from '@/utils/format';
 import { useAppSelector } from '@/store/hooks';
-import { readPendingContainerOperation, savePendingContainerOperation, clearPendingContainerOperation, PENDING_CONTAINER_OPERATION_KEY } from '@/utils/container-operation-pending';
+import { readPendingContainerOperation, savePendingContainerOperation, clearPendingContainerOperation, unresolvedContainerOperationExists } from '@/utils/container-operation-pending';
 import { FileTextIcon, MoreHorizontalIcon, PlusIcon, RefreshCwIcon, TerminalIcon } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -126,7 +126,7 @@ export default function ContainerList({ onOpenLogs, onOpenExec }: ContainerListP
             toast.error(message);
             if (operation === 'remove') throw new Error(message);
         };
-        if (flight.current || pendingOperation || window.sessionStorage.getItem(PENDING_CONTAINER_OPERATION_KEY) !== null) {
+        if (flight.current || pendingOperation || unresolvedContainerOperationExists()) {
             return block(t('container.reconcile.blocked'));
         }
         if (listQuery.isFetching || listQuery.isError || names.length === 0) {
