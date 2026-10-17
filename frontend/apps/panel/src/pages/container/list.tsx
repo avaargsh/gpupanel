@@ -492,8 +492,7 @@ export default function ContainerList({ onOpenLogs, onOpenExec }: ContainerListP
                                                             </Button>
                                                         )}
                                                         {(row.state === 'exited' ||
-                                                            row.state === 'created' ||
-                                                            row.state === 'exited') && (
+                                                            row.state === 'created') && (
                                                             <Button
                                                                 size="sm"
                                                                 disabled={!eligibleForControlledOperation(row.containerID)}
@@ -544,7 +543,7 @@ export default function ContainerList({ onOpenLogs, onOpenExec }: ContainerListP
                                                                     </DropdownMenuItem>
                                                                     {isRunning && (
                                                                         <DropdownMenuItem
-                                                                            disabled={!eligibleForControlledRestart(row.containerID)}
+                                                                            disabled={!eligibleForControlledOperation(row.containerID)}
                                                                             onSelect={() => openControlledOperation('restart', row.containerID)}
                                                                         >
                                                                             {t('container.reconcile.controlledRestart')}
