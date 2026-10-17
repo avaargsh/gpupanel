@@ -88,6 +88,10 @@ with sync_playwright() as p:
     assert resource_box['y'] + resource_box['height'] <= project_box['y']
     # Quick actions now include the dedicated GPU entry added by the workbench refresh.
     assert page.locator('.workbench-action').count() == 3
+    assert page.locator('.workbench-stats .workbench-stat-card').count() == 4
+    assert page.locator('.local-mode-chip[role="button"]').count() == 0
+    # The GPU entry sits with Terminal and Apps; no fake agent action on home.
+    assert page.locator('.workbench-action-wide').count() == 1
     assert not page.locator('.workspace-sidebar .workspace-nav-link.unavailable').count()
     assert page.evaluate('document.documentElement.scrollWidth <= innerWidth')
     assert page.get_by_role('dialog').count() == 0
@@ -106,9 +110,11 @@ with sync_playwright() as p:
     page.screenshot(path=str(OUTPUT / 'home-light.png'), full_page=True)
     page.get_by_role('button', name='Switch theme', exact=True).click()
     expect(page.locator('html')).to_have_class(re.compile(r'(^|\s)dark(\s|$)'))
-    # Dark card surface was re-toned from #191d26 to #131822 in the refreshed palette.
-    expect(page.locator('.workbench-start')).to_have_css('background-color', 'rgb(19, 24, 34)')
-    expect(page.locator('.workspace-brand')).to_have_css('color', 'rgb(237, 240, 247)')
+    # Neutral, quiet surfaces: dark workspace #171717 and sidebar labels #ececec.
+    expect(page.locator('.workbench-start')).to_have_css('background-color', 'rgb(23, 23, 23)')
+    expect(page.locator('.workspace-brand')).to_have_css('color', 'rgb(236, 236, 236)')
+    # Secondary actions must not become white pills on the dark canvas.
+    expect(page.locator('.workbench-heading [data-slot="button"][data-variant="outline"]')).to_have_css('background-color', 'rgb(33, 33, 33)')
     page.screenshot(path=str(OUTPUT / 'home-dark.png'), full_page=True)
     page.get_by_role('button', name='Collapse sidebar', exact=True).first.click()
     expect(page.locator('.workspace-sidebar')).to_have_css('width', '64px')
@@ -126,6 +132,13 @@ with sync_playwright() as p:
     page.keyboard.press('Control+k')
     assert page.get_by_role('dialog').count() == 1, 'global search must not open behind the assistant'
     page.get_by_label('Question draft').fill('fixture question')
+    assert page.locator('.assistant-conversation').is_visible()
+    assert page.locator('.assistant-composer').is_visible()
+    assert page.get_by_role('button', name='Copy question', exact=True).is_enabled()
+    conversation = page.locator('.assistant-conversation').bounding_box()
+    composer = page.locator('.assistant-composer').bounding_box()
+    assert conversation and composer
+    assert conversation['y'] + conversation['height'] <= composer['y'] + 2, 'draft composer must follow content'
     for _ in range(10):
         page.keyboard.press('Tab')
         assert page.get_by_role('dialog', name='GPUPanel Assistant').evaluate('(el) => el.contains(document.activeElement)')
