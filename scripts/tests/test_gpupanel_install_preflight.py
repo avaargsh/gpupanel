@@ -95,7 +95,7 @@ class InstallPreflightTests(unittest.TestCase):
     def test_running_legacy_panel_blocks_without_any_disk_unit(self):
         proc = self.root / "proc/321"
         proc.mkdir(parents=True)
-        (proc / "comm").write_text("1panel-agent\\n")
+        (proc / "comm").write_text("1panel-agent\n")
         result = mod.inspect_host(self.root, free_bytes=mod.MIN_FREE_BYTES)
         self.assertIn("running_panel_process", result["blockers"])
         self.assertFalse(result["safe_to_install"])
@@ -114,7 +114,7 @@ class InstallPreflightTests(unittest.TestCase):
     def test_process_inventory_never_follows_proc_pid_symlink(self):
         external = self.root / "external"
         external.mkdir()
-        (external / "comm").write_text("gpupanel-core\\n")
+        (external / "comm").write_text("gpupanel-core\n")
         proc = self.root / "proc"
         proc.mkdir()
         (proc / "123").symlink_to(external, target_is_directory=True)
@@ -127,7 +127,7 @@ class InstallPreflightTests(unittest.TestCase):
     def test_unrecognized_task_name_does_not_false_positive(self):
         proc = self.root / "proc/7"
         proc.mkdir(parents=True)
-        (proc / "comm").write_text("gpu-monitor\\n")
+        (proc / "comm").write_text("gpu-monitor\n")
         self.assertNotIn("running_panel_process", mod.inspect_host(
             self.root, free_bytes=mod.MIN_FREE_BYTES)["blockers"])
 
