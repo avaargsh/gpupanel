@@ -98,6 +98,65 @@ class LocalDeployContract(unittest.TestCase):
                 self.assertNotEqual(outcome.returncode, 0, outcome.stdout + outcome.stderr)
                 self.assertIn("denied", outcome.stderr)
 
+    def test_real_shell_default_and_bad_report_stop_before_any_host_write(self):
+        # Run the REAL shell installer with synthetic release files and a
+        # fake non-privileged id binary, but only for paths guaranteed to DENY.
+        # The base-dir is disposable and must NEVER be created by this test.
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            script = root / "install.sh"
+            script.write_bytes(INSTALLER.read_bytes())
+            payload = root / "payload"
+            units = payload / "initscript"
+            units.mkdir(parents=True)
+            for name in ("gpupanel-core", "gpupanel-agent", "pctl", "app.yaml"):
+                (payload / name).write_text("synthetic placeholder, never run", encoding="utf-8")
+            for name in ("gpupanel-core.service", "gpupanel-agent.service"):
+                (units / name).write_text("[Service]\\nType=simple\\n", encoding="utf-8")
+            mock_bin = root / "mock-bin"
+            mock_bin.mkdir()
+            fake_id = mock_bin / "id"
+            fake_id.write_text("#!/bin/sh\\nprintf '0\\\\n'\\n", encoding="utf-8")
+            fake_id.chmod(0o755)
+            env = os.environ.copy()
+            env["PATH"] = str(mock_bin) + os.pathsep + env.get("PATH", "")
+            target = root / "target"
+            checker = payload / "gpupanel-install-preflight.py"
+
+            def denied(report, *, approved=False, checker_exit=0):
+                checker.write_text(
+                    "import sys\\nprint(" + repr(json.dumps(report)) + ")\\nsys.exit(" +
+                    str(checker_exit) + ")\\n", encoding="utf-8",
+                )
+                args = [
+                    "bash", str(script), "--payload", str(payload),
+                    "--base-dir", str(target),
+                ]
+                if approved:
+                    args.append("--approve-disposable-vm-install")
+                run = subprocess.run(args, env=env, capture_output=True, text=True, check=False)
+                self.assertNotEqual(run.returncode, 0, run.stdout + run.stderr)
+                self.assertFalse(target.exists(), "denied installation mutated the target")
+                self.assertFalse((root / "install.log").exists())
+                self.assertFalse((payload / "log").exists())
+                return run
+
+            good = self._preflight_report()
+            # This is the original bug: an exit-0 preflight used to silently
+            # promote the diagnosis into root system mutation.
+            self.assertIn("authorization denied", denied(good).stdout)
+            import copy
+            blocked = copy.deepcopy(good)
+            blocked["blockers"] = ["runtime_collision"]
+            denied(blocked, approved=True)
+            unknown = copy.deepcopy(good)
+            next(c for c in unknown["checks"] if c["code"] == "disk_space")["state"] = "UNKNOWN"
+            denied(unknown, approved=True)
+            experimental = copy.deepcopy(good)
+            next(c for c in experimental["checks"] if c["code"] == "operating_system")["detail"] = "Ubuntu 26.04"
+            denied(experimental, approved=True)
+            denied(good, approved=True, checker_exit=2)
+
     def test_install_script_bash_syntax(self):
         result = subprocess.run(["bash", "-n", str(INSTALLER)],
                                 capture_output=True, text=True, check=False)
