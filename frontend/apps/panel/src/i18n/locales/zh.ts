@@ -287,6 +287,20 @@ const zh = {
         },
     },
     container: {
+        reconcile: {
+            title: '容器操作待核对',
+            scope: '主机',
+            blocked: '存在未核对的操作。请检查真实状态后再提交其他操作。',
+            unavailable: '当前容器选择不可用，请刷新后核对列表。',
+            storageFailed: '无法安全保存恢复记录；未发送操作请求。',
+            accepted: '请求已得到响应，尚未证明 Docker 最终状态。',
+            unknown: '请求结果不明确。请核对目标状态，不要自动重试。',
+            unverified: '结果尚未核对，请刷新原主机并检查 Docker 状态。',
+            refresh: '刷新状态',
+            reviewed: '已人工核对',
+            otherHost: '请切换回原主机核对这次操作。',
+            clearConfirm: '是否已核对原主机及受影响容器的真实状态？清除此本地提示不会回滚或重试操作。',
+        },
         tabs: { overview: '概览', list: '容器', images: '镜像', logs: '日志', exec: '终端' },
         state: {
             all: '全部',

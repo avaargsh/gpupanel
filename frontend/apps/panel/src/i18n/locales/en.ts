@@ -289,6 +289,20 @@ const en: LocaleResource = {
         },
     },
     container: {
+        reconcile: {
+            title: 'Container operation requires review',
+            scope: 'Host',
+            blocked: 'An operation is unresolved. Review its actual state before another request.',
+            unavailable: 'Current container selection is unavailable. Refresh and inspect the list.',
+            storageFailed: 'Unable to persist the recovery hint; request was not sent.',
+            accepted: 'Request acknowledged; Docker state has not been proven.',
+            unknown: 'Request outcome unknown. Check the target; do not retry automatically.',
+            unverified: 'Outcome not verified. Refresh this Host and check Docker state before another operation.',
+            refresh: 'Refresh observations',
+            reviewed: 'Reviewed manually',
+            otherHost: 'Switch to the original Host before reviewing this operation.',
+            clearConfirm: 'Have you checked the original Host and affected containers? Clearing this local hint does not undo or retry the operation.',
+        },
         tabs: { overview: 'Overview', list: 'Containers', images: 'Images', logs: 'Logs', exec: 'Terminal' },
         state: {
             all: 'All',

@@ -182,3 +182,20 @@
     .install-receipt { padding: 12px; }
     .install-receipt-meta { grid-template-columns: 1fr; }
 }
+
+/* Only the container list owns this unverified mutation receipt. */
+.management-shell .container-operation-receipt {
+    display: flex; align-items: flex-start; justify-content: space-between;
+    flex-wrap: wrap; gap: 16px; padding: 16px 18px;
+    border: 1px solid var(--border); border-radius: 14px;
+    background: var(--muted); min-width: 0;
+}
+.management-shell .container-operation-receipt > div:first-child {
+    min-width: 0; max-width: 68ch; overflow-wrap: anywhere;
+}
+.management-shell .container-operation-receipt-actions {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
+}
+@media (max-width: 760px) {
+    .management-shell .container-operation-receipt { padding: 14px; }
+}
