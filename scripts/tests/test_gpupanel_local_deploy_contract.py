@@ -171,6 +171,63 @@ class LocalDeployContract(unittest.TestCase):
             denied(experimental, approved=True)
             denied(good, approved=True, checker_exit=2)
 
+            # A supplied release must never splice missing pctl, unit files or
+            # preflight code from the checkout. Test the real shell before any
+            # payload-supplied checker can execute.
+            required = (
+                "gpupanel-core", "gpupanel-agent", "pctl", "app.yaml",
+                "gpupanel-install-preflight.py",
+                "initscript/gpupanel-core.service",
+                "initscript/gpupanel-agent.service",
+            )
+            for rel in required:
+                with self.subTest(missing_release_file=rel):
+                    file = payload / rel
+                    data = file.read_bytes()
+                    file.unlink()
+                    checker_marker.unlink(missing_ok=True)
+                    try:
+                        result = subprocess.run(
+                            ["bash", str(script), "--payload", str(payload),
+                             "--base-dir", str(target),
+                             "--approve-disposable-vm-install"],
+                            env=env, capture_output=True, text=True, check=False,
+                        )
+                        self.assertNotEqual(result.returncode, 0)
+                        self.assertIn("incomplete or redirected release payload", result.stdout)
+                        self.assertFalse(target.exists())
+                        self.assertFalse(checker_marker.exists(),
+                                         "incomplete release executed package checker")
+                    finally:
+                        file.write_bytes(data)
+
+            empty = subprocess.run(
+                ["bash", str(script), "--payload", "",
+                 "--base-dir", str(target), "--approve-disposable-vm-install"],
+                env=env, capture_output=True, text=True, check=False,
+            )
+            self.assertNotEqual(empty.returncode, 0)
+            self.assertIn("--payload requires a non-empty directory", empty.stdout)
+            self.assertFalse(target.exists())
+
+            # Redirecting a release component is not an allowed provenance
+            # fallback, even if its destination holds a plausible file.
+            original = payload / "pctl"
+            content = original.read_bytes()
+            original.unlink()
+            original.symlink_to(root / "external-pctl")
+            try:
+                result = subprocess.run(
+                    ["bash", str(script), "--payload", str(payload),
+                     "--base-dir", str(target), "--approve-disposable-vm-install"],
+                    env=env, capture_output=True, text=True, check=False,
+                )
+                self.assertIn("incomplete or redirected release payload", result.stdout)
+                self.assertFalse(target.exists())
+            finally:
+                original.unlink()
+                original.write_bytes(content)
+
     def test_integrated_preflight_process_and_unit_collisions_reach_installer_denial(self):
         # This is an integrated source contract across both previously
         # separate PRs, using a real preflight report, not hand-crafted JSON.
