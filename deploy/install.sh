@@ -177,11 +177,11 @@ fi
 # complete release never falls back to another checkout or package.
 pick() {
     if [ "$SOURCE_BUILD_MODE" = "0" ]; then
-        printf '%s\\n' "$PAYLOAD/$1"
+        printf '%s\n' "$PAYLOAD/$1"
     elif [ -f "$PAYLOAD/$1" ]; then
-        printf '%s\\n' "$PAYLOAD/$1"
+        printf '%s\n' "$PAYLOAD/$1"
     else
-        printf '%s\\n' "$2"
+        printf '%s\n' "$2"
     fi
 }
 
