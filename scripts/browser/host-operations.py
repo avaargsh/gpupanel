@@ -17,9 +17,11 @@ def api(route):
         intent = route.request.post_data_json
         assert 'command' not in intent
         assert ((intent['kind'] == 'host.diagnose' and intent['target'] == 'local') or
-                (intent['kind'] in ('container.restart', 'container.start', 'container.stop') and intent['target'] == CANARY))
+                (intent['kind'] in ('container.diagnose', 'container.restart', 'container.start', 'container.stop') and intent['target'] == CANARY))
         data = {'id': 'fixture-operation-' + str(len(state['plans'])), 'kind': intent['kind'], 'target': intent['target'],
-                'host': 'local', 'impact': 'Read local OS only. No changes.', 'expected': 'read-only',
+                'host': 'local', 'impact': ('Read local OS only. No changes.' if intent['kind'] == 'host.diagnose' else
+                'Read local Docker state only. No changes.' if intent['kind'] == 'container.diagnose' else
+                'Container process state may change.'), 'expected': 'read-only',
                 'hash': 'fixture-bound-hash', 'state': 'planned', 'output': '', 'error': '',
                 'createdAt': '2026-10-16T00:00:00Z', 'expiresAt': '2099-01-01T00:00:00Z', 'verified': False}
         state['plans'].append(data)
@@ -32,13 +34,23 @@ def api(route):
             route.abort('failed')
             return
         data['state'] = 'completed'
-        data['output'] = json.dumps({
-            'hostname': 'observed-fixture',
-            'os': 'linux', 'platform': 'ubuntu', 'arch': 'x86_64',
-            'kernelVersion': '6.8.0-48-generic', 'uptimeSeconds': 3600,
-            'rootFilesystem': {'totalBytes': 1000, 'usedBytes': 200, 'usedPercent': 20},
-            'accelerators': [],
-        })
+        if data['kind'] == 'container.diagnose':
+            data['output'] = json.dumps({
+                'schema': 'gpupanel.host.container-diagnosis.v1',
+                'observation': 'read-only-docker-inspect',
+                'containerId': CANARY, 'observedAt': '2026-10-18T11:58:00Z',
+                'status': 'exited', 'running': False, 'exitCode': 137,
+                'oomKilled': True, 'health': 'unhealthy',
+                'environment': {'API_TOKEN': 'SECRET_CONTAINER_ENV'},
+            })
+        else:
+            data['output'] = json.dumps({
+                'hostname': 'observed-fixture',
+                'os': 'linux', 'platform': 'ubuntu', 'arch': 'x86_64',
+                'kernelVersion': '6.8.0-48-generic', 'uptimeSeconds': 3600,
+                'rootFilesystem': {'totalBytes': 1000, 'usedBytes': 200, 'usedPercent': 20},
+                'accelerators': [],
+            })
     elif path == '/hosts/operations':
         data = state['plans']
     elif path == '/containers/search':
@@ -85,17 +97,41 @@ with sync_playwright() as p:
     page.reload()
     expect(page.locator('summary').filter(has_text='completed')).to_be_visible()
     assert state['confirms'] == 1
+    # Read-only container diagnosis uses the same existing approval/receipt path.
+    # Selecting and previewing never call Docker's legacy mutation API.
+    planned = len(state['plans'])
+    page.get_by_role('combobox', name='Operation', exact=True).select_option('container.diagnose')
+    page.get_by_role('textbox', name='Full 64-character container ID', exact=True).fill(CANARY)
+    assert len(state['plans']) == planned and state['container_mutations'] == 0
+    page.get_by_role('button', name='Preview operation', exact=True).click()
+    expect(page.get_by_role('button', name='Confirm and execute', exact=True)).to_be_enabled()
+    assert state['confirms'] == 1
+    page.get_by_role('button', name='Confirm and execute', exact=True).click()
+    expect(page.get_by_role('region', name='Read-only container evidence').first).to_be_visible()
+    expect(page.get_by_text('unhealthy', exact=True).first).to_be_visible()
+    assert page.get_by_text('SECRET_CONTAINER_ENV').count() == 0
+    assert state['container_mutations'] == 0 and state['confirms'] == 2
+    page.get_by_role('combobox', name='Operation', exact=True).select_option('host.diagnose')
     state['lost'] = True
     page.get_by_role('button', name='Preview operation', exact=True).click()
     page.get_by_role('button', name='Confirm and execute', exact=True).click()
     expect(page.get_by_text('Outcome is not confirmed.', exact=False).first).to_be_visible()
-    assert state['confirms'] == 2
+    assert state['confirms'] == 3
     page.get_by_role('button', name='Refresh', exact=True).click()
     expect(page.locator('summary').filter(has_text='unknown')).to_be_visible()
-    assert state['confirms'] == 2
+    assert state['confirms'] == 3
 
     # Container -> HostOps bridge: full ID selects a plan intention, not execution.
     planned, confirmed = len(state['plans']), state['confirms']
+    page.goto(URL + '/containers')
+    page.get_by_role('tab', name='Containers', exact=True).click()
+    row = page.get_by_role('row').filter(has_text='fixture-canary')
+    expect(row).to_be_visible()
+    # Entry is a deep link to manual review, not an automatic inspection.
+    row.get_by_role('button', name='Actions', exact=True).click()
+    page.get_by_role('menuitem', name='Inspect one container (read-only)', exact=True).click()
+    expect(page).to_have_url(re.compile(r'/host\?tab=operations&operationKind=container.diagnose&operationTarget=' + CANARY))
+    assert len(state['plans']) == planned and state['confirms'] == confirmed
     page.goto(URL + '/containers')
     page.get_by_role('tab', name='Containers', exact=True).click()
     row = page.get_by_role('row').filter(has_text='fixture-canary')
