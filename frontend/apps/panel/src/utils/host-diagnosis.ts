@@ -39,13 +39,16 @@ export function parseHostDiagnosis(output: unknown): HostDiagnosisSummary | null
     const root = report.rootFilesystem;
     const total = measured(root.totalBytes, 0, Number.MAX_SAFE_INTEGER);
     const used = measured(root.usedBytes, 0, Number.MAX_SAFE_INTEGER);
-    const pct = measured(root.usedPercent, 0, 100);
     const validBytes = total !== null && used !== null && used <= total;
+    // Contradictory usage must never be displayed as a normal percentage.
+    const pct = total !== null && used !== null && !validBytes
+        ? null : measured(root.usedPercent, 0, 100);
     const rawDevices = report.accelerators;
     // Absence of a reported device is not proof of absent GPU hardware.
     const acceleratorStatus: HostDiagnosisSummary['acceleratorStatus'] =
         report.acceleratorStatus === 'unavailable' ? 'unavailable' :
-        Array.isArray(rawDevices) && rawDevices.length <= 128 ? 'reported' : 'unknown';
+        Array.isArray(rawDevices) && rawDevices.length <= 128 && rawDevices.every(record)
+            ? 'reported' : 'unknown';
     const summary: HostDiagnosisSummary = {
         os: identity(report.os),
         platform: identity(report.platform),
