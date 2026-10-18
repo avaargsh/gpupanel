@@ -10,6 +10,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAppSelector } from '@/store/hooks';
 import { useSearchParams } from 'react-router-dom';
+import HostDiagnosisReport from './HostDiagnosisReport';
 import {
     useGetHostOperationsQuery,
     usePlanHostOperationMutation,
@@ -170,7 +171,7 @@ function LocalOperations({ initialKind, initialTarget }: { initialKind: string; 
                                 <Button
                                     onClick={() => void execute()}
                                     className="ml-3"
-                                    variant={'destructive'}
+                                    variant={preview.kind === 'host.diagnose' ? 'default' : 'destructive'}
                                     type={'button'}
                                     disabled={busy || expired || !!error || executing.isLoading}
                                 >
@@ -178,7 +179,9 @@ function LocalOperations({ initialKind, initialTarget }: { initialKind: string; 
                                     {t('hostOps.confirm')}
                                 </Button>
                             )}
-                            {preview.output && <pre className="log-output">{preview.output}</pre>}
+                            {preview.output && (preview.kind === 'host.diagnose'
+                                ? <HostDiagnosisReport output={preview.output} />
+                                : <pre className="log-output">{preview.output}</pre>)}
                             {preview.error && <p role="alert">{preview.error}</p>}
                         </div>
                     )}
@@ -226,7 +229,9 @@ function LocalOperations({ initialKind, initialTarget }: { initialKind: string; 
                                 </p>
                                 {row.error && <p role="alert">{row.error}</p>}
                                 {row.state === 'unknown' && <p>{t('hostOps.uncertain')}</p>}
-                                <pre className="log-output">{row.output || t('hostOps.noOutput')}</pre>
+                                {row.output && row.kind === 'host.diagnose'
+                                    ? <HostDiagnosisReport output={row.output} />
+                                    : <pre className="log-output">{row.output || t('hostOps.noOutput')}</pre>}
                                 {row.state === 'planned' && (
                                     <Button
                                         onClick={() => {
