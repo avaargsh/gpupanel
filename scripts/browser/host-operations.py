@@ -127,6 +127,15 @@ with sync_playwright() as p:
     page.get_by_role('tab', name='Containers', exact=True).click()
     row = page.get_by_role('row').filter(has_text='fixture-canary')
     expect(row).to_be_visible()
+    # Entry is a deep link to manual review, not an automatic inspection.
+    row.get_by_role('button', name='Actions', exact=True).click()
+    page.get_by_role('menuitem', name='Inspect one container (read-only)', exact=True).click()
+    expect(page).to_have_url(re.compile(r'/host\\?tab=operations&operationKind=container.diagnose&operationTarget=' + CANARY))
+    assert len(state['plans']) == planned and state['confirms'] == confirmed
+    page.goto(URL + '/containers')
+    page.get_by_role('tab', name='Containers', exact=True).click()
+    row = page.get_by_role('row').filter(has_text='fixture-canary')
+    expect(row).to_be_visible()
     row.get_by_role('button', name='Actions', exact=True).click()
     page.get_by_role('menuitem', name='Review restart', exact=True).click()
     expect(page).to_have_url(re.compile(r'/host\?tab=operations&operationKind=container.restart&operationTarget=' + CANARY))
