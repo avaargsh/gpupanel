@@ -89,7 +89,8 @@ def verify_checkpoint(folder: Path, *, command=subprocess.run) -> dict:
         or record.get("virtual_size") != VIRTUAL_SIZE
         or record.get("disk") != "disk.qcow2"
         or not isinstance(record.get("created_utc"), str)
-        or not re.fullmatch(r"[0-9a-f]{64}", record.get("source_image_sha256", ""))
+        or not isinstance(record.get("source_image_sha256"), str)
+        or not re.fullmatch(r"[0-9a-f]{64}", record["source_image_sha256"])
     ):
         raise RuntimeError("checkpoint identity or digest mismatch")
     image_info = _info(disk, command)
