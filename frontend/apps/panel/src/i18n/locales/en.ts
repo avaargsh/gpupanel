@@ -23,7 +23,22 @@ const en: LocaleResource = {
         "noOutput": "No execution output recorded.",
         "review": "Review this plan",
         "planError": "Unable to prepare this operation. Verify the target and retry the preview.",
-        "uncertain": "Outcome is not confirmed. Query this receipt and inspect the target; do not repeat execution automatically."
+        "uncertain": "Outcome is not confirmed. Query this receipt and inspect the target; do not repeat execution automatically.",
+        "diagnosis": {
+            "title": "Read-only local host snapshot",
+            "invalid": "No valid structured observation is available. Unvalidated raw output is hidden.",
+            "system": "Operating system",
+            "kernel": "Kernel",
+            "architecture": "Architecture",
+            "uptime": "Uptime",
+            "disk": "Root filesystem used",
+            "accelerators": "Accelerator inventory",
+            "unavailable": "Collection unavailable",
+            "notReported": "No reliable observation",
+            "noneReported": "No devices reported (hardware absence not proven)",
+            "reportedCount": "{{count}} device(s) reported",
+            "disclaimer": "This is only a read-only operation receipt, not independent attestation, root cause analysis, or proof of remediation."
+        }
 },
 
     workbench: {
