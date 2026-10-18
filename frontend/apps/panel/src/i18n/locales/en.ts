@@ -7,6 +7,7 @@ const en: LocaleResource = {
         "description": "Preview a fixed operation, inspect the exact target and impact, then confirm. No arbitrary shell commands.",
         "operation": "Operation",
         "diagnose": "Diagnose this host",
+        "containerDiagnose": "Inspect one container (read-only)",
         "restart": "Restart one container",
         "start": "Start one container",
         "stop": "Stop one container",
