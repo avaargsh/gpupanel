@@ -12,6 +12,16 @@ INSTALLER = ROOT / "deploy/install.sh"
 
 
 class LocalDeployContract(unittest.TestCase):
+    def test_vm_acceptance_guide_and_lifecycle_use_current_denial_contract(self):
+        # Contract guard only: real Ubuntu guest installation remains NOT RUN.
+        guide = (ROOT / "docs/operations/local-install-test.md").read_text(encoding="utf-8")
+        runtime = (ROOT / "scripts/install-test/runtime.py").read_text(encoding="utf-8")
+        self.assertIn("gpupanel-install-preflight.py --json", guide)
+        self.assertIn("--approve-disposable-vm-install --entrance itest-local", guide)
+        self.assertNotIn("install.sh --entrance itest-local", guide)
+        self.assertIn("'install authorization denied' in repeated.stdout", runtime)
+        self.assertIn("assert pid_before == pid_after", runtime)
+
     def test_preflight_precedes_host_mutation_and_private_log_never_retains_password(self):
         src = INSTALLER.read_text(encoding="utf-8")
         start = src.index("\ninit_install_log\nbanner")
