@@ -22,6 +22,19 @@ const zh = {
         "review": "查看并核对计划",
         "planError": "无法准备操作，请检查目标后重新预览。",
         "uncertain": "执行结果尚未确认。请查询该回执并核对目标，不要自动重复执行。",
+        "containerDiagnosis": {
+            "title": "容器只读故障证据",
+            "invalid": "容器证据缺失、与目标不符或格式异常。已隐藏原始输出。",
+            "status": "Docker 状态",
+            "running": "正在运行",
+            "exitCode": "退出码",
+            "oom": "OOM 终止",
+            "health": "健康检查",
+            "observedAt": "观测时间（UTC）",
+            "yes": "是",
+            "no": "否",
+            "disclaimer": "仅为指定容器的 Docker Inspect 状态快照：不采集环境变量、挂载、命令或原始日志；不证明故障根因或修复成功。"
+        },
         "diagnosis": {
             "title": "本机只读诊断摘要",
             "invalid": "诊断回执缺少有效的结构化数据，不展示未经校验的原始输出。",
