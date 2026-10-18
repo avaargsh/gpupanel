@@ -167,7 +167,7 @@ func TestTimeoutAndPartialResultNeverVerified(t *testing.T) {
 }
 func TestOnlyAllowlistedIntentAndCapacity(t *testing.T) {
 	e, _, _ := testEngine(t)
-	for _, req := range []PlanRequest{{Kind: "shell", Target: "rm -rf /", Key: "unique-key-07"}, {Kind: Diagnose, Target: "remote", Key: "unique-key-07"}, {Kind: Restart, Target: "short-name", Key: "unique-key-07"}} {
+	for _, req := range []PlanRequest{{Kind: "shell", Target: "rm -rf /", Key: "unique-key-07"}, {Kind: Diagnose, Target: "remote", Key: "unique-key-07"}, {Kind: Restart, Target: "short-name", Key: "unique-key-07"}, {Kind: ContainerDiagnose, Target: "unsafe;id", Key: "unique-key-07"}, {Kind: ContainerDiagnose, Target: "remote", Key: "unique-key-07"}} {
 		if _, err := e.Plan(context.Background(), "admin:session", req); err == nil {
 			t.Fatal("uncontrolled intent accepted")
 		}
