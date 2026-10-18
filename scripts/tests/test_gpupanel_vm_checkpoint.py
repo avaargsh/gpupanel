@@ -127,6 +127,23 @@ class OfflineCheckpointContracts(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError, "digest mismatch"):
             checkpoint.verify_checkpoint(folder, command=self.qemu)
 
+    def test_manifest_cannot_claim_restoration_or_install_approval(self):
+        folder = self.create()
+        path = folder / "checkpoint.json"
+        original = json.loads(path.read_text())
+        for changed in (
+            {"restoration_tested": True},
+            {"installation_approved": True},
+            {"scope": "other-vm"},
+            {"untrusted_metadata": "SECRET_PAYLOAD"},
+        ):
+            with self.subTest(changed=changed):
+                path.write_text(json.dumps({**original, **changed}))
+                with self.assertRaisesRegex(RuntimeError, "identity or digest"):
+                    checkpoint.verify_checkpoint(folder, command=self.qemu)
+        path.write_text(json.dumps(original))
+        self.assertEqual(checkpoint.verify_checkpoint(folder, command=self.qemu)["disk"], "disk.qcow2")
+
     def test_untrusted_checkpoint_name_and_symlinked_manifest_are_rejected(self):
         folder = self.create()
         with self.assertRaisesRegex(RuntimeError, "unrecognized checkpoint name"):
