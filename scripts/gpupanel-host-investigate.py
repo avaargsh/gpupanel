@@ -30,6 +30,12 @@ SIGNALS = {"out_of_memory": (b"out of memory", b"oomkilled"),
            "connection_refused": (b"connection refused",),
            "error_word": (b"error",)}
 INSPECT_TEMPLATE = '{"id":{{json .Id}},"name":{{json .Name}},"state":{{json .State}}}'
+# Docker API state and timestamp values are untrusted; never relay arbitrary text.
+DOCKER_STATES = frozenset({"created", "running", "paused", "restarting",
+                           "removing", "exited", "dead"})
+DOCKER_TIMESTAMP = re.compile(
+    r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?(?:Z|[+-]\d{2}:\d{2})$"
+)
 
 
 class InvestigationError(Exception):
@@ -138,11 +144,19 @@ def snapshot(target: str, probe: bool, *, executor=bounded_command,
             raise ValueError("invalid state")
         if not isinstance(state["ExitCode"], int) or isinstance(state["ExitCode"], bool):
             raise ValueError("invalid exit code")
+        if state["Status"] not in DOCKER_STATES:
+            raise ValueError("unrecognized Docker state")
     except (ValueError, TypeError, KeyError, UnicodeError, AttributeError) as exc:
         raise InvestigationError("Docker inspect returned invalid or incomplete metadata") from exc
-    def bounded_str(key):
+    def safe_timestamp(key):
         val = state.get(key)
-        return val if isinstance(val, str) and len(val) <= 80 and "\n" not in val else None
+        if not isinstance(val, str) or len(val) > 80 or not DOCKER_TIMESTAMP.fullmatch(val):
+            return None
+        try:
+            datetime.fromisoformat(val.replace("Z", "+00:00"))
+        except ValueError:
+            return None
+        return val
     health = state.get("Health")
     health_status = health.get("Status") if isinstance(health, dict) else None
     if health_status not in ("starting", "healthy", "unhealthy", None):
@@ -151,10 +165,10 @@ def snapshot(target: str, probe: bool, *, executor=bounded_command,
               "status": "OBSERVED", "executed": True, "mutations": False,
               "source": {"provider": "docker", "scope": "local-unix-context",
                          "containerId": identity, "containerName": name, "observedAt": observed},
-              "state": {"status": bounded_str("Status"), "running": state["Running"],
+              "state": {"status": state["Status"], "running": state["Running"],
                         "exitCode": state["ExitCode"],
                         "oomKilled": state.get("OOMKilled") if isinstance(state.get("OOMKilled"), bool) else None,
-                        "startedAt": bounded_str("StartedAt"), "finishedAt": bounded_str("FinishedAt"),
+                        "startedAt": safe_timestamp("StartedAt"), "finishedAt": safe_timestamp("FinishedAt"),
                         "health": health_status},
               "logs": {"available": False, "rawContentIncluded": False,
                        "tailRequested": TAIL_LINES},
