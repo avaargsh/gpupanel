@@ -32,7 +32,13 @@ def api(route):
             route.abort('failed')
             return
         data['state'] = 'completed'
-        data['output'] = '{"hostname":"observed-fixture"}'
+        data['output'] = json.dumps({
+            'hostname': 'observed-fixture',
+            'os': 'linux', 'platform': 'ubuntu', 'arch': 'x86_64',
+            'kernelVersion': '6.8.0-48-generic', 'uptimeSeconds': 3600,
+            'rootFilesystem': {'totalBytes': 1000, 'usedBytes': 200, 'usedPercent': 20},
+            'accelerators': [],
+        })
     elif path == '/hosts/operations':
         data = state['plans']
     elif path == '/containers/search':
@@ -70,7 +76,11 @@ with sync_playwright() as p:
     assert state['confirms'] == 0
     expect(page.get_by_text('Read local OS only. No changes.', exact=True)).to_be_visible()
     page.get_by_role('button', name='Confirm and execute', exact=True).click()
-    expect(page.get_by_text('{"hostname":"observed-fixture"}', exact=True).first).to_be_visible()
+    expect(page.get_by_role('region', name='Read-only local host snapshot').first).to_be_visible()
+    expect(page.get_by_text('linux ubuntu', exact=True).first).to_be_visible()
+    expect(page.get_by_text('No devices reported (hardware absence not proven)', exact=True).first).to_be_visible()
+    assert page.get_by_text('observed-fixture').count() == 0
+    assert page.locator('pre.log-output').filter(has_text='hostname').count() == 0
     assert state['confirms'] == 1
     page.reload()
     expect(page.locator('summary').filter(has_text='completed')).to_be_visible()
