@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { parseContainerDiagnosis } from './container-diagnosis.ts';
+import { parseContainerDiagnosis, containerInvestigationHints } from './container-diagnosis.ts';
 
 const id = 'a'.repeat(64);
 const fixture = {
@@ -44,4 +44,36 @@ test('rejects unexpected payloads and unbounded text', () => {
     for (const value of ['not-json', '[]', '{}', '', 'a'.repeat(16385), null]) {
         assert.equal(parseContainerDiagnosis(value, id), null);
     }
+});
+
+test('OOM is an observed signal; inspect memory limits without asserting a root cause', () => {
+    const report = parseContainerDiagnosis(JSON.stringify(fixture), id);
+    assert.deepEqual(containerInvestigationHints(report), ['memoryPressure', 'healthProbe']);
+});
+
+test('exit 137 without OOM flag must not be called an OOM kill', () => {
+    const report = parseContainerDiagnosis(JSON.stringify({
+        ...fixture, oomKilled: false, health: 'unknown',
+    }), id);
+    assert.deepEqual(containerInvestigationHints(report), ['nonzeroExit']);
+});
+
+test('healthy process has no asserted failure and no automatic remedy', () => {
+    const report = parseContainerDiagnosis(JSON.stringify({
+        ...fixture, status: 'running', running: true, oomKilled: false,
+        exitCode: 0, health: 'healthy',
+    }), id);
+    assert.deepEqual(containerInvestigationHints(report), ['insufficientEvidence']);
+});
+
+test('stopped zero exit and restarting states produce separate review prompts', () => {
+    const stopped = parseContainerDiagnosis(JSON.stringify({
+        ...fixture, status: 'exited', exitCode: 0, oomKilled: false, health: 'unknown',
+    }), id);
+    const restarting = parseContainerDiagnosis(JSON.stringify({
+        ...fixture, status: 'restarting', running: true, exitCode: 1,
+        oomKilled: false, health: 'unknown',
+    }), id);
+    assert.deepEqual(containerInvestigationHints(stopped), ['stopped']);
+    assert.deepEqual(containerInvestigationHints(restarting), ['unstableState']);
 });
