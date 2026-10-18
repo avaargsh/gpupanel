@@ -44,7 +44,7 @@ VERSION=local-dev ./deploy/build.sh
 python3 scripts/install-test/vm.py stop
 python3 scripts/install-test/vm.py checkpoint
 # 从上一步输出读取真实 checkpoint-... 名称；不可自行猜测或复用旧名称
-python3 scripts/install-test/vm.py verify-checkpoint <实际-checkpoint-名称>
+python3 scripts/install-test/vm.py verify-checkpoint 'checkpoint-YYYYMMDDTHHMMSSZ-xxxxxxxx'
 python3 scripts/install-test/vm.py start
 ```
 
