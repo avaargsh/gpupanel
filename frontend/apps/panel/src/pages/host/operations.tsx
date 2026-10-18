@@ -9,6 +9,9 @@ import { Badge } from '@/components/ui/badge';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAppSelector } from '@/store/hooks';
+import { useSearchParams } from 'react-router-dom';
+import HostDiagnosisReport from './HostDiagnosisReport';
+import ContainerDiagnosisReport from './ContainerDiagnosisReport';
 import {
     useGetHostOperationsQuery,
     usePlanHostOperationMutation,
@@ -18,8 +21,17 @@ import {
 export default function HostOperations() {
     const node = useAppSelector((state) => state.ui.currentNode) || 'local';
     const { t } = useTranslation();
+    const [params] = useSearchParams();
+    // A deep link may select an intention but must never plan or execute it.
+    const requestedTarget = params.get('operationTarget') || params.get('restartTarget') || '';
+    const target = /^[a-f0-9]{64}$/.test(requestedTarget) ? requestedTarget : '';
+    const requestedKind = params.get('operationKind');
+    const kind = target
+        ? (requestedKind === 'container.diagnose' || requestedKind === 'container.start' || requestedKind === 'container.stop' || requestedKind === 'container.restart'
+            ? requestedKind : 'container.restart')
+        : 'host.diagnose';
     return node === 'local' ? (
-        <LocalOperations key={node} />
+        <LocalOperations key={`${node}:${kind}:${target}`} initialKind={kind} initialTarget={target} />
     ) : (
         <Empty className="host-operations-empty">
             <EmptyHeader>
@@ -28,10 +40,10 @@ export default function HostOperations() {
         </Empty>
     );
 }
-function LocalOperations() {
+function LocalOperations({ initialKind, initialTarget }: { initialKind: string; initialTarget: string }) {
     const { t } = useTranslation();
-    const [kind, setKind] = useState('host.diagnose');
-    const [target, setTarget] = useState('');
+    const [kind, setKind] = useState(initialKind);
+    const [target, setTarget] = useState(initialTarget);
     const [preview, setPreview] = useState<HostOperation | null>(null);
     const [error, setError] = useState('');
     const [plan, planning] = usePlanHostOperationMutation();
@@ -99,7 +111,10 @@ function LocalOperations() {
                                     String(
                                         [
                                             { value: 'host.diagnose', label: t('hostOps.diagnose') },
+                                            { value: 'container.diagnose', label: t('hostOps.containerDiagnose') },
                                             { value: 'container.restart', label: t('hostOps.restart') },
+                                            { value: 'container.start', label: t('hostOps.start') },
+                                            { value: 'container.stop', label: t('hostOps.stop') },
                                         ].find((option) => String(option.value) === event.target.value)?.value ?? event.target.value,
                                     ),
                                 )
@@ -110,14 +125,17 @@ function LocalOperations() {
                             </NativeSelectOption>
                             {[
                                 { value: 'host.diagnose', label: t('hostOps.diagnose') },
+                                            { value: 'container.diagnose', label: t('hostOps.containerDiagnose') },
                                 { value: 'container.restart', label: t('hostOps.restart') },
+                                            { value: 'container.start', label: t('hostOps.start') },
+                                            { value: 'container.stop', label: t('hostOps.stop') },
                             ].map((option) => (
                                 <NativeSelectOption key={String(option.value)} value={option.value}>
                                     {option.label}
                                 </NativeSelectOption>
                             ))}
                         </NativeSelect>
-                        {kind === 'container.restart' && (
+                        {kind !== 'host.diagnose' && (
                             <Input
                                 value={target}
                                 disabled={busy}
@@ -131,7 +149,7 @@ function LocalOperations() {
                             onClick={() => void createPlan()}
                             variant={'outline'}
                             type={'button'}
-                            disabled={busy || (kind === 'container.restart' && !/^[a-f0-9]{64}$/.test(target.trim())) || planning.isLoading}
+                            disabled={busy || (kind !== 'host.diagnose' && !/^[a-f0-9]{64}$/.test(target.trim())) || planning.isLoading}
                         >
                             {planning.isLoading ? <Spinner data-icon="inline-start" /> : null}
                             {t('hostOps.preview')}
@@ -156,7 +174,7 @@ function LocalOperations() {
                                 <Button
                                     onClick={() => void execute()}
                                     className="ml-3"
-                                    variant={'destructive'}
+                                    variant={preview.kind === 'host.diagnose' || preview.kind === 'container.diagnose' ? 'default' : 'destructive'}
                                     type={'button'}
                                     disabled={busy || expired || !!error || executing.isLoading}
                                 >
@@ -164,7 +182,11 @@ function LocalOperations() {
                                     {t('hostOps.confirm')}
                                 </Button>
                             )}
-                            {preview.output && <pre className="log-output">{preview.output}</pre>}
+                            {preview.output && (preview.kind === 'host.diagnose'
+                                ? <HostDiagnosisReport output={preview.output} />
+                                : preview.kind === 'container.diagnose'
+                                    ? <ContainerDiagnosisReport output={preview.output} target={preview.target} />
+                                    : <pre className="log-output">{preview.output}</pre>)}
                             {preview.error && <p role="alert">{preview.error}</p>}
                         </div>
                     )}
@@ -212,7 +234,11 @@ function LocalOperations() {
                                 </p>
                                 {row.error && <p role="alert">{row.error}</p>}
                                 {row.state === 'unknown' && <p>{t('hostOps.uncertain')}</p>}
-                                <pre className="log-output">{row.output || t('hostOps.noOutput')}</pre>
+                                {row.output && row.kind === 'host.diagnose'
+                                    ? <HostDiagnosisReport output={row.output} />
+                                    : row.output && row.kind === 'container.diagnose'
+                                        ? <ContainerDiagnosisReport output={row.output} target={row.target} />
+                                        : <pre className="log-output">{row.output || t('hostOps.noOutput')}</pre>}
                                 {row.state === 'planned' && (
                                     <Button
                                         onClick={() => {

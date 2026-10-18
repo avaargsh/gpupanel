@@ -1,0 +1,109 @@
+name: GPUPanel HostOperations live Docker canary
+on:
+  pull_request:
+    paths:
+      - 'agent/app/hostops/**'
+      - '.github/workflows/gpupanel-hostops-live-canary.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  isolated-docker-canary:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: agent/go.mod
+          cache-dependency-path: agent/go.sum
+      - name: LIVE isolated Docker start stop restart + TaskDB reopen
+        shell: bash
+        env:
+          PROOF_DIR: ${{ runner.temp }}/hostops-proof
+        run: |
+          set -euo pipefail
+          test "$(id -u)" != 0
+          docker info >/dev/null
+          mkdir -p "$PROOF_DIR"
+          # Prove the workflow neither removes nor changes preexisting containers.
+          docker ps -a --no-trunc --format '{{.ID}} {{.State}}' | sort > "$PROOF_DIR/preexisting.txt"
+          tmp="$(mktemp -d)"
+          run_label="ci-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          tag="gpupanel-hostops:ci-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          name="gpupanel-hostops-canary-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          cid=""
+          cleanup() {
+            status=$?
+            trap - EXIT
+            if [[ -n "$cid" ]]; then
+              if docker inspect "$cid" >/dev/null 2>&1; then
+                label="$(docker inspect --format '{{ index .Config.Labels "gpupanel.hostops.acceptance" }}' "$cid")"
+                if [[ "$label" != "$run_label" ]]; then
+                  echo "Unsafe cleanup target; refusing to touch foreign container" >&2
+                  status=1
+                else
+                  docker rm -f "$cid" >/dev/null || status=1
+                fi
+              fi
+              if docker inspect "$cid" >/dev/null 2>&1; then status=1; fi
+            fi
+            if [[ -n "$tag" ]]; then docker image rm "$tag" >/dev/null 2>&1 || true; fi
+            docker ps -a --no-trunc --format '{{.ID}} {{.State}}' | sort > "$PROOF_DIR/remaining.txt" || status=1
+            if ! diff -u "$PROOF_DIR/preexisting.txt" "$PROOF_DIR/remaining.txt"; then status=1; fi
+            if [[ "$status" -eq 0 ]]; then echo VERIFIED > "$PROOF_DIR/cleanup-status.txt"; else echo FAILED > "$PROOF_DIR/cleanup-status.txt"; fi
+            rm -rf "$tmp"
+            exit "$status"
+          }
+          trap cleanup EXIT
+          # Entirely offline, no external entrypoint and no inbound/outbound network.
+          cat > "$tmp/main.go" <<'GO'
+          package main
+          import "time"
+          func main() { time.Sleep(2*time.Hour) }
+          GO
+          (cd "$tmp" && CGO_ENABLED=0 GO111MODULE=off go build -trimpath -o canary ./main.go)
+          printf 'FROM scratch\nCOPY canary /canary\nUSER 65534:65534\nENTRYPOINT ["/canary"]\n' > "$tmp/Dockerfile"
+          docker build --pull=false --network none --tag "$tag" "$tmp"
+          image="$(docker image inspect --format '{{.Id}}' "$tag")"
+          cid="$(docker create \
+            --name "$name" \
+            --label "gpupanel.hostops.acceptance=$run_label" \
+            --network none --read-only \
+            --user 65534:65534 --security-opt no-new-privileges --cap-drop ALL \
+            --pids-limit 64 --memory 128m \
+            "$image")"
+          [[ "$cid" =~ ^[a-f0-9]{64}$ ]] || { echo "Docker returned non-full ID" >&2; exit 1; }
+          export GPUPANEL_HOSTOPS_CANARY="$cid"
+          export GPUPANEL_HOSTOPS_RUN="$run_label"
+          export GPUPANEL_HOSTOPS_IMAGE="$image"
+          (cd agent && go test -count=1 -timeout=120s -run '^TestOwnedDockerStartStopRestartLifecycle$' -v ./app/hostops) | tee "$PROOF_DIR/go-test.log"
+          python3 - <<'PY'
+          import json, os, pathlib
+          folder = pathlib.Path(os.environ["PROOF_DIR"])
+          text = (folder / "go-test.log").read_text()
+          lines = [s.split("HOSTOPS_CANARY_PROOF=", 1)[1] for s in text.splitlines() if "HOSTOPS_CANARY_PROOF=" in s]
+          assert len(lines) == 1, "missing or duplicate real Docker proof record"
+          proof = json.loads(lines[0])
+          assert proof["kind"].startswith("LIVE isolated Docker")
+          assert proof["containerId"] == os.environ["GPUPANEL_HOSTOPS_CANARY"]
+          assert [s["kind"] for s in proof["checks"]] == ["container.start", "container.stop", "container.start", "container.restart"]
+          assert proof["receiptCountAfterReopen"] == 4
+          for step in proof["checks"]:
+              assert step["receiptState"] == "verified" and step["receiptVerified"]
+              for flag in ("previewUnchanged", "unconfirmedDenied", "samePlanIdOnRetry", "independentInspect", "confirmReplayUnchanged"):
+                  assert step[flag] is True
+              assert step["preSnapshotSha256"] != step["postSnapshotSha256"]
+          proof["githubCommit"] = os.environ["GITHUB_SHA"]
+          proof["githubRunId"] = os.environ["GITHUB_RUN_ID"]
+          proof["claim"] = "Real Docker SDK + TaskDB; not installed Core/browser; no operation ownership attestation"
+          (folder / "hostops-live-canary.json").write_text(json.dumps(proof, indent=2) + "\n")
+          PY
+      - name: Retain live result and cleanup evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: hostops-live-docker-${{ github.sha }}
+          path: ${{ runner.temp }}/hostops-proof/
+          if-no-files-found: warn
+          retention-days: 7

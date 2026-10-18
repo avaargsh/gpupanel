@@ -24,9 +24,12 @@ import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
 import { Spinner } from '@/components/ui/spinner';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { formatPercent } from '@/utils/format';
+import { useAppSelector } from '@/store/hooks';
+import { readPendingContainerOperation, savePendingContainerOperation, clearPendingContainerOperation, unresolvedContainerOperationExists } from '@/utils/container-operation-pending';
 import { FileTextIcon, MoreHorizontalIcon, PlusIcon, RefreshCwIcon, TerminalIcon } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { ConfirmDialog } from './confirm-dialog';
 import { ContainerCreateDialog } from './list-create';
@@ -62,6 +65,19 @@ type Order = 'ascending' | 'descending';
  */
 export default function ContainerList({ onOpenLogs, onOpenExec }: ContainerListProps) {
     const { t } = useTranslation();
+    const navigate = useNavigate();
+    const currentNode = useAppSelector((state) => state.ui.currentNode) || 'local';
+    const eligibleForControlledOperation = (id: string) =>
+        currentNode === 'local' && /^[a-f0-9]{64}$/.test(id) &&
+        !pendingOperation && !unresolvedContainerOperationExists();
+    const openControlledOperation = (kind: 'diagnose' | 'start' | 'stop' | 'restart', id: string) => {
+        if (!eligibleForControlledOperation(id)) return;
+        navigate(`/host?tab=operations&operationKind=container.${kind}&operationTarget=${id}`);
+    };
+    const node = useAppSelector((s) => s.ui.currentNode) || 'local';
+    const [pendingOperation, setPendingOperation] = useState(readPendingContainerOperation);
+    const [submissionState, setSubmissionState] = useState<'unverified' | 'accepted' | 'unknown'>('unverified');
+    const flight = useRef(false);
 
     const [page, setPage] = useState(1);
     const [pageSize, setPageSize] = useState(20);
@@ -71,6 +87,12 @@ export default function ContainerList({ onOpenLogs, onOpenExec }: ContainerListP
     const [orderBy, setOrderBy] = useState<OrderBy>('createdAt');
     const [order, setOrder] = useState<Order>('descending');
     const [selected, setSelected] = useState<string[]>([]);
+
+    // A selection belongs to the visible query, never to a previous page,
+    // filter, or ordering. Clear it before new rows become actionable.
+    useEffect(() => {
+        setSelected([]);
+    }, [page, pageSize, name, state, orderBy, order]);
 
     useEffect(() => {
         const timer = window.setTimeout(() => {
@@ -106,14 +128,43 @@ export default function ContainerList({ onOpenLogs, onOpenExec }: ContainerListP
 
     const [operate] = useOperateContainerMutation();
 
+    /** HTTP acknowledgement is not a Docker terminal-state proof.
+     * Keep a session-scoped, non-secret hint before the POST, and never auto-replay.
+     */
     const runOperate = async (operation: ContainerOperation, names: string[]) => {
+        const block = (message: string) => {
+            toast.error(message);
+            if (operation === 'remove') throw new Error(message);
+        };
+        if (flight.current || pendingOperation || unresolvedContainerOperationExists()) {
+            return block(t('container.reconcile.blocked'));
+        }
+        if (listQuery.isFetching || listQuery.isError || names.length === 0) {
+            return block(t('container.reconcile.unavailable'));
+        }
+        const receipt = { node, operation, names: [...new Set(names)], createdAt: Date.now() };
+        if (!savePendingContainerOperation(receipt)) {
+            return block(t('container.reconcile.storageFailed'));
+        }
+        flight.current = true;
+        setPendingOperation(receipt);
+        setSubmissionState('unverified');
+        setSelected([]);
         try {
-            await operate({ names, operation }).unwrap();
-            toast.success(t(`container.actions.${operation}Success`));
-            setSelected([]);
-        } catch (e) {
-            toast.error(errText(e));
-            if (operation === 'remove') throw new Error(errText(e));
+            await operate({ names: receipt.names, operation }).unwrap();
+            setSubmissionState('accepted');
+            toast.info(t('container.reconcile.accepted'));
+        } catch {
+            // A rejected or disconnected response can follow an accepted mutation.
+            // Do not claim failure or resend automatically.
+            setSubmissionState('unknown');
+            toast.error(t('container.reconcile.unknown'));
+            if (operation === 'remove') throw new Error(t('container.reconcile.unknown'));
+        } finally {
+            flight.current = false;
+            // Read-only reconciliation, not a proof that start/stop/restart finished.
+            void listQuery.refetch();
+            void statusQuery.refetch();
         }
     };
 
@@ -165,6 +216,40 @@ export default function ContainerList({ onOpenLogs, onOpenExec }: ContainerListP
 
     return (
         <div className="container-list">
+            {pendingOperation && (
+                <section role="status" aria-label={t('container.reconcile.title')} className="container-operation-receipt">
+                    <div>
+                        <h3 className="text-sm font-semibold">{t('container.reconcile.title')}</h3>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                            {t('container.reconcile.scope')}: {pendingOperation.node} ·
+                            {' '}{t(`container.actions.${pendingOperation.operation}`)} ·
+                            {' '}{pendingOperation.names.join(', ')}
+                        </p>
+                        <p className="mt-2 text-sm">{t(`container.reconcile.${submissionState}`)}</p>
+                        {pendingOperation.node !== node && (
+                            <p className="mt-1 text-xs text-destructive">{t('container.reconcile.otherHost')}</p>
+                        )}
+                    </div>
+                    <div className="container-operation-receipt-actions">
+                        <Button size="sm" variant="outline" type="button"
+                            disabled={pendingOperation.node !== node || listQuery.isFetching}
+                            onClick={() => { void listQuery.refetch(); void statusQuery.refetch(); }}>
+                            {t('container.reconcile.refresh')}
+                        </Button>
+                        <Button size="sm" variant="outline" type="button"
+                            disabled={pendingOperation.node !== node || flight.current}
+                            onClick={() => {
+                                if (!window.confirm(t('container.reconcile.clearConfirm'))) return;
+                                if (clearPendingContainerOperation(pendingOperation.createdAt)) {
+                                    setPendingOperation(null);
+                                    setSubmissionState('unverified');
+                                } else toast.error(t('container.reconcile.storageFailed'));
+                            }}>
+                            {t('container.reconcile.reviewed')}
+                        </Button>
+                    </div>
+                </section>
+            )}
             {listQuery.isError ? (
                 <Card className="container-list-card">
                     <CardHeader>
@@ -251,31 +336,49 @@ export default function ContainerList({ onOpenLogs, onOpenExec }: ContainerListP
                             >
                                 {order === 'ascending' ? t('container.list.ascending') : t('container.list.descending')}
                             </Button>
-                            {selected.length > 0 && (
-                                <>
+
+                        </div>
+
+                            {!listQuery.isFetching && !listQuery.isError && selectedNames.length > 0 && (
+                                <div className="container-selection-toolbar" role="region" aria-label={t('container.list.selected', { count: selectedNames.length })}>
                                     <span className="text-sm text-muted-foreground">
-                                        {t('container.list.selected', { count: selected.length })}
+                                        {t('container.list.selected', { count: selectedNames.length })}
                                     </span>
                                     <Button
                                         size="sm"
                                         variant="outline"
-                                        onClick={() => runOperate('start', selectedNames)}
+                                        disabled={selected.length !== 1 || !rows.some((row) => selected.includes(row.containerID) &&
+                                            (row.state === 'created' || row.state === 'exited') && eligibleForControlledOperation(row.containerID))}
+                                        onClick={() => {
+                                            const match = rows.find((row) => selected.includes(row.containerID));
+                                            if (match && selected.length === 1 && (match.state === 'created' || match.state === 'exited')) openControlledOperation('start', match.containerID);
+                                        }}
                                     >
                                         {t('container.actions.start')}
                                     </Button>
                                     <Button
                                         size="sm"
                                         variant="outline"
-                                        onClick={() => runOperate('stop', selectedNames)}
+                                        disabled={selected.length !== 1 || !rows.some((row) => selected.includes(row.containerID) &&
+                                            row.state === 'running' && eligibleForControlledOperation(row.containerID))}
+                                        onClick={() => {
+                                            const match = rows.find((row) => selected.includes(row.containerID));
+                                            if (match && selected.length === 1 && match.state === 'running') openControlledOperation('stop', match.containerID);
+                                        }}
                                     >
                                         {t('container.actions.stop')}
                                     </Button>
                                     <Button
                                         size="sm"
                                         variant="outline"
-                                        onClick={() => runOperate('restart', selectedNames)}
+                                        disabled={selected.length !== 1 || !rows.some((row) => selected.includes(row.containerID) && eligibleForControlledOperation(row.containerID))}
+                                        title={t('container.reconcile.restartSingleHint')}
+                                        onClick={() => {
+                                            const match = rows.find((row) => selected.includes(row.containerID));
+                                            if (match && selected.length === 1) openControlledOperation('restart', match.containerID);
+                                        }}
                                     >
-                                        {t('container.actions.restart')}
+                                        {t('container.reconcile.controlledRestart')}
                                     </Button>
                                     <Button
                                         size="sm"
@@ -284,9 +387,8 @@ export default function ContainerList({ onOpenLogs, onOpenExec }: ContainerListP
                                     >
                                         {t('container.actions.remove')}
                                     </Button>
-                                </>
+                                </div>
                             )}
-                        </div>
 
                         {listQuery.isFetching ? (
                             <span className="inline-flex items-center gap-2 text-sm text-muted-foreground">
@@ -383,17 +485,18 @@ export default function ContainerList({ onOpenLogs, onOpenExec }: ContainerListP
                                                             <Button
                                                                 size="sm"
                                                                 variant="outline"
-                                                                onClick={() => runOperate('stop', [row.name])}
+                                                                disabled={!eligibleForControlledOperation(row.containerID)}
+                                                                onClick={() => openControlledOperation('stop', row.containerID)}
                                                             >
                                                                 {t('container.actions.stop')}
                                                             </Button>
                                                         )}
                                                         {(row.state === 'exited' ||
-                                                            row.state === 'created' ||
-                                                            row.state === 'dead') && (
+                                                            row.state === 'created') && (
                                                             <Button
                                                                 size="sm"
-                                                                onClick={() => runOperate('start', [row.name])}
+                                                                disabled={!eligibleForControlledOperation(row.containerID)}
+                                                                onClick={() => openControlledOperation('start', row.containerID)}
                                                             >
                                                                 {t('container.actions.start')}
                                                             </Button>
@@ -438,13 +541,18 @@ export default function ContainerList({ onOpenLogs, onOpenExec }: ContainerListP
                                                                     <DropdownMenuItem onSelect={() => setDetail(row)}>
                                                                         {t('container.actions.detail')}
                                                                     </DropdownMenuItem>
+                                                                    <DropdownMenuItem
+                                                                        disabled={!eligibleForControlledOperation(row.containerID)}
+                                                                        onSelect={() => openControlledOperation('diagnose', row.containerID)}
+                                                                    >
+                                                                        {t('hostOps.containerDiagnose')}
+                                                                    </DropdownMenuItem>
                                                                     {isRunning && (
                                                                         <DropdownMenuItem
-                                                                            onClick={() =>
-                                                                                runOperate('restart', [row.name])
-                                                                            }
+                                                                            disabled={!eligibleForControlledOperation(row.containerID)}
+                                                                            onSelect={() => openControlledOperation('restart', row.containerID)}
                                                                         >
-                                                                            {t('container.actions.restart')}
+                                                                            {t('container.reconcile.controlledRestart')}
                                                                         </DropdownMenuItem>
                                                                     )}
                                                                     {isRunning && (
