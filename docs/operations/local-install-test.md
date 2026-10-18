@@ -44,11 +44,31 @@ python3 scripts/install-test/vm.py copy build/gpupanel-local-dev-linux-amd64.tar
 python3 scripts/install-test/vm.py ssh -- tar -xzf /tmp/gpupanel-local-dev-linux-amd64.tar.gz -C /tmp
 ```
 
-安装日志包含只在终端打印的初始随机密码，捕获时必须留在私有目录：
+**G3 实验授权边界**：新版 `install.sh` 默认拒绝安装，且在拒绝时不会执行
+安装包提供的 Python。运行下面命令之前，必须人工确认这是本工具专属、
+未安装过 1Panel/GPUPanel 的 Ubuntu 24.04 **一次性 VM**，已有可恢复的
+qcow2 快照/独立备份，且已经审核本次源码 SHA、构建产物与解包内容。
+仅有镜像校验不等于安装包签名；本流程不为真实工作站授予安装权限。
+
+先在 guest 中**以非 root 身份**执行已审核安装包的只读 preflight，
+查看完整 `checks` 与 `blockers`，包括 OS、路径碰撞和磁盘状态：
+
+```bash
+python3 scripts/install-test/vm.py ssh -- python3 /tmp/gpupanel-local-dev-linux-amd64/gpupanel-install-preflight.py --json
+```
+
+这里的 `installable=false` / `safe_to_install=false` 是诊断器设计上的
+恒定结论，不能解释为安装已获批准。如果任一必需检查不是 PASS，
+或碰撞路径、已有面板进程和宿主所有权不明确，**不得继续**。
+
+确认环境和快照后，**仅在上述隔离 guest** 中显式执行实验安装入口。
+`--approve-disposable-vm-install` 是测试操作者的声明，不会绕过
+安装器的 BLOCKED/UNKNOWN 必需检查；不得用于生产或现有工作主机。
+日志包含首次随机密码，必须保存在私有目录：
 
 ```bash
 umask 077
-python3 scripts/install-test/vm.py ssh -- sudo /tmp/gpupanel-local-dev-linux-amd64/install.sh --entrance itest-local > .local/install-test/install.raw.log 2>&1
+python3 scripts/install-test/vm.py ssh -- sudo /tmp/gpupanel-local-dev-linux-amd64/install.sh --approve-disposable-vm-install --entrance itest-local > .local/install-test/install.raw.log 2>&1
 python3 scripts/install-test/record_credentials.py
 ```
 

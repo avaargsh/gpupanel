@@ -81,7 +81,10 @@ result['permissions'] = permissions
 pid_before = remote(['sudo', 'systemctl', 'show', 'gpupanel-core', 'gpupanel-agent', '--property=MainPID', '--value']).stdout
 payload = next((ROOT / 'build/release').glob('gpupanel-*/install.sh'))
 repeated = remote(['sudo', '/tmp/' + payload.parent.name + '/install.sh'], check=False)
-assert repeated.returncode != 0 and 'preflight blocked' in repeated.stdout
+# The default installer must deny before executing package-supplied
+# preflight code. A repeat install is not a resume or upgrade, and must never
+# be authorized by this lifecycle test.
+assert repeated.returncode != 0 and 'install authorization denied' in repeated.stdout
 pid_after = remote(['sudo', 'systemctl', 'show', 'gpupanel-core', 'gpupanel-agent', '--property=MainPID', '--value']).stdout
 assert pid_before == pid_after
 result['repeat_install_refused_without_service_restart'] = True
