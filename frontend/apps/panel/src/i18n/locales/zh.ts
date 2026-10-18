@@ -34,6 +34,15 @@ const zh = {
             "observedAt": "观测时间（UTC）",
             "yes": "是",
             "no": "否",
+            "guidance": {
+                "title": "排查建议（需人工核对）",
+                "memoryPressure": "观测到 OOMKilled 标记。请人工检查容器内存限制与宿主内存压力；仅凭该标记不能确定根因。",
+                "healthProbe": "观测到健康检查异常。请检查探针配置、依赖服务及应用启动过程。",
+                "nonzeroExit": "容器非零退出。请人工查看启动日志和退出背景；退出码 137 本身不证明 OOM。",
+                "unstableState": "容器处于暂停、重启中或异常终止状态。请先确认运行状态变化和依赖环境。",
+                "stopped": "容器已停止且退出码为 0。请确认这是否符合预期运行模式。",
+                "insufficientEvidence": "当前快照没有明确异常信号；如问题持续，请结合时间序列和已授权日志进一步排查。"
+            },
             "disclaimer": "仅为指定容器的 Docker Inspect 状态快照：不采集环境变量、挂载、命令或原始日志；不证明故障根因或修复成功。"
         },
         "diagnosis": {
