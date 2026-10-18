@@ -34,6 +34,17 @@ func (runner LocalRunner) Prepare(ctx context.Context, kind, target string) (str
 	switch kind {
 	case Diagnose:
 		return "read-only", "Read local OS, root filesystem and accelerator inventory. No system changes.", nil
+	case ContainerDiagnose:
+		cli, err := runner.client()
+		if err != nil {
+			return "", "", errors.New("local Docker observation unavailable")
+		}
+		defer cli.Close()
+		info, err := cli.ContainerInspect(ctx, target)
+		if err != nil || info.ID != target || info.State == nil {
+			return "", "", errors.New("container unavailable for read-only observation")
+		}
+		return "read-only", fmt.Sprintf("Read limited state of local Docker container %s; no logs, environment, mounts, process arguments, or mutations.", target), nil
 	case Start, Stop:
 		cli, err := runner.client()
 		if err != nil {
@@ -73,6 +84,9 @@ func (runner LocalRunner) Prepare(ctx context.Context, kind, target string) (str
 func (runner LocalRunner) Execute(ctx context.Context, r Receipt) (Result, error) {
 	if r.Kind == Diagnose {
 		return diagnose(ctx)
+	}
+	if r.Kind == ContainerDiagnose {
+		return runner.diagnoseContainer(ctx, r.Target)
 	}
 	if r.Kind != Restart && r.Kind != Start && r.Kind != Stop {
 		return Result{}, ErrDenied
