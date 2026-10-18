@@ -5,6 +5,7 @@ const zh = {
         "description": "先预览固定操作，核对完整目标和影响，再确认执行。不接受任意 Shell 命令。",
         "operation": "操作类型",
         "diagnose": "诊断本机",
+        "containerDiagnose": "诊断指定容器（只读）",
         "restart": "重启指定容器",
         "start": "启动指定容器",
         "stop": "停止指定容器",
