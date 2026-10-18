@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Own a local, disposable Ubuntu 24.04 VM; never install panel services on the host."""
 import argparse
+import fcntl
 import hashlib
 import json
 import os
@@ -8,6 +9,7 @@ from pathlib import Path
 import shlex
 import signal
 import socket
+import stat
 import subprocess
 import sys
 import time
@@ -39,6 +41,25 @@ def owned_pid(filename, marker):
     if marker not in command or not expected_qemu:
         raise RuntimeError('PID identity changed; refuse to signal an unrelated process')
     return pid
+
+
+def guarded_vm_change(action):
+    """Serialize own start/stop/checkpoint commands; never follow a lock symlink."""
+    if STATE.is_symlink() or not STATE.is_dir():
+        raise RuntimeError("task-owned VM state directory is absent or redirected")
+    lock = STATE / ".vm-owner.lock"
+    fd = os.open(lock, os.O_RDWR | os.O_CREAT | os.O_NOFOLLOW, 0o600)
+    try:
+        mode = os.fstat(fd)
+        if not stat.S_ISREG(mode.st_mode) or mode.st_uid != os.getuid():
+            raise RuntimeError("VM owner lock is not an owned ordinary file")
+        try:
+            fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError as exc:
+            raise RuntimeError("another owned VM operation is running") from exc
+        return action()
+    finally:
+        os.close(fd)
 
 
 def available(port):
@@ -131,12 +152,29 @@ def stop():
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('action', choices=['prepare', 'start', 'stop', 'status', 'ssh', 'copy'])
+    parser.add_argument('action', choices=['prepare', 'start', 'stop', 'checkpoint', 'verify-checkpoint', 'status', 'ssh', 'copy'])
     parser.add_argument('args', nargs=argparse.REMAINDER)
     options = parser.parse_args()
     if options.action == 'prepare': prepare()
-    elif options.action == 'start': start()
-    elif options.action == 'stop': stop()
+    elif options.action == 'start': guarded_vm_change(start)
+    elif options.action == 'stop': guarded_vm_change(stop)
+    elif options.action == 'checkpoint':
+        if options.args: parser.error('checkpoint takes no arguments')
+        from checkpoint import create_checkpoint
+        folder = guarded_vm_change(lambda: create_checkpoint(
+            STATE, CACHE, IMAGE, IMAGE_SHA, BASE_URL + IMAGE,
+            is_running=lambda: bool(owned_pid('qemu.pid', str(STATE / 'disk.qcow2'))),
+        ))
+        print('Sealed offline checkpoint:', folder)
+        print('This does NOT verify restoration or authorize installation.')
+    elif options.action == 'verify-checkpoint':
+        if len(options.args) != 1: parser.error('verify-checkpoint needs one checkpoint name')
+        from checkpoint import CHECKPOINT_NAME, verify_checkpoint
+        name = options.args[0]
+        if not CHECKPOINT_NAME.fullmatch(name):
+            raise RuntimeError('invalid task-owned checkpoint name')
+        info = verify_checkpoint(STATE / 'checkpoints' / name)
+        print(json.dumps(info, indent=2))
     elif options.action == 'status': print(json.dumps({'running': bool(owned_pid('qemu.pid', str(STATE / 'disk.qcow2'))), 'ssh_port': SSH_PORT, 'panel_port': PANEL_PORT}))
     elif options.action == 'ssh':
         args = options.args[1:] if options.args[:1] == ['--'] else options.args

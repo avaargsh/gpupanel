@@ -29,6 +29,35 @@ VERSION=local-dev ./deploy/build.sh
 `build/*.tar.gz` 是包含安装器的候选包。`dist/gpupanel-preview.tar.gz` 是只含
 二进制、许可和清单的源码预览，不能用于下面的系统安装。
 
+## G3 安装前离线磁盘检查点（必须停机）
+
+此前操作指南要求准备恢复快照，但没有可验证的检查点生成入口。
+现提供任务专属 VM 的 `checkpoint` 和 `verify-checkpoint`，使用
+`qemu-img convert` 生成**不再依赖 Ubuntu backing image 的独立 QCOW2**。
+它检查固定 Ubuntu 镜像的来源声明与实际 SHA-256、任务 VM 原始 backing
+路径、目标磁盘格式/容量，并以 SHA-256 封存私有检查点。
+
+在首次安装之前、完成 guest 必要的软件准备后，停止**本任务的 VM**，
+不要对运行中或其他人拥有的磁盘做在线复制：
+
+```bash
+python3 scripts/install-test/vm.py stop
+python3 scripts/install-test/vm.py checkpoint
+# 从上一步输出读取真实 checkpoint-... 名称；不可自行猜测或复用旧名称
+python3 scripts/install-test/vm.py verify-checkpoint 'checkpoint-YYYYMMDDTHHMMSSZ-xxxxxxxx'
+python3 scripts/install-test/vm.py start
+```
+
+`checkpoint` 不覆盖已有磁盘，失败时保留未封存目录供排查。
+`verify-checkpoint` 会复核检查点的实际文件 SHA-256、QCOW2 结构及
+无外部 backing；校验结果中 `installation_approved=false`、
+`restoration_tested=false` 是固定且重要的状态。
+
+生成检查点只提供**可供后续恢复测试的候选数据**，既不是自动回滚，
+也不代表已通过中断升级、核心数据库恢复和真实重启的 G3/G6 门禁。
+恢复前要另外确认 VM 关闭、目标所有权与重放风险，并独立验证
+服务、数据和二进制摘要；不得用这些命令覆盖工作/生产主机。
+
 ## 传包与安装
 
 先在新 VM 中准备 Docker（以下 apt 命令仅在 guest 中执行）：
