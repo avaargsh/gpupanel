@@ -84,10 +84,18 @@ def verify_checkpoint(folder: Path, *, command=subprocess.run) -> dict:
     _regular(meta_file)
     _regular(disk)
     record = json.loads(meta_file.read_text(encoding="utf-8"))
-    if not isinstance(record, dict) or record.get("schema") != SCHEMA or (
-        record.get("disk_sha256") != _hash(disk)
+    allowed = {
+        "schema", "created_utc", "disk", "disk_sha256", "source_image_sha256",
+        "virtual_size", "scope", "restoration_tested", "installation_approved",
+    }
+    if not isinstance(record, dict) or set(record) != allowed or (
+        record.get("schema") != SCHEMA
+        or record.get("disk_sha256") != _hash(disk)
         or record.get("virtual_size") != VIRTUAL_SIZE
         or record.get("disk") != "disk.qcow2"
+        or record.get("scope") != "task-owned-disposable-ubuntu2404-offline"
+        or record.get("restoration_tested") is not False
+        or record.get("installation_approved") is not False
         or not isinstance(record.get("created_utc"), str)
         or not isinstance(record.get("source_image_sha256"), str)
         or not re.fullmatch(r"[0-9a-f]{64}", record["source_image_sha256"])
