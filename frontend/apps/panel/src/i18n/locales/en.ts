@@ -24,6 +24,19 @@ const en: LocaleResource = {
         "review": "Review this plan",
         "planError": "Unable to prepare this operation. Verify the target and retry the preview.",
         "uncertain": "Outcome is not confirmed. Query this receipt and inspect the target; do not repeat execution automatically.",
+        "containerDiagnosis": {
+            "title": "Read-only container evidence",
+            "invalid": "Container evidence is missing, mismatched or invalid. Unvalidated raw output is hidden.",
+            "status": "Docker status",
+            "running": "Running",
+            "exitCode": "Exit code",
+            "oom": "OOM killed",
+            "health": "Health check",
+            "observedAt": "Observed at (UTC)",
+            "yes": "Yes",
+            "no": "No",
+            "disclaimer": "Only a Docker Inspect snapshot for this exact container; no environment, mounts, arguments, or raw logs. Not a root-cause or remediation proof."
+        },
         "diagnosis": {
             "title": "Read-only local host snapshot",
             "invalid": "No valid structured observation is available. Unvalidated raw output is hidden.",
