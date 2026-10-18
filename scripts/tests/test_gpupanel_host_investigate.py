@@ -127,6 +127,59 @@ class HostInvestigateTest(unittest.TestCase):
         self.assertFalse(report["logs"]["available"])
         self.assertNotIn("xyz", json.dumps(report))
 
+    def test_unrecognized_status_is_rejected_before_reading_logs(self):
+        for status in ("TOKEN=secret-value", "RUNNING", "", "exited\\npassword=abc"):
+            with self.subTest(status=status):
+                calls = []
+                def fake(_, *args):
+                    calls.append(args[0])
+                    if args[0] == "context":
+                        return b'"unix:///var/run/docker.sock"'
+                    if args[0] == "inspect":
+                        state = {**STATE, "Status": status}
+                        return json.dumps({"id": ID, "name": "/demo", "state": state}).encode()
+                    raise AssertionError("invalid state must not reach log access")
+                with patch.object(mod.os, "geteuid", return_value=1000):
+                    with self.assertRaisesRegex(mod.InvestigationError, "invalid or incomplete") as ctx:
+                        mod.snapshot("demo", True, executor=fake,
+                                     which=lambda _: "/usr/bin/docker", environ={})
+                self.assertEqual(calls, ["context", "inspect"])
+                self.assertNotIn("secret-value", str(ctx.exception))
+
+    def test_timestamps_are_syntactic_dates_not_untrusted_docker_text(self):
+        state = {**STATE, "StartedAt": "API_TOKEN=secret-value",
+                 "FinishedAt": "2026-99-15T01:00:00Z"}
+        def fake(_, *args):
+            if args[0] == "context":
+                return b'"unix:///var/run/docker.sock"'
+            if args[0] == "inspect":
+                return json.dumps({"id": ID, "name": "/demo", "state": state}).encode()
+            if args[0] == "logs":
+                return b"container exited"
+            raise AssertionError("unexpected command")
+        with patch.object(mod.os, "geteuid", return_value=1000):
+            report = mod.snapshot("demo", True, executor=fake,
+                                  which=lambda _: "/usr/bin/docker", environ={})
+        self.assertEqual(report["status"], "OBSERVED")
+        self.assertIsNone(report["state"]["startedAt"])
+        self.assertIsNone(report["state"]["finishedAt"])
+        self.assertNotIn("secret-value", json.dumps(report))
+
+    def test_docker_rfc3339_nanosecond_timestamp_is_preserved(self):
+        state = {**STATE, "StartedAt": "2026-10-15T01:00:00.123456789Z",
+                 "FinishedAt": "0001-01-01T00:00:00Z"}
+        def fake(_, *args):
+            if args[0] == "context":
+                return b'"unix:///var/run/docker.sock"'
+            if args[0] == "inspect":
+                return json.dumps({"id": ID, "name": "/demo", "state": state}).encode()
+            return b""
+        with patch.object(mod.os, "geteuid", return_value=1000):
+            report = mod.snapshot("demo", True, executor=fake,
+                                  which=lambda _: "/usr/bin/docker", environ={})
+        self.assertEqual(report["state"]["startedAt"], state["StartedAt"])
+        self.assertEqual(report["state"]["finishedAt"], state["FinishedAt"])
+
     def test_invalid_metadata_rejects_before_logs(self):
         calls = []
         def fake(_, *args):
