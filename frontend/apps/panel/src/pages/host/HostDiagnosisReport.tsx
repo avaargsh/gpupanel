@@ -18,13 +18,14 @@ export default function HostDiagnosisReport({ output }: Props) {
         (summary.uptimeSeconds / 3600).toFixed(1) + ' h';
     const disk = summary.rootUsedPercent === null ? null :
         summary.rootUsedPercent.toFixed(1) + '%';
+    const count = summary.acceleratorCount;
     const accelerator = summary.acceleratorStatus === 'unavailable'
         ? t('hostOps.diagnosis.unavailable')
-        : summary.acceleratorStatus === 'unknown'
+        : summary.acceleratorStatus === 'unknown' || count === null
             ? t('hostOps.diagnosis.notReported')
-            : summary.acceleratorCount === 0
+            : count === 0
                 ? t('hostOps.diagnosis.noneReported')
-                : t('hostOps.diagnosis.reportedCount', { count: summary.acceleratorCount });
+                : t('hostOps.diagnosis.reportedCount', { count });
 
     const values = [
         [t('hostOps.diagnosis.system'), [summary.os, summary.platform].filter(Boolean).join(' ') || null],
