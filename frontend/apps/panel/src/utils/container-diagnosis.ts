@@ -48,3 +48,28 @@ export function parseContainerDiagnosis(output: unknown, expectedId: string): Co
         observedAt: item.observedAt,
     };
 }
+
+/** Rules produce review prompts, not root-cause verdicts or executable actions.
+ * They operate only on the allowlisted, exact-ID snapshot above.
+ */
+export type ContainerInvestigationHint =
+    'memoryPressure' | 'healthProbe' | 'nonzeroExit' | 'unstableState' |
+    'stopped' | 'insufficientEvidence';
+
+export function containerInvestigationHints(report: ContainerDiagnosisSummary): ContainerInvestigationHint[] {
+    const hints: ContainerInvestigationHint[] = [];
+    if (report.oomKilled) {
+        hints.push('memoryPressure');
+    } else if (!report.running && report.status === 'exited' && report.exitCode !== 0) {
+        // Exit 137 alone is not evidence of an OOM kill.
+        hints.push('nonzeroExit');
+    }
+    if (report.health === 'unhealthy') hints.push('healthProbe');
+    if (report.status === 'paused' || report.status === 'restarting' || report.status === 'dead') {
+        hints.push('unstableState');
+    }
+    if (!report.running && report.status === 'exited' && report.exitCode === 0 && !report.oomKilled) {
+        hints.push('stopped');
+    }
+    return hints.length ? hints : ['insufficientEvidence'];
+}
