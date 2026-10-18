@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next';
-import { parseContainerDiagnosis } from '@/utils/container-diagnosis';
+import { parseContainerDiagnosis, containerInvestigationHints } from '@/utils/container-diagnosis';
 
 export default function ContainerDiagnosisReport({ output, target }: { output: string; target: string }) {
     const { t } = useTranslation();
@@ -31,6 +31,14 @@ export default function ContainerDiagnosisReport({ output, target }: { output: s
                     </div>
                 ))}
             </dl>
+            <div className="mt-4 border-t pt-3" aria-label={t('hostOps.containerDiagnosis.guidance.title')}>
+                <h4 className="text-sm font-medium">{t('hostOps.containerDiagnosis.guidance.title')}</h4>
+                <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-muted-foreground">
+                    {containerInvestigationHints(report).map((hint) => (
+                        <li key={hint}>{t(`hostOps.containerDiagnosis.guidance.${hint}`)}</li>
+                    ))}
+                </ul>
+            </div>
             <p className="mt-3 text-xs text-muted-foreground">
                 {t('hostOps.containerDiagnosis.disclaimer')}
             </p>
