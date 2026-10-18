@@ -36,6 +36,15 @@ const en: LocaleResource = {
             "observedAt": "Observed at (UTC)",
             "yes": "Yes",
             "no": "No",
+            "guidance": {
+                "title": "Review suggestions (operator action required)",
+                "memoryPressure": "Docker reported OOMKilled. Review container limits and host memory pressure; this alone does not establish root cause.",
+                "healthProbe": "Docker reported an unhealthy check. Review probe configuration, service dependencies and startup readiness.",
+                "nonzeroExit": "The container exited non-zero. Review authorized startup logs; exit code 137 alone is not proof of an OOM kill.",
+                "unstableState": "The container is paused, restarting or dead. Review state transitions and dependent services before any action.",
+                "stopped": "The container stopped with exit code 0. Check whether that matches the intended lifecycle.",
+                "insufficientEvidence": "This snapshot shows no definitive failure signal. If symptoms persist, review authorized logs and time-series data."
+            },
             "disclaimer": "Only a Docker Inspect snapshot for this exact container; no environment, mounts, arguments, or raw logs. Not a root-cause or remediation proof."
         },
         "diagnosis": {
