@@ -21,7 +21,22 @@ const zh = {
         "noOutput": "暂无已记录的执行输出。",
         "review": "查看并核对计划",
         "planError": "无法准备操作，请检查目标后重新预览。",
-        "uncertain": "执行结果尚未确认。请查询该回执并核对目标，不要自动重复执行。"
+        "uncertain": "执行结果尚未确认。请查询该回执并核对目标，不要自动重复执行。",
+        "diagnosis": {
+            "title": "本机只读诊断摘要",
+            "invalid": "诊断回执缺少有效的结构化数据，不展示未经校验的原始输出。",
+            "system": "操作系统",
+            "kernel": "内核版本",
+            "architecture": "处理器架构",
+            "uptime": "运行时间",
+            "disk": "根文件系统使用率",
+            "accelerators": "加速器信息",
+            "unavailable": "采集不可用",
+            "notReported": "未提供可靠观测",
+            "noneReported": "未报告设备（不代表没有硬件）",
+            "reportedCount": "报告 {{count}} 个设备",
+            "disclaimer": "这只是本机执行回执中的只读观察，不是独立核验、根因诊断或修复成功证明。"
+        }
 },
 
     workbench: {
