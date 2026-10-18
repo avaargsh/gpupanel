@@ -59,6 +59,24 @@ test('invalid JSON, unexpected shape and unbounded response fail closed', () => 
     }
 });
 
+test('contradictory filesystem observations are suppressed', () => {
+    const report = parseHostDiagnosis(JSON.stringify({
+        ...GOOD,
+        rootFilesystem: { totalBytes: 100, usedBytes: 200, usedPercent: 18 },
+    }));
+    assert.equal(report?.rootUsedPercent, null);
+    assert.equal(report?.rootUsedBytes, null);
+    assert.equal(report?.rootTotalBytes, null);
+});
+
+test('malformed device entries are not counted as observed hardware', () => {
+    const report = parseHostDiagnosis(JSON.stringify({
+        ...GOOD, accelerators: ['not a validated device'],
+    }));
+    assert.equal(report?.acceleratorStatus, 'unknown');
+    assert.equal(report?.acceleratorCount, null);
+});
+
 test('overlarge GPU list does not mislead as successful device inventory', () => {
     const result = parseHostDiagnosis(JSON.stringify({
         ...GOOD, accelerators: Array.from({length: 129}, () => ({})),
