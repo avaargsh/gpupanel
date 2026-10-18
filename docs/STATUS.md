@@ -1,6 +1,6 @@
 # GPUPanel 当前工程状态
 
-> 更新：2026-10-18；最近完成源码合并的固定基线为 `main @ 30c4a919a003155c965885cdc5f2124fa22d5ef1`（#115）。**这是唯一默认状态入口**，并非实时分支指针；后续 HEAD、Actions 和实际安装二进制必须分别核对。源码成功合并不等于 G3–G6 真实验收。
+> 更新：2026-10-18；最近完成源码合并的固定基线为 `main @ 8b390e3ed1528604c79022f2ee21962ba39a6d07`（#125）。**这是唯一默认状态入口**，并非实时分支指针；后续 HEAD、Actions 和实际安装二进制必须分别核对。源码成功合并不等于 G3–G6 真实验收。
 
 ## 2026-10-18 已合入主线的源码增量（非发布验收）
 
@@ -10,6 +10,7 @@
 | [#122](https://github.com/avaargsh/gpupanel/pull/122) · `9a6d38f7` | Host 本机只读诊断的结构化回执 | 受保护 Core/Agent 既有路径 + 模拟浏览器；非现场闭环 |
 | [#123](https://github.com/avaargsh/gpupanel/pull/123) · `9b6d86be` | 指定容器 Docker Inspect 只读证据、人工排查建议 | 真实隔离 Docker canary 与模拟浏览器；不能证明根因或自动修复 |
 | [#115](https://github.com/avaargsh/gpupanel/pull/115) · `30c4a919` | 安装默认拒绝、显式一次性 VM 实验授权、保守碰撞/包完整性检查、VM 文档与重复安装验收契约 | 该 PR 的完整必需 CI PASS；合并后推送 CI 单独检查；真实 G3 升级/回滚 NOT RUN |
+| [#125](https://github.com/avaargsh/gpupanel/pull/125) · `8b390e3e` | 一次性 Ubuntu VM 停机后的独立 QCOW2 检查点、来源及 SHA-256 校验、带锁启停与检查点负向测试 | 源码及模拟 QEMU 契约 CI PASS；真实 QEMU 快照、恢复和数据一致性 NOT RUN |
 
 这些能力**已经合入源码**，但尚未对同一个安装候选完成真实登录、
 Core→Agent→Docker/App 生命周期、授权拒绝和中断恢复的统一证据采集。
