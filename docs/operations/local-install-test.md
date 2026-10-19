@@ -166,11 +166,19 @@ python3 scripts/install-test/candidate_identity.py review
   读取证据；无 VM 启停、安装、sudo、写入或网络请求。
 - 必须包含同一 `core`/`agent` 摘要、同一当前 checkout commit、
   当前本地 build 文件摘要；拒绝缺项、符号链接、不同版本或测试缺失。
+- 两份回执还必须包含相同、格式有效的 `guest_identity_sha256`。
+  真实脚本在测试前后从**已核对归属的 QEMU VM**读取 guest `/etc/machine-id`，
+  以固定域前缀计算 SHA-256 指纹；原始机器标识不写入回执。若测试期间
+  VM 身份变化，或浏览器与恢复回执来自不同 guest，直接拒绝交叉复核。
+  这避免了“相同程序、不同 VM”被误拼成同一测试对象。
 - 输出 `candidate_consistent=true` **只证明局部回执在此刻自洽**。
   checkout commit 是读取时的版本标记，不是可验证的编译来源证明。
   已保存的 JSON 不具有防伪签名，不替代原始命令日志与独立审核。
 - 输出中 `m0_release_ready=false` 始终成立；G3 完整升级/回滚、
   G5 Docker/App 完整生命周期、G6 中断恢复继续 `NOT_VERIFIED`。
+- Guest machine-id 指纹只是**伪匿名的相关性标识**，不是机器证明、
+  数字签名或抗克隆 ID；复制相同 machine-id 的镜像会导致相同指纹。
+  审核者仍需通过原始日志、VM 磁盘所有权及源镜像来源独立判断。
 - 这条命令不能把两次不同运行的脚本回执自动变成同一次完整验收。
   必须由审核者另外核实时间、VM 身份、运行日志、候选包和环境。
 
