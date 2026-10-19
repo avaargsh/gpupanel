@@ -24,6 +24,8 @@ STAGES = (
     "guest_fresh_install",
     "real_installed_browser",
     "guest_agent_recovery",
+    "guest_docker_fixture_image_prepared",
+    "real_core_agent_container_lifecycle",
 )
 
 
@@ -52,6 +54,7 @@ def summarize(state: Path, *, run_completed: bool, source_sha: str) -> dict:
     sequence_ok = marks == list(STAGES[:len(marks)])
     browser = _load(state / "browser-live.json")
     runtime = _load(state / "runtime-live.json")
+    container = _load(state / "container-live.json")
     prepared = _load(state / "ubuntu2404/image-provenance.json")
     valid_source = (
         isinstance(source_sha, str) and len(source_sha) == 40
@@ -75,9 +78,33 @@ def summarize(state: Path, *, run_completed: bool, source_sha: str) -> dict:
         and runtime.get("explicit_fixture_operator_recovery") is True
         and runtime.get("fixture_marker_and_login_settings_retained") is True
     )
+    expected_container_steps = [
+        "create_and_independent_running_observation",
+        "stop_with_independent_observation",
+        "start_with_independent_observation",
+        "restart_with_independent_observation",
+        "remove_with_independent_observation",
+    ]
+    container_ok = (
+        isinstance(container, dict)
+        and runtime_ok
+        and container.get("kind")
+            == "REAL UBUNTU GUEST + AUTHENTICATED CORE→AGENT→DOCKER; NO MOCK API"
+        and container.get("candidate") == browser.get("candidate")
+        and container.get("guest_machine_id_sha256")
+            == browser.get("guest_machine_id_sha256")
+        and container.get("steps") == expected_container_steps
+        and container.get("distinct_task_ids") is True
+        and container.get("no_external_app_catalog_used") is True
+        and container.get("app_install_lifecycle") == "NOT_RUN"
+        and container.get("compose_install_lifecycle") == "NOT_RUN"
+        and isinstance(container.get("fixture_image_sha256"), str)
+        and len(container["fixture_image_sha256"]) == 64
+        and all(c in "0123456789abcdef" for c in container["fixture_image_sha256"])
+    )
     success = (
         run_completed and valid_source and sequence_ok
-        and marks == list(STAGES) and browser_ok and runtime_ok
+        and marks == list(STAGES) and browser_ok and runtime_ok and container_ok
         and isinstance(prepared, dict)
         and prepared.get("signed_checksum_verified") is True
     )
@@ -102,6 +129,7 @@ def summarize(state: Path, *, run_completed: bool, source_sha: str) -> dict:
         "fresh_install": "PASS" if success else "NOT_ATTESTED",
         "authenticated_operations_center": "PASS" if success else "NOT_ATTESTED",
         "agent_restart_and_recovery": "PARTIAL_PASS" if success else "NOT_ATTESTED",
+        "core_agent_docker_container_lifecycle": "PARTIAL_PASS" if success else "NOT_ATTESTED",
         "full_app_compose_install_lifecycle": "NOT_RUN",
         "upgrade_and_rollback": "NOT_RUN",
         "full_data_restore": "NOT_RUN",
