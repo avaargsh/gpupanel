@@ -37,7 +37,7 @@ func Init() {
 			panic(fmt.Errorf("fatal error config file: %s", err))
 		}
 	} else {
-		// Non-dev mode: use embedded app.yaml defaults, not inherited /usr/local/bin/pctl.
+		// Non-dev mode: use embedded app.yaml defaults, not a global compatibility control script.
 		baseDir = config.Base.InstallDir
 		port = config.Conn.Port
 		version = config.Base.Version
@@ -104,7 +104,7 @@ func Init() {
 }
 
 func loadChangeInfo() string {
-	// CHANGE_USER_INFO is no longer read from the inherited /usr/local/bin/pctl.
+	// CHANGE_USER_INFO is no longer read from a global control script.
 	// User info changes are handled through the settings API instead.
 	return ""
 }
