@@ -79,6 +79,26 @@ class LiveVmEvidence(unittest.TestCase):
             "duplicate_task_replay": "NOT_RUN",
             "release_decision": "NO_GO",
         }
+        self.app_install = {
+            "kind": "REAL OWNED UBUNTU GPUPANEL APPINSTALL API; NO MOCKS",
+            "candidate": self.candidate,
+            "guest_machine_id_sha256": "d" * 64,
+            "steps": [
+                "real_local_catalog_sync",
+                "invalid_install_uuid_rejected",
+                "real_appinstall_taskdb_success",
+                "independent_running_image_and_network_evidence",
+                "real_app_uninstall_and_resource_removal",
+                "fixture_catalog_cleanup",
+            ],
+            "distinct_install_uninstall_task_ids": True,
+            "app_evidence_observational_only": True,
+            "no_public_image_pull": True,
+            "docker_no_network_or_host_ports": True,
+            "fixture_source_cleaned": True,
+            "g5_full_appstore_business_acceptance": "NOT_RUN",
+            "m0_release_decision": "NO_GO",
+        }
         self.restore = {
             "kind": "REAL GUEST POST-INSTALL OFFLINE SNAPSHOT RESTORE; PARTIAL G3/G6",
             "source_sha": self.source,
@@ -113,6 +133,7 @@ class LiveVmEvidence(unittest.TestCase):
         self.write("runtime-live.json", self.runtime)
         self.write("compose-live.json", self.compose)
         self.write("container-live.json", self.container)
+        self.write("app-install-live.json", self.app_install)
         self.write("app-rejection-live.json", self.app_rejection)
         self.write("restore-live.json", self.restore)
         (self.state / "ci-stages.txt").write_text(
@@ -133,6 +154,7 @@ class LiveVmEvidence(unittest.TestCase):
         self.assertEqual(result["offline_docker_compose_fixture"], "PASS")
         self.assertEqual(result["post_install_offline_disk_restore"], "PASS")
         self.assertEqual(result["core_agent_docker_container_lifecycle"], "PARTIAL_PASS")
+        self.assertEqual(result["gpupanel_offline_appinstall_lifecycle"], "PARTIAL_PASS")
         self.assertEqual(result["real_appinstall_missing_detail_rejection"], "PASS")
         self.assertEqual(result["upgrade_and_rollback"], "NOT_RUN")
         self.assertEqual(result["full_app_compose_install_lifecycle"], "NOT_RUN")
@@ -256,7 +278,7 @@ class LiveVmEvidence(unittest.TestCase):
         self.assertEqual(failure.compose_stage(
             "GUEST_COMPOSE_STAGE=up release=GO\n"
         ), "unknown")
-        self.assertEqual(failure.SCRIPTS.keys(), {"browser", "runtime", "compose", "restore", "container", "app-rejection"})
+        self.assertEqual(failure.SCRIPTS.keys(), {"browser", "runtime", "compose", "restore", "container", "app-rejection", "app-install"})
 
     def test_compose_fixture_requires_guest_identity_and_does_not_certify_appinstall(self):
         for corrupted in (
@@ -273,6 +295,31 @@ class LiveVmEvidence(unittest.TestCase):
                 self.assertEqual(self.summarise()["full_app_compose_install_lifecycle"], "NOT_RUN")
         (self.state / "compose-live.json").unlink()
         self.assertEqual(self.summarise()["offline_docker_compose_fixture"], "NOT_ATTESTED")
+
+    def test_actual_appinstall_evidence_requires_exact_identity_and_cleanup(self):
+        for changed in (
+            {"guest_machine_id_sha256": "0" * 64},
+            {"candidate": {**self.candidate, "source_sha": "0" * 40}},
+            {"distinct_install_uninstall_task_ids": False},
+            {"app_evidence_observational_only": False},
+            {"no_public_image_pull": False},
+            {"docker_no_network_or_host_ports": False},
+            {"fixture_source_cleaned": False},
+            {"g5_full_appstore_business_acceptance": "PASS"},
+            {"m0_release_decision": "GO"},
+            {"steps": self.app_install["steps"][:-1]},
+            {"steps": list(reversed(self.app_install["steps"]))},
+            {"secret": "UNTRUSTED_EXTRA_FIELD"},
+        ):
+            with self.subTest(changed=changed):
+                self.write("app-install-live.json", {**self.app_install, **changed})
+                proof = self.summarise()
+                self.assertEqual(proof["status"], "BLOCKED_OR_FAILED")
+                self.assertEqual(proof["gpupanel_offline_appinstall_lifecycle"], "NOT_ATTESTED")
+                self.assertEqual(proof["m0_release_decision"], "NO_GO")
+        (self.state / "app-install-live.json").unlink()
+        self.assertEqual(self.summarise()["status"], "BLOCKED_OR_FAILED")
+        self.assertEqual(self.summarise()["gpupanel_offline_appinstall_lifecycle"], "NOT_ATTESTED")
 
     def test_post_install_restore_proof_is_required_and_exact(self):
         faults = [
