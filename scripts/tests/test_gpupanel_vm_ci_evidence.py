@@ -39,6 +39,24 @@ class LiveVmEvidence(unittest.TestCase):
             "fixture_marker_and_login_settings_retained": True,
             "other_secret": "SECRET_LOG_SHOULD_NEVER_APPEAR",
         }
+        self.container = {
+            "kind": "REAL UBUNTU GUEST + AUTHENTICATED CORE→AGENT→DOCKER; NO MOCK API",
+            "candidate": self.candidate,
+            "guest_machine_id_sha256": "d" * 64,
+            "fixture_image_sha256": "e" * 64,
+            "distinct_task_ids": True,
+            "steps": [
+                "create_and_independent_running_observation",
+                "stop_with_independent_observation",
+                "start_with_independent_observation",
+                "restart_with_independent_observation",
+                "remove_with_independent_observation",
+            ],
+            "no_external_app_catalog_used": True,
+            "app_install_lifecycle": "NOT_RUN",
+            "compose_install_lifecycle": "NOT_RUN",
+            "private_payload": "NEVER_PRINT_CONTAINER_SECRET",
+        }
         (self.state / "ubuntu2404").mkdir()
         self.write("ubuntu2404/image-provenance.json", {
             "signed_checksum_verified": True,
@@ -46,6 +64,7 @@ class LiveVmEvidence(unittest.TestCase):
         })
         self.write("browser-live.json", self.browser)
         self.write("runtime-live.json", self.runtime)
+        self.write("container-live.json", self.container)
         (self.state / "ci-stages.txt").write_text(
             "\n".join(audit.STAGES) + "\n"
         )
@@ -62,11 +81,12 @@ class LiveVmEvidence(unittest.TestCase):
         self.assertEqual(result["status"], "PARTIAL_ACCEPTED")
         self.assertEqual(result["m0_release_decision"], "NO_GO")
         self.assertEqual(result["upgrade_and_rollback"], "NOT_RUN")
+        self.assertEqual(result["core_agent_docker_container_lifecycle"], "PARTIAL_PASS")
         self.assertEqual(result["full_app_compose_install_lifecycle"], "NOT_RUN")
         self.assertEqual(result["independent_reviewer"], "NOT_ATTESTED")
         encoded = json.dumps(result)
         for secret in ("MUST_NOT_LEAK", "SECRET_LOG_SHOULD_NEVER_APPEAR",
-                       "DO_NOT_PRINT_VM_IMAGE_PROVIDER"):
+                       "DO_NOT_PRINT_VM_IMAGE_PROVIDER", "NEVER_PRINT_CONTAINER_SECRET"):
             self.assertNotIn(secret, encoded)
 
     def test_early_failure_cannot_mark_pass(self):
@@ -100,6 +120,21 @@ class LiveVmEvidence(unittest.TestCase):
         self.write("runtime-live.json", {
             **self.runtime, "explicit_fixture_operator_recovery": False,
         })
+        self.assertEqual(self.summarise()["status"], "BLOCKED_OR_FAILED")
+
+    def test_container_source_and_action_failure_cannot_pass(self):
+        for patch in (
+            {"candidate": {**self.candidate, "source_sha": "f" * 40}},
+            {"guest_machine_id_sha256": "a" * 64},
+            {"fixture_image_sha256": "invalid"},
+            {"distinct_task_ids": False},
+            {"steps": self.container["steps"][:-1]},
+            {"app_install_lifecycle": "PASS"},
+            {"no_external_app_catalog_used": False},
+        ):
+            self.write("container-live.json", {**self.container, **patch})
+            self.assertEqual(self.summarise()["status"], "BLOCKED_OR_FAILED")
+        (self.state / "container-live.json").unlink()
         self.assertEqual(self.summarise()["status"], "BLOCKED_OR_FAILED")
 
     def test_release_preflight_is_readable_under_private_runner_umask(self):
@@ -147,7 +182,7 @@ class LiveVmEvidence(unittest.TestCase):
         )
         self.assertNotIn("PRIVATE_BODY", failure.diagnostic(untrusted_flat, "browser.py"))
         # Caller-supplied arbitrary paths cannot be used to read private data.
-        self.assertEqual(failure.SCRIPTS.keys(), {"browser", "runtime"})
+        self.assertEqual(failure.SCRIPTS.keys(), {"browser", "runtime", "container"})
 
     def test_workflow_only_uploads_redacted_json(self):
         flow = (ROOT / ".github/workflows/gpupanel-real-ubuntu-vm.yml").read_text()
