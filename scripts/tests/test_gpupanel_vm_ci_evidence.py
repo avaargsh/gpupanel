@@ -315,10 +315,10 @@ class LiveVmEvidence(unittest.TestCase):
     def test_real_vm_runs_for_release_inputs_and_immutable_main_sha(self):
         import re
         flow = (ROOT / ".github/workflows/gpupanel-real-ubuntu-vm.yml").read_text()
-        self.assertIn("  push:\\n    branches: [main]", flow)
-        self.assertIn("  pull_request:\\n    branches: [main]", flow)
+        self.assertIn("  push:\n    branches: [main]", flow)
+        self.assertIn("  pull_request:\n    branches: [main]", flow)
         for event in ("pull_request", "push"):
-            block = flow.split("  " + event + ":\\n", 1)[1].split("\\n  ", 1)[0]
+            block = flow.split("  " + event + ":\n", 1)[1].split("\n  ", 1)[0]
             self.assertIn("branches: [main]", block)
             paths = re.findall(r"^      - '([^']+)'$", block, re.MULTILINE)
             self.assertEqual(set(paths), {
