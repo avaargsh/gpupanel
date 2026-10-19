@@ -216,7 +216,7 @@ export default function InstallModal({ appKey, onClose }: { appKey: string; onCl
                 ) : null}
                 {pending ? (
                     <>
-                        <InstallReceipt receipt={pending} />
+                        <InstallReceipt receipt={pending} activeNode={node} />
                         <Button
                             onClick={() => {
                                 if (
