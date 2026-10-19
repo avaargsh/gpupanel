@@ -137,6 +137,9 @@ func createUpgradeStage(installDir, version string) (string, error) {
 // rollback data supplied through persistent UpgradeLog.BackupFile. A
 // successful path check alone does not authenticate snapshot contents.
 func validateUpgradeBackupPath(installDir, stored string) (string, error) {
+	if !filepath.IsAbs(stored) || filepath.Clean(stored) != stored {
+		return "", fmt.Errorf("%w: stored backup path is not canonical", errUpgradeRuntimeOwnership)
+	}
 	base := filepath.Join(installDir, "gpupanel", "tmp", "upgrade")
 	relative, err := filepath.Rel(base, stored)
 	if err != nil || relative == "." || relative == ".." ||
