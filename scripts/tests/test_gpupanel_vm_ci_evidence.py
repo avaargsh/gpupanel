@@ -160,7 +160,7 @@ class LiveVmEvidence(unittest.TestCase):
         )
         self.assertNotIn("PRIVATE_BODY", failure.diagnostic(untrusted_flat, "browser.py"))
         # Caller-supplied arbitrary paths cannot be used to read private data.
-        self.assertEqual(failure.SCRIPTS.keys(), {"browser", "runtime"})
+        self.assertEqual(failure.SCRIPTS.keys(), {"browser", "runtime", "compose"})
 
     def test_compose_fixture_requires_guest_identity_and_does_not_certify_appinstall(self):
         for corrupted in (
