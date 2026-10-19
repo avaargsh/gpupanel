@@ -157,6 +157,27 @@ def restore_sealed_disk(folder: Path) -> str:
     return vm.guarded_vm_change(exchange)
 
 
+def wait_services() -> None:
+    """Bounded real systemd readiness after reboot; never fake a PASS."""
+    import time
+    for _ in range(40):
+        results = []
+        for name in ("gpupanel-core", "gpupanel-agent"):
+            cmd = vm.ssh_args() + [shlex.join(
+                ["sudo", "systemctl", "is-active", "--quiet", name]
+            )]
+            try:
+                res = subprocess.run(cmd, stdout=subprocess.DEVNULL,
+                                     stderr=subprocess.DEVNULL, timeout=5)
+                results.append(res.returncode == 0)
+            except subprocess.TimeoutExpired:
+                results.append(False)
+        if all(results):
+            return
+        time.sleep(0.5)
+    raise RuntimeError("guest did not start both restored systemd services")
+
+
 def main() -> None:
     if not vm.owned_pid("qemu.pid", str(VM / "disk.qcow2")):
         raise RuntimeError("task-owned real Ubuntu VM required")
@@ -185,6 +206,7 @@ def main() -> None:
 
     restored_sha = restore_sealed_disk(folder)
     controlled(["python3", "scripts/install-test/vm.py", "start"], 160)
+    wait_services()
     after = marker_probe("inspect", local["source_sha"])
     if after != before:
         raise RuntimeError("restored guest marker, login settings or binaries differ")
