@@ -134,11 +134,14 @@ func TestG3RejectedArchiveReleasesOnlyPreMutationUpgradeAdmission(t *testing.T) 
 	if err != nil { t.Fatal(err) }
 	code := string(src)
 	start := strings.Index(code, "if err := validateUpgradeArchive(path.Join(downloadDir, fileName), archiveRoot); err != nil {")
-	end := strings.Index(code, "if err := files.HandleUnTar(", start)
-	if start < 0 || end <= start {
+	if start < 0 {
+		t.Fatal("pre-extraction validation hook missing")
+	}
+	endRel := strings.Index(code[start:], "if err := files.HandleUnTar(")
+	if endRel <= 0 {
 		t.Fatal("pre-extraction failure gate missing")
 	}
-	failurePath := code[start:end]
+	failurePath := code[start:start+endRel]
 	if !strings.Contains(failurePath, "releaseBeforeMutation()") {
 		t.Fatal("rejected archive kept a stale Upgrading admission")
 	}
