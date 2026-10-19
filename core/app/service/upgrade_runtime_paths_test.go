@@ -195,7 +195,7 @@ func TestG3RollbackBackupPathRequiresExactOwnedVersionAndPlainDirs(t *testing.T)
 	}
 	for _, invalid := range []string{base, filepath.Join(base,"gpupanel","tmp","upgrade"),
 		filepath.Join(path, "original"), filepath.Join(path, "..", "unexpected"),
-		filepath.Join(base, "gpupanel","tmp","upgrade","v2.0.0","..","v2.0.0")} {
+		path + "/../v2.0.0"} {
 		if _, err := validateUpgradeBackupPath(base, invalid); err == nil {
 			t.Errorf("ambiguous stored rollback directory allowed: %s", invalid)
 		}
