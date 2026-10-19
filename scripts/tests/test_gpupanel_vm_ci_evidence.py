@@ -168,6 +168,49 @@ class LiveVmEvidence(unittest.TestCase):
         (self.state / "reinstall-denial-live.json").unlink()
         self.assertEqual(self.summarise()["status"], "BLOCKED_OR_FAILED")
 
+    def test_reinstall_preflight_failure_reports_only_fixed_codes(self):
+        import contextlib
+        import io
+        import sys
+
+        script = ROOT / "scripts/install-test/reinstall-denial.py"
+        sys.path.insert(0, str(script.parent))
+        try:
+            module_spec = importlib.util.spec_from_file_location(
+                "gpupanel_reinstall_denial_test", script
+            )
+            module = importlib.util.module_from_spec(module_spec)
+            module_spec.loader.exec_module(module)
+        finally:
+            sys.path.pop(0)
+        raw = json.dumps({
+            "product": "GPUPanel",
+            "phase": "pre-install-diagnostics-only",
+            "installable": False,
+            "safe_to_install": False,
+            "blockers": ["runtime_collision"],
+            "checks": [{"code": "runtime_collision", "state": "BLOCKED"}],
+            "password": "PRIVATE_CREDENTIAL_MUST_NOT_APPEAR",
+        })
+        for code, expected in (
+            (0, "exit=ZERO report=BLOCKED_JSON"),
+            (255, "exit=SSH_TRANSPORT report=BLOCKED_JSON"),
+            (1, "exit=OTHER report=BLOCKED_JSON"),
+        ):
+            output = io.StringIO()
+            with contextlib.redirect_stderr(output):
+                with self.assertRaisesRegex(RuntimeError, "preflight did not reject"):
+                    module.verify_preflight(raw, code)
+            message = output.getvalue()
+            self.assertIn(expected, message)
+            self.assertIn("release=NO_GO", message)
+            self.assertNotIn("PRIVATE_CREDENTIAL_MUST_NOT_APPEAR", message)
+        module.verify_preflight(raw, 2)
+        with contextlib.redirect_stderr(io.StringIO()) as output:
+            with self.assertRaises(RuntimeError):
+                module.verify_preflight("not-json-password=PRIVATE_CREDENTIAL", 255)
+        self.assertNotIn("PRIVATE_CREDENTIAL", output.getvalue())
+
     def test_early_failure_cannot_mark_pass(self):
         self.assertEqual(self.summarise(completed=False)["status"], "BLOCKED_OR_FAILED")
         self.assertEqual(self.summarise()["fresh_install"], "PASS")
