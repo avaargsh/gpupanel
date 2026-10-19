@@ -10,6 +10,7 @@ import {
     Home,
     Layers,
     LayoutGrid,
+    ListChecks,
     Server,
     Settings,
     Wrench,
@@ -39,6 +40,7 @@ export const navSections: NavSection[] = [
         { path: '/openresty', labelKey: 'workbench.proxy', icon: navIcon(Globe) },
     ] },
     { titleKey: 'workbench.operations', items: [
+        { path: '/operations', labelKey: 'opsCenter.title', icon: navIcon(ListChecks) },
         { path: '/cronjobs', labelKey: 'nav.cronjob', icon: navIcon(Clock) },
         { path: '/toolbox', labelKey: 'nav.toolbox', icon: navIcon(Wrench) },
         { path: '/logs', labelKey: 'nav.logs', icon: navIcon(FileText) },
