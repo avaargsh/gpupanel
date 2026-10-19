@@ -137,16 +137,16 @@ with sync_playwright() as p:
     expect(page.get_by_text("Agent persisted execution tasks (local host)")).to_be_visible()
     expect(page.get_by_text("host-planned")).to_be_visible()
     expect(page.get_by_text("host-unknown")).to_be_visible()
-    expect(page.get_by_text("install-old")).to_be_visible()
-    expect(page.get_by_text("generic-running")).to_be_visible()
+    expect(page.get_by_text("install-old", exact=True)).to_be_visible()
+    expect(page.get_by_text("generic-running", exact=True)).to_be_visible()
     # Finished Task Success is only in Activity, never a pending approval.
     assert page.get_by_text("install-new", exact=True).count() == 0
     select_tab(page, "Pending confirmation")
     expect(page.get_by_text("host-planned")).to_be_visible()
     assert page.get_by_text("host-expired").count() == 0
-    assert page.get_by_text("install-new").count() == 0
+    assert page.get_by_text("install-new", exact=True).count() == 0
     select_tab(page, "All activity")
-    expect(page.get_by_text("install-new")).to_be_visible()
+    expect(page.get_by_text("install-new", exact=True)).to_be_visible()
     expect(page.get_by_text("host-expired")).to_be_visible()
 
     # The historical task points at AppInstall ID 7, but the backend returns
@@ -180,8 +180,8 @@ with sync_playwright() as p:
     state["evidence_fail"] = False
     state["host_fail"] = True
     page.get_by_role("button", name="Refresh", exact=True).click()
-    expect(page.get_by_text("install-new")).to_be_visible()
-    expect(page.get_by_text("Failed to load", exact=False)).to_be_visible()
+    expect(page.get_by_text("install-new", exact=True)).to_be_visible()
+    expect(page.get_by_text("Receipts unavailable.", exact=False)).to_be_visible()
     assert page.get_by_text("host-planned").count() == 0
 
     # Inverse failure cannot hide session-scoped Host confirmation plans.
@@ -192,7 +192,7 @@ with sync_playwright() as p:
     expect(page.get_by_text("host-planned")).to_be_visible()
     select_tab(page, "All activity")
     expect(page.get_by_text("Execution task logs unavailable", exact=False)).to_be_visible()
-    assert page.get_by_text("install-new").count() == 0
+    assert page.get_by_text("install-new", exact=True).count() == 0
 
     # Scope transition suppresses both local sources and the evidence drawer.
     before_remote = len(state["requests"])
