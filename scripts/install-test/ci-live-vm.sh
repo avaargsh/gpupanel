@@ -100,27 +100,39 @@ chmod 0600 "$STATE/install.raw.log"
 python3 scripts/install-test/record_credentials.py
 stage 'guest_fresh_install'
 
-# G3 read-only guest fact check: the installed systemd services must refer
-# to real owned binaries under /opt/gpupanel. /usr/local/bin binaries are
-# lookup-only compatibility symlinks, never in-app upgrade write targets.
-# This does not perform or certify A→B→A upgrade or rollback.
+# G3 read-only guest ownership check. The opt-only development installer
+# MUST NOT leave global compatibility aliases, while both systemd units must
+# execute exactly the real files under /opt/gpupanel.
+#
+# Fail each predicate EXPLICITLY: in POSIX shell -e does not abort on the
+# left-hand side of an AND-list, so '[ -f ... ] && [ -x ... ]' can be
+# silently skipped. A green live-VM job must not be a false positive.
+# This does NOT execute or certify A→B→A upgrade/rollback.
 if ! python3 scripts/install-test/vm.py ssh -- sudo sh -euc '
-  [ "$(readlink -f /opt/gpupanel)" = /opt/gpupanel ]
+  test "$(readlink -f /opt/gpupanel)" = /opt/gpupanel || exit 31
+  test -f /opt/gpupanel/pctl || exit 32
+  test ! -L /opt/gpupanel/pctl || exit 33
+  test ! -e /usr/local/bin/pctl || exit 34
+  test ! -L /usr/local/bin/pctl || exit 35
   for role in core agent; do
     binary="/opt/gpupanel/gpupanel-$role"
     alias="/usr/local/bin/gpupanel-$role"
     unit="/etc/systemd/system/gpupanel-$role.service"
-    [ -f "$binary" ] && [ -x "$binary" ] && [ ! -L "$binary" ]
-    [ -L "$alias" ] && [ "$(readlink "$alias")" = "$binary" ]
-    [ -f "$unit" ] && [ ! -L "$unit" ]
-    [ "$(grep -Fxc "ExecStart=$binary" "$unit")" = 1 ]
-    [ "$(grep -Fxc "WorkingDirectory=/opt/gpupanel" "$unit")" = 1 ]
+    test -f "$binary" || exit 36
+    test -x "$binary" || exit 37
+    test ! -L "$binary" || exit 38
+    test ! -e "$alias" || exit 39
+    test ! -L "$alias" || exit 40
+    test -f "$unit" || exit 41
+    test ! -L "$unit" || exit 42
+    test "$(grep -Fxc "ExecStart=$binary" "$unit")" = 1 || exit 43
+    test "$(grep -Fxc "WorkingDirectory=/opt/gpupanel" "$unit")" = 1 || exit 44
   done
 ' > "$STATE/upgrade-runtime-identity.raw.log" 2>&1; then
-  echo 'BLOCKED: installed guest runtime ownership differs from reviewed systemd layout' >&2
+  echo 'BLOCKED: installed guest runtime ownership differs from reviewed opt-only systemd layout' >&2
   exit 3
 fi
-echo 'G3 real guest runtime identity checked (read-only); upgrade/rollback NOT_RUN'
+echo 'G3 real guest opt-only runtime identity checked (read-only); upgrade/rollback NOT_RUN'
 
 # A real browser against installed Core+Agent with no route mocks, then
 # guest-only controlled restart/SIGKILL/recovery.
