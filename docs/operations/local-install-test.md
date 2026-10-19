@@ -382,3 +382,27 @@ GitHub 可能延迟、跳过 scheduled workflow，管理员也可以禁用它。
 即使同版本 PARTIAL_ACCEPTED，真正的 AppInstall G5、
 产品升级/回滚、完整用户工作区恢复及人工发布签核仍未完成，
 **GPUPanel M0 一律 NO-GO**。
+
+## 2026-10-19：已安装机器拒绝二次安装（真实客体负向验收）
+
+在已成功通过一次性 Ubuntu 24.04 VM 的真实登录及 Agent 恢复之后，
+新增 `scripts/install-test/reinstall-denial.py`，并接入
+`ci-live-vm.sh` 的 Docker/Compose 生命周期测试之前。
+
+此测试仅在**仍属于当前 CI 任务的 QEMU guest**内执行以下步骤：
+
+- 核验当前洁净源码 SHA、Core/Agent 构建 SHA-256、VM 已安装二进制及
+  正在运行的服务进程身份，与既有浏览器/恢复记录完全一致。
+- 非 root 运行发布包内独立只读预检，必须得到退出码 2，
+  `runtime_collision=BLOCKED` 且阻断清单真实包含该检查。
+- 故意对**同一隔离 guest**再次使用显式授权参数执行同版安装器，
+  要求安装器以 `preflight blocked` 拒绝；绝不绕过碰撞门禁。
+- 拒绝之后重新读取 Core/Agent 二进制与 PID、pctl 和两份 systemd
+  单元的摘要及客体 machine-id，必须与尝试前逐项完全一致。
+- 仅产出脱敏 `reinstall-denial-live.json`，不保存原始安装器输出
+  或任何登录密钥；单独校验后的结果才纳入
+  `ci-evidence.json.already_installed_reinstall_refusal`。
+
+此负向测试**不证明已支持原地升级或回滚**，更不表示可以在真实
+工作站重新运行安装器。产品原地升级、迁移、恢复仍是独立未完成门禁，
+总体 M0 必须保持 **NO-GO**。
