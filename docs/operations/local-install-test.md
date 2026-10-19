@@ -435,3 +435,47 @@ Task UUID、lost ACK、真实应用升级/停止/卸载或已存在安装之间
 观察到数据库/Docker 资源副作用。真实 G5 GO 必须后续在
 隔离 VM 里跑通一次有来源、有镜像摘要的本地 AppInstall
 完整正向生命周期。
+
+## 2026-10-20 — G5 真实离线 AppInstall API（候选验证）
+
+新增 `scripts/install-test/app-fixture-guest.py` 与
+`scripts/install-test/app-install-live.py`，且已接入现有
+`ci-live-vm.sh` 的 **同一台任务独占 Ubuntu/QEMU guest**。
+与纯 Docker Compose 或容器管理相比，这一切片真正调用
+GPUPanel 自身的认证 Core API 和 Agent 的 AppInstall 逻辑：
+
+1. 在已验证的同一 candidate、guest、Chromium 登录和受控 Agent
+   恢复后，向 guest 的**本地应用目录**写入唯一受控的
+   `m0ciapp/1.0.0`，只使用本轮先前从发行版 BusyBox 导入的
+   `gpupanel-m0-fixture:local`；`pull_policy: never`、
+   `network_mode: none`、只读根文件系统、无主机端口；
+2. 通过 `POST /apps/sync/local` 同步本地目录，并在持久 TaskDB
+   验证该次 `AppStore / TaskSync` 的唯一 UUID 与成功状态；
+3. 经 Core 获取实际持久化的 AppDetail ID。请求一个无效
+   TaskID，核对其在安装前拒绝；随后使用**全新的一次性 UUID**
+   仅发起一次 `POST /apps/install`，不对结果不明的提交做重试；
+4. 等待真实 `App / TaskInstall` TaskDB 的确定 Success，
+   读取 `GET /apps/installed/evidence/{id}` 并要求同一
+   taskId、installId、Task Success、AppInstall Running、
+   `CONSISTENT` 与 `verified=false`。再用 guest Docker
+   Inspect 独立核对镜像 digest、`network_mode=none`、
+   无主机端口、容器运行；
+5. 使用另一个唯一 UUID 调用现有
+   `POST /apps/installed/op` 的 `delete`，核对
+   `App / TaskUninstall` TaskDB Success、Docker 实体消失、
+   AppInstall 记录不可再读；删除**精确已知**本地 fixture 文件，
+   再同步本地 Catalog 并验证 TaskSync 成功。
+
+任何异常、UNKNOWN、关联错配、网络/端口意外暴露或未清理干净，
+都阻断 CI，失败详情仅以来源行号和异常类型公开。
+总证据新增 `real_offline_appinstall_core_taskdb_docker` 阶段及
+`gpupanel_offline_appinstall_lifecycle=PARTIAL_PASS`，要求
+**全部六项步骤、同一 candidate/guest 身份和原有离线恢复门禁**
+同时完成。缺失、伪造、乱序或跨客体的 JSON 均为
+`BLOCKED_OR_FAILED`。
+
+这项只证明隔离 Ubuntu VM 上的一条**离线应用安装—观察—卸载**
+路径，不验证公网应用商店、升级/回滚、真实业务健康、
+复杂多容器依赖、跨进程并发竞态、安装中 ACK 丢失后恢复或独立
+审核。总体 `full_app_compose_install_lifecycle=NOT_RUN`、
+`m0_release_decision=NO_GO` 仍固定。
