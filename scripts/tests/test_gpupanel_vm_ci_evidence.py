@@ -187,6 +187,17 @@ class LiveVmEvidence(unittest.TestCase):
         (self.state / "compose-live.json").unlink()
         self.assertEqual(self.summarise()["offline_docker_compose_fixture"], "NOT_ATTESTED")
 
+    def test_offline_scratch_image_has_explicit_executable_entrypoint(self):
+        guest = (ROOT / "scripts/install-test/compose-fixture-guest.py").read_text()
+        self.assertIn('shutil.copyfile(binary, folder / "busybox")', guest)
+        self.assertIn('(folder / "busybox").chmod(0o755)', guest)
+        self.assertLess(
+            guest.index('(folder / "busybox").chmod(0o755)'),
+            guest.index('(folder / "Dockerfile").write_text('),
+        )
+        self.assertIn('"docker", "build", "--pull=false", "--network=none"', guest)
+        self.assertIn('"network_mode: none', guest)
+
     def test_workflow_only_uploads_redacted_json(self):
         flow = (ROOT / ".github/workflows/gpupanel-real-ubuntu-vm.yml").read_text()
         self.assertIn("persist-credentials: false", flow)
