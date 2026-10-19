@@ -2,10 +2,9 @@
 #
 # GPUPanel control script (pctl).
 #
-# The leading KEY=VALUE lines are read by the Go binaries via ctl_conf
-# (/usr/local/bin/pctl). Keep them first and in this exact form. deploy/install.sh
-# rewrites these values in place at install time, so do not indent them or move
-# them below the shebang comments.
+# Installed only at /opt/gpupanel/pctl (or <base-dir>/gpupanel/pctl).
+# Keep KEY=VALUE bootstrap fields at the top; deploy/install.sh stamps them
+# in place. No global /usr/local/bin alias or ctl_conf compatibility is used.
 # shellcheck disable=SC2034,SC2125,SC2209
 BASE_DIR=/opt
 ORIGINAL_PORT=9999
@@ -28,7 +27,7 @@ mkdir -p "$LOG_DIR" 2>/dev/null
 
 require_root() {
     if [ "$(id -u)" != "0" ]; then
-        echo "pctl: this operation requires root. Try: sudo pctl $*" >&2
+        echo "pctl: this operation requires root. Try: sudo $PANEL_DIR/pctl $*" >&2
         exit 1
     fi
 }
@@ -151,7 +150,7 @@ run_cmd() {
             ;;
         ""|help|-h|--help)
             cat <<'EOF'
-Usage: pctl <command> [core|agent]
+Usage: /opt/gpupanel/pctl <command> [core|agent]
 
   start   [core|agent]   start the panel service(s)
   stop    [core|agent]   stop the panel service(s)
@@ -159,9 +158,9 @@ Usage: pctl <command> [core|agent]
   status                 show core/agent status
 
 Other management subcommands are delegated to the gpupanel-core binary, e.g.:
-  pctl update username | pctl update password | pctl update port
-  pctl reset https|mfa|entrance|ips|domain | pctl restore
-  pctl listen-ip [ipv4|ipv6] | pctl user-info | pctl version
+  /opt/gpupanel/pctl update username | /opt/gpupanel/pctl update password | /opt/gpupanel/pctl update port
+  /opt/gpupanel/pctl reset https|mfa|entrance|ips|domain | /opt/gpupanel/pctl restore
+  /opt/gpupanel/pctl listen-ip [ipv4|ipv6] | /opt/gpupanel/pctl user-info | /opt/gpupanel/pctl version
 EOF
             ;;
         *)

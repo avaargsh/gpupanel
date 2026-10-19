@@ -17,12 +17,10 @@
 # Self-contained: works from a source checkout (deploy/install.sh) and from an
 # extracted release tarball (gpupanel-<version>-<os>-<arch>/install.sh).
 #
-# Everything the Go binaries read at boot comes from the KEY=VALUE header of
-# pctl, resolved through /usr/local/bin/pctl (core/utils/ctl_conf). This script
-# therefore stamps BASE_DIR, ORIGINAL_PORT, ORIGINAL_USERNAME,
-# ORIGINAL_PASSWORD, ORIGINAL_ENTRANCE, ORIGINAL_VERSION and LANGUAGE there --
-# the same contract the in-app upgrade path (core/app/service/upgrade.go)
-# relies on when it re-copies a new pctl over the installed one.
+# All installed GPUPanel commands, binaries and control state remain inside
+# ${BASE_DIR}/gpupanel. No /usr/local/bin compatibility links are created.
+# The pctl header stores local bootstrap metadata; Core/Agent use their
+# embedded runtime configuration and settings DB, not a global pctl link.
 set -euo pipefail
 umask 077
 
@@ -134,7 +132,6 @@ export GPUPANEL_AUTO_PROVISION="$AUTO_PROVISION"
 PANEL_DIR="${BASE_DIR}/gpupanel"
 CONF_DIR="${PANEL_DIR}/conf"
 GEO_DIR="${PANEL_DIR}/geo"
-BIN_DIR="/usr/local/bin"
 UNIT_DIR="/etc/systemd/system"
 
 # ---- locate payload ----------------------------------------------------------
@@ -325,7 +322,6 @@ PYCODE
 # Re-running the installer (or upgrading) must not silently rotate the
 # credentials the panel already stored in its database.
 OLD_PCTL="$PANEL_DIR/pctl"
-[ -f "$OLD_PCTL" ] || OLD_PCTL="$BIN_DIR/pctl"
 
 # A non-empty db means the panel has already booted and owns its credentials:
 # from here on they live in its database, not in pctl.
@@ -388,7 +384,7 @@ case "$ENTRANCE" in
     *[!A-Za-z0-9_-]*|"") die "invalid entrance (use 3-30 chars of A-Za-z0-9_-; input omitted)" ;;
 esac
 
-# pctl is both a bash script and a KEY=VALUE file read by the Go binaries, so a
+# pctl is a bash control script with KEY=VALUE bootstrap metadata, so a
 # value containing whitespace, quotes or a backslash would break one of the two
 # readers (or the sed that writes it).
 assert_kv_safe() {
@@ -419,15 +415,9 @@ mkdir -p "$PANEL_DIR" "$CONF_DIR" "$PANEL_DIR/log" "$PANEL_DIR/db" "$GEO_DIR"
 install -m 0755 "$CORE_SRC" "$PANEL_DIR/gpupanel-core"
 install -m 0755 "$AGENT_SRC" "$PANEL_DIR/gpupanel-agent"
 
-# pctl must live at /usr/local/bin/pctl because the Go binaries read their
-# ORIGINAL_* / BASE_DIR / LANGUAGE keys from that exact path. Keep the real
-# script under $PANEL_DIR and expose it through a symlink.
+# The only installed control entrypoint is $PANEL_DIR/pctl. Do not create
+# aliases under /usr/local/bin or require global PATH modifications.
 install -m 0700 "$PCTL_SRC" "$PANEL_DIR/pctl"
-ln -sfn "$PANEL_DIR/pctl" "$BIN_DIR/pctl"
-# compatibility links for the in-app upgrade/restore code paths, which copy the
-# new binaries straight into /usr/local/bin
-ln -sfn "$PANEL_DIR/gpupanel-core" "$BIN_DIR/gpupanel-core"
-ln -sfn "$PANEL_DIR/gpupanel-agent" "$BIN_DIR/gpupanel-agent"
 if [ -f "$PAYLOAD/GeoIP.mmdb" ]; then
     install -m 0644 "$PAYLOAD/GeoIP.mmdb" "$GEO_DIR/GeoIP.mmdb"
 fi
@@ -468,7 +458,7 @@ else
     chmod 0600 "$CONF_DIR/app.yaml"
     ok "config: wrote $CONF_DIR/app.yaml"
 fi
-# Note: in release mode the core reads its settings from pctl and the embedded
+# Note: in release mode the Core reads embedded and persisted settings, not pctl;
 # app.yaml, not from this file. It only takes effect if `mode: dev` is set
 # manually, which is what the `make dev` workflow does.
 
@@ -503,8 +493,8 @@ if [ "$started" = "0" ]; then
 fi
 
 # ---- wait for the panel to actually serve ------------------------------------
-# systemctl restart returns as soon as the unit is spawned, so a core that
-# panics on a missing pctl key (or a stale unit left by an older install) still
+# systemctl restart returns as soon as the unit is spawned, so a Core process
+# that exits quickly (or a stale unit left by an older install) still
 # counts as "started". Poll the listening port instead.
 wait_ready() {
     local tries="$1"
@@ -576,7 +566,7 @@ else
 fi
 log "  panel dir    : $PANEL_DIR"
 log "  binaries     : $PANEL_DIR/gpupanel-core, $PANEL_DIR/gpupanel-agent"
-log "  control      : pctl start|stop|restart|status"
+log "  control      : $PANEL_DIR/pctl start|stop|restart|status"
 log "  username     : $USERNAME"
 if [ "$PASSWORD_KNOWN" = "1" ]; then
     printf "  password     : %s\n" "$PASSWORD"
