@@ -179,7 +179,7 @@ with sync_playwright() as p:
     # Error in Host receipts cannot blank the persisted execution log.
     state["evidence_fail"] = False
     state["host_fail"] = True
-    page.get_by_role("button", name="Refresh", exact=True).click()
+    page.get_by_role("button", name="Refresh", exact=True).first.click()
     expect(page.get_by_text("install-new", exact=True)).to_be_visible()
     expect(page.get_by_text("Receipts unavailable.", exact=False)).to_be_visible()
     assert page.get_by_text("host-planned").count() == 0
@@ -187,7 +187,7 @@ with sync_playwright() as p:
     # Inverse failure cannot hide session-scoped Host confirmation plans.
     state["host_fail"] = False
     state["task_fail"] = True
-    page.get_by_role("button", name="Refresh", exact=True).click()
+    page.get_by_role("button", name="Refresh", exact=True).first.click()
     select_tab(page, "Pending confirmation")
     expect(page.get_by_text("host-planned")).to_be_visible()
     select_tab(page, "All activity")
