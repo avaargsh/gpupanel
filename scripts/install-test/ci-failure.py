@@ -14,6 +14,7 @@ SCRIPTS = {
     "browser": ("browser.raw.log", "browser.py"),
     "runtime": ("runtime.raw.log", "runtime.py"),
     "compose": ("compose.raw.log", "compose-live.py"),
+    "container": ("container.raw.log", "container.py"),
 }
 LINE = re.compile(r'File "[^"\n]*/([^/"]+\.py)", line ([1-9][0-9]{0,5})')
 CLASS = re.compile(r"^(AssertionError|AttributeError|FileNotFoundError|"
