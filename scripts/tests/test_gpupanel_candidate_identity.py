@@ -108,6 +108,22 @@ class CandidateIdentityTests(unittest.TestCase):
             self.review()
         self.assertEqual((self.state / ci.ATTEMPT_FILE).stat().st_mode & 0o777, 0o600)
 
+    def test_active_attempt_rejects_mismatched_installed_guest(self):
+        self.write_receipts()
+        class VM:
+            pass
+        with patch.object(ci, "source_checkout_commit", return_value=self.commit):
+            with patch.object(ci, "assert_installed_candidate", return_value=self.digests):
+                with patch.object(ci, "guest_identity_fingerprint", return_value="f" * 64):
+                    with self.assertRaisesRegex(ValueError, "different guest"):
+                        ci.current_attempt(self.root, self.state, vm=VM())
+
+    def test_active_attempt_rejects_source_change_even_with_same_receipts(self):
+        self.write_receipts()
+        with patch.object(ci, "source_checkout_commit", return_value="0" * 40):
+            with self.assertRaisesRegex(ValueError, "different checkout commit"):
+                ci.current_attempt(self.root, self.state)
+
     def test_begin_does_not_touch_existing_receipts(self):
         self.write_receipts()
         previous = (self.state / "browser-live.json").read_bytes()
