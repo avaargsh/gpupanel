@@ -109,6 +109,15 @@ if ! python3 scripts/install-test/runtime.py > "$STATE/runtime.raw.log" 2>&1; th
 fi
 stage 'guest_agent_recovery'
 
+# Confirm the installer refuses a second application of the same release
+# in the *already-installed* task-owned guest, without service or config
+# mutation. Collision evidence is from the real read-only preflight.
+if ! python3 scripts/install-test/reinstall-denial.py > "$STATE/reinstall.raw.log" 2>&1; then
+    echo 'BLOCKED: same-guest reinstall collision refusal not established' >&2
+    exit 1
+fi
+stage 'guest_reinstall_collision_denied'
+
 # Real Docker Engine/Compose, but NOT the GPUPanel AppInstall API: build
 # a trusted *local* scratch image, run only inside the disposable guest with
 # no container network/host ports; verify logs, restart, persisted file and
