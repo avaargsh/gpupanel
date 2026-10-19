@@ -41,12 +41,12 @@ if resp.returncode:
     import re
     import sys
     positions = re.findall(
-        r'File "[^"\\n]*/compose-fixture-guest\\.py", line ([1-9][0-9]{0,4})',
+        r'File "[^"]*/compose-fixture-guest[.]py", line ([1-9][0-9]{0,4})',
         resp.stderr,
     )
     classes = re.findall(
         r'^(RuntimeError|AssertionError|FileNotFoundError|'
-        r'PermissionError|subprocess\\.TimeoutExpired|OSError):',
+        r'PermissionError|subprocess[.]TimeoutExpired|OSError):',
         resp.stderr, re.MULTILINE,
     )
     line = positions[-1] if positions else "UNKNOWN"
