@@ -210,10 +210,22 @@ func (u *UpgradeService) Upgrade(req dto.Upgrade) error {
 			_ = settingRepo.Update("SystemStatus", "Free")
 			return
 		}
+		// A successful cp exit code does not establish that the rollback
+		// executables and service definitions survived intact. Check the
+		// complete owned backup before the FIRST binary replacement.
+		if err := verifyUpgradeBackupInventory(originalDir, svcInfo); err != nil {
+			global.LOG.Errorf("upgrade refused: rollback backup is incomplete: %v", err)
+			_ = settingRepo.Update("SystemStatus", "Free")
+			return
+		}
 		itemLog := model.UpgradeLog{NodeID: 0, OldVersion: global.CONF.Base.Version, NewVersion: req.Version, BackupFile: baseDir}
-		_ = upgradeLogRepo.Create(&itemLog)
+		if err := upgradeLogRepo.Create(&itemLog); err != nil {
+			global.LOG.Errorf("upgrade refused: cannot persist rollback record: %v", err)
+			_ = settingRepo.Update("SystemStatus", "Free")
+			return
+		}
 
-		global.LOG.Info("backup original data successful, now start to upgrade!")
+		global.LOG.Info("rollback binary/unit snapshot verified; starting upgrade (database consistency still unproven)")
 
 		if err := files.CopyFileWithRename(path.Join(tmpDir, "gpupanel-core"), svcInfo.coreBinary); err != nil {
 			global.LOG.Errorf("upgrade gpupanel-core failed, err: %v", err)
