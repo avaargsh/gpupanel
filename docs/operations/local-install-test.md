@@ -106,7 +106,14 @@ python3 scripts/install-test/record_credentials.py
 
 ## 真实浏览器及负向检查
 
+先在已安装、已核验且仍运行的本任务 VM 上**显式开始新一轮验收**。
+`begin` 读取当前 checkout、Core/Agent 安装摘要及 guest 指纹，并在私有目录
+写入新的 `active-acceptance-attempt.json`。它不执行安装、恢复或任何产品授权；
+每次执行都会生成新的随机 `attempt_id`，旧浏览器/恢复回执不能拼接到新一轮。
+开始后若修改源码/候选二进制或更换 VM，必须重建候选并重新验收。
+
 ```bash
+python3 scripts/install-test/candidate_identity.py begin
 python3 scripts/install-test/browser.py
 ```
 
@@ -166,11 +173,16 @@ python3 scripts/install-test/candidate_identity.py review
   读取证据；无 VM 启停、安装、sudo、写入或网络请求。
 - 必须包含同一 `core`/`agent` 摘要、同一当前 checkout commit、
   当前本地 build 文件摘要；拒绝缺项、符号链接、不同版本或测试缺失。
+- 两份回执必须携带当前 `active-acceptance-attempt.json` 中的
+  `attempt_id`，与本地 Core/Agent、checkout、guest 指纹一起核对；
+  跨验收轮次、缺失轮次或旧回执全部拒绝。不要在浏览器和恢复测试之间
+  重新执行 `begin`；要重跑时，先完整重做两项测试。
 - 两份回执还必须包含相同、格式有效的 `guest_identity_sha256`。
   真实脚本在测试前后从**已核对归属的 QEMU VM**读取 guest `/etc/machine-id`，
   以固定域前缀计算 SHA-256 指纹；原始机器标识不写入回执。若测试期间
   VM 身份变化，或浏览器与恢复回执来自不同 guest，直接拒绝交叉复核。
   这避免了“相同程序、不同 VM”被误拼成同一测试对象。
+  `attempt_id` 只是本地操作者组织本轮测试的随机标签，不具有签名或远端机器证明能力。
 - 输出 `candidate_consistent=true` **只证明局部回执在此刻自洽**。
   checkout commit 是读取时的版本标记，不是可验证的编译来源证明。
   已保存的 JSON 不具有防伪签名，不替代原始命令日志与独立审核。
