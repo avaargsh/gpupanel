@@ -102,6 +102,21 @@ class LiveVmEvidence(unittest.TestCase):
         })
         self.assertEqual(self.summarise()["status"], "BLOCKED_OR_FAILED")
 
+    def test_release_preflight_is_readable_under_private_runner_umask(self):
+        build = (ROOT / "deploy/build.sh").read_text()
+        self.assertIn("umask 022", build)
+        # It must apply BEFORE mkdir/tar create the public release payload.
+        self.assertLess(
+            build.index("umask 022"), build.index('mkdir -p "$PKG_DIR/initscript"')
+        )
+        self.assertIn('install -m 0755 "$ROOT/scripts/gpupanel-install-preflight.py"', build)
+        script = (ROOT / "scripts/install-test/ci-live-vm.sh").read_text()
+        self.assertIn("umask 077", script)
+        self.assertIn(
+            'python3 scripts/install-test/vm.py ssh -- python3 "/tmp/$package/gpupanel-install-preflight.py" --json',
+            script,
+        )
+
     def test_workflow_only_uploads_redacted_json(self):
         flow = (ROOT / ".github/workflows/gpupanel-real-ubuntu-vm.yml").read_text()
         self.assertIn("persist-credentials: false", flow)
