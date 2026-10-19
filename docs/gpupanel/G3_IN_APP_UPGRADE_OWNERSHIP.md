@@ -80,3 +80,27 @@ the one-purpose guest.
 The proven #140 VM workflow only covered **fresh install**, Chromium login
 and partial Agent restart/recovery. **G3 upgrade/rollback remains NOT RUN and
 M0 remains NO-GO** until independent evidence is reviewed.
+
+## Latest G3 concurrency admission guard
+
+The live API was previously able to accept two different-version upgrade
+requests: create-only version directories prevented **same-version** collision
+but did not serialize requests across versions. The new entrypoint performs
+`SettingRepo.UpdateIfMatch("SystemStatus", "Free", "Upgrading")` **before**
+creating the version stage. An unavailable setting, missing Free status or
+competing request is rejected instead of launching a second mutating worker.
+
+Before the first runtime executable change, failed downloads, unpacking,
+backups or schema validation may CAS the status back to Free; their private
+staging directories remain intact for review. If a binary replacement begins,
+an incomplete rollback retains `Upgrading`; no automatic release follows a
+restart whose actual Core/Agent health has not been independently verified.
+Thus a second upgrade cannot treat staged-files/HTTP success as a completed
+operation. It requires operator reconciliation, not a retry timer.
+
+This guard reuses a **value-only** setting CAS, **not** a unique lease or
+operation-owner ID. It is intentionally not a completed multi-process
+execution attestation. Concurrent external settings changes and crash
+recovery still need a durable owner-specific lease and independently observed
+terminal state. The lack of a post-restart release/recovery pathway makes
+this **Draft-only**, not a finished normal-user upgrade experience.
