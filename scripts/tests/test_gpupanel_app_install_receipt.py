@@ -32,7 +32,10 @@ class AppInstallReceiptContract(unittest.TestCase):
 
     def test_ui_disables_tailing_and_download_of_synthetic_log(self):
         s = UI.read_text(encoding="utf-8")
-        self.assertIn("result.data.scope === 'admission'", s)
+        self.assertIn("observation.scope === 'admission'", s)
+        self.assertIn("visibleInstallReceipt(result, sameHost)", s)
+        self.assertIn("skip: !sameHost", s)
+        self.assertIn("refetchOnMountOrArgChange: true", s)
         self.assertIn('Admission only; no completed-install proof', s)
         self.assertNotIn('pollingInterval', s)
         self.assertNotIn('download', s.split('export default function', 1)[1])
