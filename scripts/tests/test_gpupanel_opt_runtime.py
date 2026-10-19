@@ -63,6 +63,25 @@ class OptOnlyRuntimeLayout(unittest.TestCase):
             self.assertIn('path.Join(global.CONF.Base.InstallDir, "gpupanel/lang.tar.gz")',
                           (ROOT / f).read_text(encoding="utf-8"))
 
+    def test_real_guest_ownership_checks_cannot_skip_failed_predicates(self):
+        source = (ROOT / "scripts/install-test/ci-live-vm.sh").read_text(
+            encoding="utf-8"
+        )
+        start = source.index("if ! python3 scripts/install-test/vm.py ssh -- sudo sh -euc '")
+        end = source.index("' > \"$STATE/upgrade-runtime-identity.raw.log\"", start)
+        guest = source[start:end]
+        self.assertIn('test ! -e "$alias" || exit', guest)
+        self.assertIn('test ! -L "$alias" || exit', guest)
+        self.assertIn("test ! -e /usr/local/bin/pctl || exit", guest)
+        self.assertIn("ExecStart=$binary", guest)
+        self.assertIn("WorkingDirectory=/opt/gpupanel", guest)
+        self.assertNotIn("&&", guest,
+                         "shell -e suppresses failure for non-final AND-list commands")
+        for line in guest.splitlines():
+            if line.strip().startswith("test "):
+                self.assertRegex(line, r"\\|\\| exit [0-9]+$",
+                                 "every guest check must fail independently")
+
     def test_bash_scripts_are_syntactically_valid_without_host_mutation(self):
         for filename in ("deploy/install.sh", "deploy/uninstall.sh",
                          "deploy/pctl", "deploy/build.sh"):
