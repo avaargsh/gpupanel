@@ -136,6 +136,17 @@ if ! python3 scripts/install-test/container.py > "$STATE/container.raw.log" 2>&1
 fi
 stage 'real_core_agent_container_lifecycle'
 
+# Real GPUPanel AppInstall admission and uninstall on this *same* owned VM.
+# Local app catalog definition references the already imported offline image;
+# no public registry or host network/port. Failed or UNKNOWN TaskDB status
+# blocks the workflow; never automatically repeat a possibly accepted install.
+python3 scripts/install-test/vm.py copy scripts/install-test/app-fixture-guest.py
+if ! python3 scripts/install-test/app-install-live.py > "$STATE/app-install.raw.log" 2>&1; then
+    python3 scripts/install-test/ci-failure.py app-install
+    exit 1
+fi
+stage 'real_offline_appinstall_core_taskdb_docker'
+
 # Only the disposable guest disk is fault-injected and cold-restored.
 # A sealed post-install checkpoint is independently validated before
 # replacing the task-owned disk; the prior disk is retained for review.
