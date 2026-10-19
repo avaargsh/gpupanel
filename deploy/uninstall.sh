@@ -30,15 +30,13 @@ if [ "$(id -u)" != "0" ]; then
 fi
 
 PANEL_DIR="${BASE_DIR}/gpupanel"
-BIN_DIR="/usr/local/bin"
 UNIT_DIR="/etc/systemd/system"
 
 echo "==> stopping GPUPanel"
 if command -v systemctl >/dev/null 2>&1; then
     systemctl disable --now gpupanel-agent gpupanel-core 2>/dev/null || true
 fi
-# Never let one stubborn file abort the uninstall half-way and leave the
-# services and symlinks behind.
+# Never let one stubborn file abort the uninstall half-way and leave services running.
 rm -f "$UNIT_DIR/gpupanel-core.service" "$UNIT_DIR/gpupanel-agent.service" 2>/dev/null \
     || echo "    warning: could not remove the unit files from $UNIT_DIR"
 if command -v systemctl >/dev/null 2>&1; then
@@ -51,18 +49,6 @@ pkill -f "$PANEL_DIR/gpupanel-agent" 2>/dev/null || true
 pkill -f "$PANEL_DIR/gpupanel-core" 2>/dev/null || true
 sleep 1
 
-echo "==> removing symlinks from $BIN_DIR"
-# Only remove the links when they still point into the panel dir, so a
-# differently-installed GPUPanel is never clobbered by this uninstaller.
-for link in pctl gpupanel-core gpupanel-agent; do
-    target="$(readlink -f "$BIN_DIR/$link" 2>/dev/null || true)"
-    case "$target" in
-        "$PANEL_DIR"/*) rm -f "$BIN_DIR/$link"; echo "    removed $BIN_DIR/$link" ;;
-        "") : ;;
-        *) echo "    kept $BIN_DIR/$link -> $target (not part of $PANEL_DIR)" ;;
-    esac
-done
-
 if [ "$PURGE" = "1" ]; then
     echo "==> purging $PANEL_DIR"
     rm -rf "$PANEL_DIR"
@@ -71,4 +57,4 @@ else
 fi
 
 echo "GPUPanel uninstalled."
-echo "  note: /usr/local/bin/lang is shared with the in-app upgrade path and is left in place."
+echo "  note: all GPUPanel-managed language resources remain under $PANEL_DIR."
