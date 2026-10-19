@@ -25,6 +25,7 @@ STAGES = (
     "guest_fresh_install",
     "real_installed_browser",
     "guest_agent_recovery",
+    "guest_app_install_denied_without_side_effects",
     "guest_compose_offline_lifecycle",
     "guest_core_fixture_image_prepared",
     "real_core_agent_container_lifecycle",
@@ -61,6 +62,7 @@ def summarize(state: Path, *, run_completed: bool, source_sha: str) -> dict:
     release = _load(state / "release-transfer.json")
     compose = _load(state / "compose-live.json")
     container = _load(state / "container-live.json")
+    app_rejection = _load(state / "app-rejection-live.json")
     restore = _load(state / "restore-live.json")
     valid_source = (
         isinstance(source_sha, str) and len(source_sha) == 40
@@ -171,10 +173,30 @@ def summarize(state: Path, *, run_completed: bool, source_sha: str) -> dict:
         and restore.get("full_data_restore_verified") is False
         and restore.get("m0_release_decision") == "NO_GO"
     )
+    app_rejection_ok = (
+        isinstance(app_rejection, dict) and runtime_ok
+        and set(app_rejection) == {
+            "schema", "kind", "candidate", "guest_machine_id_sha256",
+            "nonexistent_app_detail_rejected",
+            "no_task_app_or_docker_mutation", "app_install_success",
+            "duplicate_task_replay", "release_decision",
+        }
+        and app_rejection["schema"] == "gpupanel.vm.appinstall-rejection.v1"
+        and app_rejection["kind"] ==
+            "REAL INSTALLED CORE+AGENT APPINSTALL REJECTION; NOT APP INSTALL"
+        and app_rejection["candidate"] == browser.get("candidate")
+        and app_rejection["guest_machine_id_sha256"] ==
+            browser.get("guest_machine_id_sha256")
+        and app_rejection["nonexistent_app_detail_rejected"] is True
+        and app_rejection["no_task_app_or_docker_mutation"] is True
+        and app_rejection["app_install_success"] == "NOT_RUN"
+        and app_rejection["duplicate_task_replay"] == "NOT_RUN"
+        and app_rejection["release_decision"] == "NO_GO"
+    )
     success = (
         run_completed and valid_source and release_ok and sequence_ok
         and marks == list(STAGES) and browser_ok and runtime_ok and compose_ok
-        and container_ok and restore_ok
+        and container_ok and restore_ok and app_rejection_ok
         and isinstance(prepared, dict)
         and prepared.get("signed_checksum_verified") is True
     )
@@ -206,6 +228,7 @@ def summarize(state: Path, *, run_completed: bool, source_sha: str) -> dict:
         "agent_restart_and_recovery": "PARTIAL_PASS" if success else "NOT_ATTESTED",
         "offline_docker_compose_fixture": "PASS" if success else "NOT_ATTESTED",
         "core_agent_docker_container_lifecycle": "PARTIAL_PASS" if success else "NOT_ATTESTED",
+        "real_appinstall_missing_detail_rejection": "PASS" if success else "NOT_ATTESTED",
         "post_install_offline_disk_restore": "PASS" if success else "NOT_ATTESTED",
         "full_app_compose_install_lifecycle": "NOT_RUN",
         "upgrade_and_rollback": "NOT_RUN",

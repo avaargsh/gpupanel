@@ -412,3 +412,26 @@ GPL 许可审计通过或真实生产主机升级可用。报告永远保持
 测试入口：`python3 -m unittest scripts/tests/test_gpupanel_vm_release_transfer.py`。
 只对实际通过的完整、同一 commit VM 工作流记录 G3 的安装包传输
 片段，不能跨 PR 复用历史证据。
+
+## G5 增量：真实 AppInstall 拒绝路径（仍非安装验收）
+
+`scripts/install-test/app-rejection-live.py` 仅在任务专属 Ubuntu
+QEMU 虚拟机中运行。它复用已经通过的同一源码/客体身份、
+真实 Chromium 登录和 Agent 故障恢复证据，向已安装 Core
+提交**一次**使用不存在的 `appDetailId` 的 AppInstall 请求。
+
+成功的拒绝证据必须同时满足：
+- Core API 返回非成功业务码，且从未自动重放；
+- 客体中 `agent.db.app_installs`、`task.db.tasks` 记录数量与
+  Docker 容器、网络、卷的实际身份集合全部未变化；
+- 拒绝证据中的 candidate / machine-id SHA 与真实浏览器一致；
+- 最终 CI JSON 的 `real_appinstall_missing_detail_rejection`
+  只可能是 `PASS` 或 `NOT_ATTESTED`，且
+  `full_app_compose_install_lifecycle` 始终为 `NOT_RUN`。
+
+**这不验证**存在的本地 AppDetail 能安装成功，也不验证重复
+Task UUID、lost ACK、真实应用升级/停止/卸载或已存在安装之间
+的资源竞争。它仅证明不存在应用详情时执行链路拒绝并且没有
+观察到数据库/Docker 资源副作用。真实 G5 GO 必须后续在
+隔离 VM 里跑通一次有来源、有镜像摘要的本地 AppInstall
+完整正向生命周期。

@@ -147,6 +147,15 @@ if ! python3 scripts/install-test/runtime.py > "$STATE/runtime.raw.log" 2>&1; th
 fi
 stage 'guest_agent_recovery'
 
+# G5 AppInstall negative contract: one authenticated but nonexistent AppDetail
+# is refused without TaskDB/AppInstall or Docker side effects. Never auto-retry,
+# and never claim that a legitimate app was installed.
+if ! python3 scripts/install-test/app-rejection-live.py > "$STATE/app-rejection.raw.log" 2>&1; then
+    python3 scripts/install-test/ci-failure.py app-rejection
+    exit 1
+fi
+stage 'guest_app_install_denied_without_side_effects'
+
 # Real Docker Engine/Compose, but NOT the GPUPanel AppInstall API: build
 # a trusted *local* scratch image, run only inside the disposable guest with
 # no container network/host ports; verify logs, restart, persisted file and
