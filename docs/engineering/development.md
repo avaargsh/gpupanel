@@ -78,3 +78,17 @@ sudo/pctl 拉起已安装后端，因此不作为默认开发入口。源码改�
 [证据索引](../evidence/README.md) 的 historical/source/live 分级阅读，
 当前交付状态、整改所有权与 NOT RUN 清单见 [GOVERNANCE_STATUS](../STATUS.md)。
 未执行的命令一律记为 NOT RUN，不改写为 PASS。
+
+## DEV / TEST / RELEASE 验收分层
+
+- **DEV（每次 PR）**：运行 Python 合约测试、React build/typecheck/unit，
+  以及 Core/Agent 的 Go 测试与授权、安全回归。这些检查不会触碰已安装的工作站。
+- **TEST（显式手动执行）**：通过 GitHub Actions 的
+  `GPUPanel mainline baseline` → `Run workflow` 触发完整 Chromium
+  浏览器负向测试。此测试使用模拟 API，不代表真实 Core/Agent/Host 验收。
+- **RELEASE（`v*` 标签）**：触发完整 baseline 与 Chromium，
+  但 G3–G6 仍要求 #69 的 Ubuntu 一次性 VM 证据、安装/回滚、登录、
+  Docker/App、持久工作区恢复与独立审核。任何 CI 成功都不能写成真机 PASS。
+
+当前 CI 工作流只以 `main` 为活动开发分支；已清理的 `dev-v2` 不再作为 PR 目标。
+正式发布若存在 UNKNOWN、外部执行副作用未对账或证据缺失，仍保持 NO-GO。
