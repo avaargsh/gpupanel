@@ -146,7 +146,7 @@ with sync_playwright() as play:
         "publishAllPorts": False, "taskID": new_id,
         "restartPolicy": "no",
     })
-    action_task("create", new_id)  # actual backend's task operation spelling
+    action_task("TaskCreate", new_id)  # actual backend's task operation spelling
     if state() != "running":
         raise RuntimeError("independent guest Docker create observation failed")
     completed.append("create_and_independent_running_observation")
