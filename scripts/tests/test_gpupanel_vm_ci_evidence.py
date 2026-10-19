@@ -319,7 +319,8 @@ class LiveVmEvidence(unittest.TestCase):
         self.assertEqual(failure.compose_stage(
             "GUEST_COMPOSE_STAGE=up release=GO\n"
         ), "unknown")
-        self.assertEqual(failure.SCRIPTS.keys(), {"browser", "runtime", "compose", "restore", "container"})
+        self.assertEqual(set(failure.SCRIPTS), {"browser", "runtime", "compose", "restore", "container", "compose-api"})
+        self.assertEqual(failure.SCRIPTS["compose-api"], ("compose-api.raw.log", "compose-api-live.py"))
 
     def test_compose_fixture_requires_guest_identity_and_does_not_certify_appinstall(self):
         for corrupted in (
