@@ -279,6 +279,26 @@ class LiveVmEvidence(unittest.TestCase):
             "GUEST_COMPOSE_STAGE=up release=GO\n"
         ), "unknown")
         self.assertEqual(failure.SCRIPTS.keys(), {"browser", "runtime", "compose", "restore", "container", "app-rejection", "app-install"})
+        self.assertEqual(failure.app_api_stage(
+            "G5_APP_API_FAILURE_STAGE=catalog-sync release=NO_GO\n"
+            "cookie=UNREDACTABLE_SECRET\n"
+        ), "catalog-sync")
+        self.assertEqual(failure.app_api_stage(
+            "G5_APP_API_FAILURE_STAGE=install-admission release=NO_GO\n"
+        ), "install-admission")
+        for forged in (
+            "G5_APP_API_FAILURE_STAGE=/api/v1/apps/install release=NO_GO\n",
+            "G5_APP_API_FAILURE_STAGE=install-admission password=SECRET release=NO_GO\n",
+            "G5_APP_API_FAILURE_STAGE=detail-lookup release=GO\n",
+        ):
+            self.assertEqual(failure.app_api_stage(forged), "unknown")
+        self.assertNotIn(
+            "UNREDACTABLE_SECRET",
+            "G5_APP_API_FAILURE_STAGE=" + failure.app_api_stage(
+                "cookie=UNREDACTABLE_SECRET\n"
+            ) + " release=NO_GO",
+        )
+
 
     def test_compose_fixture_requires_guest_identity_and_does_not_certify_appinstall(self):
         for corrupted in (
