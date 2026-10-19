@@ -144,6 +144,9 @@ with sync_playwright() as play:
     api_post("/containers", {
         "name": container_name, "image": image_name,
         "cmd": ["/bin/busybox", "sleep", "600"],
+        # ContainerCreate requires an explicit network. The fixture is
+        # intentionally network-isolated: no bridge, external traffic or ports.
+        "networks": [{"network": "none"}],
         "forcePull": False, "privileged": False,
         "publishAllPorts": False, "taskID": new_id,
         "restartPolicy": "no",
@@ -151,6 +154,12 @@ with sync_playwright() as play:
     action_task("TaskCreate", new_id)  # actual backend's task operation spelling
     if state() != "running":
         raise RuntimeError("independent guest Docker create observation failed")
+    network_mode = guest([
+        "sudo", "docker", "inspect", "--format",
+        "{{.HostConfig.NetworkMode}}", container_name,
+    ])
+    if network_mode != "none":
+        raise RuntimeError("fixture container network isolation not verified")
     completed.append("create_and_independent_running_observation")
 
     for operation, expected in (
