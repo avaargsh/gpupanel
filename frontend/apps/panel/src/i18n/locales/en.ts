@@ -2,6 +2,23 @@ import type { LocaleResource } from './zh';
 
 const en: LocaleResource = {
     opsCenter: {
+        hostReceipts: 'Host controlled operations (current session)',
+        agentTasks: 'Agent persisted execution tasks (local host)',
+        agentScope: 'Existing task-log API, including possible app installs; not session approvals or ACP Agent tasks. Latest 20 only.',
+        emptyTasks: 'No matching execution task logs in the latest page.',
+        taskUnnamed: 'Unnamed execution task',
+        taskLoadError: 'Execution task logs unavailable. Host receipts remain independent; retry the query.',
+        allTaskLogs: 'All task logs',
+        openTaskLogs: 'Inspect task log',
+        taskWarning: 'Task outcome is failed or uncertain. Inspect the original task log; do not automatically retry any operation.',
+        unrecognized: 'Unrecognized status',
+        taskStates: {
+            Executing: 'Executing',
+            Failed: 'Failed',
+            Unknown: 'Unknown outcome',
+            Canceled: 'Canceled',
+            Success: 'Task success receipt',
+        },
         title: 'Operations Center',
         description: 'Review this login session’s local controlled operations and receipts.',
         scope: 'Host Operation receipts only, not autonomous Agent tasks or cross-system approvals. No automatic execution.',
