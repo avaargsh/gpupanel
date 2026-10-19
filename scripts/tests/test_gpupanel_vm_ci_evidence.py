@@ -318,7 +318,11 @@ class LiveVmEvidence(unittest.TestCase):
         self.assertIn("  push:\n    branches: [main]", flow)
         self.assertIn("  pull_request:\n    branches: [main]", flow)
         for event in ("pull_request", "push"):
-            block = flow.split("  " + event + ":\n", 1)[1].split("\n  ", 1)[0]
+            rest = flow.split("  " + event + ":\n", 1)[1]
+            # Only the next 2-space event key ends this block; nested
+            # 4-space 'branches' and 'paths' must remain inside it.
+            end = re.search(r"(?m)^  [a-z_]+:", rest)
+            block = rest[:end.start()] if end else rest
             self.assertIn("branches: [main]", block)
             paths = re.findall(r"^      - '([^']+)'$", block, re.MULTILINE)
             self.assertEqual(set(paths), {
