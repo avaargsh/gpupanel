@@ -1,0 +1,103 @@
+name: GPUPanel real Ubuntu 24.04 disposable VM acceptance
+
+# A green older VM run does not certify a newer binary/UI candidate.
+# Cover inputs compiled into both binaries and the embedded frontend, and
+# rerun on main after merges to verify the *actual* immutable main commit.
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'core/**'
+      - 'agent/**'
+      - 'frontend/**'
+      - 'deploy/**'
+      - 'scripts/**'
+      - '.github/workflows/gpupanel-real-ubuntu-vm.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'core/**'
+      - 'agent/**'
+      - 'frontend/**'
+      - 'deploy/**'
+      - 'scripts/**'
+      - '.github/workflows/gpupanel-real-ubuntu-vm.yml'
+  # GitHub suppresses some events produced by GITHUB_TOKEN automation.
+  # A scheduled default-branch run is an independent safety net for merges
+  # that did not generate a push workflow. It is not a release approval.
+  schedule:
+    - cron: '43 13 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: gpupanel-real-vm-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  live-ubuntu-qemu:
+    # Never execute a fork's untrusted code on a runner with a privileged
+    # hardware-virtualization device or privileged guest installer.
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: pnpm/action-setup@v4
+        with:
+          version: '12.8.1'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: core/go.mod
+          cache-dependency-path: |
+            core/go.sum
+            agent/go.sum
+      - name: Install official Ubuntu VM verification, KVM and Chromium prerequisites
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq qemu-system-x86 qemu-utils ubuntu-cloudimage-keyring openssh-client gnupg curl
+          python3 -m pip install playwright==1.63.0
+          python3 -m playwright install --with-deps chromium
+          if [ ! -c /dev/kvm ]; then
+            echo 'BLOCKED: runner lacks /dev/kvm; this is NOT a VM acceptance pass' >&2
+            exit 1
+          fi
+          sudo chmod o+rw /dev/kvm
+          test -r /dev/kvm && test -w /dev/kvm
+      - name: Run REAL pinned Ubuntu VM install -> browser -> guest recovery
+        id: live
+        shell: bash
+        run: bash scripts/install-test/ci-live-vm.sh
+      - name: Verify sanitized exact-candidate evidence
+        if: always()
+        shell: bash
+        run: |
+          if [ "${{ steps.live.outcome }}" = success ]; then
+            python3 scripts/install-test/ci-evidence.py --live-script-completed
+          else
+            python3 scripts/install-test/ci-evidence.py || true
+            echo 'Live VM acceptance not completed — preserve G3–G6 NO-GO.'
+          fi
+      - name: Stop only the owned disposable guest
+        if: always()
+        run: python3 scripts/install-test/vm.py stop || true
+      - name: Upload redacted evidence only — never VM disks, credentials or logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gpupanel-real-vm-partial-evidence
+          path: .local/install-test/ci-evidence.json
+          if-no-files-found: warn
+          retention-days: 7

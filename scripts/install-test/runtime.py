@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Guest-only lifecycle/collision probes for the task-owned installed VM."""
-import hashlib
+import candidate
 import json
 from pathlib import Path
 import shlex
@@ -57,13 +57,40 @@ print(json.dumps({'marker_sha256':hashlib.sha256(p.read_bytes()).hexdigest(),'se
 ''')
 
 
-result = {'kind': 'LIVE guest-only lifecycle; not complete App recovery acceptance'}
-expected = {scope: hashlib.file_digest((ROOT / 'build' / f'gpupanel-{scope}').open('rb'), 'sha256').hexdigest() for scope in ('core', 'agent')}
-installed = python('''import hashlib,json
-print(json.dumps({name:hashlib.file_digest(open('/opt/gpupanel/gpupanel-'+name,'rb'),'sha256').hexdigest() for name in ('core','agent')}))
+# Enforce one clean source candidate and the preceding real logged-in browser
+# receipt before ANY service restart, crash, or operator test recovery action.
+local = candidate.local_candidate(ROOT)
+browser = json.loads((STATE / 'browser-live.json').read_text(encoding='utf-8'))
+candidate.verify_browser_chain(browser, local)
+installed = python('''import hashlib,json,os,subprocess
+from pathlib import Path
+def fingerprint(name):
+ target=Path('/opt/gpupanel')/('gpupanel-'+name)
+ pid=subprocess.check_output(
+  ['systemctl','show','gpupanel-'+name,'-p','MainPID','--value'],
+  text=True,timeout=5).strip()
+ if not pid.isdecimal() or int(pid)==0:
+  raise RuntimeError('installed service not running')
+ live=os.stat('/proc/'+pid+'/exe'); disk=os.stat(target)
+ if (live.st_dev,live.st_ino)!=(disk.st_dev,disk.st_ino):
+  raise RuntimeError('running service executable differs from installed file')
+ return hashlib.file_digest(target.open('rb'),'sha256').hexdigest()
+print(json.dumps({
+ 'binary_sha256': {name:fingerprint(name) for name in ('core','agent')},
+ 'machine_id_sha256':hashlib.sha256(Path('/etc/machine-id').read_bytes()).hexdigest()
+}))
 ''')
-assert expected == installed, 'Installed binaries differ from the tested build'
-result['binary_sha256'] = installed
+candidate.verify_installed(local, installed['binary_sha256'])
+if (not candidate.SHA256.fullmatch(installed['machine_id_sha256'])
+        or installed['machine_id_sha256'] != browser.get('guest_machine_id_sha256')):
+    raise RuntimeError('VM guest identity changed since verified browser acceptance')
+result = {
+    'kind': 'LIVE guest-only lifecycle; not complete App recovery acceptance',
+    'candidate': local,
+    'guest_machine_id_sha256': installed['machine_id_sha256'],
+    'same_candidate_live_browser_verified': True,
+    'binary_sha256': installed['binary_sha256'],
+}
 before = retained()
 wait_agent()
 remote(['sudo', 'systemctl', 'restart', 'gpupanel-agent'])

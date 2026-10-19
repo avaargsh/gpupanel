@@ -51,6 +51,10 @@ const (
 )
 
 var WebUrlMap = map[string]struct{}{
+	"/host": {},
+	"/projects": {},
+	"/operations": {},
+	"/gpu": {},
 	"/apps":           {},
 	"/apps/all":       {},
 	"/apps/installed": {},
@@ -235,6 +239,7 @@ var WebUrlMap = map[string]struct{}{
 }
 
 var DynamicRoutes = []string{
+	`^/projects/[^/]+$`,
 	`^/containers/composeDetail/[^/]+$`,
 	`^/databases/mysql/setting/[^/]+/[^/]+$`,
 	`^/databases/postgresql/setting/[^/]+/[^/]+$`,

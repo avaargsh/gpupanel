@@ -27,7 +27,7 @@ try:
     else:
         raise RuntimeError('Vite readiness timeout')
     status = 0
-    for name in ('remote-integration.py', 'vnext-shell.py', 'host-operations.py', 'container-operation.py'):
+    for name in ('remote-integration.py', 'vnext-shell.py', 'host-operations.py', 'container-operation.py', 'operations-center.py'):
         completed = subprocess.run([sys.executable, str(ROOT / 'scripts/browser' / name)], cwd=ROOT, timeout=120)
         if completed.returncode:
             status = completed.returncode

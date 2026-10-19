@@ -128,3 +128,32 @@ TaskInstall 回执及 Docker 资源状态，并给出
 
 真实浏览器登录、当前候选安装升级/回滚、Docker 运行结果与 G3–G6
 完整矩阵仍然 **NOT RUN / M0 NO-GO**。
+
+## 本轮增量：真实 Chromium / 模拟 API 浏览器负向验收
+
+`scripts/browser/operations-center.py` 已加入现有
+`scripts/browser/run-react-tests.py`，由
+`gpupanel-vnext-visual-smoke.yml` 在涉及前端或浏览器脚本的
+Pull Request 中运行**真实 Chromium 浏览器**。使用独立的
+本地 Vite 页面和受控模拟 Core/Agent API，测试：
+
+- Host 当前会话回执和 Agent 持久任务必须分别呈现；
+  `planned` 仅未过期才能待确认，Task `Success` 不能冒充 Approval；
+- 当前所选任务与 Agent 返回的最近关联 `taskId` 不一致时，
+  **不显示 CONSISTENT 证据**，不将另一次安装归因给旧任务；
+- 相同任务 ID/资源 ID 的只读观察必须继续标记为
+  **非安装证明**；接口失败或刷新期间隐藏旧快照；
+- Host 和任务日志单侧故障不会遮蔽另一来源；
+  当前节点切到远程时禁止请求本地专有任务/资源证据；
+- 不触发安装、重试、确认等变更类 API；检查窄屏布局，
+  不渲染敏感日志、错误消息和环境变量。
+
+浏览器 JSON/screenshot 保存在独立的
+`.local/install-test/operations/` 目录并作为 CI 附件；
+明确写有 `REAL CHROMIUM / SIMULATED Core+Agent API`，
+**不代表真实登录、持久服务、Docker 生命周期或 G3–G6 完成**。
+
+这条证据只对对应 PR 完全一致的构建提交有效。
+生产前仍须在同一个不可变候选的获授权 Ubuntu 测试机，
+逐项完成安装/升级/回滚、用户登录及越权拒绝、
+实际 App/Compose 操作与中断恢复的 G3–G6 联合验收。
