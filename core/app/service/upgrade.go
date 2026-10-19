@@ -275,7 +275,9 @@ func (u *UpgradeService) Rollback(req dto.OperateByID) error {
 	if err != nil {
 		return err
 	}
-	u.handleRollback(log.BackupFile, 3, svcInfo)
+	// BackupFile records the upgrade transaction directory; the actual
+	// sealed files were copied into its "original" child.
+	u.handleRollback(path.Join(log.BackupFile, "original"), 3, svcInfo)
 	return nil
 }
 
