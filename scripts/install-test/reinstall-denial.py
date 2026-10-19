@@ -77,7 +77,59 @@ print(json.dumps({
     return value
 
 
-def verify_preflight(raw: str, exit_code: int) -> None:
+def classify_guest_preflight(package: str) -> str:
+    """Emit bounded independent fixture diagnostics, without paths or stderr.
+
+    Probe is read-only and limited to the known, task-owned release location.
+    Neither the raw stdout/stderr of the failed preflight nor guest environment
+    is ever printed to CI. It never retries installation.
+    """
+    probe = """import ast,json,os,stat,sys
+from pathlib import Path
+target=Path('/tmp')/sys.argv[1]/'gpupanel-install-preflight.py'
+parent=target.parent
+try:
+    mode=target.lstat().st_mode
+    regular=stat.S_ISREG(mode)
+    readable=os.access(target,os.R_OK)
+    traversable=os.access(parent,os.X_OK)
+    if regular and readable and traversable:
+        ast.parse(target.read_text(encoding='utf-8'))
+    syntax_ok=regular and readable and traversable
+except (OSError,UnicodeError,SyntaxError):
+    syntax_ok=False
+    regular=False
+    readable=False
+    traversable=False
+print(json.dumps({'regular':regular,'readable':readable,
+                  'traversable':traversable,'syntax_ok':syntax_ok}))
+"""
+    if not package.startswith("gpupanel-ci-") or not package.endswith("-linux-amd64"):
+        return "INVALID_PACKAGE"
+    result = guest(["python3", "-c", probe, package], max_seconds=20)
+    if result.returncode != 0:
+        return "PROBE_UNAVAILABLE"
+    try:
+        observed = json.loads(result.stdout)
+        if not isinstance(observed, dict) or any(
+            type(observed.get(key)) is not bool
+            for key in ("regular", "readable", "traversable", "syntax_ok")
+        ):
+            return "PROBE_INVALID"
+        if not observed["regular"]:
+            return "SCRIPT_NOT_REGULAR"
+        if not observed["traversable"]:
+            return "DIRECTORY_NOT_TRAVERSABLE"
+        if not observed["readable"]:
+            return "SCRIPT_NOT_READABLE"
+        if not observed["syntax_ok"]:
+            return "SCRIPT_SYNTAX_UNVERIFIED"
+        return "SCRIPT_PRESENT_AND_PARSEABLE"
+    except (ValueError, TypeError):
+        return "PROBE_INVALID"
+
+
+def verify_preflight(raw: str, exit_code: int, *, package: str = "") -> None:
     if exit_code != 2:
         # The private SSH/preflight output may contain inventory and private
         # filesystem details. Emit only an enum identifying *why* G3 stopped;
@@ -98,8 +150,9 @@ def verify_preflight(raw: str, exit_code: int) -> None:
             "BLOCKED_JSON" if has_collision else
             "OTHER_JSON" if isinstance(diagnostic, dict) else "NON_JSON"
         )
+        fixture_class = classify_guest_preflight(package)
         print(f"REINSTALL_PREFLIGHT_DIAG exit={exit_class} report={report_class} "
-              "release=NO_GO", file=sys.stderr)
+              f"script={fixture_class} release=NO_GO", file=sys.stderr)
         raise RuntimeError("installed-host preflight did not reject")
     report = json.loads(raw)
     if not isinstance(report, dict) or (
@@ -159,7 +212,7 @@ def main() -> None:
 
     package = "gpupanel-ci-" + local["source_sha"][:12] + "-linux-amd64"
     preflight = guest(["python3", "/tmp/" + package + "/gpupanel-install-preflight.py", "--json"])
-    verify_preflight(preflight.stdout, preflight.returncode)
+    verify_preflight(preflight.stdout, preflight.returncode, package=package)
 
     # Intentionally attempt the same operator-gated installer on the same
     # disposable guest; collision logic must refuse before writing anything.
