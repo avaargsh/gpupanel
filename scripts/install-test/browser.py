@@ -15,6 +15,7 @@ if credentials['url'] != f'http://127.0.0.1:{vm.PANEL_PORT}':
     raise SystemExit('Refuse a non-fixture target')
 binary_before = candidate_identity.assert_installed_candidate(vm)
 checkout_commit = candidate_identity.source_checkout_commit(ROOT)
+guest_identity_before = candidate_identity.guest_identity_fingerprint(vm)
 result = {'kind': 'LIVE local VM; no intercepted APIs', 'target': credentials['url']}
 
 
@@ -89,7 +90,10 @@ if candidate_identity.assert_installed_candidate(vm) != binary_before:
     raise RuntimeError('installed candidate binary changed during live browser smoke')
 if candidate_identity.source_checkout_commit(ROOT) != checkout_commit:
     raise RuntimeError('source checkout changed during live browser smoke')
+if candidate_identity.guest_identity_fingerprint(vm) != guest_identity_before:
+    raise RuntimeError('guest identity changed during live browser smoke')
 result['binary_sha256'] = binary_before
 result['candidate_commit'] = checkout_commit
+result['guest_identity_sha256'] = guest_identity_before
 (STATE / 'browser-live.json').write_text(json.dumps(result, indent=2) + '\n')
 print(json.dumps(result, indent=2))
