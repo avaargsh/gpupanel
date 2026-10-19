@@ -235,13 +235,28 @@ with sync_playwright() as playwright:
     })
     if containers():
         raise RuntimeError("Compose project containers survived deletion")
-    again = post("/containers/compose/search", {"page":1,"pageSize":40})
-    items = again.get("data", {}).get("items")
-    if not isinstance(items, list) or any(
-        isinstance(row, dict) and (row.get("name") or row.get("Name")) == project
-        for row in items
-    ):
-        raise RuntimeError("Compose record survived deletion")
+    # The real Agent first tears down Docker, then removes its persistent
+    # Compose record. A post-DELETE snapshot may legitimately catch the
+    # intermediate state. Observe until both converge; never replay DELETE,
+    # infer success from HTTP 200 or suppress an unresolved record.
+    until = time.monotonic() + 20
+    while True:
+        again = post("/containers/compose/search", {"page": 1, "pageSize": 40})
+        data = again.get("data")
+        items = data.get("items") if isinstance(data, dict) else None
+        if not isinstance(items, list):
+            raise RuntimeError("Compose record search unavailable after deletion")
+        matches = [
+            row for row in items if isinstance(row, dict)
+            and (row.get("name") or row.get("Name")) == project
+        ]
+        if not matches:
+            break
+        if time.monotonic() >= until:
+            raise RuntimeError("Compose record survived deletion")
+        time.sleep(0.5)
+    if containers():
+        raise RuntimeError("Compose containers reappeared after record deletion")
     done.append("delete_only_owned_compose_project_and_record")
     context.close()
     browser_instance.close()
