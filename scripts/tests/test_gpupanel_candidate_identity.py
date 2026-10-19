@@ -27,11 +27,15 @@ class CandidateIdentityTests(unittest.TestCase):
             (self.build / ("gpupanel-" + part)).write_bytes(("binary-" + part).encode())
         self.digests = ci.local_build_digests(self.root)
         self.commit = "a" * 40
+        self.guest_identity = "b" * 64
+        self.attempt_id = "d" * 32
 
     def write_receipts(self):
         browser = {
             "binary_sha256": self.digests,
             "candidate_commit": self.commit,
+            "guest_identity_sha256": self.guest_identity,
+            "attempt_id": self.attempt_id,
             "live_login_and_httponly_entrance": True,
             "anonymous_core_host_evidence_denied": True,
             "invalid_csrf_denied": True,
@@ -40,10 +44,20 @@ class CandidateIdentityTests(unittest.TestCase):
         runtime = {
             "binary_sha256": self.digests,
             "candidate_commit": self.commit,
+            "guest_identity_sha256": self.guest_identity,
+            "attempt_id": self.attempt_id,
             "two_clean_agent_restarts": True,
             "fixture_marker_and_login_settings_retained": True,
             "repeat_install_refused_without_service_restart": True,
         }
+        active = {
+            "schema": ci.ATTEMPT_SCHEMA,
+            "attempt_id": self.attempt_id,
+            "candidate_commit": self.commit,
+            "binary_sha256": self.digests,
+            "guest_identity_sha256": self.guest_identity,
+        }
+        (self.state / ci.ATTEMPT_FILE).write_text(json.dumps(active))
         (self.state / "browser-live.json").write_text(json.dumps(browser))
         (self.state / "runtime-live.json").write_text(json.dumps(runtime))
         return browser, runtime
@@ -61,6 +75,64 @@ class CandidateIdentityTests(unittest.TestCase):
         self.assertEqual(reviewed["g5_full_docker_app_lifecycle"], "NOT_VERIFIED")
         self.assertEqual(reviewed["g6_full_recovery"], "NOT_VERIFIED")
 
+    def test_an_old_browser_receipt_cannot_be_mixed_into_new_attempt(self):
+        browser, runtime = self.write_receipts()
+        runtime["attempt_id"] = "e" * 32
+        (self.state / "runtime-live.json").write_text(json.dumps(runtime))
+        with self.assertRaisesRegex(ValueError, "different acceptance attempt"):
+            self.review()
+
+    def test_missing_or_corrupt_active_attempt_fails_closed(self):
+        self.write_receipts()
+        active = self.state / ci.ATTEMPT_FILE
+        active.unlink()
+        with self.assertRaises(FileNotFoundError):
+            self.review()
+        active.write_text(json.dumps({"schema": ci.ATTEMPT_SCHEMA}))
+        with self.assertRaisesRegex(ValueError, "unsupported or missing"):
+            self.review()
+        active.unlink()
+        active.symlink_to(self.state / "browser-live.json")
+        with self.assertRaisesRegex(ValueError, "real file"):
+            self.review()
+
+    def test_begin_rotates_attempt_and_refuses_stale_receipts(self):
+        self.write_receipts()
+        with patch.object(ci, "source_checkout_commit", return_value=self.commit), \
+             patch.object(ci, "assert_installed_candidate", return_value=self.digests), \
+             patch.object(ci, "guest_identity_fingerprint", return_value=self.guest_identity):
+            result = ci.begin_attempt(object(), self.root, self.state)
+            self.assertNotEqual(result["attempt_id"], self.attempt_id)
+            self.assertEqual(ci.current_attempt(self.root, self.state)["attempt_id"], result["attempt_id"])
+        with self.assertRaisesRegex(ValueError, "different acceptance attempt"):
+            self.review()
+        self.assertEqual((self.state / ci.ATTEMPT_FILE).stat().st_mode & 0o777, 0o600)
+
+    def test_active_attempt_rejects_mismatched_installed_guest(self):
+        self.write_receipts()
+        class VM:
+            pass
+        with patch.object(ci, "source_checkout_commit", return_value=self.commit):
+            with patch.object(ci, "assert_installed_candidate", return_value=self.digests):
+                with patch.object(ci, "guest_identity_fingerprint", return_value="f" * 64):
+                    with self.assertRaisesRegex(ValueError, "different guest"):
+                        ci.current_attempt(self.root, self.state, vm=VM())
+
+    def test_active_attempt_rejects_source_change_even_with_same_receipts(self):
+        self.write_receipts()
+        with patch.object(ci, "source_checkout_commit", return_value="0" * 40):
+            with self.assertRaisesRegex(ValueError, "different checkout commit"):
+                ci.current_attempt(self.root, self.state)
+
+    def test_begin_does_not_touch_existing_receipts(self):
+        self.write_receipts()
+        previous = (self.state / "browser-live.json").read_bytes()
+        with patch.object(ci, "source_checkout_commit", return_value=self.commit), \
+             patch.object(ci, "assert_installed_candidate", return_value=self.digests), \
+             patch.object(ci, "guest_identity_fingerprint", return_value=self.guest_identity):
+            ci.begin_attempt(object(), self.root, self.state)
+        self.assertEqual((self.state / "browser-live.json").read_bytes(), previous)
+
     def test_changed_installed_binary_refuses_mixed_receipts(self):
         b, r = self.write_receipts()
         b["binary_sha256"] = {**self.digests, "agent": "f" * 64}
@@ -74,6 +146,48 @@ class CandidateIdentityTests(unittest.TestCase):
         (self.state / "runtime-live.json").write_text(json.dumps(r))
         with self.assertRaisesRegex(ValueError, "checkout commit"):
             self.review()
+
+    def test_different_vm_with_identical_binaries_is_rejected(self):
+        browser, runtime = self.write_receipts()
+        runtime["guest_identity_sha256"] = "c" * 64
+        (self.state / "runtime-live.json").write_text(json.dumps(runtime))
+        with self.assertRaisesRegex(ValueError, "different guest identities"):
+            self.review()
+
+    def test_missing_or_invalid_guest_identity_is_rejected(self):
+        browser, runtime = self.write_receipts()
+        del browser["guest_identity_sha256"]
+        (self.state / "browser-live.json").write_text(json.dumps(browser))
+        with self.assertRaisesRegex(ValueError, "guest identity fingerprint"):
+            self.review()
+        browser["guest_identity_sha256"] = "not-hex"
+        (self.state / "browser-live.json").write_text(json.dumps(browser))
+        with self.assertRaisesRegex(ValueError, "guest identity fingerprint"):
+            self.review()
+
+    def test_guest_identity_is_pseudonymous_and_refuses_unowned_vm(self):
+        class VM:
+            STATE = Path("/tmp/disposable-fixture")
+            def owned_pid(self, *_):
+                return 123
+            def ssh_args(self):
+                return ["ssh", "fixture"]
+        from subprocess import CompletedProcess
+        machine_id = "1234567890abcdef1234567890abcdef"
+        with patch.object(ci.subprocess, "run", return_value=CompletedProcess([], 0, stdout=machine_id + "\n")):
+            fingerprint = ci.guest_identity_fingerprint(VM())
+        self.assertRegex(fingerprint, r"^[0-9a-f]{64}$")
+        self.assertNotIn(machine_id, fingerprint)
+        with patch.object(ci.subprocess, "run", return_value=CompletedProcess([], 0, stdout="invalid")):
+            with self.assertRaisesRegex(ValueError, "machine-id"):
+                ci.guest_identity_fingerprint(VM())
+        class Unowned(VM):
+            def owned_pid(self, *_):
+                return None
+            def ssh_args(self):
+                raise AssertionError("must refuse before ssh")
+        with self.assertRaisesRegex(RuntimeError, "not running"):
+            ci.guest_identity_fingerprint(Unowned())
 
     def test_missing_required_real_check_denied(self):
         b, r = self.write_receipts()

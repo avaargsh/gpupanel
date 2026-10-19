@@ -58,6 +58,12 @@
   **checkout commit**，提供同候选的只读交叉检查：
   `python3 scripts/install-test/candidate_identity.py review`。
   它只做局部回执一致性检查；**不能证明构建来源，也不签发 M0 GO**。
+  后续一致性检查还要求浏览器与恢复脚本回执来自同一 QEMU guest
+  的伪匿名 machine-id 指纹；不同 guest 的相同二进制不能拼成一次验收。
+  该指纹不能防御克隆 machine-id 或伪造回执，仍需独立审核真实 VM。
+  最新的验收轮次还须由操作者显式 `candidate_identity.py begin` 开始；
+  两项真实测试回执与当前 `attempt_id` 一致，否则拒绝旧轮次的拼接，
+  仍不能当作独立硬件证明或安装发布通过。
 - 缺 Linux/QEMU、真实 Ubuntu、升级/回滚、Docker/App 和独立观察时继续 NO-GO。
 
 **R1 — 可用的开发者 Workspace：**
