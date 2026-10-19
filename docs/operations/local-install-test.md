@@ -328,3 +328,30 @@ Compose API、跨 UUID 同名竞态、应用卸载以及升级回滚仍
 **NOT RUN / M0 NO-GO**。仅允许在一次性自有 VM 上测试；
 不使用生产 Docker 主机，不重试可能已执行的创建命令，
 不执行全局 Docker Prune。
+
+## 2026-10-19：发行输入变更必须自动重跑真实 VM
+
+此前真实 VM Workflow 只在安装脚本/部分部署文件变化时自动触发：
+Core、Agent、前端发生实质变更后，旧的 VM PASS 不能证明最新候选
+仍能安装、登录与恢复。现在
+`.github/workflows/gpupanel-real-ubuntu-vm.yml` 对以下路径
+在 PR 和主分支 push 上运行实际 QEMU/KVM 验收：
+
+- `core/**`：Core / 内嵌 Web UI / 路由 / 鉴权；
+- `agent/**`：Host、任务与 Docker 执行；
+- `frontend/**`：登录、Operations Center 与应用交互；
+- `deploy/**`：发布包、安装与服务定义；
+- `scripts/**`：预检与实测、恢复和取证工具；
+- 对应 Workflow 文件自身。
+
+PR 上的 Action 可能构建 **synthetic merge checkout**，
+实际身份必须从 `ci-evidence.json.source_sha` 读取，不能把
+PR HEAD 猜作虚拟机实际构建提交。PR 合并到 `main` 后，
+`push` Workflow 重新针对**真正的 main 提交**生成独立证据。
+如果 `main` 最新提交没有对应的成功真实 VM 记录，就不能借用
+合并前的 Green 作为同版本 G3–G6 验收。
+
+此项只加强候选证据的自动复测覆盖；
+`PARTIAL_ACCEPTED` 仍仅代表已经真实执行的子集，
+G5 AppInstall、安装升级回滚、完整数据恢复和人工发布审批
+在独立证据完成前始终是 **M0 NO-GO**。
