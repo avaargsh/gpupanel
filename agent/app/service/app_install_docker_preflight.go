@@ -5,6 +5,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/avaargsh/GPUPanel/agent/global"
 	"github.com/avaargsh/GPUPanel/agent/utils/docker"
 	"github.com/docker/docker/api/types/container"
 )
@@ -101,15 +102,21 @@ func inspectAppInstallDockerPreflight(
 // and only its ListAllContainers (read-only) capability. It is intentionally
 // internal, not an HTTP endpoint and not wired to any release callback.
 func inspectAgentDockerNameResiduals(ctx context.Context, name string) (AppInstallDockerPreflight, error) {
-	if ctx == nil || ctx.Err() != nil {
+	if ctx == nil || ctx.Err() != nil || global.DB == nil {
 		return inspectAppInstallDockerPreflight(ctx, name, nil)
 	}
+	// The existing Docker configuration selects the daemon. A healthy read
+	// from it is NOT a proof that all possible host/remote daemons or volumes
+	// were inspected; this result never drives release authorization.
 	cli, err := docker.NewClient()
 	if err != nil {
 		return inspectAppInstallDockerPreflight(ctx, name,
 			func() ([]container.Summary, error) { return nil, err })
 	}
 	defer cli.Close()
-	return inspectAppInstallDockerPreflight(ctx, name, cli.ListAllContainers)
+	bounded, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+	return inspectAppInstallDockerPreflight(bounded, name,
+		func() ([]container.Summary, error) { return cli.ListAllContainersWithContext(bounded) })
 }
 
