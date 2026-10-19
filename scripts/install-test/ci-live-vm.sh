@@ -120,6 +120,18 @@ if ! python3 scripts/install-test/compose-live.py > "$STATE/compose.raw.log" 2>&
 fi
 stage 'guest_compose_offline_lifecycle'
 
+# Full GPUPanel Core -> Agent -> real guest Docker fixture. Import an apt-
+# sourced static BusyBox without network pulls; the API request explicitly
+# selects network=none and Docker inspection verifies the isolation.
+python3 scripts/install-test/vm.py ssh -- sudo tar -C / --dereference -cf /tmp/gpupanel-m0-busybox.tar bin/busybox
+python3 scripts/install-test/vm.py ssh -- sudo docker import /tmp/gpupanel-m0-busybox.tar gpupanel-m0-fixture:local
+stage 'guest_core_fixture_image_prepared'
+if ! python3 scripts/install-test/container.py > "$STATE/container.raw.log" 2>&1; then
+    python3 scripts/install-test/ci-failure.py container
+    exit 1
+fi
+stage 'real_core_agent_container_lifecycle'
+
 # Only the disposable guest disk is fault-injected and cold-restored.
 # A sealed post-install checkpoint is independently validated before
 # replacing the task-owned disk; the prior disk is retained for review.

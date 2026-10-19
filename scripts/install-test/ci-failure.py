@@ -15,6 +15,7 @@ SCRIPTS = {
     "runtime": ("runtime.raw.log", "runtime.py"),
     "compose": ("compose.raw.log", "compose-live.py"),
     "restore": ("restore.raw.log", "restore-live.py"),
+    "container": ("container.raw.log", "container.py"),
 }
 LINE = re.compile(r'File "[^"\n]*/([^/"]+\.py)", line ([1-9][0-9]{0,5})')
 CLASS = re.compile(r"^(AssertionError|AttributeError|FileNotFoundError|"
@@ -51,7 +52,7 @@ def diagnostic(raw: str, basename: str) -> str:
 
 def main() -> int:
     if len(sys.argv) != 2 or sys.argv[1] not in SCRIPTS:
-        print("Usage: ci-failure.py browser|runtime|compose|restore", file=sys.stderr)
+        print("Usage: ci-failure.py browser|runtime|compose|restore|container", file=sys.stderr)
         return 2
     file_name, basename = SCRIPTS[sys.argv[1]]
     path = STATE / file_name

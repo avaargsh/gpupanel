@@ -50,6 +50,24 @@ class LiveVmEvidence(unittest.TestCase):
             "container_removed": True,
             "local_image_removed": True,
         }
+        self.container = {
+            "kind": "REAL UBUNTU GUEST + AUTHENTICATED CORE→AGENT→DOCKER; NO MOCK API",
+            "candidate": self.candidate,
+            "guest_machine_id_sha256": "d" * 64,
+            "fixture_image_sha256": "e" * 64,
+            "distinct_task_ids": True,
+            "steps": [
+                "create_and_independent_running_observation",
+                "stop_with_independent_observation",
+                "start_with_independent_observation",
+                "restart_with_independent_observation",
+                "remove_with_independent_observation",
+            ],
+            "no_external_app_catalog_used": True,
+            "app_install_lifecycle": "NOT_RUN",
+            "compose_install_lifecycle": "NOT_RUN",
+            "private": "NEVER_EXPOSE_CONTAINER_TASK_LOG",
+        }
         self.restore = {
             "kind": "REAL GUEST POST-INSTALL OFFLINE SNAPSHOT RESTORE; PARTIAL G3/G6",
             "source_sha": self.source,
@@ -73,6 +91,7 @@ class LiveVmEvidence(unittest.TestCase):
         self.write("browser-live.json", self.browser)
         self.write("runtime-live.json", self.runtime)
         self.write("compose-live.json", self.compose)
+        self.write("container-live.json", self.container)
         self.write("restore-live.json", self.restore)
         (self.state / "ci-stages.txt").write_text(
             "\n".join(audit.STAGES) + "\n"
@@ -91,12 +110,14 @@ class LiveVmEvidence(unittest.TestCase):
         self.assertEqual(result["m0_release_decision"], "NO_GO")
         self.assertEqual(result["offline_docker_compose_fixture"], "PASS")
         self.assertEqual(result["post_install_offline_disk_restore"], "PASS")
+        self.assertEqual(result["core_agent_docker_container_lifecycle"], "PARTIAL_PASS")
         self.assertEqual(result["upgrade_and_rollback"], "NOT_RUN")
         self.assertEqual(result["full_app_compose_install_lifecycle"], "NOT_RUN")
         self.assertEqual(result["independent_reviewer"], "NOT_ATTESTED")
         encoded = json.dumps(result)
         for secret in ("MUST_NOT_LEAK", "SECRET_LOG_SHOULD_NEVER_APPEAR",
-                       "DO_NOT_PRINT_VM_IMAGE_PROVIDER", "NEVER_REPORT_ME"):
+                       "DO_NOT_PRINT_VM_IMAGE_PROVIDER", "NEVER_REPORT_ME",
+                       "NEVER_EXPOSE_CONTAINER_TASK_LOG"):
             self.assertNotIn(secret, encoded)
 
     def test_early_failure_cannot_mark_pass(self):
@@ -186,7 +207,7 @@ class LiveVmEvidence(unittest.TestCase):
         self.assertEqual(failure.compose_stage(
             "GUEST_COMPOSE_STAGE=up release=GO\n"
         ), "unknown")
-        self.assertEqual(failure.SCRIPTS.keys(), {"browser", "runtime", "compose", "restore"})
+        self.assertEqual(failure.SCRIPTS.keys(), {"browser", "runtime", "compose", "restore", "container"})
 
     def test_compose_fixture_requires_guest_identity_and_does_not_certify_appinstall(self):
         for corrupted in (
@@ -242,6 +263,43 @@ class LiveVmEvidence(unittest.TestCase):
         runner = (ROOT / "scripts/install-test/ci-live-vm.sh").read_text()
         self.assertIn("python3 scripts/install-test/restore-live.py", runner)
         self.assertIn("stage 'guest_post_install_offline_restore'", runner)
+
+    def test_container_evidence_requires_exact_guest_and_complete_lifecycle(self):
+        for invalid in (
+            {"guest_machine_id_sha256": "0" * 64},
+            {"candidate": {**self.candidate, "source_sha": "a" * 40}},
+            {"steps": self.container["steps"][:-1]},
+            {"distinct_task_ids": False},
+            {"fixture_image_sha256": "not_a_hash"},
+            {"no_external_app_catalog_used": False},
+            {"app_install_lifecycle": "PASS"},
+            {"compose_install_lifecycle": "PASS"},
+        ):
+            with self.subTest(invalid=invalid):
+                self.write("container-live.json", {**self.container, **invalid})
+                result = self.summarise()
+                self.assertEqual(result["status"], "BLOCKED_OR_FAILED")
+                self.assertEqual(result["core_agent_docker_container_lifecycle"], "NOT_ATTESTED")
+                self.assertEqual(result["post_install_offline_disk_restore"], "NOT_ATTESTED")
+        self.write("container-live.json", self.container)
+        (self.state / "container-live.json").unlink()
+        self.assertEqual(self.summarise()["status"], "BLOCKED_OR_FAILED")
+
+    def test_core_container_fixture_has_explicit_offline_network_and_identity(self):
+        source = (ROOT / "scripts/install-test/container.py").read_text()
+        backend = (ROOT / "agent/app/service/container.go").read_text()
+        self.assertIn('return nil, nil, nil, fmt.Errorf("please set up the network")', backend)
+        self.assertIn('"networks": [{"network": "none"}]', source)
+        self.assertIn('{{.HostConfig.NetworkMode}}', source)
+        self.assertIn('if network_mode != "none":', source)
+        self.assertIn('"privileged": False', source)
+        self.assertIn('"publishAllPorts": False', source)
+        self.assertNotIn('forcePull": True', source)
+        runner = (ROOT / "scripts/install-test/ci-live-vm.sh").read_text()
+        self.assertLess(
+            runner.index("stage 'real_core_agent_container_lifecycle'"),
+            runner.index("stage 'guest_post_install_offline_restore'"),
+        )
 
     def test_offline_scratch_image_has_explicit_executable_entrypoint(self):
         guest = (ROOT / "scripts/install-test/compose-fixture-guest.py").read_text()
