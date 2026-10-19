@@ -104,7 +104,7 @@ except (OSError,UnicodeError,SyntaxError):
 print(json.dumps({'regular':regular,'readable':readable,
                   'traversable':traversable,'syntax_ok':syntax_ok}))
 """
-    if not package.startswith("gpupanel-ci-") or not package.endswith("-linux-amd64"):
+    if __import__("re").fullmatch(r"gpupanel-ci-[0-9a-f]{12}-linux-amd64", package) is None:
         return "INVALID_PACKAGE"
     result = guest(["python3", "-c", probe, package], max_seconds=20)
     if result.returncode != 0:
