@@ -79,6 +79,27 @@ print(json.dumps({
 
 def verify_preflight(raw: str, exit_code: int) -> None:
     if exit_code != 2:
+        # The private SSH/preflight output may contain inventory and private
+        # filesystem details. Emit only an enum identifying *why* G3 stopped;
+        # never include stdout, stderr, paths, process listings or credentials.
+        import sys
+        try:
+            diagnostic = json.loads(raw)
+        except (ValueError, TypeError):
+            diagnostic = None
+        has_collision = (
+            isinstance(diagnostic, dict)
+            and isinstance(diagnostic.get("blockers"), list)
+            and "runtime_collision" in diagnostic["blockers"]
+        )
+        exit_class = ("ZERO" if exit_code == 0 else
+                      "SSH_TRANSPORT" if exit_code == 255 else "OTHER")
+        report_class = (
+            "BLOCKED_JSON" if has_collision else
+            "OTHER_JSON" if isinstance(diagnostic, dict) else "NON_JSON"
+        )
+        print(f"REINSTALL_PREFLIGHT_DIAG exit={exit_class} report={report_class} "
+              "release=NO_GO", file=sys.stderr)
         raise RuntimeError("installed-host preflight did not reject")
     report = json.loads(raw)
     if not isinstance(report, dict) or (
