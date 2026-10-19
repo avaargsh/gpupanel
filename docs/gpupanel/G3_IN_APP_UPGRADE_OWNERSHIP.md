@@ -24,8 +24,12 @@ make any later downgrade ambiguous.
   directories/managers fail closed, instead of writing to a guessed path.
 - Back up, install and roll back the **same validated runtime targets**.
   Never write either compatibility symlink in `/usr/local/bin`.
-- Correct manual Rollback to address `BackupFile/original`, because the
-  upgrade log stores the transaction parent, not its actual backup child.
+- Correct the original backup path to `BackupFile/original`, rather than
+  the transaction parent. **The running Core API now refuses an online manual
+  Rollback after read-only snapshot validation**. Writing SQLite files and
+  executables while the owning services run is not an offline restore; no
+  safe API-triggered rollback exists in this Draft. The earlier handler is
+  retained for future stopped-service integration only.
 - Make the rollback handler accumulate and return restoration errors instead
   of logging them and returning implicit success. Automatic rollback failures
   are explicitly surfaced in service logs; this is not proof of guest health.
@@ -44,6 +48,12 @@ make any later downgrade ambiguous.
 - No Agent installation change; no live customer host action.
 
 ## Remaining blockers
+
+**Operators must not use an in-app Rollback button or HTTP request to
+restore live databases.** The current in-app handler returns a fail-closed
+error until a separate authenticated, stop-verified offline recovery tool
+can restore DB/binaries/service units, restart both services and validate
+original state. This is intentionally an availability limitation for safety.
 
 This does **not** establish a complete safe upgrade/rollback. The in-app
 upgrade still downloads asynchronously, modifies service files, copies DB
