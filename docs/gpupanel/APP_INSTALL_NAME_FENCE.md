@@ -20,6 +20,16 @@ filesystem side effects may already have begun.
   inserted in ONE TaskDB transaction with durable unique constraints.
 - Conflicts deny the new request; no Docker side effect is entered by the
   HTTP handler. Failed transactions roll back the newly inserted Task record.
+- Before the shared `AppService.Install` path performs even its first Docker
+  network mutation, `BeginAppInstallExecution` consumes a durable
+  `execution_started_at IS NULL` transition. It matches the canonical
+  Task UUID, normalized owner name and persisted Executing App/TaskInstall
+  receipt in the *same SQL UPDATE*. Once consumed, the execution attempt
+  cannot be replayed, even after a crash before external side effects.
+- **Non-HTTP callers fail closed** unless they explicitly arrange the same
+  previously authorized durable Task/name admission; the shared service
+  method does not silently generate a new ID, reserve a name or grant an
+  approval. This is a safety boundary, not a finished non-HTTP UX.
 - Claim remains after **SUCCESS, FAILED, UNKNOWN, restart, or lost ACK**.
   Never infer safe reuse from a Task status. Existing TaskDB Task receipts
   and their logs remain inspectable.
@@ -88,9 +98,10 @@ Before G5 acceptance, additionally require:
    original Task UUID, Agent node, AppInstall rows, Docker identity, Compose
    project and persistent filesystem; require explicit operator approval,
    compare-and-swap ownership, audit and idempotent lost-ACK handling.
-2. Cover non-HTTP AppService.Install entry points. Current durable name admission
-   is on the authenticated HTTP path; process-local lock alone is insufficient
-   to certify other callers as cross-process-safe.
+2. Add explicit normal authorization + durable reservation to legitimate
+   non-HTTP AppService.Install callers. The **shared service execution CAS now
+   rejects** unreserved non-HTTP callers before any side effects, but this
+   does not automatically authorize or enable those workflows.
 3. Prove the migration handles real legacy data including inconsistent,
    duplicate and truncated task names, and can be rolled back safely.
 4. Run the authenticated Core -> Agent -> Docker/AppInstall workflow on a
