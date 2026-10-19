@@ -86,6 +86,9 @@ def summarize(state: Path, *, run_completed: bool, source_sha: str) -> dict:
         and len(release["guest_machine_id_sha256"]) == 64
         and all(c in "0123456789abcdef" for c in release["guest_machine_id_sha256"])
         and release.get("signature_proof") == "NOT_ATTESTED"
+        and isinstance(browser, dict)
+        and release["guest_machine_id_sha256"] ==
+            browser.get("guest_machine_id_sha256")
     )
     browser_ok = (
         isinstance(browser, dict)
