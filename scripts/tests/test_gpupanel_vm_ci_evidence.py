@@ -312,6 +312,34 @@ class LiveVmEvidence(unittest.TestCase):
         self.assertIn('"docker", "build", "--pull=false", "--network=none"', guest)
         self.assertIn('network_mode: none', guest)
 
+    def test_real_vm_runs_for_release_inputs_and_immutable_main_sha(self):
+        import re
+        flow = (ROOT / ".github/workflows/gpupanel-real-ubuntu-vm.yml").read_text()
+        self.assertIn("  push:\\n    branches: [main]", flow)
+        self.assertIn("  pull_request:\\n    branches: [main]", flow)
+        for event in ("pull_request", "push"):
+            block = flow.split("  " + event + ":\\n", 1)[1].split("\\n  ", 1)[0]
+            self.assertIn("branches: [main]", block)
+            paths = re.findall(r"^      - '([^']+)'$", block, re.MULTILINE)
+            self.assertEqual(set(paths), {
+                "core/**", "agent/**", "frontend/**", "deploy/**",
+                "scripts/**",
+                ".github/workflows/gpupanel-real-ubuntu-vm.yml",
+            })
+        # Never run an untrusted fork PR in the privileged KVM CI lane.
+        self.assertIn(
+            "github.event.pull_request.head.repo.full_name == github.repository",
+            flow,
+        )
+        # The source identity in the report must be the exact CI checkout.
+        source = (ROOT / "scripts/install-test/ci-live-vm.sh").read_text()
+        self.assertIn('git rev-parse HEAD', source)
+        self.assertIn('$(git status --porcelain --untracked-files=all)', source)
+        self.assertIn('GITHUB_SHA', source)
+        self.assertIn("m0_release_decision", (
+            ROOT / "scripts/install-test/ci-evidence.py"
+        ).read_text())
+
     def test_workflow_only_uploads_redacted_json(self):
         flow = (ROOT / ".github/workflows/gpupanel-real-ubuntu-vm.yml").read_text()
         self.assertIn("persist-credentials: false", flow)
