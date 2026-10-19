@@ -1,4 +1,5 @@
 """Source-only gate for sanitized full-chain VM CI evidence (no VM launched)."""
+import ast
 import importlib.util
 import json
 from pathlib import Path
@@ -156,6 +157,27 @@ class LiveVmEvidence(unittest.TestCase):
                        "DO_NOT_PRINT_VM_IMAGE_PROVIDER", "NEVER_REPORT_ME",
                        "NEVER_EXPOSE_CONTAINER_TASK_LOG"):
             self.assertNotIn(secret, encoded)
+
+    def test_real_compose_script_remains_scoped_and_syntax_valid(self):
+        path = ROOT / "scripts/install-test/compose-api-live.py"
+        source = path.read_text()
+        ast.parse(source, filename=str(path))
+        self.assertIn("candidate.verify_browser_chain(browser, local)", source)
+        self.assertIn('guest_identity = browser.get("guest_machine_id_sha256")', source)
+        self.assertIn("from playwright.sync_api import", source)
+        self.assertNotIn("page.route(", source)
+        self.assertIn('"network_mode: none', source)
+        self.assertIn("no_registry_pull", source)
+        self.assertIn('"taskID": task_id', source)
+        self.assertIn('"type": "Compose"', source)
+        self.assertIn('operation": "delete"', source)
+        self.assertIn('"withFile": False', source)
+        run = (ROOT / "scripts/install-test/ci-live-vm.sh").read_text()
+        self.assertIn("python3 scripts/install-test/compose-api-live.py", run)
+        self.assertIn("stage 'real_core_agent_compose_api_lifecycle'", run)
+        diagnostic = (ROOT / "scripts/install-test/ci-failure.py").read_text()
+        self.assertIn('"compose-api": ("compose-api.raw.log", "compose-api-live.py")', diagnostic)
+        self.assertNotIn("docker system prune", source)
 
     def test_real_compose_api_evidence_is_required_and_fail_closed(self):
         original = dict(self.compose_api)
