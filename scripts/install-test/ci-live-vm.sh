@@ -71,6 +71,10 @@ python3 scripts/install-test/vm.py start
 python3 scripts/install-test/vm.py copy "$release"
 archive="$(basename "$release")"
 package="${archive%.tar.gz}"
+# Compare local built release TAR SHA to the actual bytes received in the
+# owned guest BEFORE running tar or any installer payload.
+python3 scripts/install-test/release-transfer.py
+stage 'guest_release_archive_verified'
 python3 scripts/install-test/vm.py ssh -- sudo tar -xzf "/tmp/$archive" -C /tmp
 python3 scripts/install-test/vm.py ssh -- python3 "/tmp/$package/gpupanel-install-preflight.py" --json > "$STATE/preflight.raw.json"
 # Inspect the exact preflight JSON instead of treating exit 0 as permission.

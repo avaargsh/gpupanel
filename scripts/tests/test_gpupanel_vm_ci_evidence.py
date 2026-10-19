@@ -102,6 +102,16 @@ class LiveVmEvidence(unittest.TestCase):
             "signed_checksum_verified": True,
             "url": "DO_NOT_PRINT_VM_IMAGE_PROVIDER",
         })
+        self.release_transfer = {
+            "schema": "gpupanel.vm.release-transfer.v1",
+            "source_sha": self.source,
+            "archive_name": f"gpupanel-ci-{self.source[:12]}-linux-amd64.tar.gz",
+            "local_release_sha256": "9" * 64,
+            "guest_release_sha256": "9" * 64,
+            "guest_machine_id_sha256": "d" * 64,
+            "signature_proof": "NOT_ATTESTED",
+        }
+        self.write("release-transfer.json", self.release_transfer)
         self.write("browser-live.json", self.browser)
         self.write("runtime-live.json", self.runtime)
         self.write("reinstall-denial-live.json", self.reinstall)
@@ -135,6 +145,32 @@ class LiveVmEvidence(unittest.TestCase):
                        "DO_NOT_PRINT_VM_IMAGE_PROVIDER", "NEVER_REPORT_ME",
                        "NEVER_EXPOSE_CONTAINER_TASK_LOG"):
             self.assertNotIn(secret, encoded)
+
+    def test_archive_integrity_and_guest_binding_are_required(self):
+        baseline = self.summarise()
+        self.assertEqual(baseline["guest_release_transfer"], "MATCHED")
+        self.assertEqual(baseline["release_archive_sha256"], "9" * 64)
+        self.assertEqual(baseline["release_package_signature"], "NOT_ATTESTED")
+        for corrupt in (
+            {"source_sha": "0" * 40},
+            {"archive_name": "gpupanel-ci-untrusted-linux-amd64.tar.gz"},
+            {"guest_release_sha256": "0" * 64},
+            {"local_release_sha256": "not-a-sha"},
+            {"guest_machine_id_sha256": "0" * 64},
+            {"signature_proof": "VERIFIED"},
+            {"injected_secret": "NO"},
+        ):
+            with self.subTest(corrupt=corrupt):
+                self.write("release-transfer.json", {
+                    **self.release_transfer, **corrupt,
+                })
+                report = self.summarise()
+                self.assertEqual(report["status"], "BLOCKED_OR_FAILED")
+                self.assertEqual(report["guest_release_transfer"], "NOT_ATTESTED")
+                self.assertIsNone(report["release_archive_sha256"])
+        self.write("release-transfer.json", self.release_transfer)
+        (self.state / "release-transfer.json").unlink()
+        self.assertEqual(self.summarise()["status"], "BLOCKED_OR_FAILED")
 
     def test_reinstall_denial_is_required_exact_scope_and_no_mutation(self):
         script = (ROOT / "scripts/install-test/reinstall-denial.py").read_text()
