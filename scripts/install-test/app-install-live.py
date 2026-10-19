@@ -136,7 +136,7 @@ with sync_playwright() as play:
             const item = document.cookie.split('; ').find(
                 v => v.startsWith('pcsrftoken=')
             );
-            const csrf = item ? decodeURIComponent(item.slice(12)) : '';
+            const csrf = item ? decodeURIComponent(item.slice('pcsrftoken='.length)) : '';
             const r = await fetch('/api/v1' + endpoint, {
                 method, credentials:'include',
                 headers:{'Content-Type':'application/json',
