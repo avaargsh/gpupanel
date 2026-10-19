@@ -89,8 +89,8 @@ func loadRestorePath(upgradeDir string) (string, error) {
 }
 
 func downloadLangFromRemote() {
-	path := fmt.Sprintf("%s/language/lang.tar.gz", global.ResourceURL())
-	if err := fileUtils.DownloadFile(path, path.Join(global.CONF.Base.InstallDir, "gpupanel/lang.tar.gz")); err != nil {
+	downloadURL := fmt.Sprintf("%s/language/lang.tar.gz", global.ResourceURL())
+	if err := fileUtils.DownloadFile(downloadURL, path.Join(global.CONF.Base.InstallDir, "gpupanel/lang.tar.gz")); err != nil {
 		global.LOG.Errorf("download lang.tar.gz failed, err: %v", err)
 		return
 	}
