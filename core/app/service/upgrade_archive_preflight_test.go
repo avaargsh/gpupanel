@@ -128,3 +128,21 @@ func TestG3UpgradePreflightsArchiveBeforePrivilegedUntarAndBackup(t *testing.T) 
 		t.Fatal("upgrade archive scan must precede extraction and backup")
 	}
 }
+
+func TestG3RejectedArchiveReleasesOnlyPreMutationUpgradeAdmission(t *testing.T) {
+	src, err := os.ReadFile("upgrade.go")
+	if err != nil { t.Fatal(err) }
+	code := string(src)
+	start := strings.Index(code, "if err := validateUpgradeArchive(path.Join(downloadDir, fileName), archiveRoot); err != nil {")
+	end := strings.Index(code, "if err := files.HandleUnTar(", start)
+	if start < 0 || end <= start {
+		t.Fatal("pre-extraction failure gate missing")
+	}
+	failurePath := code[start:end]
+	if !strings.Contains(failurePath, "releaseBeforeMutation()") {
+		t.Fatal("rejected archive kept a stale Upgrading admission")
+	}
+	if strings.Contains(failurePath, "settingRepo.Update(") {
+		t.Fatal("rejected archive bypassed conditional SQLite upgrade admission release")
+	}
+}
