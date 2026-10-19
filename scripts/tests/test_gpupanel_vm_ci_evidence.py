@@ -139,7 +139,7 @@ class LiveVmEvidence(unittest.TestCase):
         self.assertNotIn("private-user", sanitized)
         # A literal escaped backslash-n log has no real exception line.
         # Never guess a class from a secret-bearing freeform string.
-        untrusted_flat = log.replace("\\n", r"\n")
+        untrusted_flat = log.replace("\n", r"\n")
         self.assertEqual(
             failure.diagnostic(untrusted_flat, "browser.py"),
             "PRIVATE_VM_FAILURE source=browser.py:88 "
