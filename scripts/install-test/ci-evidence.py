@@ -24,6 +24,7 @@ STAGES = (
     "guest_fresh_install",
     "real_installed_browser",
     "guest_agent_recovery",
+    "guest_compose_offline_lifecycle",
 )
 
 
@@ -53,6 +54,7 @@ def summarize(state: Path, *, run_completed: bool, source_sha: str) -> dict:
     browser = _load(state / "browser-live.json")
     runtime = _load(state / "runtime-live.json")
     prepared = _load(state / "ubuntu2404/image-provenance.json")
+    compose = _load(state / "compose-live.json")
     valid_source = (
         isinstance(source_sha, str) and len(source_sha) == 40
         and all(char in "0123456789abcdef" for char in source_sha)
@@ -75,9 +77,25 @@ def summarize(state: Path, *, run_completed: bool, source_sha: str) -> dict:
         and runtime.get("explicit_fixture_operator_recovery") is True
         and runtime.get("fixture_marker_and_login_settings_retained") is True
     )
+    compose_ok = (
+        isinstance(compose, dict)
+        and browser_ok and runtime_ok
+        and compose == {
+            "kind": "REAL GUEST OFFLINE DOCKER COMPOSE FIXTURE; NOT GPUPanel AppInstall",
+            "source_sha": source_sha,
+            "guest_machine_id_sha256": browser.get("guest_machine_id_sha256"),
+            "container_created": True,
+            "logs_observed": True,
+            "offline_no_host_ports": True,
+            "marker_reread_after_stop_start": True,
+            "marker_reread_after_restart": True,
+            "container_removed": True,
+            "local_image_removed": True,
+        }
+    )
     success = (
         run_completed and valid_source and sequence_ok
-        and marks == list(STAGES) and browser_ok and runtime_ok
+        and marks == list(STAGES) and browser_ok and runtime_ok and compose_ok
         and isinstance(prepared, dict)
         and prepared.get("signed_checksum_verified") is True
     )
@@ -102,6 +120,7 @@ def summarize(state: Path, *, run_completed: bool, source_sha: str) -> dict:
         "fresh_install": "PASS" if success else "NOT_ATTESTED",
         "authenticated_operations_center": "PASS" if success else "NOT_ATTESTED",
         "agent_restart_and_recovery": "PARTIAL_PASS" if success else "NOT_ATTESTED",
+        "offline_docker_compose_fixture": "PASS" if success else "NOT_ATTESTED",
         "full_app_compose_install_lifecycle": "NOT_RUN",
         "upgrade_and_rollback": "NOT_RUN",
         "full_data_restore": "NOT_RUN",

@@ -39,6 +39,17 @@ class LiveVmEvidence(unittest.TestCase):
             "fixture_marker_and_login_settings_retained": True,
             "other_secret": "SECRET_LOG_SHOULD_NEVER_APPEAR",
         }
+        self.compose = {
+            "kind": "REAL GUEST OFFLINE DOCKER COMPOSE FIXTURE; NOT GPUPanel AppInstall",
+            "source_sha": self.source,
+            "guest_machine_id_sha256": "d" * 64,
+            "container_created": True, "logs_observed": True,
+            "offline_no_host_ports": True,
+            "marker_reread_after_stop_start": True,
+            "marker_reread_after_restart": True,
+            "container_removed": True,
+            "local_image_removed": True,
+        }
         (self.state / "ubuntu2404").mkdir()
         self.write("ubuntu2404/image-provenance.json", {
             "signed_checksum_verified": True,
@@ -46,6 +57,7 @@ class LiveVmEvidence(unittest.TestCase):
         })
         self.write("browser-live.json", self.browser)
         self.write("runtime-live.json", self.runtime)
+        self.write("compose-live.json", self.compose)
         (self.state / "ci-stages.txt").write_text(
             "\n".join(audit.STAGES) + "\n"
         )
@@ -61,6 +73,7 @@ class LiveVmEvidence(unittest.TestCase):
         result = self.summarise()
         self.assertEqual(result["status"], "PARTIAL_ACCEPTED")
         self.assertEqual(result["m0_release_decision"], "NO_GO")
+        self.assertEqual(result["offline_docker_compose_fixture"], "PASS")
         self.assertEqual(result["upgrade_and_rollback"], "NOT_RUN")
         self.assertEqual(result["full_app_compose_install_lifecycle"], "NOT_RUN")
         self.assertEqual(result["independent_reviewer"], "NOT_ATTESTED")
@@ -147,7 +160,43 @@ class LiveVmEvidence(unittest.TestCase):
         )
         self.assertNotIn("PRIVATE_BODY", failure.diagnostic(untrusted_flat, "browser.py"))
         # Caller-supplied arbitrary paths cannot be used to read private data.
-        self.assertEqual(failure.SCRIPTS.keys(), {"browser", "runtime"})
+        self.assertEqual(failure.compose_stage(
+            "GUEST_COMPOSE_STAGE=up release=NO_GO\nusername=secret\n"
+        ), "up")
+        self.assertEqual(failure.compose_stage(
+            "GUEST_COMPOSE_STAGE=unknown attacker-data release=NO_GO\n"
+        ), "unknown")
+        self.assertEqual(failure.compose_stage(
+            "GUEST_COMPOSE_STAGE=up release=GO\n"
+        ), "unknown")
+        self.assertEqual(failure.SCRIPTS.keys(), {"browser", "runtime", "compose"})
+
+    def test_compose_fixture_requires_guest_identity_and_does_not_certify_appinstall(self):
+        for corrupted in (
+            {**self.compose, "source_sha": "0" * 40},
+            {**self.compose, "guest_machine_id_sha256": "0" * 64},
+            {**self.compose, "container_removed": False},
+            {**self.compose, "offline_no_host_ports": False},
+            {**self.compose, "marker_reread_after_restart": False},
+            {**self.compose, "fake_appinstall": True},
+        ):
+            with self.subTest(corrupted=corrupted):
+                self.write("compose-live.json", corrupted)
+                self.assertEqual(self.summarise()["status"], "BLOCKED_OR_FAILED")
+                self.assertEqual(self.summarise()["full_app_compose_install_lifecycle"], "NOT_RUN")
+        (self.state / "compose-live.json").unlink()
+        self.assertEqual(self.summarise()["offline_docker_compose_fixture"], "NOT_ATTESTED")
+
+    def test_offline_scratch_image_has_explicit_executable_entrypoint(self):
+        guest = (ROOT / "scripts/install-test/compose-fixture-guest.py").read_text()
+        self.assertIn('shutil.copyfile(binary, folder / "busybox")', guest)
+        self.assertIn('(folder / "busybox").chmod(0o755)', guest)
+        self.assertLess(
+            guest.index('(folder / "busybox").chmod(0o755)'),
+            guest.index('(folder / "Dockerfile").write_text('),
+        )
+        self.assertIn('"docker", "build", "--pull=false", "--network=none"', guest)
+        self.assertIn('network_mode: none', guest)
 
     def test_workflow_only_uploads_redacted_json(self):
         flow = (ROOT / ".github/workflows/gpupanel-real-ubuntu-vm.yml").read_text()

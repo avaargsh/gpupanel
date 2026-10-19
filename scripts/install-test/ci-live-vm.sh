@@ -49,7 +49,7 @@ stage 'task_owned_vm_booted'
 
 # Installation prerequisites execute only within the isolated guest.
 python3 scripts/install-test/vm.py ssh -- sudo apt-get update -qq
-python3 scripts/install-test/vm.py ssh -- sudo env DEBIAN_FRONTEND=noninteractive apt-get install -y -qq docker.io docker-compose-v2
+python3 scripts/install-test/vm.py ssh -- sudo env DEBIAN_FRONTEND=noninteractive apt-get install -y -qq docker.io docker-compose-v2 busybox-static
 python3 scripts/install-test/vm.py ssh -- sudo systemctl enable --now docker
 python3 scripts/install-test/vm.py ssh -- sudo docker info --format '{{.ServerVersion}}'
 stage 'guest_docker_ready'
@@ -109,6 +109,17 @@ if ! python3 scripts/install-test/runtime.py > "$STATE/runtime.raw.log" 2>&1; th
 fi
 stage 'guest_agent_recovery'
 
+# Real Docker Engine/Compose, but NOT the GPUPanel AppInstall API: build
+# a trusted *local* scratch image, run only inside the disposable guest with
+# no container network/host ports; verify logs, restart, persisted file and
+# exact project-only cleanup.
+python3 scripts/install-test/vm.py copy scripts/install-test/compose-fixture-guest.py
+if ! python3 scripts/install-test/compose-live.py > "$STATE/compose.raw.log" 2>&1; then
+    python3 scripts/install-test/ci-failure.py compose
+    exit 1
+fi
+stage 'guest_compose_offline_lifecycle'
+
 # A successful run is a G3 fresh-install + G4 slice + G6 Agent slice only.
-# G5 real AppInstall, upgrade/rollback and full data restore stay NOT RUN.
+# G5 GPUPanel AppInstall, upgrade/rollback and full data restore stay NOT RUN.
 echo 'LIVE VM partial acceptance PASSED; M0 release decision remains NO_GO'
