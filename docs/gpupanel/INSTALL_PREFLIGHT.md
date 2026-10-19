@@ -14,6 +14,15 @@ Important: PASS means the limited metadata checks succeeded; it does not mean th
 
 ## Developer-only system installation gate (not a public installer)
 
+**New G3 network default:** even after explicit disposable-VM installation
+approval, `deploy/install.sh` defaults to `--bind-address 127.0.0.1`.
+It does not open a firewall port implicitly. `--bind-address 0.0.0.0`
+is a **deliberate experimental VM-only override**, not guidance for
+public use: HTTP without verified TLS/authentication must not be exposed
+on a network interface. This source-level default is not evidence that the
+Core service started or that its eventual login/session endpoints are secure.
+G4 first login and production TLS configuration remain **NOT RUN / NO-GO**.
+
 `deploy/install.sh` is **not** a released safe installer. It previously accepted a read-only diagnostic's process exit status 0 as permission to start mutating host state, even though the JSON explicitly has `installable=false` and `safe_to_install=false`. The install script now treats that status as diagnostics **only**:
 
 - **Default invocation refuses before loading or executing any package-supplied Python/checker.** Even the diagnostic file inside an unverified release archive is executable code and must not run implicitly as root. Run `python3 scripts/gpupanel-install-preflight.py --json` from a trusted source checkout (or review the extracted checker) separately as an unprivileged user, then assess the result; the installer itself never silently grants write permission.
