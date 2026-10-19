@@ -113,6 +113,7 @@ stage 'guest_agent_recovery'
 # in the *already-installed* task-owned guest, without service or config
 # mutation. Collision evidence is from the real read-only preflight.
 if ! python3 scripts/install-test/reinstall-denial.py > "$STATE/reinstall.raw.log" 2>&1; then
+    python3 scripts/install-test/ci-failure.py reinstall
     echo 'BLOCKED: same-guest reinstall collision refusal not established' >&2
     exit 1
 fi
