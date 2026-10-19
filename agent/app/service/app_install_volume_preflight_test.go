@@ -83,6 +83,18 @@ func TestG5VolumePreflightDifferentProjectOnlyBoundsOneDaemon(t *testing.T) {
 	}
 }
 
+func TestG5VolumePreflightDoesNotConfuseSubstringWithOwnership(t *testing.T) {
+	got, err := inspectAppInstallVolumePreflight(context.Background(), "jupyter", fixtureHostHash,
+		func(context.Context) ([]*volume.Volume, []string, error) {
+			return []*volume.Volume{testVolume("jupyterbackup", "unrelated-project", "local")}, nil, nil
+		})
+	if err != nil { t.Fatal(err) }
+	if !got.VolumeAbsent || got.CanRelease ||
+		slices.Contains(got.Reasons, "POSSIBLE_DOCKER_VOLUME_RESIDUE") {
+		t.Fatalf("substring alone must not establish ownership: %+v", got)
+	}
+}
+
 func TestG5VolumePreflightErrorsWarningsSaturationAndCancellation(t *testing.T) {
 	canceled, cancel := context.WithCancel(context.Background()); cancel()
 	cases := []struct{
