@@ -223,6 +223,20 @@ class LiveVmEvidence(unittest.TestCase):
         (self.state / "container-live.json").unlink()
         self.assertEqual(self.summarise()["status"], "BLOCKED_OR_FAILED")
 
+    def test_core_container_fixture_requires_offline_network_configuration(self):
+        # This is a real backend requirement: loadConfigInfo refuses
+        # ContainerCreate without req.Networks. The M0 fixture must also
+        # independently verify Docker used network=none.
+        source = (ROOT / "scripts/install-test/container.py").read_text()
+        backend = (ROOT / "agent/app/service/container.go").read_text()
+        self.assertIn('return nil, nil, nil, fmt.Errorf("please set up the network")', backend)
+        self.assertIn('"networks": [{"network": "none"}]', source)
+        self.assertIn('{{.HostConfig.NetworkMode}}', source)
+        self.assertIn('if network_mode != "none":', source)
+        self.assertIn('"privileged": False', source)
+        self.assertIn('"publishAllPorts": False', source)
+        self.assertNotIn('forcePull": True', source)
+
     def test_offline_scratch_image_has_explicit_executable_entrypoint(self):
         guest = (ROOT / "scripts/install-test/compose-fixture-guest.py").read_text()
         self.assertIn('shutil.copyfile(binary, folder / "busybox")', guest)
