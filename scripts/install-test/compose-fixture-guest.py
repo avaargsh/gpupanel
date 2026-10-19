@@ -86,6 +86,12 @@ def run(source_sha: str, machine_digest: str) -> dict:
         marker = "owned-composable-fixture:" + uuid.uuid4().hex
         (folder / "data/marker").write_text(marker, encoding="utf-8")
         shutil.copyfile(binary, folder / "busybox")
+        # copyfile() does not preserve the executable bit. A scratch image
+        # would otherwise contain /bin/busybox mode 0644 and Compose 'up'
+        # fails when its entrypoint cannot execute. Do not rely on umask.
+        (folder / "busybox").chmod(0o755)
+        if not os.access(folder / "busybox", os.X_OK):
+            raise RuntimeError("local offline container binary is not executable")
         (folder / "Dockerfile").write_text(
             'FROM scratch\nCOPY busybox /bin/busybox\n', encoding="utf-8"
         )
