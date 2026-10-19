@@ -18,6 +18,7 @@ import LogsPage from '@/pages/logs';
 import SettingsPage from '@/pages/settings';
 import ProtectedRoute from './ProtectedRoute';
 import ProjectsPage from '@/pages/ProjectsPage';
+import OperationsCenterPage from '@/pages/OperationsCenterPage';
 import ProjectDetailPage from '@/pages/ProjectDetailPage';
 
 /**
@@ -49,6 +50,7 @@ export const router = createBrowserRouter([
             { path: 'apps', element: <AppsPage /> },
             { path: 'ai', element: <AiPage /> },
             { path: 'gpu', element: <GpuPage /> },
+            { path: 'operations', element: <OperationsCenterPage /> },
             { path: 'cronjobs', element: <CronjobsPage /> },
             { path: 'toolbox', element: <ToolboxPage /> },
             { path: 'logs', element: <LogsPage /> },
