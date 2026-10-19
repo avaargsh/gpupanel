@@ -133,15 +133,20 @@ with sync_playwright() as playwright:
         body:JSON.stringify({page:1,pageSize:20,type:'',status:''})
       });
       const h = await host.json(), t = await tasks.json();
+      // Fresh installs may return nil slices (JSON null) for empty
+      // session receipts or zero TaskLogs. Absence must not be confused
+      // with unauthorized/error responses or with a successful task.
+      const hostShape = Array.isArray(h.data) || h.data === null;
+      const taskShape = Array.isArray(t.data?.items) ||
+          (t.data?.items === null && t.data?.total === 0);
       return {hostHTTP:host.status, hostCode:h.code,
               taskHTTP:tasks.status, taskCode:t.code,
-              hostArray:Array.isArray(h.data),
-              taskArray:Array.isArray(t.data?.items)};
+              hostShape, taskShape};
     }""")
     assert checks == {
         'hostHTTP': 200, 'hostCode': 200,
         'taskHTTP': 200, 'taskCode': 200,
-        'hostArray': True, 'taskArray': True,
+        'hostShape': True, 'taskShape': True,
     }, 'Core/Agent Operations Center read-only contracts unavailable'
     assert not unexpected_mutations, 'Operations Center issued an unapproved mutation'
     result['live_operations_center_read_only'] = True
