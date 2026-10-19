@@ -105,7 +105,7 @@ class CandidateIdentityTests(unittest.TestCase):
                 return ["ssh", "fixture"]
         from subprocess import CompletedProcess
         machine_id = "1234567890abcdef1234567890abcdef"
-        with patch.object(ci.subprocess, "run", return_value=CompletedProcess([], 0, stdout=machine_id + "\\n")):
+        with patch.object(ci.subprocess, "run", return_value=CompletedProcess([], 0, stdout=machine_id + "\n")):
             fingerprint = ci.guest_identity_fingerprint(VM())
         self.assertRegex(fingerprint, r"^[0-9a-f]{64}$")
         self.assertNotIn(machine_id, fingerprint)
