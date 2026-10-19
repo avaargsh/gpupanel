@@ -2,6 +2,10 @@
 """Live browser smoke against only the task-owned installed VM, without API mocks."""
 import json
 from pathlib import Path
+import re
+import shlex
+import subprocess
+import candidate
 from playwright.sync_api import sync_playwright, expect
 import vm
 
@@ -12,7 +16,23 @@ if not vm.owned_pid('qemu.pid', str(vm.STATE / 'disk.qcow2')):
 credentials = json.loads((STATE / 'credentials.json').read_text())
 if credentials['url'] != f'http://127.0.0.1:{vm.PANEL_PORT}':
     raise SystemExit('Refuse a non-fixture target')
-result = {'kind': 'LIVE local VM; no intercepted APIs', 'target': credentials['url']}
+local = candidate.local_candidate(ROOT)
+remote_probe = """import hashlib,json
+from pathlib import Path
+names=('core','agent')
+print(json.dumps({name:hashlib.file_digest(
+    (Path('/opt/gpupanel')/('gpupanel-'+name)).open('rb'),
+    'sha256').hexdigest() for name in names}))
+"""
+installed = json.loads(subprocess.check_output(
+    vm.ssh_args() + [shlex.join(['sudo', 'python3', '-c', remote_probe])],
+    text=True, timeout=35,
+))
+candidate.verify_installed(local, installed)
+result = {
+    'kind': 'LIVE local VM; no intercepted APIs',
+    'target': credentials['url'], 'candidate': local,
+}
 
 
 def denied(response):
@@ -71,6 +91,50 @@ with sync_playwright() as playwright:
     assert denied(invalid), 'invalid CSRF was accepted'
     result['invalid_csrf_denied'] = True
     result['invalid_csrf_http_status'] = invalid.status
+    # Exercise the *installed* Operations Center, not the Vite/mocked suite.
+    # Its two sources must each be reachable through the authenticated Core.
+    unexpected_mutations = []
+    def classify_request(req):
+        path = req.url.split('/api/v1/', 1)[-1].split('?', 1)[0]
+        if '/api/v1/' not in req.url:
+            return
+        if req.method not in ('GET', 'HEAD') and not (
+            req.method == 'POST' and path == 'logs/tasks/search'
+        ):
+            unexpected_mutations.append((path, req.method))
+    page.on('request', classify_request)
+    page.goto(credentials['url'] + '/operations')
+    expect(page.get_by_role('heading', name=re.compile('Operations Center|操作中心'))).to_be_visible()
+    expect(page.get_by_text(re.compile('Host controlled operations|主机受控操作')).first).to_be_visible()
+    expect(page.get_by_text(re.compile('Agent persisted execution tasks|Agent 持久执行任务')).first).to_be_visible()
+    checks = page.evaluate("""async () => {
+      const csrf = document.cookie.split('; ').find(v => v.startsWith('pcsrftoken='))?.split('=').slice(1).join('=') || '';
+      const header = {'CurrentNode': 'local', 'X-CSRF-Token': decodeURIComponent(csrf)};
+      const host = await fetch('/api/v1/hosts/operations', {credentials:'include', headers:header});
+      const tasks = await fetch('/api/v1/logs/tasks/search', {
+        method:'POST', credentials:'include',
+        headers:{...header, 'Content-Type':'application/json'},
+        body:JSON.stringify({page:1,pageSize:20,type:'',status:''})
+      });
+      const h = await host.json(), t = await tasks.json();
+      return {hostHTTP:host.status, hostCode:h.code,
+              taskHTTP:tasks.status, taskCode:t.code,
+              hostArray:Array.isArray(h.data),
+              taskArray:Array.isArray(t.data?.items)};
+    }""")
+    assert checks == {
+        'hostHTTP': 200, 'hostCode': 200,
+        'taskHTTP': 200, 'taskCode': 200,
+        'hostArray': True, 'taskArray': True,
+    }, 'Core/Agent Operations Center read-only contracts unavailable'
+    assert not unexpected_mutations, 'Operations Center issued an unapproved mutation'
+    result['live_operations_center_read_only'] = True
+    result['operations_center'] = {
+        'host_and_task_sources_authenticated': True,
+        'no_unapproved_ui_mutations': True,
+        'content_recorded': False,
+    }
+    page.screenshot(path=str(STATE / 'operations-center-live.png'), full_page=True)
     page.screenshot(path=str(STATE / 'dashboard-live.png'), full_page=True)
     page.goto(credentials['url'] + '/apps')
     page.wait_for_load_state('networkidle')
