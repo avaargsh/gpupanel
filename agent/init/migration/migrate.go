@@ -122,6 +122,7 @@ func InitTaskDB() {
 		migrations.AddTaskTable,
 		migrations.AddHostOperations,
 		migrations.AddAppInstallNameClaims,
+		migrations.AddAppInstallNameReleaseAudit,
 	})
 	if err := m.Migrate(); err != nil {
 		global.LOG.Error(err)
