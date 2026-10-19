@@ -105,10 +105,7 @@ class LiveVmEvidence(unittest.TestCase):
     def test_workflow_only_uploads_redacted_json(self):
         flow = (ROOT / ".github/workflows/gpupanel-real-ubuntu-vm.yml").read_text()
         self.assertIn("persist-credentials: false", flow)
-        self.assertIn("python3 scripts/install-test/ci-live-vm.sh", flow.replace(
-            "bash scripts/install-test/ci-live-vm.sh",
-            "python3 scripts/install-test/ci-live-vm.sh",
-        ))
+        self.assertIn("bash scripts/install-test/ci-live-vm.sh", flow)
         self.assertIn("path: .local/install-test/ci-evidence.json", flow)
         self.assertNotIn("path: .local/install-test/ubuntu2404/", flow)
         self.assertNotIn("path: .local/install-test/install.raw.log", flow)
