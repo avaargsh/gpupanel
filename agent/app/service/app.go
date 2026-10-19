@@ -354,9 +354,16 @@ func (a AppService) Install(req request.AppInstallCreate, executeScript bool) (a
 }
 
 func (a AppService) installWithHooks(req request.AppInstallCreate, executeScript bool, hooks *appInstallHooks) (appInstall *model.AppInstall, err error) {
+	// Every installation path, including internal callers that bypass HTTP,
+	// must consume exactly one durable TaskDB admission before *any* Docker,
+	// AppDB, network or filesystem mutation. No auto-reserve or replay here.
+	if err = BeginAppInstallExecution(req.TaskID, req.Name); err != nil {
+		return nil, err
+	}
 	// Guard the complete synchronous check-and-create phase, including calls
 	// from non-HTTP paths. The async runner starts only after AppInstall exists.
-	// This is not a durable inter-process fence or crash-recovery contract.
+	// The TaskDB execution CAS above is the durable inter-process fence;
+	// this mutex remains a local defense for the synchronous name check.
 	unlockName := lockAppInstallPreparation(req.Name)
 	defer unlockName()
 

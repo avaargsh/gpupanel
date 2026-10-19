@@ -19,6 +19,8 @@ import (
 var (
 	ErrAppInstallTaskReplay = errors.New("installation task ID already exists: inspect the existing task before retrying")
 	ErrAppInstallTaskID     = errors.New("installation task ID must be a canonical UUID")
+	ErrAppInstallNameReserved = errors.New("installation name has a durable unresolved admission: inspect original task and resources")
+	ErrAppInstallNameInvalid = errors.New("installation name must be nonempty and at most 255 bytes")
 )
 
 // NormalizeAppInstallTaskID preserves the optional legacy API field while
@@ -34,39 +36,79 @@ func NormalizeAppInstallTaskID(id string) (string, error) {
 	return id, nil
 }
 
-// claimAppInstallTask is the durable admission fence in the existing TaskDB.
-// The primary key is authoritative across handler goroutines and agent restarts.
-// Do not read-before-write: concurrent retries must lose an atomic insert.
+// NormalizeAppInstallNameKey applies the same trim/case-insensitive name domain
+// as the existing preparation lock. The durable claim is keyed by the name,
+// not the request ID, and deliberately has no time-based eviction.
+func NormalizeAppInstallNameKey(name string) (string, error) {
+	key := strings.ToLower(strings.TrimSpace(name))
+	if key == "" || len(key) > 255 {
+		return "", ErrAppInstallNameInvalid
+	}
+	return key, nil
+}
+
+// claimAppInstallTask creates the Task ID and normalized name owner atomically.
+// Separate Agent processes compete on TaskDB's durable unique keys, not the
+// process-local preparation mutex. A failed claim rolls back both inserts.
+// The claim remains occupied on SUCCESS, FAILED and UNKNOWN: no automatic
+// retry, timeout, restart, or task lifecycle transition releases ownership.
 func claimAppInstallTask(db *gorm.DB, id, name string) error {
 	if db == nil {
 		return errors.New("task database is unavailable")
 	}
-	receipt := &model.Task{
-		ID: id, Name: name, Type: task.TaskScopeApp,
-		Operate: task.TaskInstall, Status: constant.StatusExecuting,
-		CreatedAt: time.Now().UTC(),
+	key, err := NormalizeAppInstallNameKey(name)
+	if err != nil {
+		return err
 	}
-	result := db.WithContext(context.Background()).
-		Clauses(clause.OnConflict{Columns: []clause.Column{{Name: "id"}}, DoNothing: true}).
-		Create(receipt)
-	if result.Error != nil {
-		return fmt.Errorf("reserve installation task: %w", result.Error)
+	// HTTP callers must normalize/generate their UUID before admission. A
+	// missing ID must not reserve a blank TaskDB key or generate an ID that
+	// is different from the one later used by the task executor.
+	if id == "" {
+		return ErrAppInstallTaskID
 	}
-	if result.RowsAffected != 1 {
-		return ErrAppInstallTaskReplay
+	if normalized, err := NormalizeAppInstallTaskID(id); err != nil || normalized != id {
+		return ErrAppInstallTaskID
 	}
-	return nil
+	return db.WithContext(context.Background()).Transaction(func(tx *gorm.DB) error {
+		receipt := &model.Task{
+			ID: id, Name: name, Type: task.TaskScopeApp,
+			Operate: task.TaskInstall, Status: constant.StatusExecuting,
+			CreatedAt: time.Now().UTC(),
+		}
+		result := tx.Clauses(clause.OnConflict{Columns: []clause.Column{{Name: "id"}}, DoNothing: true}).Create(receipt)
+		if result.Error != nil {
+			return fmt.Errorf("reserve installation task: %w", result.Error)
+		}
+		if result.RowsAffected != 1 {
+			return ErrAppInstallTaskReplay
+		}
+		nameOwner := &model.AppInstallNameClaim{NameKey: key, TaskID: id, CreatedAt: time.Now().UTC()}
+		claimed := tx.Clauses(clause.OnConflict{Columns: []clause.Column{{Name: "name_key"}}, DoNothing: true}).Create(nameOwner)
+		if claimed.Error != nil {
+			return fmt.Errorf("reserve installation name: %w", claimed.Error)
+		}
+		if claimed.RowsAffected != 1 {
+			return ErrAppInstallNameReserved
+		}
+		return nil
+	})
 }
 
 // ReserveAppInstallTask must run after normal API authorization/validation and
 // before any application/Docker side effect. An accepted HTTP request is still
 // not evidence that deployment completed.
 func ReserveAppInstallTask(id, name string) error {
-	if strings.TrimSpace(name) == "" {
-		return errors.New("installation name is required")
-	}
-	if _, err := NormalizeAppInstallTaskID(id); err != nil {
+	if _, err := NormalizeAppInstallNameKey(name); err != nil {
 		return err
+	}
+	// HTTP callers must normalize/generate their UUID before admission. A
+	// missing ID must not reserve a blank TaskDB key or generate an ID that
+	// is different from the one later used by the task executor.
+	if id == "" {
+		return ErrAppInstallTaskID
+	}
+	if normalized, err := NormalizeAppInstallTaskID(id); err != nil || normalized != id {
+		return ErrAppInstallTaskID
 	}
 	return claimAppInstallTask(global.TaskDB, id, name)
 }

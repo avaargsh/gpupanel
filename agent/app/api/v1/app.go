@@ -187,7 +187,8 @@ func (b *BaseApi) InstallApp(c *gin.Context) {
 		return
 	}
 	if err = service.ReserveAppInstallTask(req.TaskID, req.Name); err != nil {
-		if errors.Is(err, service.ErrAppInstallTaskReplay) || errors.Is(err, service.ErrAppInstallTaskID) {
+		if errors.Is(err, service.ErrAppInstallTaskReplay) || errors.Is(err, service.ErrAppInstallTaskID) ||
+            errors.Is(err, service.ErrAppInstallNameReserved) || errors.Is(err, service.ErrAppInstallNameInvalid) {
 			helper.BadRequest(c, err)
 		} else {
 			helper.InternalServer(c, errors.New("installation task admission is unavailable"))

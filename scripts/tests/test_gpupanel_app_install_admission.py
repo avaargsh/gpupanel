@@ -34,5 +34,27 @@ class AppInstallAdmissionContract(unittest.TestCase):
         self.assertNotIn("Delete(", source)
         self.assertNotIn("O_TRUNC", source)
 
+    def test_every_install_entrypoint_consumes_durable_execution_before_side_effects(self):
+        service = (ROOT / "agent/app/service/app.go").read_text()
+        start = service.index("func (a AppService) installWithHooks(")
+        end = service.index("func (a AppService) SyncAppListFromLocal", start)
+        block = service[start:end]
+        self.assertIn("BeginAppInstallExecution(req.TaskID, req.Name)", block)
+        self.assertLess(
+            block.index("BeginAppInstallExecution(req.TaskID, req.Name)"),
+            block.index("lockAppInstallPreparation(req.Name)"),
+        )
+        self.assertLess(
+            block.index("BeginAppInstallExecution(req.TaskID, req.Name)"),
+            block.index("docker.CreateDefaultDockerNetwork()"),
+        )
+        self.assertIn("return a.installWithHooks(req, executeScript, nil)", service)
+        gate = (ROOT / "agent/app/service/app_install_execution_gate.go").read_text()
+        self.assertIn("execution_started_at IS NULL", gate)
+        self.assertIn("AND EXISTS (SELECT 1 FROM tasks", gate)
+        self.assertIn("result.RowsAffected != 1", gate)
+        self.assertNotIn("Delete(", gate)
+        self.assertNotIn("MarkAppInstallAdmissionFailed(", gate)
+
 if __name__ == "__main__":
     unittest.main()
