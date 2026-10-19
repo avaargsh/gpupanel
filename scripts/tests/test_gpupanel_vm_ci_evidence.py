@@ -123,11 +123,11 @@ class LiveVmEvidence(unittest.TestCase):
         failure = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(failure)
         log = (
-            'username=private-user password=UNREDACTABLE_SECRET\\n'
-            'Traceback (most recent call last):\\n'
-            '  File "/private/scripts/install-test/browser.py", line 88, in <module>\\n'
-            '    expect(page).to_be_visible(timeout=10000)\\n'
-            'AssertionError: cookie=SECRET_COOKIE payload=PRIVATE_BODY\\n'
+            'username=private-user password=UNREDACTABLE_SECRET\n'
+            'Traceback (most recent call last):\n'
+            '  File "/private/scripts/install-test/browser.py", line 88, in <module>\n'
+            '    expect(page).to_be_visible(timeout=10000)\n'
+            'AssertionError: cookie=SECRET_COOKIE payload=PRIVATE_BODY\n'
         )
         sanitized = failure.diagnostic(log, "browser.py")
         self.assertEqual(sanitized,
@@ -137,6 +137,15 @@ class LiveVmEvidence(unittest.TestCase):
         self.assertNotIn("SECRET_COOKIE", sanitized)
         self.assertNotIn("PRIVATE_BODY", sanitized)
         self.assertNotIn("private-user", sanitized)
+        # A literal escaped backslash-n log has no real exception line.
+        # Never guess a class from a secret-bearing freeform string.
+        untrusted_flat = log.replace("\\n", r"\n")
+        self.assertEqual(
+            failure.diagnostic(untrusted_flat, "browser.py"),
+            "PRIVATE_VM_FAILURE source=browser.py:88 "
+            "exception_class=UNCLASSIFIED release=NO_GO",
+        )
+        self.assertNotIn("PRIVATE_BODY", failure.diagnostic(untrusted_flat, "browser.py"))
         # Caller-supplied arbitrary paths cannot be used to read private data.
         self.assertEqual(failure.SCRIPTS.keys(), {"browser", "runtime"})
 
