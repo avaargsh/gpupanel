@@ -98,9 +98,15 @@ stage 'guest_fresh_install'
 
 # A real browser against installed Core+Agent with no route mocks, then
 # guest-only controlled restart/SIGKILL/recovery.
-python3 scripts/install-test/browser.py > "$STATE/browser.raw.log" 2>&1
+if ! python3 scripts/install-test/browser.py > "$STATE/browser.raw.log" 2>&1; then
+    python3 scripts/install-test/ci-failure.py browser
+    exit 1
+fi
 stage 'real_installed_browser'
-python3 scripts/install-test/runtime.py > "$STATE/runtime.raw.log" 2>&1
+if ! python3 scripts/install-test/runtime.py > "$STATE/runtime.raw.log" 2>&1; then
+    python3 scripts/install-test/ci-failure.py runtime
+    exit 1
+fi
 stage 'guest_agent_recovery'
 
 # A successful run is a G3 fresh-install + G4 slice + G6 Agent slice only.
