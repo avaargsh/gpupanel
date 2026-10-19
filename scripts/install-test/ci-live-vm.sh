@@ -120,6 +120,15 @@ if ! python3 scripts/install-test/compose-live.py > "$STATE/compose.raw.log" 2>&
 fi
 stage 'guest_compose_offline_lifecycle'
 
-# A successful run is a G3 fresh-install + G4 slice + G6 Agent slice only.
-# G5 GPUPanel AppInstall, upgrade/rollback and full data restore stay NOT RUN.
+# Only the disposable guest disk is fault-injected and cold-restored.
+# A sealed post-install checkpoint is independently validated before
+# replacing the task-owned disk; the prior disk is retained for review.
+if ! python3 scripts/install-test/restore-live.py > "$STATE/restore.raw.log" 2>&1; then
+    python3 scripts/install-test/ci-failure.py restore
+    exit 1
+fi
+stage 'guest_post_install_offline_restore'
+
+# Full AppInstall, production upgrade/rollback and broader restore remain
+# NOT RUN; do not promote this partial CI proof to M0 release GO.
 echo 'LIVE VM partial acceptance PASSED; M0 release decision remains NO_GO'

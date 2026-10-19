@@ -260,3 +260,37 @@ KVM 设备、Docker 包、guest 启动或服务权限失败时，
 UNKNOWN 持久化、并发冲突、容器副作用回执或真实用户业务服务，
 不能勾选 G5 退出条件。下一步才是通过 GPUPanel 的真实受认证 API
 联动操作与明确的任务结果/资源证据核对。
+
+## 实机增量：安装后离线快照故障恢复（候选门禁）
+
+`scripts/install-test/restore-live.py` 在已有的**真实首次安装、
+真实浏览器、Agent 恢复和离线 Docker Compose fixture**均通过之后，
+继续验证一次性 QEMU guest 的安装后冷恢复：
+
+1. 核对干净 Git 源码、运行中 Core/Agent 文件 SHA、当前
+   `guest_machine_id_sha256` 和已有 G4/G6/Compose 证据；
+2. 仅在该 guest 写入专属固定路径的测试标记，读取已安装登录
+   配置摘要，不读取或打印实际凭据；
+3. 关闭 QEMU，转换并验证独立可移植的安装后 QCOW2 快照，
+   按快照内容的 SHA-256 复验；
+4. 启动旧磁盘，在 guest 中**只损坏专属测试标记**，确认其摘要
+   与备份不一致；再次关机；
+5. 在独占的 VM owner 锁保护下，保留原 `disk.qcow2` 到
+   `disk.before-ci-restore.qcow2`，从已验证快照复制新的
+   `disk.qcow2`；磁盘和快照目录不可为符号链接，VM 正在
+   运行时拒绝操作；
+6. 重启同一个 guest，等真正的 Core/Agent systemd 服务就绪，
+   复验标记已恢复、登录设置摘要一致、客体身份和运行的两个
+   二进制摘要都与浏览器候选一致。
+
+只上传自动脱敏的 `ci-evidence.json`，**不上传**备份磁盘、
+客体私钥、登录设置、安装日志和原始浏览器截图。
+机器证据中新加 `post_install_offline_disk_restore=PASS` 仅当
+以上阶段逐个完成，并且所有强制身份校验一致；否则为
+`NOT_ATTESTED`，CI 阻断。
+
+该测试证明一次 task-owned **完整磁盘的离线恢复演练**，
+并不代表生产环境增量备份、失效升级回滚、数据库迁移失败、
+跨主机恢复或完整 App/Compose 数据恢复。发布决策继续
+`NO_GO`，仍须 G3 的升级回滚、G5 的 GPUPanel API
+AppInstall/Compose 端到端，以及独立操作员验收。

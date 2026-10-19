@@ -50,6 +50,21 @@ class LiveVmEvidence(unittest.TestCase):
             "container_removed": True,
             "local_image_removed": True,
         }
+        self.restore = {
+            "kind": "REAL GUEST POST-INSTALL OFFLINE SNAPSHOT RESTORE; PARTIAL G3/G6",
+            "source_sha": self.source,
+            "guest_machine_id_sha256": "d" * 64,
+            "binary_sha256": self.candidate["binary_sha256"],
+            "offline_checkpoint_sha256": "e" * 64,
+            "restored_disk_sha256": "e" * 64,
+            "fault_injected_marker_changed": True,
+            "marker_reverted_by_disk_restore": True,
+            "login_settings_digest_equal": True,
+            "services_running_exact_binaries": True,
+            "full_data_restore_verified": False,
+            "m0_release_decision": "NO_GO",
+            "secret": "NEVER_REPORT_ME",
+        }
         (self.state / "ubuntu2404").mkdir()
         self.write("ubuntu2404/image-provenance.json", {
             "signed_checksum_verified": True,
@@ -58,6 +73,7 @@ class LiveVmEvidence(unittest.TestCase):
         self.write("browser-live.json", self.browser)
         self.write("runtime-live.json", self.runtime)
         self.write("compose-live.json", self.compose)
+        self.write("restore-live.json", self.restore)
         (self.state / "ci-stages.txt").write_text(
             "\n".join(audit.STAGES) + "\n"
         )
@@ -74,12 +90,13 @@ class LiveVmEvidence(unittest.TestCase):
         self.assertEqual(result["status"], "PARTIAL_ACCEPTED")
         self.assertEqual(result["m0_release_decision"], "NO_GO")
         self.assertEqual(result["offline_docker_compose_fixture"], "PASS")
+        self.assertEqual(result["post_install_offline_disk_restore"], "PASS")
         self.assertEqual(result["upgrade_and_rollback"], "NOT_RUN")
         self.assertEqual(result["full_app_compose_install_lifecycle"], "NOT_RUN")
         self.assertEqual(result["independent_reviewer"], "NOT_ATTESTED")
         encoded = json.dumps(result)
         for secret in ("MUST_NOT_LEAK", "SECRET_LOG_SHOULD_NEVER_APPEAR",
-                       "DO_NOT_PRINT_VM_IMAGE_PROVIDER"):
+                       "DO_NOT_PRINT_VM_IMAGE_PROVIDER", "NEVER_REPORT_ME"):
             self.assertNotIn(secret, encoded)
 
     def test_early_failure_cannot_mark_pass(self):
@@ -169,7 +186,7 @@ class LiveVmEvidence(unittest.TestCase):
         self.assertEqual(failure.compose_stage(
             "GUEST_COMPOSE_STAGE=up release=GO\n"
         ), "unknown")
-        self.assertEqual(failure.SCRIPTS.keys(), {"browser", "runtime", "compose"})
+        self.assertEqual(failure.SCRIPTS.keys(), {"browser", "runtime", "compose", "restore"})
 
     def test_compose_fixture_requires_guest_identity_and_does_not_certify_appinstall(self):
         for corrupted in (
@@ -186,6 +203,45 @@ class LiveVmEvidence(unittest.TestCase):
                 self.assertEqual(self.summarise()["full_app_compose_install_lifecycle"], "NOT_RUN")
         (self.state / "compose-live.json").unlink()
         self.assertEqual(self.summarise()["offline_docker_compose_fixture"], "NOT_ATTESTED")
+
+    def test_post_install_restore_proof_is_required_and_exact(self):
+        faults = [
+            {"source_sha": "0" * 40},
+            {"guest_machine_id_sha256": "0" * 64},
+            {"binary_sha256": {"core": "a" * 64, "agent": "0" * 64}},
+            {"offline_checkpoint_sha256": "0" * 64},
+            {"restored_disk_sha256": "0" * 64},
+            {"fault_injected_marker_changed": False},
+            {"marker_reverted_by_disk_restore": False},
+            {"login_settings_digest_equal": False},
+            {"services_running_exact_binaries": False},
+            {"full_data_restore_verified": True},
+            {"m0_release_decision": "GO"},
+            {"kind": "SIMULATED_RESTORE"},
+        ]
+        for fault in faults:
+            with self.subTest(fault=fault):
+                self.write("restore-live.json", {**self.restore, **fault})
+                proof = self.summarise()
+                self.assertEqual(proof["status"], "BLOCKED_OR_FAILED")
+                self.assertEqual(proof["post_install_offline_disk_restore"], "NOT_ATTESTED")
+        self.write("restore-live.json", self.restore)
+        (self.state / "restore-live.json").unlink()
+        self.assertEqual(self.summarise()["status"], "BLOCKED_OR_FAILED")
+
+    def test_restore_script_is_owned_vm_only_and_preserves_previous_disk(self):
+        import ast
+        source = (ROOT / "scripts/install-test/restore-live.py").read_text()
+        ast.parse(source)
+        self.assertIn("vm.guarded_vm_change(exchange)", source)
+        self.assertIn('VM / "disk.before-ci-restore.qcow2"', source)
+        self.assertIn("checkpoint.verify_checkpoint(folder)", source)
+        self.assertIn("original.exists() or original.is_symlink()", source)
+        self.assertIn("marker_reverted_by_disk_restore", source)
+        self.assertNotIn("subprocess.run(['docker'", source)
+        runner = (ROOT / "scripts/install-test/ci-live-vm.sh").read_text()
+        self.assertIn("python3 scripts/install-test/restore-live.py", runner)
+        self.assertIn("stage 'guest_post_install_offline_restore'", runner)
 
     def test_offline_scratch_image_has_explicit_executable_entrypoint(self):
         guest = (ROOT / "scripts/install-test/compose-fixture-guest.py").read_text()

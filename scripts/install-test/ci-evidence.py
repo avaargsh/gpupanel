@@ -25,6 +25,7 @@ STAGES = (
     "real_installed_browser",
     "guest_agent_recovery",
     "guest_compose_offline_lifecycle",
+    "guest_post_install_offline_restore",
 )
 
 
@@ -55,6 +56,7 @@ def summarize(state: Path, *, run_completed: bool, source_sha: str) -> dict:
     runtime = _load(state / "runtime-live.json")
     prepared = _load(state / "ubuntu2404/image-provenance.json")
     compose = _load(state / "compose-live.json")
+    restore = _load(state / "restore-live.json")
     valid_source = (
         isinstance(source_sha, str) and len(source_sha) == 40
         and all(char in "0123456789abcdef" for char in source_sha)
@@ -93,9 +95,30 @@ def summarize(state: Path, *, run_completed: bool, source_sha: str) -> dict:
             "local_image_removed": True,
         }
     )
+    expected_binary = browser.get("candidate", {}).get("binary_sha256") if browser_ok else None
+    restored_digest = restore.get("offline_checkpoint_sha256") if isinstance(restore, dict) else None
+    restore_ok = (
+        isinstance(restore, dict) and runtime_ok and compose_ok
+        and restore.get("kind") ==
+            "REAL GUEST POST-INSTALL OFFLINE SNAPSHOT RESTORE; PARTIAL G3/G6"
+        and restore.get("source_sha") == source_sha
+        and restore.get("guest_machine_id_sha256")
+            == browser.get("guest_machine_id_sha256")
+        and restore.get("binary_sha256") == expected_binary
+        and isinstance(restored_digest, str)
+        and len(restored_digest) == 64
+        and all(ch in "0123456789abcdef" for ch in restored_digest)
+        and restore.get("restored_disk_sha256") == restored_digest
+        and restore.get("fault_injected_marker_changed") is True
+        and restore.get("marker_reverted_by_disk_restore") is True
+        and restore.get("login_settings_digest_equal") is True
+        and restore.get("services_running_exact_binaries") is True
+        and restore.get("full_data_restore_verified") is False
+        and restore.get("m0_release_decision") == "NO_GO"
+    )
     success = (
         run_completed and valid_source and sequence_ok
-        and marks == list(STAGES) and browser_ok and runtime_ok and compose_ok
+        and marks == list(STAGES) and browser_ok and runtime_ok and compose_ok and restore_ok
         and isinstance(prepared, dict)
         and prepared.get("signed_checksum_verified") is True
     )
@@ -121,6 +144,7 @@ def summarize(state: Path, *, run_completed: bool, source_sha: str) -> dict:
         "authenticated_operations_center": "PASS" if success else "NOT_ATTESTED",
         "agent_restart_and_recovery": "PARTIAL_PASS" if success else "NOT_ATTESTED",
         "offline_docker_compose_fixture": "PASS" if success else "NOT_ATTESTED",
+        "post_install_offline_disk_restore": "PASS" if success else "NOT_ATTESTED",
         "full_app_compose_install_lifecycle": "NOT_RUN",
         "upgrade_and_rollback": "NOT_RUN",
         "full_data_restore": "NOT_RUN",
