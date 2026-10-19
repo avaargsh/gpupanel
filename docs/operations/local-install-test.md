@@ -232,3 +232,33 @@ PR 自动触发与 VM 代码路径相关的变更；手动
 保存并绑定，不复用历史其他版本的 PASS。作业因网络镜像、
 KVM 设备、Docker 包、guest 启动或服务权限失败时，
 状态必须明确是失败/阻塞，不能以自动跳过算作 GO。
+
+## G5 增量：真实本机容器生命周期（仍不是完整 AppInstall）
+
+`scripts/install-test/ci-live-vm.sh` 在已经通过相同候选 G3 首装、
+真实 G4 登录与部分 G6 Agent 恢复的任务专属 Ubuntu VM 中，
+追加一个**真实 Core → Agent → Docker 的受认证容器控制实验**：
+
+- Guest 从 Ubuntu 已签名 apt 仓库安装 `busybox-static`，打包仅含
+  BusyBox 的最小根文件系统，导入 guest Docker 的
+  `gpupanel-m0-fixture:local`。无需访问 Docker Hub、应用市场、
+  GPU 或外部业务容器。
+- `scripts/install-test/container.py` 必须验证当前源码/二进制候选、
+  登录浏览器证据、恢复记录和 task-owned VM 后才允许创建。
+  匿名请求必须拒绝；登录以当前私有凭据完成。
+- 五个互不相同的 Task UUID 驱动 Core API 的创建、停止、
+  启动、重启、删除；每一步要求 Agent 持久回执精确匹配
+  UUID、Container Scope、操作类型、`Success`，并通过
+  **guest Docker CLI 独立观察**真实容器状态，而不是相信 HTTP 200。
+- 所有操作仅针对一次性 VM 内专用名字，发现既有同名容器则
+  fail-closed；网络失败或异步任务结果不确定**不自动重放操作**。
+  不执行 `docker prune`，不接触 runner 本机 Docker。
+- CI 证据的 `core_agent_docker_container_lifecycle` 只能是
+  `PARTIAL_PASS` 或 `NOT_ATTESTED`；完整
+  `full_app_compose_install_lifecycle` 继续是 `NOT_RUN`。
+  未测 AppInstall DB/Docker 跨事务 UNKNOWN、不同 TaskID 竞态、
+  同名失败回收、完整应用日志/卸载、多租户权限与升级回滚。
+
+这条链路的正向验收必须来自真实 QEMU 工作流，不可用单元测试或
+Docker CLI 单独执行结果代替 GPUPanel Core API 测试。未经独立验收，
+M0 发布结论仍固定 `NO_GO`。
