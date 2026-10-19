@@ -49,7 +49,7 @@ stage 'task_owned_vm_booted'
 
 # Installation prerequisites execute only within the isolated guest.
 python3 scripts/install-test/vm.py ssh -- sudo apt-get update -qq
-python3 scripts/install-test/vm.py ssh -- sudo env DEBIAN_FRONTEND=noninteractive apt-get install -y -qq docker.io docker-compose-v2
+python3 scripts/install-test/vm.py ssh -- sudo env DEBIAN_FRONTEND=noninteractive apt-get install -y -qq docker.io docker-compose-v2 busybox-static
 python3 scripts/install-test/vm.py ssh -- sudo systemctl enable --now docker
 python3 scripts/install-test/vm.py ssh -- sudo docker info --format '{{.ServerVersion}}'
 stage 'guest_docker_ready'
@@ -71,6 +71,10 @@ python3 scripts/install-test/vm.py start
 python3 scripts/install-test/vm.py copy "$release"
 archive="$(basename "$release")"
 package="${archive%.tar.gz}"
+# Compare local built release TAR SHA to the actual bytes received in the
+# owned guest BEFORE running tar or any installer payload.
+python3 scripts/install-test/release-transfer.py
+stage 'guest_release_archive_verified'
 python3 scripts/install-test/vm.py ssh -- sudo tar -xzf "/tmp/$archive" -C /tmp
 python3 scripts/install-test/vm.py ssh -- python3 "/tmp/$package/gpupanel-install-preflight.py" --json > "$STATE/preflight.raw.json"
 # Inspect the exact preflight JSON instead of treating exit 0 as permission.
@@ -96,6 +100,28 @@ chmod 0600 "$STATE/install.raw.log"
 python3 scripts/install-test/record_credentials.py
 stage 'guest_fresh_install'
 
+# G3 read-only guest fact check: the installed systemd services must refer
+# to real owned binaries under /opt/gpupanel. /usr/local/bin binaries are
+# lookup-only compatibility symlinks, never in-app upgrade write targets.
+# This does not perform or certify A→B→A upgrade or rollback.
+if ! python3 scripts/install-test/vm.py ssh -- sudo sh -euc '
+  [ "$(readlink -f /opt/gpupanel)" = /opt/gpupanel ]
+  for role in core agent; do
+    binary="/opt/gpupanel/gpupanel-$role"
+    alias="/usr/local/bin/gpupanel-$role"
+    unit="/etc/systemd/system/gpupanel-$role.service"
+    [ -f "$binary" ] && [ -x "$binary" ] && [ ! -L "$binary" ]
+    [ -L "$alias" ] && [ "$(readlink "$alias")" = "$binary" ]
+    [ -f "$unit" ] && [ ! -L "$unit" ]
+    [ "$(grep -Fxc "ExecStart=$binary" "$unit")" = 1 ]
+    [ "$(grep -Fxc "WorkingDirectory=/opt/gpupanel" "$unit")" = 1 ]
+  done
+' > "$STATE/upgrade-runtime-identity.raw.log" 2>&1; then
+  echo 'BLOCKED: installed guest runtime ownership differs from reviewed systemd layout' >&2
+  exit 3
+fi
+echo 'G3 real guest runtime identity checked (read-only); upgrade/rollback NOT_RUN'
+
 # A real browser against installed Core+Agent with no route mocks, then
 # guest-only controlled restart/SIGKILL/recovery.
 if ! python3 scripts/install-test/browser.py > "$STATE/browser.raw.log" 2>&1; then
@@ -109,6 +135,38 @@ if ! python3 scripts/install-test/runtime.py > "$STATE/runtime.raw.log" 2>&1; th
 fi
 stage 'guest_agent_recovery'
 
-# A successful run is a G3 fresh-install + G4 slice + G6 Agent slice only.
-# G5 real AppInstall, upgrade/rollback and full data restore stay NOT RUN.
+# Real Docker Engine/Compose, but NOT the GPUPanel AppInstall API: build
+# a trusted *local* scratch image, run only inside the disposable guest with
+# no container network/host ports; verify logs, restart, persisted file and
+# exact project-only cleanup.
+python3 scripts/install-test/vm.py copy scripts/install-test/compose-fixture-guest.py
+if ! python3 scripts/install-test/compose-live.py > "$STATE/compose.raw.log" 2>&1; then
+    python3 scripts/install-test/ci-failure.py compose
+    exit 1
+fi
+stage 'guest_compose_offline_lifecycle'
+
+# Full GPUPanel Core -> Agent -> real guest Docker fixture. Import an apt-
+# sourced static BusyBox without network pulls; the API request explicitly
+# selects network=none and Docker inspection verifies the isolation.
+python3 scripts/install-test/vm.py ssh -- sudo tar -C / --dereference -cf /tmp/gpupanel-m0-busybox.tar bin/busybox
+python3 scripts/install-test/vm.py ssh -- sudo docker import /tmp/gpupanel-m0-busybox.tar gpupanel-m0-fixture:local
+stage 'guest_core_fixture_image_prepared'
+if ! python3 scripts/install-test/container.py > "$STATE/container.raw.log" 2>&1; then
+    python3 scripts/install-test/ci-failure.py container
+    exit 1
+fi
+stage 'real_core_agent_container_lifecycle'
+
+# Only the disposable guest disk is fault-injected and cold-restored.
+# A sealed post-install checkpoint is independently validated before
+# replacing the task-owned disk; the prior disk is retained for review.
+if ! python3 scripts/install-test/restore-live.py > "$STATE/restore.raw.log" 2>&1; then
+    python3 scripts/install-test/ci-failure.py restore
+    exit 1
+fi
+stage 'guest_post_install_offline_restore'
+
+# Full AppInstall, production upgrade/rollback and broader restore remain
+# NOT RUN; do not promote this partial CI proof to M0 release GO.
 echo 'LIVE VM partial acceptance PASSED; M0 release decision remains NO_GO'

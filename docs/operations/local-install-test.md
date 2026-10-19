@@ -232,3 +232,183 @@ PR 自动触发与 VM 代码路径相关的变更；手动
 保存并绑定，不复用历史其他版本的 PASS。作业因网络镜像、
 KVM 设备、Docker 包、guest 启动或服务权限失败时，
 状态必须明确是失败/阻塞，不能以自动跳过算作 GO。
+
+## 2026-10-19 — Offline Docker Compose 实机片段（不是 AppInstall 验收）
+
+继 G3 新装 / G4 真实浏览器 / G6 Agent 受控恢复的同候选实机证据后，
+新增 `scripts/install-test/compose-live.py`，只有在**同一洁净源码、
+同一个客体 machine-id、浏览器成功、Agent 恢复成功**后才调用
+`scripts/install-test/compose-fixture-guest.py`：
+
+- 仅在专属 guest 内从 `busybox-static` 和 `FROM scratch` 本地
+  构建容器映像，`--pull=false`，Compose 明确 `pull_policy: never`。
+  没有远端 registry，也没有需要下载的应用镜像。
+- 随机、独立 Compose project；容器 `network_mode: none`、
+  无 host port、只读 rootfs、禁用 Linux capabilities 和
+  privilege escalation。只挂载 guest 临时目录的只读 marker 文件。
+- 真实 Docker/Compose `up → inspect → logs → stop/start → restart →
+  文件重新读取 → down → 确认容器移除 → 清理本地镜像`。
+  测试仅清理自己随机命名的资源，绝不做全局 Docker prune。
+- 严格校验脱敏证据里的项目所属候选与客体身份，任一动作失败、
+  状态与资源不一致或清理未完成，都不能标记
+  `offline_docker_compose_fixture=PASS`。仍保留
+  `full_app_compose_install_lifecycle=NOT_RUN`、
+  `m0_release_decision=NO_GO`。
+
+**严格界限：**这只验收一次性客体内的 Docker/Compose 底座及
+容器状态，不是 GPUPanel AppStore/AppInstall 的接单、TaskDB、审批、
+UNKNOWN 持久化、并发冲突、容器副作用回执或真实用户业务服务，
+不能勾选 G5 退出条件。下一步才是通过 GPUPanel 的真实受认证 API
+联动操作与明确的任务结果/资源证据核对。
+
+## 实机增量：安装后离线快照故障恢复（候选门禁）
+
+`scripts/install-test/restore-live.py` 在已有的**真实首次安装、
+真实浏览器、Agent 恢复和离线 Docker Compose fixture**均通过之后，
+继续验证一次性 QEMU guest 的安装后冷恢复：
+
+1. 核对干净 Git 源码、运行中 Core/Agent 文件 SHA、当前
+   `guest_machine_id_sha256` 和已有 G4/G6/Compose 证据；
+2. 仅在该 guest 写入专属固定路径的测试标记，读取已安装登录
+   配置摘要，不读取或打印实际凭据；
+3. 关闭 QEMU，转换并验证独立可移植的安装后 QCOW2 快照，
+   按快照内容的 SHA-256 复验；
+4. 启动旧磁盘，在 guest 中**只损坏专属测试标记**，确认其摘要
+   与备份不一致；再次关机；
+5. 在独占的 VM owner 锁保护下，保留原 `disk.qcow2` 到
+   `disk.before-ci-restore.qcow2`，从已验证快照复制新的
+   `disk.qcow2`；磁盘和快照目录不可为符号链接，VM 正在
+   运行时拒绝操作；
+6. 重启同一个 guest，等真正的 Core/Agent systemd 服务就绪，
+   复验标记已恢复、登录设置摘要一致、客体身份和运行的两个
+   二进制摘要都与浏览器候选一致。
+
+只上传自动脱敏的 `ci-evidence.json`，**不上传**备份磁盘、
+客体私钥、登录设置、安装日志和原始浏览器截图。
+机器证据中新加 `post_install_offline_disk_restore=PASS` 仅当
+以上阶段逐个完成，并且所有强制身份校验一致；否则为
+`NOT_ATTESTED`，CI 阻断。
+
+该测试证明一次 task-owned **完整磁盘的离线恢复演练**，
+并不代表生产环境增量备份、失效升级回滚、数据库迁移失败、
+跨主机恢复或完整 App/Compose 数据恢复。发布决策继续
+`NO_GO`，仍须 G3 的升级回滚、G5 的 GPUPanel API
+AppInstall/Compose 端到端，以及独立操作员验收。
+
+## 2026-10-19 — G5 实机 Core→Agent→Docker 容器片段
+
+本阶段接入独立的真实 GPUPanel Core API 容器操作测试，
+**不是**直接用 Docker CLI 伪装成平台容器生命周期。
+
+在已经完成真实登录、Agent 故障恢复、离线 Compose 生命周期之后，
+`ci-live-vm.sh` 从同一个获授权 Ubuntu VM 内的发行版
+`busybox-static` 导入本地离线镜像。脚本
+`scripts/install-test/container.py` 使用现有的登录会话和 CSRF，
+先确认匿名创建被拒绝，再为唯一任务 UUID 执行创建、停止、启动、
+重启、删除。每一步须同时满足以下证据：
+
+- GPUPanel Core API 接受操作；
+- Agent 持久 TaskDB 查到同一 UUID、`Container` 范围与操作类型，
+  且任务完成状态确为 `Success`；
+- 客体 Docker 对运行、退出或删除结果的独立检查一致。
+
+**实机发现的契约：**`ContainerCreate` 必须明确携带
+`networks`，没有该属性，Agent 会拒绝加载配置，任务变为
+`Failed`。离线 fixture 使用 `networks: [{network: none}]`，
+并通过 Docker Inspect 单独检查 `HostConfig.NetworkMode=none`，
+既保证创建请求合法，又不引入外部网络、主机端口与镜像拉取。
+
+验收报告只读取脱敏的任务 UUID 数量、步骤状态、候选二进制、
+同一 guest 身份与不可泄露的固定断言。新的容器步骤后，
+**原有安装后离线磁盘恢复仍是必需且独立的最终阶段**。
+任一阶段失败都不能产生 `PARTIAL_ACCEPTED`。
+
+无论这项容器级验证是否成功，`AppInstall`、真实应用市场与
+Compose API、跨 UUID 同名竞态、应用卸载以及升级回滚仍
+**NOT RUN / M0 NO-GO**。仅允许在一次性自有 VM 上测试；
+不使用生产 Docker 主机，不重试可能已执行的创建命令，
+不执行全局 Docker Prune。
+
+## 2026-10-19：发行输入变更必须自动重跑真实 VM
+
+此前真实 VM Workflow 只在安装脚本/部分部署文件变化时自动触发：
+Core、Agent、前端发生实质变更后，旧的 VM PASS 不能证明最新候选
+仍能安装、登录与恢复。现在
+`.github/workflows/gpupanel-real-ubuntu-vm.yml` 对以下路径
+在 PR 和主分支 push 上运行实际 QEMU/KVM 验收：
+
+- `core/**`：Core / 内嵌 Web UI / 路由 / 鉴权；
+- `agent/**`：Host、任务与 Docker 执行；
+- `frontend/**`：登录、Operations Center 与应用交互；
+- `deploy/**`：发布包、安装与服务定义；
+- `scripts/**`：预检与实测、恢复和取证工具；
+- 对应 Workflow 文件自身。
+
+PR 上的 Action 可能构建 **synthetic merge checkout**，
+实际身份必须从 `ci-evidence.json.source_sha` 读取，不能把
+PR HEAD 猜作虚拟机实际构建提交。PR 合并到 `main` 后，
+`push` Workflow 重新针对**真正的 main 提交**生成独立证据。
+如果 `main` 最新提交没有对应的成功真实 VM 记录，就不能借用
+合并前的 Green 作为同版本 G3–G6 验收。
+
+此项只加强候选证据的自动复测覆盖；
+`PARTIAL_ACCEPTED` 仍仅代表已经真实执行的子集，
+G5 AppInstall、安装升级回滚、完整数据恢复和人工发布审批
+在独立证据完成前始终是 **M0 NO-GO**。
+
+## GitHub 自动化合并的主分支复测兜底
+
+GitHub 官方说明：以某些 `GITHUB_TOKEN` 创建的事件不会继续触发
+普通 `push` Workflow（`workflow_dispatch` 与
+`repository_dispatch` 是例外）。因此单靠 `push: main`，
+不能推断由机器人合并的每个提交都有独立主分支验收。
+
+真实 VM 流水线保留 `pull_request`、`push main` 和人工
+`workflow_dispatch`，同时增加 **每天一次的
+`schedule`**，由 GitHub 在默认分支最新提交上运行相同的
+固定 Ubuntu 24.04 KVM、真实浏览器/容器/离线恢复矩阵。
+它不依赖 PR 合成 merge SHA，也不会引用已合并 PR 的绿色 CI
+替代最新主分支证据。
+
+**核对方法**：打开 Actions → GPUPanel real Ubuntu 24.04
+disposable VM acceptance，选择事件为 `schedule`、
+`push` 或 `workflow_dispatch` 且 branch 为 `main`
+的运行，验证 `ci-evidence.json.source_sha` 与所要验收的
+当前主分支精确 SHA 相等，并验证 `PARTIAL_ACCEPTED`。
+若没有这样的运行/报告，主分支实机状态是 **NOT_ATTESTED**，
+不是 PASS。定期触发是检测兜底，不保证每次合并立即复测：
+GitHub 可能延迟、跳过 scheduled workflow，管理员也可以禁用它。
+
+即使同版本 PARTIAL_ACCEPTED，真正的 AppInstall G5、
+产品升级/回滚、完整用户工作区恢复及人工发布签核仍未完成，
+**GPUPanel M0 一律 NO-GO**。
+
+
+## 2026-10-19 — G3 原始安装包的 guest 传输完整性门禁
+
+真实 VM CI 从当前 **GitHub commit** 构建
+`gpupanel-ci-<commit-prefix>-linux-amd64.tar.gz`，随后通过只作用于专属
+guest 的 `vm.py copy` 传入 `/tmp`。在解包或执行任何安装器代码之前，
+`scripts/install-test/release-transfer.py` 会：
+
+- 核对干净 checkout 的完整 SHA、固定格式的安装包文件名、
+  非符号链接的本机构建归档；
+- 在 guest 内以非 root 身份对**收到的实际归档文件**重新计算 SHA-256，
+  同时读取 guest machine-id 摘要，与 host 计算值和后续真实浏览器
+  记录的 guest 身份绑定；
+- 将仅包含两边 SHA、源码 SHA、guest 身份摘要与
+  `signature_proof=NOT_ATTESTED` 的证据写入私有
+  `release-transfer.json`；成功后才能解包、预检和继续安装；
+- 让最终的 `ci-evidence.json` 在文件缺失、摘要不同、guest 不同、
+  记录字段伪造或步骤乱序时 **BLOCKED_OR_FAILED**，而不是
+  `PARTIAL_ACCEPTED`。
+
+**校验边界**：相等的 SHA-256 证明这次 runner→guest 传输期间
+归档字节一致，**不证明**产物由可信构建者签名、上游依赖可复现、
+GPL 许可审计通过或真实生产主机升级可用。报告永远保持
+`release_package_signature=NOT_ATTESTED` 与
+`m0_release_decision=NO_GO`。
+
+测试入口：`python3 -m unittest scripts/tests/test_gpupanel_vm_release_transfer.py`。
+只对实际通过的完整、同一 commit VM 工作流记录 G3 的安装包传输
+片段，不能跨 PR 复用历史证据。

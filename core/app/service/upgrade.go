@@ -172,10 +172,17 @@ func (u *UpgradeService) Upgrade(req dto.Upgrade) error {
 		return err
 	}
 
+	// Take the durable SQLite admission before creating a stage or launching
+	// a worker. Same-name and different-version requests share this fence.
+	if err := claimUpgradeAdmission(settingRepo.UpdateIfMatch); err != nil {
+		return err
+	}
 	// Never erase a previous rollback backup or concurrent transaction.
-	// Version is validated BEFORE any filesystem mutation.
 	baseDir, err := createUpgradeStage(global.CONF.Base.InstallDir, req.Version)
 	if err != nil {
+		if releaseErr := releaseUpgradeAdmission(settingRepo.UpdateIfMatch); releaseErr != nil {
+			return fmt.Errorf("upgrade stage refused: %v; admission recovery: %w", err, releaseErr)
+		}
 		return err
 	}
 	downloadDir := path.Join(baseDir, "downloads")
@@ -187,36 +194,51 @@ func (u *UpgradeService) Upgrade(req dto.Upgrade) error {
 	}
 	downloadPath := fmt.Sprintf("%s/%s/%s/release", global.RepoURL(), mode, req.Version)
 	fileName := fmt.Sprintf("gpupanel-%s-%s-%s.tar.gz", req.Version, "linux", itemArch)
-	_ = settingRepo.Update("SystemStatus", "Upgrading")
+	// Only pre-mutation failures may release the admission automatically.
+	// Once an executable has been touched, keep the claim until an
+	// independently verified rollback or post-upgrade health review.
+	releaseBeforeMutation := func() {
+		if err := releaseUpgradeAdmission(settingRepo.UpdateIfMatch); err != nil {
+			global.LOG.Errorf("upgrade admission still unresolved: %v", err)
+		}
+	}
+	rollbackAndReconcile := func(step int) {
+		if err := u.handleRollback(originalDir, step, svcInfo); err != nil {
+			global.LOG.Errorf("automatic rollback incomplete; upgrade remains blocked: %v", err)
+			return
+		}
+		if err := releaseUpgradeAdmission(settingRepo.UpdateIfMatch); err != nil {
+			global.LOG.Errorf("rollback completed but admission remains unresolved: %v", err)
+		}
+	}
 	go func() {
 		if err := files.DownloadFileWithProxyStream(downloadPath+"/"+fileName, downloadDir+"/"+fileName); err != nil {
 			global.LOG.Errorf("download service file failed, err: %v", err)
-			_ = settingRepo.Update("SystemStatus", "Free")
+			releaseBeforeMutation()
 			return
 		}
 		global.LOG.Info("download all file successful!")
 		defer func() {
 			_ = os.Remove(downloadDir)
 		}()
-		// Verify every path/type/bound before any privileged extraction.
-		// The transport archive is not publisher-authenticated yet, so
-		// this is only a structural safety preflight (G3 remains NO-GO).
+		// Validate the entire archive before privileged extraction. This
+		// structural gate does not authenticate the release publisher.
 		archiveRoot := strings.TrimSuffix(fileName, ".tar.gz")
 		if err := validateUpgradeArchive(path.Join(downloadDir, fileName), archiveRoot); err != nil {
 			global.LOG.Errorf("upgrade archive rejected before extraction: %v", err)
-			_ = settingRepo.Update("SystemStatus", "Free")
+			releaseBeforeMutation()
 			return
 		}
 		if err := files.HandleUnTar(downloadDir+"/"+fileName, downloadDir, ""); err != nil {
 			global.LOG.Errorf("decompress file failed, err: %v", err)
-			_ = settingRepo.Update("SystemStatus", "Free")
+			releaseBeforeMutation()
 			return
 		}
 		tmpDir := downloadDir + "/" + strings.ReplaceAll(fileName, ".tar.gz", "")
 
 		if err := u.handleBackup(originalDir, svcInfo); err != nil {
 			global.LOG.Errorf("handle backup original file failed, err: %v", err)
-			_ = settingRepo.Update("SystemStatus", "Free")
+			releaseBeforeMutation()
 			return
 		}
 		// A successful cp exit code does not establish that the rollback
@@ -224,13 +246,13 @@ func (u *UpgradeService) Upgrade(req dto.Upgrade) error {
 		// complete owned backup before the FIRST binary replacement.
 		if err := verifyUpgradeBackupInventory(originalDir, svcInfo); err != nil {
 			global.LOG.Errorf("upgrade refused: rollback backup is incomplete: %v", err)
-			_ = settingRepo.Update("SystemStatus", "Free")
+			releaseBeforeMutation()
 			return
 		}
 		itemLog := model.UpgradeLog{NodeID: 0, OldVersion: global.CONF.Base.Version, NewVersion: req.Version, BackupFile: baseDir}
 		if err := upgradeLogRepo.Create(&itemLog); err != nil {
 			global.LOG.Errorf("upgrade refused: cannot persist rollback record: %v", err)
-			_ = settingRepo.Update("SystemStatus", "Free")
+			releaseBeforeMutation()
 			return
 		}
 
@@ -238,18 +260,12 @@ func (u *UpgradeService) Upgrade(req dto.Upgrade) error {
 
 		if err := files.CopyFileWithRename(path.Join(tmpDir, "gpupanel-core"), svcInfo.coreBinary); err != nil {
 			global.LOG.Errorf("upgrade gpupanel-core failed, err: %v", err)
-			_ = settingRepo.Update("SystemStatus", "Free")
-			if rollbackErr := u.handleRollback(originalDir, 1, svcInfo); rollbackErr != nil {
-				global.LOG.Errorf("automatic rollback incomplete: %v", rollbackErr)
-			}
+			rollbackAndReconcile(1)
 			return
 		}
 		if err := files.CopyFileWithRename(path.Join(tmpDir, "gpupanel-agent"), svcInfo.agentBinary); err != nil {
 			global.LOG.Errorf("upgrade gpupanel-agent failed, err: %v", err)
-			_ = settingRepo.Update("SystemStatus", "Free")
-			if rollbackErr := u.handleRollback(originalDir, 1, svcInfo); rollbackErr != nil {
-				global.LOG.Errorf("automatic rollback incomplete: %v", rollbackErr)
-			}
+			rollbackAndReconcile(1)
 			return
 		}
 
@@ -258,43 +274,31 @@ func (u *UpgradeService) Upgrade(req dto.Upgrade) error {
 
 		if err := files.CopyItem(false, true, path.Join(initScriptPath, svcInfo.selCoreName), svcInfo.basePath); err != nil {
 			global.LOG.Errorf("upgrade %s failed, err: %v", svcInfo.coreName, err)
-			_ = settingRepo.Update("SystemStatus", "Free")
-			if rollbackErr := u.handleRollback(originalDir, 3, svcInfo); rollbackErr != nil {
-				global.LOG.Errorf("automatic rollback incomplete: %v", rollbackErr)
-			}
+			rollbackAndReconcile(3)
 			return
 		}
 		if err := files.CopyItem(false, true, path.Join(initScriptPath, svcInfo.selAgentName), svcInfo.basePath); err != nil {
 			global.LOG.Errorf("upgrade %s failed, err: %v", svcInfo.agentName, err)
-			_ = settingRepo.Update("SystemStatus", "Free")
-			if rollbackErr := u.handleRollback(originalDir, 3, svcInfo); rollbackErr != nil {
-				global.LOG.Errorf("automatic rollback incomplete: %v", rollbackErr)
-			}
+			rollbackAndReconcile(3)
 			return
 		}
 
-		// The disposable VM installer does not create /usr/local/bin/lang,
+		// The experimental installer may not have a complete app-local lang directory,
 		// and the release builder may omit GeoIP.mmdb. Only replace an
 		// asset that existed before the upgrade AND has a real backup.
 		// Never make rollback require deletion of a newly created asset.
-		langPath := "/usr/local/bin/lang"
+		langPath := path.Join(global.CONF.Base.InstallDir, "gpupanel/lang")
 		langAllowed, langErr := shouldCopyOptionalUpgradeAsset(
 			langPath, path.Join(originalDir, "lang"), path.Join(tmpDir, "lang"), true)
 		if langErr != nil {
 			global.LOG.Errorf("upgrade refused: unsafe optional language files: %v", langErr)
-			_ = settingRepo.Update("SystemStatus", "Free")
-			if rollbackErr := u.handleRollback(originalDir, 3, svcInfo); rollbackErr != nil {
-				global.LOG.Errorf("automatic rollback incomplete: %v", rollbackErr)
-			}
+			rollbackAndReconcile(3)
 			return
 		}
 		if langAllowed {
-			if err := files.CopyItem(true, true, path.Join(tmpDir, "lang"), "/usr/local/bin"); err != nil {
+			if err := files.CopyItem(true, true, path.Join(tmpDir, "lang"), path.Join(global.CONF.Base.InstallDir, "gpupanel")); err != nil {
 				global.LOG.Errorf("Update language files failed: %v", err)
-				_ = settingRepo.Update("SystemStatus", "Free")
-				if rollbackErr := u.handleRollback(originalDir, 4, svcInfo); rollbackErr != nil {
-					global.LOG.Errorf("automatic rollback incomplete: %v", rollbackErr)
-				}
+				rollbackAndReconcile(4)
 				return
 			}
 		}
@@ -303,32 +307,27 @@ func (u *UpgradeService) Upgrade(req dto.Upgrade) error {
 			geoPath, path.Join(originalDir, "GeoIP.mmdb"), path.Join(tmpDir, "GeoIP.mmdb"), false)
 		if geoErr != nil {
 			global.LOG.Errorf("upgrade refused: unsafe optional GeoIP file: %v", geoErr)
-			_ = settingRepo.Update("SystemStatus", "Free")
-			if rollbackErr := u.handleRollback(originalDir, 4, svcInfo); rollbackErr != nil {
-				global.LOG.Errorf("automatic rollback incomplete: %v", rollbackErr)
-			}
+			rollbackAndReconcile(4)
 			return
 		}
 		if geoAllowed {
 			if err := files.CopyFileWithRename(path.Join(tmpDir, "GeoIP.mmdb"), geoPath); err != nil {
 				global.LOG.Warnf("Update GeoIP database failed: %v", err)
-				_ = settingRepo.Update("SystemStatus", "Free")
-				if rollbackErr := u.handleRollback(originalDir, 4, svcInfo); rollbackErr != nil {
-					global.LOG.Errorf("automatic rollback incomplete: %v", rollbackErr)
-				}
+				rollbackAndReconcile(4)
 				return
 			}
 		}
 
-		global.LOG.Info("upgrade successful!")
+		global.LOG.Warn("upgrade files staged; restart and Core/Agent health have NOT been verified")
 		dropBackupCopies()
 		xpack.MultiNodeProvider.AutoUpgradeWithMaster()
 		_ = settingRepo.Update("SystemVersion", req.Version)
 		_ = global.AgentDB.Model(&model.Setting{}).Where("key = ?", "SystemVersion").Updates(map[string]interface{}{"value": req.Version}).Error
 		global.CONF.Base.Version = req.Version
 		_ = os.RemoveAll(downloadDir)
-		_ = settingRepo.Update("SystemStatus", "Free")
-
+		// No post-restart Core/Agent health proof exists in this asynchronous
+		// legacy path. Keep SystemStatus=Upgrading to reject further upgrades
+		// until a separately observed, authenticated reconciliation exists.
 		controller.RestartPanel(true, true, true)
 	}()
 	return nil
@@ -349,7 +348,15 @@ func (u *UpgradeService) Rollback(req dto.OperateByID) error {
 	if err != nil {
 		return err
 	}
-	return u.handleRollback(backup, 3, svcInfo)
+	if err := verifyUpgradeBackupInventory(backup, svcInfo); err != nil {
+		return fmt.Errorf("refuse incomplete rollback snapshot: %w", err)
+	}
+	// Rollback is invoked by the running Core API. In-place restoration of
+	// SQLite and service binaries while their owners are running is not an
+	// offline recovery and can corrupt both DB and runtime state. The M0
+	// offline guest recovery path is independent; leave these assets intact
+	// until a stop-verified, separately operated rollback is implemented.
+	return fmt.Errorf("%w: online rollback is disabled until offline service-stop and database restore are verified", errUpgradeRuntimeOwnership)
 }
 
 type noteHelper struct {
@@ -534,11 +541,11 @@ func (u *UpgradeService) handleBackup(originalDir string, svcInfo serviceInfo) e
 	if err := files.CopyItem(false, true, svcInfo.agentBinary, originalDir); err != nil {
 		return err
 	}
-	// pctl is no longer part of the GPUPanel runtime; skip backing up the legacy ctl binary.
-	if hasLang, err := optionalUpgradeAsset("/usr/local/bin/lang", true); err != nil {
+	// pctl is an app-local control script; it is not a global upgrade target.
+	if hasLang, err := optionalUpgradeAsset(path.Join(global.CONF.Base.InstallDir, "gpupanel/lang"), true); err != nil {
 		return err
 	} else if hasLang {
-		if err := files.CopyItem(true, true, "/usr/local/bin/lang", originalDir); err != nil {
+		if err := files.CopyItem(true, true, path.Join(global.CONF.Base.InstallDir, "gpupanel/lang"), originalDir); err != nil {
 			return err
 		}
 	}
@@ -574,25 +581,19 @@ func (u *UpgradeService) handleRollback(originalDir string, errStep int, svcInfo
 		global.LOG.Errorf("rollback %s failed: %v", action, err)
 		failures = append(failures, fmt.Errorf("%s: %w", action, err))
 	}
-	record("reset status", settingRepo.Update("SystemStatus", "Free"))
-	dbPath := path.Join(global.CONF.Base.InstallDir, "gpupanel")
-	dbBackup := path.Join(originalDir, "db")
-	if info, err := os.Lstat(dbBackup); err != nil {
-		record("missing database backup", err)
-	} else if !info.IsDir() || info.Mode()&os.ModeSymlink != 0 {
-		record("database backup identity", errUpgradeRuntimeOwnership)
-	} else if err := os.Chmod(dbBackup, 0700); err != nil {
-		record("database backup permissions", err)
-	} else {
-		record("database restore", files.CopyItem(true, true, dbBackup, dbPath))
-	}
+	// This handler is only reached before the upgrade's own service restart.
+	// No database migration has been approved in that window, so reverting
+	// staged Core/Agent files must NEVER copy an unproven SQLite snapshot
+	// over databases still used by this Core and the running Agent. Full DB
+	// restoration is an offline, separately authorized G3/G6 procedure.
+	// The snapshot is preserved for an operator; do not delete or overwrite it.
 	record("core executable", files.CopyFileWithRename(path.Join(originalDir, "gpupanel-core"), svcInfo.coreBinary))
 	record("agent executable", files.CopyFileWithRename(path.Join(originalDir, "gpupanel-agent"), svcInfo.agentBinary))
 	if errStep == 1 {
 		return errors.Join(failures...)
 	}
-	// pctl is no longer part of GPUPanel runtime. Never alter its
-	// compatibility symlink as a side effect of restoring binaries.
+	// App-local pctl metadata is not part of binary restore. There are no
+	// global compatibility symlinks to modify.
 	if errStep == 2 {
 		return errors.Join(failures...)
 	}
@@ -604,7 +605,7 @@ func (u *UpgradeService) handleRollback(originalDir string, errStep int, svcInfo
 	if langSaved, err := optionalUpgradeAsset(path.Join(originalDir, "lang"), true); err != nil {
 		record("language backup", err)
 	} else if langSaved {
-		record("language files", files.CopyItem(true, true, path.Join(originalDir, "lang"), "/usr/local/bin"))
+		record("language files", files.CopyItem(true, true, path.Join(originalDir, "lang"), path.Join(global.CONF.Base.InstallDir, "gpupanel")))
 	}
 	if geoSaved, err := optionalUpgradeAsset(path.Join(originalDir, "GeoIP.mmdb"), false); err != nil {
 		record("GeoIP backup", err)

@@ -43,18 +43,18 @@ sudo ./gpupanel-<version>-linux-<arch>/install.sh
 ```
 
 - 在停止服务或复制二进制前检查 OS、已存在的运行路径、父路径符号链接和可用空间。
-- 默认安装到 `/opt/gpupanel`，暴露 `/usr/local/bin/pctl` 与两项自有二进制链接。
+- 默认仅安装到 `/opt/gpupanel`，控制入口为 `/opt/gpupanel/pctl`。不创建任何 `/usr/local/bin` 兼容链接。
 - `pctl` 以 0700 保存引导值；安装日志在**通过冲突预检与参数校验之后**才建立于 `<base-dir>/gpupanel/log/install.log`（0600），不写入源码或 payload 目录。`--help`、非法选项和预检失败不创建安装日志。生成的密码只打印到终端；密码及入口值的非法输入也不会出现在报错中。
 - 配置和数据库归属由 Core/Agent 管理。当前 Core 内嵌配置 `mode=dev` 时可能读取
   `/opt/gpupanel/conf/app.yaml`；其他引导路径从 pctl 读取。不要假设改一个 YAML
   就完成了任意路径迁移，或把模板里的开发默认值当成实际安装密码。
 - 首次安全入口在服务端验证后交接到 `/login`；Cookie/CSRF 会话仍由 Core 管控。
 - 已安装环境会被预检拒绝，**重复运行安装器不是受支持的升级流程**。
-  `pctl restart` 只重启已有二进制，不会把新源码变成已部署代码。
+  `sudo /opt/gpupanel/pctl restart` 只重启已有二进制，不会把新源码变成已部署代码。
 
 ## 控制与回退
 
-`sudo pctl status` 查看状态；`sudo pctl restart` 重启已有实例。运行权限与自有
+`sudo /opt/gpupanel/pctl status` 查看状态；`sudo /opt/gpupanel/pctl restart` 重启已有实例。运行权限与自有
 路径必须按实际安装核对，不能用全局 `pkill` 清理其他项目。
 
 本轮 VM 可用 `make install-test-stop` 停止并保留磁盘；它不删除宿主机任何服务。

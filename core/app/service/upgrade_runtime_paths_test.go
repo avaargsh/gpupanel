@@ -102,20 +102,38 @@ func TestG3UpgradeRejectsUnexpectedServiceManagerAndBase(t *testing.T) {
 	}
 }
 
-func TestG3ManualRollbackUsesOriginalSubdirectoryAndReturnsFailure(t *testing.T) {
+func TestG3ManualRollbackRefusesOnlineDBAndExecutableMutation(t *testing.T) {
 	src, err := os.ReadFile("upgrade.go")
 	if err != nil { t.Fatal(err) }
+	marker := "func (u *UpgradeService) Rollback("
+	start := strings.Index(string(src), marker)
+	end := strings.Index(string(src), "type noteHelper struct")
+	if start < 0 || end < start { t.Fatal("manual rollback API entrypoint missing") }
+	handler := string(src)[start:end]
 	for _, required := range []string{
 		`validateUpgradeBackupPath(global.CONF.Base.InstallDir, log.BackupFile)`,
-		`return u.handleRollback(backup, 3, svcInfo)`,
+		`verifyUpgradeBackupInventory(backup, svcInfo)`,
+		`online rollback is disabled until offline service-stop`,
+	} {
+		if !strings.Contains(handler, required) {
+			t.Errorf("online rollback must refuse unsafe mutation: missing %q", required)
+		}
+	}
+	if strings.Contains(handler, "return u.handleRollback(") {
+		t.Fatal("running Core API must not restore SQLite files or overwrite its own executable")
+	}
+	for _, required := range []string{
 		`return errors.Join(failures...)`,
-		`record("database restore",`,
 		`record("core executable",`,
 		`record("agent executable",`,
 	} {
 		if !strings.Contains(string(src), required) {
-			t.Errorf("manual rollback must report incomplete restore; missing %q",required)
+			t.Errorf("staged executable rollback must report failure; missing %q", required)
 		}
+	}
+	if strings.Contains(string(src), `record("database restore",`) ||
+		strings.Contains(string(src), `files.CopyItem(true, true, dbBackup, dbPath)`) {
+		t.Fatal("neither manual nor automatic rollback may overwrite databases while Core is running")
 	}
 }
 

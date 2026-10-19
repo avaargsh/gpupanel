@@ -2,8 +2,9 @@
 
 The real Ubuntu 24.04 QEMU job #140 installed Core and Agent into
 `/opt/gpupanel/gpupanel-{core,agent}`, with systemd `ExecStart` directly
-using those paths. The installer also creates compatibility symbolic links at
-`/usr/local/bin/gpupanel-{core,agent}`.
+using those paths. Earlier disposable installers also created global
+compatibility symbolic links; the current development installer deliberately
+**creates no global binary or control aliases** (see `DEV_RUNTIME_LAYOUT.md`).
 
 **Previously** the in-app Upgrade/Rollback code passed the symbolic link path
 to `CopyFileWithRename`, which copies to `destination.tmp` and then calls
@@ -23,12 +24,21 @@ make any later downgrade ambiguous.
   `/etc/systemd/system`) during this initial pilot. Different base
   directories/managers fail closed, instead of writing to a guessed path.
 - Back up, install and roll back the **same validated runtime targets**.
-  Never write either compatibility symlink in `/usr/local/bin`.
-- Correct manual Rollback to address `BackupFile/original`, because the
-  upgrade log stores the transaction parent, not its actual backup child.
+  Keep all binary writes inside `/opt/gpupanel`; compatibility links are no longer created.
+- Correct the original backup path to `BackupFile/original`, rather than
+  the transaction parent. **The running Core API now refuses an online manual
+  Rollback after read-only snapshot validation**. Writing SQLite files and
+  executables while the owning services run is not an offline restore; no
+  safe API-triggered rollback exists in this Draft. The earlier handler is
+  retained for future stopped-service integration only.
 - Make the rollback handler accumulate and return restoration errors instead
   of logging them and returning implicit success. Automatic rollback failures
   are explicitly surfaced in service logs; this is not proof of guest health.
+- **Automatic rollback before the service restart restores only the owned
+  binaries and service files, not the live SQLite database.** A database
+  rollback requires a stopped-service, independently reviewed offline
+  procedure. The TaskDB/CoreDB backup data remains for investigation and
+  is not overwritten during a staged binary failure.
 - Reject release-version inputs that are not bounded conventional version
   tokens **before constructing any filesystem path**. The old upgrade code
   interpolated an API-provided version directly into a path and recursively
@@ -44,6 +54,12 @@ make any later downgrade ambiguous.
 - No Agent installation change; no live customer host action.
 
 ## Remaining blockers
+
+**Operators must not use an in-app Rollback button or HTTP request to
+restore live databases.** The current in-app handler returns a fail-closed
+error until a separate authenticated, stop-verified offline recovery tool
+can restore DB/binaries/service units, restart both services and validate
+original state. This is intentionally an availability limitation for safety.
 
 This does **not** establish a complete safe upgrade/rollback. The in-app
 upgrade still downloads asynchronously, modifies service files, copies DB
@@ -65,3 +81,27 @@ the one-purpose guest.
 The proven #140 VM workflow only covered **fresh install**, Chromium login
 and partial Agent restart/recovery. **G3 upgrade/rollback remains NOT RUN and
 M0 remains NO-GO** until independent evidence is reviewed.
+
+## Latest G3 concurrency admission guard
+
+The live API was previously able to accept two different-version upgrade
+requests: create-only version directories prevented **same-version** collision
+but did not serialize requests across versions. The new entrypoint performs
+`SettingRepo.UpdateIfMatch("SystemStatus", "Free", "Upgrading")` **before**
+creating the version stage. An unavailable setting, missing Free status or
+competing request is rejected instead of launching a second mutating worker.
+
+Before the first runtime executable change, failed downloads, unpacking,
+backups or schema validation may CAS the status back to Free; their private
+staging directories remain intact for review. If a binary replacement begins,
+an incomplete rollback retains `Upgrading`; no automatic release follows a
+restart whose actual Core/Agent health has not been independently verified.
+Thus a second upgrade cannot treat staged-files/HTTP success as a completed
+operation. It requires operator reconciliation, not a retry timer.
+
+This guard reuses a **value-only** setting CAS, **not** a unique lease or
+operation-owner ID. It is intentionally not a completed multi-process
+execution attestation. Concurrent external settings changes and crash
+recovery still need a durable owner-specific lease and independently observed
+terminal state. The lack of a post-restart release/recovery pathway makes
+this **Draft-only**, not a finished normal-user upgrade experience.

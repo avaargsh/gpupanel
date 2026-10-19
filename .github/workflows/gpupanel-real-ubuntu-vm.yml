@@ -1,14 +1,32 @@
 name: GPUPanel real Ubuntu 24.04 disposable VM acceptance
 
+# A green older VM run does not certify a newer binary/UI candidate.
+# Cover inputs compiled into both binaries and the embedded frontend, and
+# rerun on main after merges to verify the *actual* immutable main commit.
 on:
   pull_request:
     branches: [main]
     paths:
-      - 'scripts/install-test/**'
-      - 'scripts/tests/test_gpupanel_vm_ci_evidence.py'
+      - 'core/**'
+      - 'agent/**'
+      - 'frontend/**'
+      - 'deploy/**'
+      - 'scripts/**'
       - '.github/workflows/gpupanel-real-ubuntu-vm.yml'
-      - 'deploy/build.sh'
-      - 'deploy/install.sh'
+  push:
+    branches: [main]
+    paths:
+      - 'core/**'
+      - 'agent/**'
+      - 'frontend/**'
+      - 'deploy/**'
+      - 'scripts/**'
+      - '.github/workflows/gpupanel-real-ubuntu-vm.yml'
+  # GitHub suppresses some events produced by GITHUB_TOKEN automation.
+  # A scheduled default-branch run is an independent safety net for merges
+  # that did not generate a push workflow. It is not a release approval.
+  schedule:
+    - cron: '43 13 * * *'
   workflow_dispatch:
 
 permissions:
