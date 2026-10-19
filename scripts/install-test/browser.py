@@ -17,13 +17,23 @@ credentials = json.loads((STATE / 'credentials.json').read_text())
 if credentials['url'] != f'http://127.0.0.1:{vm.PANEL_PORT}':
     raise SystemExit('Refuse a non-fixture target')
 local = candidate.local_candidate(ROOT)
-remote_probe = """import hashlib,json
+remote_probe = """import hashlib,json,os,subprocess
 from pathlib import Path
 names=('core','agent')
+def installed_running(name):
+    target=Path('/opt/gpupanel')/('gpupanel-'+name)
+    pid=subprocess.check_output(
+        ['systemctl','show','gpupanel-'+name,'-p','MainPID','--value'],
+        text=True,timeout=5).strip()
+    if not pid.isdecimal() or int(pid)==0:
+        raise RuntimeError('expected running service process is unavailable')
+    live=os.stat('/proc/'+pid+'/exe')
+    disk=os.stat(target)
+    if (live.st_dev,live.st_ino)!=(disk.st_dev,disk.st_ino):
+        raise RuntimeError('running service executable differs from installed file')
+    return hashlib.file_digest(target.open('rb'),'sha256').hexdigest()
 print(json.dumps({
-    'binary_sha256': {name:hashlib.file_digest(
-        (Path('/opt/gpupanel')/('gpupanel-'+name)).open('rb'),
-        'sha256').hexdigest() for name in names},
+    'binary_sha256': {name:installed_running(name) for name in names},
     'machine_id_sha256': hashlib.sha256(Path('/etc/machine-id').read_bytes()).hexdigest()
 }))
 """
