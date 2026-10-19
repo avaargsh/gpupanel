@@ -106,8 +106,8 @@ func TestG3ManualRollbackUsesOriginalSubdirectoryAndReturnsFailure(t *testing.T)
 	src, err := os.ReadFile("upgrade.go")
 	if err != nil { t.Fatal(err) }
 	for _, required := range []string{
-		`path.Join(log.BackupFile, "original")`,
-		`return u.handleRollback(path.Join(log.BackupFile, "original"), 3, svcInfo)`,
+		`validateUpgradeBackupPath(global.CONF.Base.InstallDir, log.BackupFile)`,
+		`return u.handleRollback(backup, 3, svcInfo)`,
 		`return errors.Join(failures...)`,
 		`record("database restore",`,
 		`record("core executable",`,
@@ -129,5 +129,92 @@ func TestG3UpgradeNeverWritesCompatibilityPath(t *testing.T){
 	}
 	for _, requirement:=range []string{"svcInfo.coreBinary","svcInfo.agentBinary","upgradeRuntimePaths("}{
 		if !strings.Contains(string(src),requirement){t.Fatalf("missing required owned-executable wiring %s",requirement)}
+	}
+}
+
+func TestG3UpgradeVersionRejectsTraversalAndUnboundedTokens(t *testing.T) {
+	invalid := []string{"", "../..", "/tmp", "v2.0.0/../../", "v2.0.0\\\\x",
+		"v2.0.0%2f..", "v2.0.0-..", "v2.0.0-", "v2.0.0\\n", "v2.0.0;rm",
+		"v2.0", "v2.0.0é", strings.Repeat("a", 140)}
+	for _, version := range invalid {
+		if err := validateUpgradeVersion(version); err == nil {
+			t.Errorf("unsafe upgrade version accepted: %q", version)
+		}
+	}
+	for _, version := range []string{"v2.0.0", "v2.0.0-lts", "v2.0.0-beta.2",
+		"v2.1.0-dev-1", "2.0.0"} {
+		if err := validateUpgradeVersion(version); err != nil {
+			t.Errorf("valid release version %q rejected: %v", version, err)
+		}
+	}
+}
+
+func TestG3UpgradeStagingPreservesExistingRollbackEvidence(t *testing.T) {
+	base, _, _ := upgradeRuntimeFixture(t)
+	dir, err := createUpgradeStage(base, "v2.0.0-lts")
+	if err != nil { t.Fatal(err) }
+	snapshot := filepath.Join(dir,"original","existing.db")
+	if err := os.WriteFile(snapshot, []byte("evidence-do-not-delete"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := createUpgradeStage(base, "v2.0.0-lts"); err == nil {
+		t.Fatal("repeated version overwrote previous rollback evidence")
+	}
+	preserved, err := os.ReadFile(snapshot)
+	if err != nil || string(preserved) != "evidence-do-not-delete" {
+		t.Fatalf("existing rollback evidence removed: %q %v", preserved, err)
+	}
+	for _, v := range []string{"../../etc", "/tmp", "."} {
+		if _, err := createUpgradeStage(base, v); err == nil {
+			t.Fatalf("unsafe version %q created stage", v)
+		}
+	}
+}
+
+func TestG3UpgradeStagingRejectsRedirectedParents(t *testing.T) {
+	base, _, _ := upgradeRuntimeFixture(t)
+	foreign := t.TempDir()
+	link := filepath.Join(base, "gpupanel", "tmp")
+	if err := os.Symlink(foreign,link); err != nil { t.Fatal(err) }
+	if _, err := createUpgradeStage(base, "v2.0.0"); !errors.Is(err,errUpgradeRuntimeOwnership) {
+		t.Fatalf("staging through redirected tmp permitted: %v",err)
+	}
+	entries, err := os.ReadDir(foreign)
+	if err != nil || len(entries) != 0 {
+		t.Fatalf("redirected destination was modified: %v %+v",err,entries)
+	}
+}
+
+func TestG3RollbackBackupPathRequiresExactOwnedVersionAndPlainDirs(t *testing.T) {
+	base, _, _ := upgradeRuntimeFixture(t)
+	path, err := createUpgradeStage(base, "v2.0.0")
+	if err != nil { t.Fatal(err) }
+	original, err := validateUpgradeBackupPath(base, path)
+	if err != nil || original != filepath.Join(path, "original") {
+		t.Fatalf("freshly owned backup was denied: %s %v", original, err)
+	}
+	for _, invalid := range []string{base, filepath.Join(base,"gpupanel","tmp","upgrade"),
+		filepath.Join(path, "original"), filepath.Join(path, "..", "unexpected"),
+		filepath.Join(base, "gpupanel","tmp","upgrade","v2.0.0","..","v2.0.0")} {
+		if _, err := validateUpgradeBackupPath(base, invalid); err == nil {
+			t.Errorf("ambiguous stored rollback directory allowed: %s", invalid)
+		}
+	}
+	if err := os.RemoveAll(filepath.Join(path, "original")); err != nil { t.Fatal(err) }
+	if err := os.Symlink(t.TempDir(),filepath.Join(path,"original")); err != nil { t.Fatal(err) }
+	if _, err := validateUpgradeBackupPath(base, path); !errors.Is(err, errUpgradeRuntimeOwnership) {
+		t.Fatalf("redirected original backup allowed: %v",err)
+	}
+}
+
+func TestG3UpgradeNeverUsesRecursiveStageDeletion(t *testing.T) {
+	src, err := os.ReadFile("upgrade.go")
+	if err != nil { t.Fatal(err) }
+	for _, unsafe := range []string{"os.RemoveAll(baseDir)", "fmt.Sprintf(\"gpupanel/tmp/upgrade/%s\""} {
+		if strings.Contains(string(src),unsafe) { t.Fatalf("unsafe version stage construct: %s", unsafe) }
+	}
+	for _, required := range []string{"createUpgradeStage(","validateUpgradeVersion(req.Version)",
+		"validateUpgradeBackupPath("} {
+		if !strings.Contains(string(src),required) { t.Fatalf("required stage guard missing: %s",required) }
 	}
 }
