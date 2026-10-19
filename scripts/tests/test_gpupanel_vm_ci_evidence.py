@@ -117,6 +117,29 @@ class LiveVmEvidence(unittest.TestCase):
             script,
         )
 
+    def test_private_browser_failure_is_redacted_to_line_and_class(self):
+        failure_source = ROOT / "scripts/install-test/ci-failure.py"
+        spec = importlib.util.spec_from_file_location("vm_ci_failure", failure_source)
+        failure = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(failure)
+        log = (
+            'username=private-user password=UNREDACTABLE_SECRET\\n'
+            'Traceback (most recent call last):\\n'
+            '  File "/private/scripts/install-test/browser.py", line 88, in <module>\\n'
+            '    expect(page).to_be_visible(timeout=10000)\\n'
+            'AssertionError: cookie=SECRET_COOKIE payload=PRIVATE_BODY\\n'
+        )
+        sanitized = failure.diagnostic(log, "browser.py")
+        self.assertEqual(sanitized,
+            "PRIVATE_VM_FAILURE source=browser.py:88 "
+            "exception_class=AssertionError release=NO_GO")
+        self.assertNotIn("UNREDACTABLE_SECRET", sanitized)
+        self.assertNotIn("SECRET_COOKIE", sanitized)
+        self.assertNotIn("PRIVATE_BODY", sanitized)
+        self.assertNotIn("private-user", sanitized)
+        # Caller-supplied arbitrary paths cannot be used to read private data.
+        self.assertEqual(failure.SCRIPTS.keys(), {"browser", "runtime"})
+
     def test_workflow_only_uploads_redacted_json(self):
         flow = (ROOT / ".github/workflows/gpupanel-real-ubuntu-vm.yml").read_text()
         self.assertIn("persist-credentials: false", flow)
