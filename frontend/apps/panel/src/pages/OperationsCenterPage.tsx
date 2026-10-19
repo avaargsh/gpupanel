@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -12,7 +12,8 @@ import { useGetHostOperationsQuery, type HostOperation } from '@/api/hostOperati
 import { useSearchTasksQuery, type TaskInfo } from '@/api/logsApi';
 import { useAppSelector } from '@/store/hooks';
 import { isConfirmablePlan, projectOperationReceipts } from '@/utils/operationViews';
-import { projectAgentTasks } from '@/utils/agentTaskViews';
+import { linkedInstallId, projectAgentTasks } from '@/utils/agentTaskViews';
+import EvidenceSheet from '@/pages/app/EvidenceSheet';
 
 type View = 'tasks' | 'confirmations' | 'activity';
 
@@ -60,7 +61,10 @@ function ReceiptRows({ rows, now }: { rows: HostOperation[]; now: number }) {
     </ul>;
 }
 
-function AgentTaskRows({ rows }: { rows: TaskInfo[] }) {
+function AgentTaskRows({ rows, onReview }: {
+    rows: TaskInfo[];
+    onReview: (task: TaskInfo) => void;
+}) {
     const { t } = useTranslation();
     if (!rows.length) return <p role="status" className="py-6 text-sm text-muted-foreground">{t('opsCenter.emptyTasks')}</p>;
     return <ul className="flex flex-col gap-2" aria-label={t('opsCenter.agentTasks')}>
@@ -76,9 +80,15 @@ function AgentTaskRows({ rows }: { rows: TaskInfo[] }) {
             </div>
             <p className="mt-2 break-all text-xs text-muted-foreground">{t('opsCenter.created')}: {row.createdAt} · ID: {row.id}</p>
             {(row.status === 'Unknown' || row.status === 'Failed') && <p className="mt-2 text-sm">{t('opsCenter.taskWarning')}</p>}
-            <Button asChild size="sm" variant="outline" className="mt-3">
-                <Link to="/logs?tab=task">{t('opsCenter.openTaskLogs')}</Link>
-            </Button>
+            <div className="mt-3 flex flex-wrap gap-2">
+                <Button asChild size="sm" variant="outline">
+                    <Link to="/logs?tab=task">{t('opsCenter.openTaskLogs')}</Link>
+                </Button>
+                {linkedInstallId(row) !== null && <Button
+                    type="button" size="sm" variant="outline"
+                    onClick={() => onReview(row)}
+                >{t('opsCenter.reviewAppEvidence')}</Button>}
+            </div>
         </li>)}
     </ul>;
 }
@@ -93,7 +103,9 @@ export default function OperationsCenterPage() {
     const { t } = useTranslation();
     const node = useAppSelector((state) => state.ui.currentNode) || 'local';
     const [tab, setTab] = useState<View>('tasks');
+    const [evidenceTarget, setEvidenceTarget] = useState<{ task: TaskInfo; node: string } | null>(null);
     const isLocal = node === 'local';
+    useEffect(() => setEvidenceTarget(null), [node]);
     const receipts = useGetHostOperationsQuery(undefined, {
         skip: !isLocal,
         pollingInterval: 5000,
@@ -143,7 +155,11 @@ export default function OperationsCenterPage() {
                 </Button>
             </AlertDescription></Alert> : taskLogs.isLoading || taskLogs.isFetching
                 ? <p role="status" className="text-sm text-muted-foreground">{t('hostOps.loading')}</p>
-                : <AgentTaskRows rows={items} />}
+                : <AgentTaskRows rows={items} onReview={(task) => {
+                    if (isLocal && linkedInstallId(task) !== null) {
+                        setEvidenceTarget({ task, node });
+                    }
+                }} />}
         </section>
     );
     const labels = {
@@ -193,6 +209,13 @@ export default function OperationsCenterPage() {
                     </CardContent>
                 </Card>
             </Tabs>}
+            {isLocal && evidenceTarget && evidenceTarget.node === node
+                && linkedInstallId(evidenceTarget.task) !== null
+                && <EvidenceSheet
+                    id={evidenceTarget.task.resourceID}
+                    expectedTask={evidenceTarget.task}
+                    onClose={() => setEvidenceTarget(null)}
+                />}
         </div>
     </div>;
 }

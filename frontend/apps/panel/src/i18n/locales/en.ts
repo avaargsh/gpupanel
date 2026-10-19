@@ -9,6 +9,7 @@ const en: LocaleResource = {
         taskUnnamed: 'Unnamed execution task',
         taskLoadError: 'Execution task logs unavailable. Host receipts remain independent; retry the query.',
         allTaskLogs: 'All task logs',
+        reviewAppEvidence: 'Review install resource evidence (read-only)',
         openTaskLogs: 'Inspect task log',
         taskWarning: 'Task outcome is failed or uncertain. Inspect the original task log; do not automatically retry any operation.',
         unrecognized: 'Unrecognized status',

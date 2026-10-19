@@ -4,6 +4,7 @@ import { Spinner } from '@/components/ui/spinner';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { baseApi } from '@/api/baseApi';
 import type { PendingAppInstall } from '@/utils/app-install-pending';
+import { canQueryInstallReceipt, visibleInstallReceipt } from '@/utils/app-install-receipt-view';
 const receiptApi = baseApi.injectEndpoints({
     endpoints: (build) => ({
         readInstallReceipt: build.query<
@@ -23,8 +24,13 @@ const receiptApi = baseApi.injectEndpoints({
     }),
 });
 /** A bounded, manually refreshed receipt. Synthetic admission data is never tailed or downloaded. */
-export default function InstallReceipt({ receipt }: { receipt: PendingAppInstall }) {
-    const result = receiptApi.useReadInstallReceiptQuery(receipt);
+export default function InstallReceipt({ receipt, activeNode }: { receipt: PendingAppInstall; activeNode: string }) {
+    const sameHost = canQueryInstallReceipt(receipt.node, activeNode);
+    const result = receiptApi.useReadInstallReceiptQuery(receipt, {
+        skip: !sameHost,
+        refetchOnMountOrArgChange: true,
+    });
+    const observation = visibleInstallReceipt(result, sameHost);
     return (
         <section className="install-receipt" aria-label="Install task receipt">
             <div className="install-receipt-heading">
@@ -49,24 +55,30 @@ export default function InstallReceipt({ receipt }: { receipt: PendingAppInstall
                 <div className="flex flex-wrap items-center justify-between gap-3">
                     <strong className="text-sm font-medium">Receipt observation / 回执观察</strong>
                     <Button onClick={() => void result.refetch()} variant="outline" size="sm" type="button"
-                        disabled={result.isFetching}>
+                        disabled={!sameHost || result.isFetching}>
                         {result.isFetching ? <Spinner data-icon="inline-start" /> : null}
                         刷新回执 / Refresh receipt
                     </Button>
                 </div>
-                {result.isError ? (
+                {!sameHost ? (
+                    <Alert>
+                        <AlertDescription>当前 Host 与原任务不同，请切回原 Host 后查看。结果仍不明确。 / Switch to the original Host to inspect this task; outcome remains unknown.</AlertDescription>
+                    </Alert>
+                ) : result.isError ? (
                     <Alert>
                         <AlertDescription>回执不可用，结果仍不明确 / Receipt unavailable; outcome remains unknown</AlertDescription>
                     </Alert>
+                ) : result.isFetching || result.isLoading ? (
+                    <p role="status" className="text-xs text-muted-foreground">正在重新读取回执 / Refreshing receipt</p>
                 ) : null}
-                {result.data ? (
+                {observation ? (
                     <div className="install-receipt-observation">
                         <p role="status" className="text-xs text-muted-foreground">
-                            {result.data.scope === 'admission'
+                            {observation.scope === 'admission'
                                 ? '只读受理记录，不证明安装完成 / Admission only; no completed-install proof'
-                                : result.data.taskStatus}
+                                : observation.taskStatus}
                         </p>
-                        <pre className="log-output install-receipt-log">{result.data.lines?.join('\n')}</pre>
+                        <pre className="log-output install-receipt-log">{observation.lines?.join('\n')}</pre>
                     </div>
                 ) : null}
             </div>

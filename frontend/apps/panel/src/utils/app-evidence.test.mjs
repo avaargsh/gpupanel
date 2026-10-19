@@ -18,3 +18,13 @@ test('foreign identity, untrusted classification and verified=true fail closed',
 test('nonarrays and oversized fields cannot masquerade as evidence', () => {
     for (const row of [{ ...sample(), reasons: {} }, { ...sample(), containers: [null] }, { ...sample(), reasons: ['x'.repeat(513)] }]) assert.throws(() => parseAppEvidence(row, 7));
 });
+
+test('bounded taskId is preserved for exact installation-attempt attribution', () => {
+    const id = '12345678-1234-4234-8234-123456789012';
+    const observed = parseAppEvidence({ ...sample(), taskId: id }, 7);
+    assert.equal(observed.taskId, id);
+    assert.equal(observed.verified, false);
+    assert.equal(parseAppEvidence(sample(), 7).taskId, '');
+    assert.throws(() => parseAppEvidence({ ...sample(), taskId: 'x'.repeat(513) }, 7));
+    assert.throws(() => parseAppEvidence({ ...sample(), taskId: { value: id } }, 7));
+});

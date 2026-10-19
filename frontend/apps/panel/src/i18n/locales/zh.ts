@@ -7,6 +7,7 @@ const zh = {
         taskUnnamed: '未命名执行任务',
         taskLoadError: '执行任务日志读取失败。主机回执仍可独立查看，请重试查询。',
         allTaskLogs: '全部任务日志',
+        reviewAppEvidence: '核对安装资源证据（只读）',
         openTaskLogs: '查看任务详情',
         taskWarning: '执行结果异常或无法确定，请打开任务日志核对，不要重复触发安装或运维操作。',
         unrecognized: '未知状态',
