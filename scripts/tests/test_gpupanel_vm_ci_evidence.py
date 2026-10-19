@@ -296,6 +296,19 @@ class LiveVmEvidence(unittest.TestCase):
         (self.state / "compose-live.json").unlink()
         self.assertEqual(self.summarise()["offline_docker_compose_fixture"], "NOT_ATTESTED")
 
+    def test_live_appinstall_uses_complete_csrf_cookie_and_no_retry(self):
+        source = (ROOT / "scripts/install-test/app-install-live.py").read_text()
+        self.assertIn("item.slice('pcsrftoken='.length)", source)
+        self.assertNotIn("item.slice(12)", source)
+        self.assertIn("await_task(install_task, \"App\", \"TaskInstall\")", source)
+        self.assertIn("await_task(uninstall_id, \"App\", \"TaskUninstall\")", source)
+        self.assertIn('raise RuntimeError("task outcome ambiguous; do NOT retry")', source)
+        runner = (ROOT / "scripts/install-test/ci-live-vm.sh").read_text()
+        self.assertLess(
+            runner.index("stage 'real_offline_appinstall_core_taskdb_docker'"),
+            runner.index("stage 'guest_post_install_offline_restore'"),
+        )
+
     def test_actual_appinstall_evidence_requires_exact_identity_and_cleanup(self):
         for changed in (
             {"guest_machine_id_sha256": "0" * 64},
