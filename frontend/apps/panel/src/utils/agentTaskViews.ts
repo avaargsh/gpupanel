@@ -34,3 +34,12 @@ export function linkedInstallId(task: {
         && task.resourceID > 0
         ? task.resourceID : null;
 }
+
+export function evidenceMatchesTask(
+    selected: { id: string; resourceID: number; type: string; operate: string },
+    evidence: { installId: number; taskId: string; verified: false },
+): boolean {
+    const id = linkedInstallId(selected);
+    return id !== null && evidence.installId === id &&
+        evidence.verified === false && evidence.taskId === selected.id;
+}
