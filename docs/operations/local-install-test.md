@@ -355,3 +355,30 @@ PR HEAD 猜作虚拟机实际构建提交。PR 合并到 `main` 后，
 `PARTIAL_ACCEPTED` 仍仅代表已经真实执行的子集，
 G5 AppInstall、安装升级回滚、完整数据恢复和人工发布审批
 在独立证据完成前始终是 **M0 NO-GO**。
+
+## GitHub 自动化合并的主分支复测兜底
+
+GitHub 官方说明：以某些 `GITHUB_TOKEN` 创建的事件不会继续触发
+普通 `push` Workflow（`workflow_dispatch` 与
+`repository_dispatch` 是例外）。因此单靠 `push: main`，
+不能推断由机器人合并的每个提交都有独立主分支验收。
+
+真实 VM 流水线保留 `pull_request`、`push main` 和人工
+`workflow_dispatch`，同时增加 **每天一次的
+`schedule`**，由 GitHub 在默认分支最新提交上运行相同的
+固定 Ubuntu 24.04 KVM、真实浏览器/容器/离线恢复矩阵。
+它不依赖 PR 合成 merge SHA，也不会引用已合并 PR 的绿色 CI
+替代最新主分支证据。
+
+**核对方法**：打开 Actions → GPUPanel real Ubuntu 24.04
+disposable VM acceptance，选择事件为 `schedule`、
+`push` 或 `workflow_dispatch` 且 branch 为 `main`
+的运行，验证 `ci-evidence.json.source_sha` 与所要验收的
+当前主分支精确 SHA 相等，并验证 `PARTIAL_ACCEPTED`。
+若没有这样的运行/报告，主分支实机状态是 **NOT_ATTESTED**，
+不是 PASS。定期触发是检测兜底，不保证每次合并立即复测：
+GitHub 可能延迟、跳过 scheduled workflow，管理员也可以禁用它。
+
+即使同版本 PARTIAL_ACCEPTED，真正的 AppInstall G5、
+产品升级/回滚、完整用户工作区恢复及人工发布签核仍未完成，
+**GPUPanel M0 一律 NO-GO**。
