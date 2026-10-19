@@ -2,6 +2,8 @@ package service
 
 import (
 	"errors"
+	"fmt"
+	"strings"
 	"path/filepath"
 	"sync"
 	"testing"
@@ -23,7 +25,7 @@ func appInstallAdmissionDB(t *testing.T) (*gorm.DB, string) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := db.AutoMigrate(&model.Task{}); err != nil {
+	if err := db.AutoMigrate(&model.Task{}, &model.AppInstallNameClaim{}); err != nil {
 		t.Fatal(err)
 	}
 	sqlDB, err := db.DB()
@@ -156,6 +158,97 @@ func TestAppInstallTaskAdmissionFailureCannotReleaseOrClobberRunning(t *testing.
 	if receipt.Status != constant.StatusExecuting || receipt.ResourceID != 123 {
 		t.Fatalf("admission cleanup clobbered started task: %+v", receipt)
 	}
+}
+
+func TestAppInstallTaskAdmissionSameNameDifferentIDsIsAtomic(t *testing.T) {
+    db, _ := appInstallAdmissionDB(t)
+    names := []string{"  Jupyter  ", "jupyter", "JUPYTER"}
+    const workers = 24
+    var wg sync.WaitGroup
+    var mu sync.Mutex
+    winners, blocked, unexpected := 0, 0, 0
+    for i := 0; i < workers; i++ {
+        wg.Add(1)
+        go func(i int) {
+            defer wg.Done()
+            // Every iteration has a distinct canonical Task ID.
+            id := fmt.Sprintf("%08x-1111-4111-8111-111111111111", i+1)
+            err := claimAppInstallTask(db, id, names[i%len(names)])
+            mu.Lock()
+            defer mu.Unlock()
+            switch {
+            case err == nil:
+                winners++
+            case errors.Is(err, ErrAppInstallNameReserved):
+                blocked++
+            default:
+                unexpected++
+            }
+        }(i)
+    }
+    wg.Wait()
+    if winners != 1 || blocked != workers-1 || unexpected != 0 {
+        t.Fatalf("accepted=%d blocked=%d unexpected=%d", winners, blocked, unexpected)
+    }
+    var tasks int64
+    if err := db.Model(&model.Task{}).Count(&tasks).Error; err != nil { t.Fatal(err) }
+    if tasks != 1 { t.Fatalf("rejected names left orphan TaskDB receipts: %d", tasks) }
+    var claims []model.AppInstallNameClaim
+    if err := db.Find(&claims).Error; err != nil { t.Fatal(err) }
+    if len(claims) != 1 || claims[0].NameKey != "jupyter" {
+        t.Fatalf("unexpected claim state %+v", claims)
+    }
+}
+
+func TestAppInstallTaskNameClaimSurvivesRestartStatusChanges(t *testing.T) {
+    db, path := appInstallAdmissionDB(t)
+    id := "55555555-5555-4555-8555-555555555555"
+    if err := claimAppInstallTask(db, id, "Notebook"); err != nil { t.Fatal(err) }
+    if err := db.Model(&model.Task{}).Where("id = ?", id).
+        Update("status", constant.StatusUnknown).Error; err != nil { t.Fatal(err) }
+    other, err := gorm.Open(sqlite.Open(path), &gorm.Config{Logger: logger.Default.LogMode(logger.Silent)})
+    if err != nil { t.Fatal(err) }
+    handle, err := other.DB()
+    if err != nil { t.Fatal(err) }
+    defer handle.Close()
+    replay := "66666666-6666-4666-8666-666666666666"
+    if err := claimAppInstallTask(other, replay, " notebook "); !errors.Is(err, ErrAppInstallNameReserved) {
+        t.Fatalf("restart lost name owner: %v", err)
+    }
+    if err := db.Model(&model.Task{}).Where("id = ?", id).
+        Update("status", constant.StatusSuccess).Error; err != nil { t.Fatal(err) }
+    if err := claimAppInstallTask(other, replay, "NOTEBOOK"); !errors.Is(err, ErrAppInstallNameReserved) {
+        t.Fatalf("completed task unexpectedly released its unresolved name owner: %v", err)
+    }
+    var leaked int64
+    if err := other.Model(&model.Task{}).Where("id = ?", replay).Count(&leaked).Error; err != nil { t.Fatal(err) }
+    if leaked != 0 { t.Fatal("rejected request inserted a Task row") }
+}
+
+func TestAppInstallTaskAdmissionFailsClosedWithoutNameClaimSchema(t *testing.T) {
+    path := filepath.Join(t.TempDir(), "legacy-task.db")
+    db, err := gorm.Open(sqlite.Open(path), &gorm.Config{Logger: logger.Default.LogMode(logger.Silent)})
+    if err != nil { t.Fatal(err) }
+    handle, err := db.DB()
+    if err != nil { t.Fatal(err) }
+    defer handle.Close()
+    if err := db.AutoMigrate(&model.Task{}); err != nil { t.Fatal(err) }
+    if err := claimAppInstallTask(db, "77777777-7777-4777-8777-777777777777", "Jupyter"); err == nil {
+        t.Fatal("missing name claim migration admitted an installation")
+    }
+    var count int64
+    if err := db.Model(&model.Task{}).Count(&count).Error; err != nil { t.Fatal(err) }
+    if count != 0 { t.Fatal("failed migration claim left unpaired task reservation") }
+}
+
+func TestAppInstallNameNormalizationDeniesEmptyAndTooLong(t *testing.T) {
+    for _, name := range []string{"", "   ", strings.Repeat("x", 256)} {
+        if _, err := NormalizeAppInstallNameKey(name); !errors.Is(err, ErrAppInstallNameInvalid) {
+            t.Fatalf("invalid name %q accepted: %v", name, err)
+        }
+    }
+    key, err := NormalizeAppInstallNameKey("  JUPYTER  ")
+    if err != nil || key != "jupyter" { t.Fatalf("normalized=%q err=%v", key, err) }
 }
 
 func TestAppInstallTaskAdmissionUnavailableFailsClosed(t *testing.T) {
