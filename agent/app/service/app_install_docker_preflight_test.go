@@ -123,6 +123,41 @@ func TestDockerPreflightQueryFailureTruncationAndCancellationBlock(t *testing.T)
 	}
 }
 
+func TestDockerPreflightCancellationDuringQueryCannotReportAbsence(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	got, err := inspectAppInstallDockerPreflight(ctx, "jupyter",
+		func() ([]container.Summary, error) {
+			cancel()
+			return []container.Summary{}, nil
+		})
+	if err != nil { t.Fatal(err) }
+	if got.DockerAbsent || got.CanRelease || got.Verified ||
+		!slices.Contains(got.Reasons, "DOCKER_OBSERVATION_FAILED") {
+		t.Fatalf("cancelled Docker request was treated as empty inventory: %+v", got)
+	}
+}
+
+func TestDockerPreflightComposeIdentityIsCaseInsensitiveButNotSubstring(t *testing.T) {
+	for _, tc := range []struct{
+		project string
+		expectsResidue bool
+	}{
+		{" JUPYTER ", true},
+		{"jupyter-old", false},
+		{"notjupyter", false},
+	} {
+		got, err := inspectAppInstallDockerPreflight(context.Background(), "jupyter",
+			func() ([]container.Summary, error) {
+				return []container.Summary{appPreflightContainer("external-worker", tc.project)}, nil
+			})
+		if err != nil { t.Fatal(err) }
+		if got.DockerAbsent == tc.expectsResidue || got.CanRelease {
+			t.Fatalf("project %q incorrectly attributed: %+v", tc.project, got)
+		}
+	}
+}
+
 func TestDockerPreflightRejectsInvalidOrOversizedNameBeforeQuery(t *testing.T) {
 	for _, input := range []string{"", " ", strings.Repeat("q", 256)} {
 		calls := 0
