@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 )
 
@@ -83,4 +84,76 @@ func validateOwnedUpgradePaths(installDir string, svc serviceInfo, expectedBase,
 		}
 	}
 	return bins[0], bins[1], nil
+}
+
+ 
+// Only conventional version tokens from the release channel are admitted.
+// Version input is also a directory component; do not accept separators,
+// traversal, shell syntax, Unicode lookalikes or unbounded lengths.
+var upgradeVersionToken = regexp.MustCompile(`^v?[0-9]+(\\.[0-9]+){2}(-[A-Za-z0-9]+([._-][A-Za-z0-9]+)*)?$`)
+
+func validateUpgradeVersion(version string) error {
+	if len(version) == 0 || len(version) > 96 || !upgradeVersionToken.MatchString(version) {
+		return fmt.Errorf("%w: invalid upgrade release version", errUpgradeRuntimeOwnership)
+	}
+	return nil
+}
+
+// createUpgradeStage is create-only: never recursively remove a previous
+// version directory containing a prior rollback snapshot or an in-flight
+// upgrade transaction. It checks each parent with Lstat before writing.
+func createUpgradeStage(installDir, version string) (string, error) {
+	if err := validateUpgradeVersion(version); err != nil {
+		return "", err
+	}
+	dir := filepath.Join(installDir, "gpupanel")
+	for _, segment := range []string{"tmp", "upgrade"} {
+		next := filepath.Join(dir, segment)
+		stat, err := os.Lstat(next)
+		if os.IsNotExist(err) {
+			if err := os.Mkdir(next, 0700); err != nil {
+				return "", fmt.Errorf("create upgrade staging parent: %w", err)
+			}
+			stat, err = os.Lstat(next)
+		}
+		if err != nil || !stat.IsDir() || stat.Mode()&os.ModeSymlink != 0 {
+			return "", fmt.Errorf("%w: staging parent is redirected or not a directory", errUpgradeRuntimeOwnership)
+		}
+		dir = next
+	}
+	transaction := filepath.Join(dir, version)
+	if err := os.Mkdir(transaction, 0700); err != nil {
+		return "", fmt.Errorf("%w: upgrade stage already exists or cannot be created: %v", errUpgradeRuntimeOwnership, err)
+	}
+	for _, child := range []string{"downloads", "original"} {
+		if err := os.Mkdir(filepath.Join(transaction, child), 0700); err != nil {
+			return "", fmt.Errorf("%w: incomplete upgrade stage: %v", errUpgradeRuntimeOwnership, err)
+		}
+	}
+	return transaction, nil
+}
+
+// validateUpgradeBackupPath refuses a different directory or symlinked
+// rollback data supplied through persistent UpgradeLog.BackupFile. A
+// successful path check alone does not authenticate snapshot contents.
+func validateUpgradeBackupPath(installDir, stored string) (string, error) {
+	base := filepath.Join(installDir, "gpupanel", "tmp", "upgrade")
+	relative, err := filepath.Rel(base, stored)
+	if err != nil || relative == "." || relative == ".." ||
+		strings.HasPrefix(relative, ".."+string(filepath.Separator)) ||
+		strings.Contains(relative, string(filepath.Separator)) {
+		return "", fmt.Errorf("%w: backup path is outside an exact upgrade transaction", errUpgradeRuntimeOwnership)
+	}
+	if err := validateUpgradeVersion(relative); err != nil {
+		return "", err
+	}
+	dir := filepath.Join(installDir, "gpupanel")
+	for _, part := range []string{"tmp", "upgrade", relative, "original"} {
+		dir = filepath.Join(dir, part)
+		stat, err := os.Lstat(dir)
+		if err != nil || !stat.IsDir() || stat.Mode()&os.ModeSymlink != 0 {
+			return "", fmt.Errorf("%w: backup path is missing or redirected", errUpgradeRuntimeOwnership)
+		}
+	}
+	return dir, nil
 }
