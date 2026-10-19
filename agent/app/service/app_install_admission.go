@@ -60,8 +60,14 @@ func claimAppInstallTask(db *gorm.DB, id, name string) error {
 	if err != nil {
 		return err
 	}
-	if _, err := NormalizeAppInstallTaskID(id); err != nil {
-		return err
+	// HTTP callers must normalize/generate their UUID before admission. A
+	// missing ID must not reserve a blank TaskDB key or generate an ID that
+	// is different from the one later used by the task executor.
+	if id == "" {
+		return ErrAppInstallTaskID
+	}
+	if normalized, err := NormalizeAppInstallTaskID(id); err != nil || normalized != id {
+		return ErrAppInstallTaskID
 	}
 	return db.WithContext(context.Background()).Transaction(func(tx *gorm.DB) error {
 		receipt := &model.Task{
@@ -95,8 +101,14 @@ func ReserveAppInstallTask(id, name string) error {
 	if _, err := NormalizeAppInstallNameKey(name); err != nil {
 		return err
 	}
-	if _, err := NormalizeAppInstallTaskID(id); err != nil {
-		return err
+	// HTTP callers must normalize/generate their UUID before admission. A
+	// missing ID must not reserve a blank TaskDB key or generate an ID that
+	// is different from the one later used by the task executor.
+	if id == "" {
+		return ErrAppInstallTaskID
+	}
+	if normalized, err := NormalizeAppInstallTaskID(id); err != nil || normalized != id {
+		return ErrAppInstallTaskID
 	}
 	return claimAppInstallTask(global.TaskDB, id, name)
 }
