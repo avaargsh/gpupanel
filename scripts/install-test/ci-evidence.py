@@ -29,6 +29,7 @@ STAGES = (
     "guest_compose_offline_lifecycle",
     "guest_core_fixture_image_prepared",
     "real_core_agent_container_lifecycle",
+    "real_offline_appinstall_core_taskdb_docker",
     "guest_post_install_offline_restore",
 )
 
@@ -62,6 +63,7 @@ def summarize(state: Path, *, run_completed: bool, source_sha: str) -> dict:
     release = _load(state / "release-transfer.json")
     compose = _load(state / "compose-live.json")
     container = _load(state / "container-live.json")
+    app_install = _load(state / "app-install-live.json")
     app_rejection = _load(state / "app-rejection-live.json")
     restore = _load(state / "restore-live.json")
     valid_source = (
@@ -152,10 +154,42 @@ def summarize(state: Path, *, run_completed: bool, source_sha: str) -> dict:
         and len(container["fixture_image_sha256"]) == 64
         and all(c in "0123456789abcdef" for c in container["fixture_image_sha256"])
     )
+    expected_app_steps = [
+        "real_local_catalog_sync",
+        "invalid_install_uuid_rejected",
+        "real_appinstall_taskdb_success",
+        "independent_running_image_and_network_evidence",
+        "real_app_uninstall_and_resource_removal",
+        "fixture_catalog_cleanup",
+    ]
+    app_install_ok = (
+        isinstance(app_install, dict) and container_ok
+        and set(app_install) == {
+            "kind", "candidate", "guest_machine_id_sha256",
+            "steps", "distinct_install_uninstall_task_ids",
+            "app_evidence_observational_only", "no_public_image_pull",
+            "docker_no_network_or_host_ports", "fixture_source_cleaned",
+            "g5_full_appstore_business_acceptance", "m0_release_decision",
+        }
+        and app_install.get("kind") ==
+            "REAL OWNED UBUNTU GPUPANEL APPINSTALL API; NO MOCKS"
+        and app_install.get("candidate") == browser.get("candidate")
+        and app_install.get("guest_machine_id_sha256") ==
+            browser.get("guest_machine_id_sha256")
+        and app_install.get("steps") == expected_app_steps
+        and app_install.get("distinct_install_uninstall_task_ids") is True
+        and app_install.get("app_evidence_observational_only") is True
+        and app_install.get("no_public_image_pull") is True
+        and app_install.get("docker_no_network_or_host_ports") is True
+        and app_install.get("fixture_source_cleaned") is True
+        and app_install.get("g5_full_appstore_business_acceptance") == "NOT_RUN"
+        and app_install.get("m0_release_decision") == "NO_GO"
+    )
     expected_binary = browser.get("candidate", {}).get("binary_sha256") if browser_ok else None
     restored_digest = restore.get("offline_checkpoint_sha256") if isinstance(restore, dict) else None
     restore_ok = (
         isinstance(restore, dict) and runtime_ok and compose_ok and container_ok
+        and app_install_ok
         and restore.get("kind") ==
             "REAL GUEST POST-INSTALL OFFLINE SNAPSHOT RESTORE; PARTIAL G3/G6"
         and restore.get("source_sha") == source_sha
@@ -196,7 +230,7 @@ def summarize(state: Path, *, run_completed: bool, source_sha: str) -> dict:
     success = (
         run_completed and valid_source and release_ok and sequence_ok
         and marks == list(STAGES) and browser_ok and runtime_ok and compose_ok
-        and container_ok and restore_ok and app_rejection_ok
+        and container_ok and restore_ok and app_rejection_ok and app_install_ok
         and isinstance(prepared, dict)
         and prepared.get("signed_checksum_verified") is True
     )
@@ -228,6 +262,7 @@ def summarize(state: Path, *, run_completed: bool, source_sha: str) -> dict:
         "agent_restart_and_recovery": "PARTIAL_PASS" if success else "NOT_ATTESTED",
         "offline_docker_compose_fixture": "PASS" if success else "NOT_ATTESTED",
         "core_agent_docker_container_lifecycle": "PARTIAL_PASS" if success else "NOT_ATTESTED",
+        "gpupanel_offline_appinstall_lifecycle": "PARTIAL_PASS" if success else "NOT_ATTESTED",
         "real_appinstall_missing_detail_rejection": "PASS" if success else "NOT_ATTESTED",
         "post_install_offline_disk_restore": "PASS" if success else "NOT_ATTESTED",
         "full_app_compose_install_lifecycle": "NOT_RUN",
