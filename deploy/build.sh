@@ -69,6 +69,12 @@ mkdir -p "$BUILD"
     go build -trimpath -ldflags '-s -w' -o "$BUILD/gpupanel-agent" ./cmd/server )
 
 # ---- assemble release payload ------------------------------------------------
+# The CI runner deliberately uses umask 077 for passwords, SSH keys and VM
+# images. The *public release archive*, however, must remain traversable by
+# an ordinary non-root operator running the mandatory read-only preflight.
+# Normalize payload directory/file permissions independent of caller umask;
+# this subshell script does NOT relax the parent runner's private-file umask.
+umask 022
 # The package directory name must match the tarball stem: the upgrade code
 # derives its extraction dir from the tarball name.
 PKG_NAME="gpupanel-${VERSION}-${GOOS_TARGET}-${GOARCH_TARGET}"

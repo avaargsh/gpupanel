@@ -192,3 +192,43 @@ python3 scripts/install-test/runtime.py
 真实 App/Compose 安装/卸载、磁盘满/下载中断、用户 Workspace
 恢复，也没有独立操作员放行。CI 的单元测试只验证门禁拒绝逻辑，
 不冒充实际运行的 KVM 或 Ubuntu VM。
+
+## 2026-10-19 增量：真正运行的 GitHub Actions QEMU/KVM 试验流水线
+
+新增 `.github/workflows/gpupanel-real-ubuntu-vm.yml`。
+与只使用 mock API 的 Chromium smoke 不同，这条工作流将在**独立
+GitHub Actions Ubuntu 24.04 x86 runner** 上自行构建安装包，然后：
+
+1. 显式确认有可用的 `/dev/kvm`；没有硬件虚拟化直接标记
+   **BLOCKED**，不切换纯模拟器后声称已经通过；
+2. 下载固定版本 Ubuntu minimal cloud image，按 Ubuntu 官方
+   签名清单及固定 SHA-256 验证，建立专属 QEMU/QCOW2 guest；
+3. guest 内安装 Docker（不在 GitHub runner 宿主安装
+   GPUPanel 服务），生成并复验断电状态的独立 QCOW2 检查点；
+4. 从此次 CI checkout 的准确源码构建完整 Release 包，在
+   guest 执行独立预检，确认关键检查 PASS 后显式选择
+   `--approve-disposable-vm-install`；
+5. 进入真实 Web/浏览器登录验证、受认证保护的 Host/Docker、
+   Operations Center、安装任务列表及 CSRF 拒绝；
+6. **同一源码和同一组已安装 Core/Agent 二进制**完成 guest
+   正常重启、受控 Agent 崩溃与人工 fixture 恢复；
+7. 只上传脱敏 `ci-evidence.json`，始终将整个 M0
+   `m0_release_decision` 固定为 **NO_GO**。
+
+工作流仅使用无写入权限的 checkout，禁止上传 VM 私钥、
+disk、随机初始化密码、原始日志和浏览器截图。私有内容全部在
+CI 作业结束时丢弃，额外执行本任务自有 QEMU 的优雅停止。
+它有 75 分钟硬超时，提交来自外部 fork 的 PR 不启用特权 VM 作业。
+
+运行范围是**完整真实运行链路的一部分**。即使步骤全部 PASS，
+也只能表示这一独立 CI runner 的 G3 fresh install、G4 浏览器
+和 G6 Agent 恢复片段；**不代表**真实 App/Compose 的 G5
+完整生命周期、升级/回滚、磁盘损坏恢复、真实 GPU、
+用户 Workspace 持久化或独立人工验收。
+
+PR 自动触发与 VM 代码路径相关的变更；手动
+`workflow_dispatch` 可在主分支重新运行，但必须将实际
+工作流 Run ID、checkout Commit SHA 与红acted evidence
+保存并绑定，不复用历史其他版本的 PASS。作业因网络镜像、
+KVM 设备、Docker 包、guest 启动或服务权限失败时，
+状态必须明确是失败/阻塞，不能以自动跳过算作 GO。
