@@ -50,6 +50,24 @@ class LiveVmEvidence(unittest.TestCase):
             "container_removed": True,
             "local_image_removed": True,
         }
+        self.container = {
+            "kind": "REAL UBUNTU GUEST + AUTHENTICATED CORE→AGENT→DOCKER; NO MOCK API",
+            "candidate": self.candidate,
+            "guest_machine_id_sha256": "d" * 64,
+            "fixture_image_sha256": "e" * 64,
+            "distinct_task_ids": True,
+            "steps": [
+                "create_and_independent_running_observation",
+                "stop_with_independent_observation",
+                "start_with_independent_observation",
+                "restart_with_independent_observation",
+                "remove_with_independent_observation",
+            ],
+            "no_external_app_catalog_used": True,
+            "app_install_lifecycle": "NOT_RUN",
+            "compose_install_lifecycle": "NOT_RUN",
+            "secret": "DO_NOT_PRINT_CONTAINER_SECRET",
+        }
         (self.state / "ubuntu2404").mkdir()
         self.write("ubuntu2404/image-provenance.json", {
             "signed_checksum_verified": True,
@@ -58,6 +76,7 @@ class LiveVmEvidence(unittest.TestCase):
         self.write("browser-live.json", self.browser)
         self.write("runtime-live.json", self.runtime)
         self.write("compose-live.json", self.compose)
+        self.write("container-live.json", self.container)
         (self.state / "ci-stages.txt").write_text(
             "\n".join(audit.STAGES) + "\n"
         )
@@ -74,12 +93,13 @@ class LiveVmEvidence(unittest.TestCase):
         self.assertEqual(result["status"], "PARTIAL_ACCEPTED")
         self.assertEqual(result["m0_release_decision"], "NO_GO")
         self.assertEqual(result["offline_docker_compose_fixture"], "PASS")
+        self.assertEqual(result["core_agent_docker_container_lifecycle"], "PARTIAL_PASS")
         self.assertEqual(result["upgrade_and_rollback"], "NOT_RUN")
         self.assertEqual(result["full_app_compose_install_lifecycle"], "NOT_RUN")
         self.assertEqual(result["independent_reviewer"], "NOT_ATTESTED")
         encoded = json.dumps(result)
         for secret in ("MUST_NOT_LEAK", "SECRET_LOG_SHOULD_NEVER_APPEAR",
-                       "DO_NOT_PRINT_VM_IMAGE_PROVIDER"):
+                       "DO_NOT_PRINT_VM_IMAGE_PROVIDER", "DO_NOT_PRINT_CONTAINER_SECRET"):
             self.assertNotIn(secret, encoded)
 
     def test_early_failure_cannot_mark_pass(self):
@@ -169,7 +189,7 @@ class LiveVmEvidence(unittest.TestCase):
         self.assertEqual(failure.compose_stage(
             "GUEST_COMPOSE_STAGE=up release=GO\n"
         ), "unknown")
-        self.assertEqual(failure.SCRIPTS.keys(), {"browser", "runtime", "compose"})
+        self.assertEqual(failure.SCRIPTS.keys(), {"browser", "runtime", "compose", "container"})
 
     def test_compose_fixture_requires_guest_identity_and_does_not_certify_appinstall(self):
         for corrupted in (
@@ -186,6 +206,22 @@ class LiveVmEvidence(unittest.TestCase):
                 self.assertEqual(self.summarise()["full_app_compose_install_lifecycle"], "NOT_RUN")
         (self.state / "compose-live.json").unlink()
         self.assertEqual(self.summarise()["offline_docker_compose_fixture"], "NOT_ATTESTED")
+
+    def test_core_agent_container_task_proof_is_exact_and_non_approving(self):
+        for patch in (
+            {"guest_machine_id_sha256": "0" * 64},
+            {"candidate": {**self.candidate, "source_sha": "a" * 40}},
+            {"steps": self.container["steps"][:-1]},
+            {"distinct_task_ids": False},
+            {"fixture_image_sha256": "no"},
+            {"no_external_app_catalog_used": False},
+            {"app_install_lifecycle": "PASS"},
+        ):
+            with self.subTest(patch=patch):
+                self.write("container-live.json", {**self.container, **patch})
+                self.assertEqual(self.summarise()["status"], "BLOCKED_OR_FAILED")
+        (self.state / "container-live.json").unlink()
+        self.assertEqual(self.summarise()["status"], "BLOCKED_OR_FAILED")
 
     def test_offline_scratch_image_has_explicit_executable_entrypoint(self):
         guest = (ROOT / "scripts/install-test/compose-fixture-guest.py").read_text()
