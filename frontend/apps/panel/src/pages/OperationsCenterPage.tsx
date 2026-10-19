@@ -105,10 +105,22 @@ export default function OperationsCenterPage() {
     );
     const now = Date.now();
     // A failed refresh must never show previously cached receipts as current.
-    const rows = isLocal && receipts.isSuccess && !receipts.isError
+    const rows = isLocal && receipts.isSuccess && !receipts.isFetching && !receipts.isError
         ? receipts.currentData ?? []
         : [];
     const projection = projectOperationReceipts(rows, now);
+    const hostSection = (items: HostOperation[]) => (
+        receipts.isLoading || receipts.isFetching
+            ? <p role="status" className="text-sm text-muted-foreground">{t('hostOps.loading')}</p>
+            : receipts.isError
+                ? <Alert variant="destructive"><AlertDescription>
+                    {t('hostOps.loadError')}{' '}
+                    <Button size="sm" type="button" variant="outline" onClick={() => void receipts.refetch()}>
+                        {t('common.refresh')}
+                    </Button>
+                </AlertDescription></Alert>
+                : <ReceiptRows rows={items} now={now} />
+    );
     // Agent tasks are a separate local-host execution log, NOT Host receipts
     // or per-session approvals. Never display stale cached results on refresh.
     const executionTasks = isLocal && !taskLogs.isFetching && !taskLogs.isError && taskLogs.isSuccess
@@ -155,15 +167,6 @@ export default function OperationsCenterPage() {
             </div>
             {!isLocal ? <Alert>
                 <AlertDescription>{t('opsCenter.localOnly')}</AlertDescription>
-            </Alert> : receipts.isLoading ? <p role="status" className="text-sm text-muted-foreground">
-                {t('hostOps.loading')}
-            </p> : receipts.isError ? <Alert variant="destructive">
-                <AlertDescription>
-                    {t('hostOps.loadError')}{' '}
-                    <Button variant="outline" size="sm" type="button" onClick={() => void receipts.refetch()}>
-                        {t('common.refresh')}
-                    </Button>
-                </AlertDescription>
             </Alert> : <Tabs value={tab} onValueChange={(next) => setTab(next as View)}>
                 <TabsList variant="line" className="module-tabs">
                     <TabsTrigger value="tasks">{labels.tasks}</TabsTrigger>
@@ -178,13 +181,13 @@ export default function OperationsCenterPage() {
                     <CardContent>
                         <TabsContent value="tasks">
                             <h3 className="mb-2 text-sm font-semibold">{t('opsCenter.hostReceipts')}</h3>
-                            <ReceiptRows rows={projection.tasks} now={now} />
+                            {hostSection(projection.tasks)}
                             {agentTaskSection(agentTasks.needsAttention)}
                         </TabsContent>
-                        <TabsContent value="confirmations"><ReceiptRows rows={projection.pendingConfirmation} now={now} /></TabsContent>
+                        <TabsContent value="confirmations">{hostSection(projection.pendingConfirmation)}</TabsContent>
                         <TabsContent value="activity">
                             <h3 className="mb-2 text-sm font-semibold">{t('opsCenter.hostReceipts')}</h3>
-                            <ReceiptRows rows={projection.activity} now={now} />
+                            {hostSection(projection.activity)}
                             {agentTaskSection(agentTasks.activity)}
                         </TabsContent>
                     </CardContent>
