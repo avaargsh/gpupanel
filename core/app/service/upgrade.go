@@ -215,9 +215,7 @@ func (u *UpgradeService) Upgrade(req dto.Upgrade) error {
 			global.LOG.Errorf("upgrade gpupanel-core failed, err: %v", err)
 			_ = settingRepo.Update("SystemStatus", "Free")
 			if rollbackErr := u.handleRollback(originalDir, 1, svcInfo); rollbackErr != nil {
-
 				global.LOG.Errorf("automatic rollback incomplete: %v", rollbackErr)
-
 			}
 			return
 		}
@@ -225,9 +223,7 @@ func (u *UpgradeService) Upgrade(req dto.Upgrade) error {
 			global.LOG.Errorf("upgrade gpupanel-agent failed, err: %v", err)
 			_ = settingRepo.Update("SystemStatus", "Free")
 			if rollbackErr := u.handleRollback(originalDir, 1, svcInfo); rollbackErr != nil {
-
 				global.LOG.Errorf("automatic rollback incomplete: %v", rollbackErr)
-
 			}
 			return
 		}
@@ -239,9 +235,7 @@ func (u *UpgradeService) Upgrade(req dto.Upgrade) error {
 			global.LOG.Errorf("upgrade %s failed, err: %v", svcInfo.coreName, err)
 			_ = settingRepo.Update("SystemStatus", "Free")
 			if rollbackErr := u.handleRollback(originalDir, 3, svcInfo); rollbackErr != nil {
-
 				global.LOG.Errorf("automatic rollback incomplete: %v", rollbackErr)
-
 			}
 			return
 		}
@@ -249,9 +243,7 @@ func (u *UpgradeService) Upgrade(req dto.Upgrade) error {
 			global.LOG.Errorf("upgrade %s failed, err: %v", svcInfo.agentName, err)
 			_ = settingRepo.Update("SystemStatus", "Free")
 			if rollbackErr := u.handleRollback(originalDir, 3, svcInfo); rollbackErr != nil {
-
 				global.LOG.Errorf("automatic rollback incomplete: %v", rollbackErr)
-
 			}
 			return
 		}
@@ -260,9 +252,7 @@ func (u *UpgradeService) Upgrade(req dto.Upgrade) error {
 			global.LOG.Errorf("Update language files failed: %v", err)
 			_ = settingRepo.Update("SystemStatus", "Free")
 			if rollbackErr := u.handleRollback(originalDir, 4, svcInfo); rollbackErr != nil {
-
 				global.LOG.Errorf("automatic rollback incomplete: %v", rollbackErr)
-
 			}
 			return
 		}
@@ -270,9 +260,7 @@ func (u *UpgradeService) Upgrade(req dto.Upgrade) error {
 			global.LOG.Warnf("Update GeoIP database failed: %v", err)
 			_ = settingRepo.Update("SystemStatus", "Free")
 			if rollbackErr := u.handleRollback(originalDir, 4, svcInfo); rollbackErr != nil {
-
 				global.LOG.Errorf("automatic rollback incomplete: %v", rollbackErr)
-
 			}
 			return
 		}
