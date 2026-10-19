@@ -68,6 +68,31 @@ class LiveVmEvidence(unittest.TestCase):
             "compose_install_lifecycle": "NOT_RUN",
             "private": "NEVER_EXPOSE_CONTAINER_TASK_LOG",
         }
+        self.compose_api = {
+            "kind": "REAL AUTHENTICATED GPUPANEL CORE→AGENT COMPOSE API + GUEST DOCKER",
+            "candidate": self.candidate,
+            "guest_machine_id_sha256": "d" * 64,
+            "fixture_image_sha256": "e" * 64,
+            "create_taskdb_id_bound": True,
+            "exact_record_identity": True,
+            "isolated_network_none": True,
+            "no_published_ports": True,
+            "no_registry_pull": True,
+            "no_unscoped_cleanup": True,
+            "steps": [
+                "create_taskdb_success_and_independent_running_inspection",
+                "exact_persisted_compose_record_found",
+                "stop_and_independent_docker_state",
+                "start_and_independent_docker_state",
+                "restart_and_independent_docker_state",
+                "delete_only_owned_compose_project_and_record",
+            ],
+            "app_install_lifecycle": "NOT_RUN",
+            "m0_release_decision": "NO_GO",
+            "other_private": "DO_NOT_LEAK_COMPOSE_RAW",
+        }
+        # This fixture metadata must follow strict known-field evidence schema.
+        self.compose_api.pop("other_private")
         self.restore = {
             "kind": "REAL GUEST POST-INSTALL OFFLINE SNAPSHOT RESTORE; PARTIAL G3/G6",
             "source_sha": self.source,
@@ -102,6 +127,7 @@ class LiveVmEvidence(unittest.TestCase):
         self.write("runtime-live.json", self.runtime)
         self.write("compose-live.json", self.compose)
         self.write("container-live.json", self.container)
+        self.write("compose-api-live.json", self.compose_api)
         self.write("restore-live.json", self.restore)
         (self.state / "ci-stages.txt").write_text(
             "\n".join(audit.STAGES) + "\n"
@@ -121,6 +147,7 @@ class LiveVmEvidence(unittest.TestCase):
         self.assertEqual(result["offline_docker_compose_fixture"], "PASS")
         self.assertEqual(result["post_install_offline_disk_restore"], "PASS")
         self.assertEqual(result["core_agent_docker_container_lifecycle"], "PARTIAL_PASS")
+        self.assertEqual(result["core_agent_compose_api_lifecycle"], "PARTIAL_PASS")
         self.assertEqual(result["upgrade_and_rollback"], "NOT_RUN")
         self.assertEqual(result["full_app_compose_install_lifecycle"], "NOT_RUN")
         self.assertEqual(result["independent_reviewer"], "NOT_ATTESTED")
@@ -129,6 +156,33 @@ class LiveVmEvidence(unittest.TestCase):
                        "DO_NOT_PRINT_VM_IMAGE_PROVIDER", "NEVER_REPORT_ME",
                        "NEVER_EXPOSE_CONTAINER_TASK_LOG"):
             self.assertNotIn(secret, encoded)
+
+    def test_real_compose_api_evidence_is_required_and_fail_closed(self):
+        original = dict(self.compose_api)
+        for bad in (
+            {"candidate": {**self.candidate, "source_sha": "0" * 40}},
+            {"guest_machine_id_sha256": "0" * 64},
+            {"fixture_image_sha256": "f" * 64},
+            {"create_taskdb_id_bound": False},
+            {"exact_record_identity": False},
+            {"isolated_network_none": False},
+            {"no_published_ports": False},
+            {"no_registry_pull": False},
+            {"no_unscoped_cleanup": False},
+            {"steps": self.compose_api["steps"][:-1]},
+            {"m0_release_decision": "GO"},
+            {"untrusted_extra": "SECRET_LOG_SHOULD_NEVER_APPEAR"},
+        ):
+            with self.subTest(bad=bad):
+                self.write("compose-api-live.json", {**original, **bad})
+                report = self.summarise()
+                self.assertEqual(report["status"], "BLOCKED_OR_FAILED")
+                self.assertEqual(report["core_agent_compose_api_lifecycle"], "NOT_ATTESTED")
+                self.assertEqual(report["m0_release_decision"], "NO_GO")
+                self.assertNotIn("SECRET_LOG_SHOULD_NEVER_APPEAR", json.dumps(report))
+        self.write("compose-api-live.json", original)
+        (self.state / "compose-api-live.json").unlink()
+        self.assertEqual(self.summarise()["status"], "BLOCKED_OR_FAILED")
 
     def test_archive_integrity_and_guest_binding_are_required(self):
         baseline = self.summarise()
