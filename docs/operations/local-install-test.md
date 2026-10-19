@@ -260,3 +260,30 @@ KVM 设备、Docker 包、guest 启动或服务权限失败时，
 UNKNOWN 持久化、并发冲突、容器副作用回执或真实用户业务服务，
 不能勾选 G5 退出条件。下一步才是通过 GPUPanel 的真实受认证 API
 联动操作与明确的任务结果/资源证据核对。
+
+## 2026-10-19 实机增量：通过 GPUPanel API 控制容器
+
+前一阶段的离线 Compose 实测是 **Docker Engine/Compose** 自身的
+真实生命周期，不经过 GPUPanel Core/Agent。本增量将该 Compose 证据
+保留为独立阶段，随后在**同一一次性 Ubuntu VM / 同一源码二进制**
+测试 GPUPanel 受认证的 Core→Agent→Docker 执行通路。
+
+CI 在 guest 内从 Ubuntu 签名 apt 包的 `busybox-static` 导入本地
+`gpupanel-m0-fixture:local` 镜像，完全不需要外部 Registry
+或远程 App Catalog。测试脚本 `scripts/install-test/container.py`
+检查真实浏览器身份、当前源码/VM 与恢复证据后，经 Core HTTP API
+执行五个独立 Task UUID：create→stop→start→restart→remove。
+每次 API 接受 **不能代表操作成功**；必须等待 Agent 持久 TaskDB
+中的精确 UUID + `Container` Scope + 操作类型为 `Success`，
+再由 guest Docker 独立检查当前运行/退出/删除状态。
+
+所有容器名限定为专属测试前缀；同名存在立即拒绝，失败不自动重复
+POST、不隐式清理外部对象。初始匿名容器创建必须被 Core 拒绝。
+脚本不访问宿主 Docker 或任何生产地址，错误日志仍只通过
+`ci-failure.py` 输出白名单异常类和源码行号。上传证据新增
+`core_agent_docker_container_lifecycle` 字段；无论通过与否，
+`full_app_compose_install_lifecycle` 必须保持 `NOT_RUN`。
+
+此切片验证了受认证的 GPUPanel **容器操作**，不等于 AppInstall
+DB 跨进程事务、Lost ACK、应用市场安装、不同 UUID 同名竞态、
+失败回收、真实镜像供应链签名或者完整 G5 App 验收；M0 仍 NO-GO。
