@@ -98,3 +98,33 @@ Agent `task.db` 中的持久 `Task` 记录。应用安装、资源操作等
 数据分页边界：Agent 默认仅最近 20 条（可在任务日志页翻页），
 Host 当前会话最近 50 条。两者不跨库去重、不合并时间线、
 不宣称全量历史。ACP Control Plane 仍未接入。
+
+## 2026-10-19 增量：按安装任务精确关联 AppInstall 证据
+
+操作中心对 Agent Task Logs 增加 **只读「核对安装资源证据」** 按钮。
+只有 `type=App`、`operate=TaskInstall`、`resourceID` 为正的安全整数，
+且任务 ID 有效时才显示。调用既有
+`GET /apps/installed/evidence/{resourceID}`，不新增执行、恢复或审批 API。
+
+现有 Agent 证据处理只读检查 AppInstall 行、最近的同 resourceID
+TaskInstall 回执及 Docker 资源状态，并给出
+`CONSISTENT / PARTIAL / CONFLICT / UNKNOWN`。证据响应返回
+`taskId`：界面 **仅在它与用户选中的 task.id 完全一致时** 才展示
+相关资源快照。因为同一安装可有不同历史尝试，若最新关联任务变更、
+资源 ID 对不上或 taskId 缺失，界面只显示「不能归因」，不把其他
+任务的结果错认成本次结果。
+
+分类为 CONSISTENT 仍然只代表有限时间点的元数据与容器观测一致，
+**不证明健康检查、业务就绪、存储完整性或用户批准安装成功**。
+状态为 Success 的任务只在 Activity 作为执行回执展示，
+不自动升级为 Verified，也不允许自动重复安装。
+证据视图复用原 App Evidence Sheet、`Cache-Control: no-store`
+和本机管理员权限边界，查询失败和刷新中隐藏旧快照。
+
+回归测试覆盖：非 App/非 TaskInstall、零或非整数资源 ID、
+关联到不同任务、响应缺少 taskId、后台 verified 标志异常、
+证据解析边界与不修改原始任务数据。此增量没有服务端迁移，
+没有将两个数据库记录写成单一事务或新的审计保证。
+
+真实浏览器登录、当前候选安装升级/回滚、Docker 运行结果与 G3–G6
+完整矩阵仍然 **NOT RUN / M0 NO-GO**。
