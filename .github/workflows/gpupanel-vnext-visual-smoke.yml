@@ -42,5 +42,7 @@ jobs:
           path: |
             .local/install-test/vnext/*.png
             .local/install-test/vnext/*.json
+            .local/install-test/operations/*.json
+            .local/install-test/operations/*.png
           if-no-files-found: warn
           retention-days: 7
