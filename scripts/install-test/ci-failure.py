@@ -16,6 +16,7 @@ SCRIPTS = {
     "compose": ("compose.raw.log", "compose-live.py"),
     "restore": ("restore.raw.log", "restore-live.py"),
     "container": ("container.raw.log", "container.py"),
+    "reinstall": ("reinstall.raw.log", "reinstall-denial.py"),
 }
 LINE = re.compile(r'File "[^"\n]*/([^/"]+\.py)", line ([1-9][0-9]{0,5})')
 CLASS = re.compile(r"^(AssertionError|AttributeError|FileNotFoundError|"
@@ -52,7 +53,7 @@ def diagnostic(raw: str, basename: str) -> str:
 
 def main() -> int:
     if len(sys.argv) != 2 or sys.argv[1] not in SCRIPTS:
-        print("Usage: ci-failure.py browser|runtime|compose|restore|container", file=sys.stderr)
+        print("Usage: ci-failure.py browser|runtime|compose|restore|container|reinstall", file=sys.stderr)
         return 2
     file_name, basename = SCRIPTS[sys.argv[1]]
     path = STATE / file_name
@@ -64,6 +65,17 @@ def main() -> int:
     raw = path.read_text(encoding="utf-8", errors="replace")[-200_000:]
     if sys.argv[1] == "compose":
         print("GUEST_COMPOSE_FAILURE_STAGE=" + compose_stage(raw) + " release=NO_GO")
+    if sys.argv[1] == "reinstall":
+        # The producer writes only fixed enum values, never guest command
+        # output. Match both entire lines and enum allowlists before echo.
+        marker = re.findall(
+            r"(?m)^REINSTALL_PREFLIGHT_DIAG exit=(ZERO|SSH_TRANSPORT|OTHER) "
+            r"report=(BLOCKED_JSON|OTHER_JSON|NON_JSON) release=NO_GO$",
+            raw,
+        )
+        if marker:
+            status, shape = marker[-1]
+            print(f"REINSTALL_PREFLIGHT_DIAG exit={status} report={shape} release=NO_GO")
     print(diagnostic(raw, basename))
     return 0
 

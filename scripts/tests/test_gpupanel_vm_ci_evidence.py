@@ -39,6 +39,20 @@ class LiveVmEvidence(unittest.TestCase):
             "fixture_marker_and_login_settings_retained": True,
             "other_secret": "SECRET_LOG_SHOULD_NEVER_APPEAR",
         }
+        self.reinstall = {
+            "kind": "REAL OWNED UBUNTU GUEST REINSTALL REFUSAL; NO MOCKS",
+            "candidate": self.candidate,
+            "guest_machine_id_sha256": "d" * 64,
+            "preflight_runtime_collision": "BLOCKED",
+            "operator_gated_reinstall": "DENIED",
+            "running_binary_and_pid_unchanged": True,
+            "pctl_and_systemd_hashes_unchanged": True,
+            "credential_values_recorded": False,
+            "release_decision": "NO_GO",
+            "private_password": "NEVER_PRINT_PASSWORD",
+        }
+        # Evidence schema rejects extraneous fields, including passwords.
+        self.reinstall.pop("private_password")
         self.compose = {
             "kind": "REAL GUEST OFFLINE DOCKER COMPOSE FIXTURE; NOT GPUPanel AppInstall",
             "source_sha": self.source,
@@ -100,6 +114,7 @@ class LiveVmEvidence(unittest.TestCase):
         self.write("release-transfer.json", self.release_transfer)
         self.write("browser-live.json", self.browser)
         self.write("runtime-live.json", self.runtime)
+        self.write("reinstall-denial-live.json", self.reinstall)
         self.write("compose-live.json", self.compose)
         self.write("container-live.json", self.container)
         self.write("restore-live.json", self.restore)
@@ -118,6 +133,7 @@ class LiveVmEvidence(unittest.TestCase):
         result = self.summarise()
         self.assertEqual(result["status"], "PARTIAL_ACCEPTED")
         self.assertEqual(result["m0_release_decision"], "NO_GO")
+        self.assertEqual(result["already_installed_reinstall_refusal"], "PASS")
         self.assertEqual(result["offline_docker_compose_fixture"], "PASS")
         self.assertEqual(result["post_install_offline_disk_restore"], "PASS")
         self.assertEqual(result["core_agent_docker_container_lifecycle"], "PARTIAL_PASS")
@@ -155,6 +171,81 @@ class LiveVmEvidence(unittest.TestCase):
         self.write("release-transfer.json", self.release_transfer)
         (self.state / "release-transfer.json").unlink()
         self.assertEqual(self.summarise()["status"], "BLOCKED_OR_FAILED")
+
+    def test_reinstall_denial_is_required_exact_scope_and_no_mutation(self):
+        script = (ROOT / "scripts/install-test/reinstall-denial.py").read_text()
+        import ast
+        ast.parse(script)
+        self.assertIn("candidate.verify_browser_chain(browser, local)", script)
+        self.assertIn("verify_preflight(preflight.stdout, preflight.returncode)", script)
+        self.assertIn("if after != before:", script)
+        runner = (ROOT / "scripts/install-test/ci-live-vm.sh").read_text()
+        self.assertIn("python3 scripts/install-test/reinstall-denial.py", runner)
+        self.assertIn("python3 scripts/install-test/ci-failure.py reinstall", runner)
+        self.assertLess(runner.index("stage 'guest_reinstall_collision_denied'"),
+                        runner.index("stage 'guest_compose_offline_lifecycle'"))
+        faults = [
+            {"candidate": {**self.candidate, "source_sha": "0" * 40}},
+            {"guest_machine_id_sha256": "0" * 64},
+            {"preflight_runtime_collision": "PASS"},
+            {"operator_gated_reinstall": "SUCCESS"},
+            {"running_binary_and_pid_unchanged": False},
+            {"pctl_and_systemd_hashes_unchanged": False},
+            {"credential_values_recorded": True},
+            {"release_decision": "GO"},
+            {"hidden_password": "SECRET"},
+        ]
+        for change in faults:
+            with self.subTest(fault=change):
+                self.write("reinstall-denial-live.json", {**self.reinstall, **change})
+                report = self.summarise()
+                self.assertEqual(report["status"], "BLOCKED_OR_FAILED")
+                self.assertEqual(report["already_installed_reinstall_refusal"], "NOT_ATTESTED")
+        (self.state / "reinstall-denial-live.json").unlink()
+        self.assertEqual(self.summarise()["status"], "BLOCKED_OR_FAILED")
+
+    def test_reinstall_preflight_failure_reports_only_fixed_codes(self):
+        import contextlib
+        import io
+        import sys
+
+        script = ROOT / "scripts/install-test/reinstall-denial.py"
+        sys.path.insert(0, str(script.parent))
+        try:
+            module_spec = importlib.util.spec_from_file_location(
+                "gpupanel_reinstall_denial_test", script
+            )
+            module = importlib.util.module_from_spec(module_spec)
+            module_spec.loader.exec_module(module)
+        finally:
+            sys.path.pop(0)
+        raw = json.dumps({
+            "product": "GPUPanel",
+            "phase": "pre-install-diagnostics-only",
+            "installable": False,
+            "safe_to_install": False,
+            "blockers": ["runtime_collision"],
+            "checks": [{"code": "runtime_collision", "state": "BLOCKED"}],
+            "password": "PRIVATE_CREDENTIAL_MUST_NOT_APPEAR",
+        })
+        for code, expected in (
+            (0, "exit=ZERO report=BLOCKED_JSON"),
+            (255, "exit=SSH_TRANSPORT report=BLOCKED_JSON"),
+            (1, "exit=OTHER report=BLOCKED_JSON"),
+        ):
+            output = io.StringIO()
+            with contextlib.redirect_stderr(output):
+                with self.assertRaisesRegex(RuntimeError, "preflight did not reject"):
+                    module.verify_preflight(raw, code)
+            message = output.getvalue()
+            self.assertIn(expected, message)
+            self.assertIn("release=NO_GO", message)
+            self.assertNotIn("PRIVATE_CREDENTIAL_MUST_NOT_APPEAR", message)
+        module.verify_preflight(raw, 2)
+        with contextlib.redirect_stderr(io.StringIO()) as output:
+            with self.assertRaises(RuntimeError):
+                module.verify_preflight("not-json-password=PRIVATE_CREDENTIAL", 255)
+        self.assertNotIn("PRIVATE_CREDENTIAL", output.getvalue())
 
     def test_early_failure_cannot_mark_pass(self):
         self.assertEqual(self.summarise(completed=False)["status"], "BLOCKED_OR_FAILED")
@@ -243,7 +334,7 @@ class LiveVmEvidence(unittest.TestCase):
         self.assertEqual(failure.compose_stage(
             "GUEST_COMPOSE_STAGE=up release=GO\n"
         ), "unknown")
-        self.assertEqual(failure.SCRIPTS.keys(), {"browser", "runtime", "compose", "restore", "container"})
+        self.assertEqual(failure.SCRIPTS.keys(), {"browser", "runtime", "compose", "restore", "container", "reinstall"})
 
     def test_compose_fixture_requires_guest_identity_and_does_not_certify_appinstall(self):
         for corrupted in (

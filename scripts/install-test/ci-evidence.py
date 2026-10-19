@@ -25,6 +25,7 @@ STAGES = (
     "guest_fresh_install",
     "real_installed_browser",
     "guest_agent_recovery",
+    "guest_reinstall_collision_denied",
     "guest_compose_offline_lifecycle",
     "guest_core_fixture_image_prepared",
     "real_core_agent_container_lifecycle",
@@ -57,6 +58,7 @@ def summarize(state: Path, *, run_completed: bool, source_sha: str) -> dict:
     sequence_ok = marks == list(STAGES[:len(marks)])
     browser = _load(state / "browser-live.json")
     runtime = _load(state / "runtime-live.json")
+    reinstall = _load(state / "reinstall-denial-live.json")
     prepared = _load(state / "ubuntu2404/image-provenance.json")
     release = _load(state / "release-transfer.json")
     compose = _load(state / "compose-live.json")
@@ -110,8 +112,29 @@ def summarize(state: Path, *, run_completed: bool, source_sha: str) -> dict:
         and runtime.get("explicit_fixture_operator_recovery") is True
         and runtime.get("fixture_marker_and_login_settings_retained") is True
     )
+    reinstall_ok = (
+        isinstance(reinstall, dict) and runtime_ok
+        and reinstall.get("kind") ==
+            "REAL OWNED UBUNTU GUEST REINSTALL REFUSAL; NO MOCKS"
+        and reinstall.get("candidate") == browser.get("candidate")
+        and reinstall.get("guest_machine_id_sha256")
+            == browser.get("guest_machine_id_sha256")
+        and reinstall.get("preflight_runtime_collision") == "BLOCKED"
+        and reinstall.get("operator_gated_reinstall") == "DENIED"
+        and reinstall.get("running_binary_and_pid_unchanged") is True
+        and reinstall.get("pctl_and_systemd_hashes_unchanged") is True
+        and reinstall.get("credential_values_recorded") is False
+        and reinstall.get("release_decision") == "NO_GO"
+        and set(reinstall) == {
+            "kind", "candidate", "guest_machine_id_sha256",
+            "preflight_runtime_collision", "operator_gated_reinstall",
+            "running_binary_and_pid_unchanged",
+            "pctl_and_systemd_hashes_unchanged",
+            "credential_values_recorded", "release_decision",
+        }
+    )
     compose_ok = (
-        isinstance(compose, dict)
+        isinstance(compose, dict) and reinstall_ok
         and browser_ok and runtime_ok
         and compose == {
             "kind": "REAL GUEST OFFLINE DOCKER COMPOSE FIXTURE; NOT GPUPanel AppInstall",
@@ -173,7 +196,7 @@ def summarize(state: Path, *, run_completed: bool, source_sha: str) -> dict:
     )
     success = (
         run_completed and valid_source and release_ok and sequence_ok
-        and marks == list(STAGES) and browser_ok and runtime_ok and compose_ok
+        and marks == list(STAGES) and browser_ok and runtime_ok and reinstall_ok and compose_ok
         and container_ok and restore_ok
         and isinstance(prepared, dict)
         and prepared.get("signed_checksum_verified") is True
@@ -204,6 +227,7 @@ def summarize(state: Path, *, run_completed: bool, source_sha: str) -> dict:
         "fresh_install": "PASS" if success else "NOT_ATTESTED",
         "authenticated_operations_center": "PASS" if success else "NOT_ATTESTED",
         "agent_restart_and_recovery": "PARTIAL_PASS" if success else "NOT_ATTESTED",
+        "already_installed_reinstall_refusal": "PASS" if success else "NOT_ATTESTED",
         "offline_docker_compose_fixture": "PASS" if success else "NOT_ATTESTED",
         "core_agent_docker_container_lifecycle": "PARTIAL_PASS" if success else "NOT_ATTESTED",
         "post_install_offline_disk_restore": "PASS" if success else "NOT_ATTESTED",
