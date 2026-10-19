@@ -146,3 +146,34 @@ make install-test-stop
 
 发布前还需要独立证明备份、完整 Docker/App 生命周期、中断升级与无损恢复。
 本地 VM 成功不自动使 M0 全部 GO，也不替代不可变 Git 来源与远程 CI。
+
+
+## 同一安装候选的回执复核（只读，G4 / 有限 G6）
+
+`scripts/install-test/browser.py` 和 `scripts/install-test/runtime.py`
+现在分别从**正在运行的本任务 VM**读取实际安装的
+`/opt/gpupanel/gpupanel-core` / `gpupanel-agent` SHA-256，
+在验收前后与本地 `build/` 的候选二进制比较，并将
+`binary_sha256` / `candidate_commit` 写入各自的私有 JSON 回执。
+
+完成两条真实测试、未修改代码、未替换编译二进制后，执行：
+
+```bash
+python3 scripts/install-test/candidate_identity.py review
+```
+
+- 仅从 `.local/install-test/browser-live.json` 与 `runtime-live.json`
+  读取证据；无 VM 启停、安装、sudo、写入或网络请求。
+- 必须包含同一 `core`/`agent` 摘要、同一当前 checkout commit、
+  当前本地 build 文件摘要；拒绝缺项、符号链接、不同版本或测试缺失。
+- 输出 `candidate_consistent=true` **只证明局部回执在此刻自洽**。
+  checkout commit 是读取时的版本标记，不是可验证的编译来源证明。
+  已保存的 JSON 不具有防伪签名，不替代原始命令日志与独立审核。
+- 输出中 `m0_release_ready=false` 始终成立；G3 完整升级/回滚、
+  G5 Docker/App 完整生命周期、G6 中断恢复继续 `NOT_VERIFIED`。
+- 这条命令不能把两次不同运行的脚本回执自动变成同一次完整验收。
+  必须由审核者另外核实时间、VM 身份、运行日志、候选包和环境。
+
+测试工具及本说明不改变默认拒绝的系统安装策略，也不开放任意 Host
+脚本执行接口。发布门槛仍以 [#69](https://github.com/avaargsh/gpupanel/issues/69)
+和 [状态页](../STATUS.md) 为准。

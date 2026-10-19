@@ -2,6 +2,7 @@
 """Guest-only lifecycle/collision probes for the task-owned installed VM."""
 import hashlib
 import json
+import candidate_identity
 from pathlib import Path
 import shlex
 import subprocess
@@ -57,12 +58,14 @@ print(json.dumps({'marker_sha256':hashlib.sha256(p.read_bytes()).hexdigest(),'se
 ''')
 
 
+candidate_before = candidate_identity.assert_installed_candidate(vm)
+checkout_commit = candidate_identity.source_checkout_commit(ROOT)
 result = {'kind': 'LIVE guest-only lifecycle; not complete App recovery acceptance'}
 expected = {scope: hashlib.file_digest((ROOT / 'build' / f'gpupanel-{scope}').open('rb'), 'sha256').hexdigest() for scope in ('core', 'agent')}
 installed = python('''import hashlib,json
 print(json.dumps({name:hashlib.file_digest(open('/opt/gpupanel/gpupanel-'+name,'rb'),'sha256').hexdigest() for name in ('core','agent')}))
 ''')
-assert expected == installed, 'Installed binaries differ from the tested build'
+assert expected == installed == candidate_before, 'Installed binaries differ from the tested build'
 result['binary_sha256'] = installed
 before = retained()
 wait_agent()
@@ -124,5 +127,10 @@ wait_agent()
 result['explicit_fixture_operator_recovery'] = True
 assert before == retained(), 'Fixture marker or retained login settings changed'
 result['fixture_marker_and_login_settings_retained'] = True
+if candidate_identity.assert_installed_candidate(vm) != candidate_before:
+    raise RuntimeError('installed binaries changed during lifecycle smoke')
+if candidate_identity.source_checkout_commit(ROOT) != checkout_commit:
+    raise RuntimeError('source checkout changed during lifecycle smoke')
+result['candidate_commit'] = checkout_commit
 (STATE / 'runtime-live.json').write_text(json.dumps(result, indent=2) + '\n')
 print(json.dumps(result, indent=2))
