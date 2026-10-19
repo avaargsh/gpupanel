@@ -275,11 +275,11 @@ func (u *UpgradeService) Upgrade(req dto.Upgrade) error {
 			return
 		}
 
-		// The disposable VM installer does not create /usr/local/bin/lang,
+		// The experimental installer may not have a complete app-local lang directory,
 		// and the release builder may omit GeoIP.mmdb. Only replace an
 		// asset that existed before the upgrade AND has a real backup.
 		// Never make rollback require deletion of a newly created asset.
-		langPath := "/usr/local/bin/lang"
+		langPath := path.Join(global.CONF.Base.InstallDir, "gpupanel/lang")
 		langAllowed, langErr := shouldCopyOptionalUpgradeAsset(
 			langPath, path.Join(originalDir, "lang"), path.Join(tmpDir, "lang"), true)
 		if langErr != nil {
@@ -288,7 +288,7 @@ func (u *UpgradeService) Upgrade(req dto.Upgrade) error {
 			return
 		}
 		if langAllowed {
-			if err := files.CopyItem(true, true, path.Join(tmpDir, "lang"), "/usr/local/bin"); err != nil {
+			if err := files.CopyItem(true, true, path.Join(tmpDir, "lang"), path.Join(global.CONF.Base.InstallDir, "gpupanel")); err != nil {
 				global.LOG.Errorf("Update language files failed: %v", err)
 				rollbackAndReconcile(4)
 				return
@@ -533,11 +533,11 @@ func (u *UpgradeService) handleBackup(originalDir string, svcInfo serviceInfo) e
 	if err := files.CopyItem(false, true, svcInfo.agentBinary, originalDir); err != nil {
 		return err
 	}
-	// pctl is no longer part of the GPUPanel runtime; skip backing up the legacy ctl binary.
-	if hasLang, err := optionalUpgradeAsset("/usr/local/bin/lang", true); err != nil {
+	// pctl is an app-local control script; it is not a global upgrade target.
+	if hasLang, err := optionalUpgradeAsset(path.Join(global.CONF.Base.InstallDir, "gpupanel/lang"), true); err != nil {
 		return err
 	} else if hasLang {
-		if err := files.CopyItem(true, true, "/usr/local/bin/lang", originalDir); err != nil {
+		if err := files.CopyItem(true, true, path.Join(global.CONF.Base.InstallDir, "gpupanel/lang"), originalDir); err != nil {
 			return err
 		}
 	}
@@ -584,8 +584,8 @@ func (u *UpgradeService) handleRollback(originalDir string, errStep int, svcInfo
 	if errStep == 1 {
 		return errors.Join(failures...)
 	}
-	// pctl is no longer part of GPUPanel runtime. Never alter its
-	// compatibility symlink as a side effect of restoring binaries.
+	// App-local pctl metadata is not part of binary restore. There are no
+	// global compatibility symlinks to modify.
 	if errStep == 2 {
 		return errors.Join(failures...)
 	}
@@ -597,7 +597,7 @@ func (u *UpgradeService) handleRollback(originalDir string, errStep int, svcInfo
 	if langSaved, err := optionalUpgradeAsset(path.Join(originalDir, "lang"), true); err != nil {
 		record("language backup", err)
 	} else if langSaved {
-		record("language files", files.CopyItem(true, true, path.Join(originalDir, "lang"), "/usr/local/bin"))
+		record("language files", files.CopyItem(true, true, path.Join(originalDir, "lang"), path.Join(global.CONF.Base.InstallDir, "gpupanel")))
 	}
 	if geoSaved, err := optionalUpgradeAsset(path.Join(originalDir, "GeoIP.mmdb"), false); err != nil {
 		record("GeoIP backup", err)
