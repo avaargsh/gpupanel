@@ -28,6 +28,7 @@ STAGES = (
     "guest_compose_offline_lifecycle",
     "guest_core_fixture_image_prepared",
     "real_core_agent_container_lifecycle",
+    "real_core_agent_compose_api_lifecycle",
     "guest_post_install_offline_restore",
 )
 
@@ -61,6 +62,7 @@ def summarize(state: Path, *, run_completed: bool, source_sha: str) -> dict:
     release = _load(state / "release-transfer.json")
     compose = _load(state / "compose-live.json")
     container = _load(state / "container-live.json")
+    compose_api = _load(state / "compose-api-live.json")
     restore = _load(state / "restore-live.json")
     valid_source = (
         isinstance(source_sha, str) and len(source_sha) == 40
@@ -150,10 +152,46 @@ def summarize(state: Path, *, run_completed: bool, source_sha: str) -> dict:
         and len(container["fixture_image_sha256"]) == 64
         and all(c in "0123456789abcdef" for c in container["fixture_image_sha256"])
     )
+    expected_compose_api_steps = [
+        "create_taskdb_success_and_independent_running_inspection",
+        "exact_persisted_compose_record_found",
+        "stop_and_independent_docker_state",
+        "start_and_independent_docker_state",
+        "restart_and_independent_docker_state",
+        "delete_only_owned_compose_project_and_record",
+    ]
+    compose_api_ok = (
+        isinstance(compose_api, dict) and container_ok
+        and set(compose_api) == {
+            "kind", "candidate", "guest_machine_id_sha256",
+            "fixture_image_sha256", "create_taskdb_id_bound",
+            "exact_record_identity", "isolated_network_none",
+            "no_published_ports", "no_registry_pull",
+            "no_unscoped_cleanup", "steps",
+            "app_install_lifecycle", "m0_release_decision",
+        }
+        and compose_api.get("kind") ==
+            "REAL AUTHENTICATED GPUPANEL CORE→AGENT COMPOSE API + GUEST DOCKER"
+        and compose_api["candidate"] == browser.get("candidate")
+        and compose_api["guest_machine_id_sha256"] ==
+            browser.get("guest_machine_id_sha256")
+        and compose_api["fixture_image_sha256"] ==
+            container.get("fixture_image_sha256")
+        and compose_api["create_taskdb_id_bound"] is True
+        and compose_api["exact_record_identity"] is True
+        and compose_api["isolated_network_none"] is True
+        and compose_api["no_published_ports"] is True
+        and compose_api["no_registry_pull"] is True
+        and compose_api["no_unscoped_cleanup"] is True
+        and compose_api["steps"] == expected_compose_api_steps
+        and compose_api["app_install_lifecycle"] == "NOT_RUN"
+        and compose_api["m0_release_decision"] == "NO_GO"
+    )
     expected_binary = browser.get("candidate", {}).get("binary_sha256") if browser_ok else None
     restored_digest = restore.get("offline_checkpoint_sha256") if isinstance(restore, dict) else None
     restore_ok = (
         isinstance(restore, dict) and runtime_ok and compose_ok and container_ok
+        and compose_api_ok
         and restore.get("kind") ==
             "REAL GUEST POST-INSTALL OFFLINE SNAPSHOT RESTORE; PARTIAL G3/G6"
         and restore.get("source_sha") == source_sha
@@ -174,7 +212,7 @@ def summarize(state: Path, *, run_completed: bool, source_sha: str) -> dict:
     success = (
         run_completed and valid_source and release_ok and sequence_ok
         and marks == list(STAGES) and browser_ok and runtime_ok and compose_ok
-        and container_ok and restore_ok
+        and container_ok and compose_api_ok and restore_ok
         and isinstance(prepared, dict)
         and prepared.get("signed_checksum_verified") is True
     )
@@ -206,6 +244,7 @@ def summarize(state: Path, *, run_completed: bool, source_sha: str) -> dict:
         "agent_restart_and_recovery": "PARTIAL_PASS" if success else "NOT_ATTESTED",
         "offline_docker_compose_fixture": "PASS" if success else "NOT_ATTESTED",
         "core_agent_docker_container_lifecycle": "PARTIAL_PASS" if success else "NOT_ATTESTED",
+        "core_agent_compose_api_lifecycle": "PARTIAL_PASS" if success else "NOT_ATTESTED",
         "post_install_offline_disk_restore": "PASS" if success else "NOT_ATTESTED",
         "full_app_compose_install_lifecycle": "NOT_RUN",
         "upgrade_and_rollback": "NOT_RUN",
