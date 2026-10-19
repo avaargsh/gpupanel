@@ -424,8 +424,9 @@ install -m 0755 "$AGENT_SRC" "$PANEL_DIR/gpupanel-agent"
 # script under $PANEL_DIR and expose it through a symlink.
 install -m 0700 "$PCTL_SRC" "$PANEL_DIR/pctl"
 ln -sfn "$PANEL_DIR/pctl" "$BIN_DIR/pctl"
-# compatibility links for the in-app upgrade/restore code paths, which copy the
-# new binaries straight into /usr/local/bin
+# Compatibility links for command lookup only. In-app upgrade and rollback
+# must copy binaries through the actual owned PANEL_DIR paths, NOT replace
+# these symbolic links via cp-to-.tmp and rename.
 ln -sfn "$PANEL_DIR/gpupanel-core" "$BIN_DIR/gpupanel-core"
 ln -sfn "$PANEL_DIR/gpupanel-agent" "$BIN_DIR/gpupanel-agent"
 if [ -f "$PAYLOAD/GeoIP.mmdb" ]; then
