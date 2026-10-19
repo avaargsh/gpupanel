@@ -4,7 +4,7 @@
 
 | 用途 | 当前入口 |
 | --- | --- |
-| 产品 | [ROADMAP](gpupanel/ROADMAP.md) · [vNext](gpupanel/VNEXT_WORKBENCH.md) |
+| 产品 | [交付组合](gpupanel/DELIVERY_COMPOSITION.md) · [ROADMAP](gpupanel/ROADMAP.md) · [vNext](gpupanel/VNEXT_WORKBENCH.md) |
 | 工程 | [AGENTS](../AGENTS.md) · [开发](engineering/development.md) · [React/shadcn](engineering/SHADCN_MIGRATION.md) |
 | 测试与回执 | [测试指南](engineering/testing.md) · [证据保留](evidence/README.md) |
 | Ubuntu Host | [安装](operations/host-install.md) · [VM](operations/local-install-test.md) · [受控操作](engineering/host-operations.md) |
