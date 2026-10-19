@@ -221,8 +221,8 @@ func (u *UpgradeService) Upgrade(req dto.Upgrade) error {
 		defer func() {
 			_ = os.Remove(downloadDir)
 		}()
-		// Reject untrusted release members before privileged untar.
-		// This structural check does not authenticate the release publisher.
+		// Reject malformed archive entries before privileged extraction;
+		// this structure check does not verify the release publisher.
 		archiveRoot := strings.TrimSuffix(fileName, ".tar.gz")
 		if err := validateUpgradeArchive(path.Join(downloadDir, fileName), archiveRoot); err != nil {
 			global.LOG.Errorf("upgrade archive rejected before extraction: %v", err)
