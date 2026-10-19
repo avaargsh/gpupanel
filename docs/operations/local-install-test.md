@@ -232,3 +232,31 @@ PR 自动触发与 VM 代码路径相关的变更；手动
 保存并绑定，不复用历史其他版本的 PASS。作业因网络镜像、
 KVM 设备、Docker 包、guest 启动或服务权限失败时，
 状态必须明确是失败/阻塞，不能以自动跳过算作 GO。
+
+## 2026-10-19 — Offline Docker Compose 实机片段（不是 AppInstall 验收）
+
+继 G3 新装 / G4 真实浏览器 / G6 Agent 受控恢复的同候选实机证据后，
+新增 `scripts/install-test/compose-live.py`，只有在**同一洁净源码、
+同一个客体 machine-id、浏览器成功、Agent 恢复成功**后才调用
+`scripts/install-test/compose-fixture-guest.py`：
+
+- 仅在专属 guest 内从 `busybox-static` 和 `FROM scratch` 本地
+  构建容器映像，`--pull=false`，Compose 明确 `pull_policy: never`。
+  没有远端 registry，也没有需要下载的应用镜像。
+- 随机、独立 Compose project；容器 `network_mode: none`、
+  无 host port、只读 rootfs、禁用 Linux capabilities 和
+  privilege escalation。只挂载 guest 临时目录的只读 marker 文件。
+- 真实 Docker/Compose `up → inspect → logs → stop/start → restart →
+  文件重新读取 → down → 确认容器移除 → 清理本地镜像`。
+  测试仅清理自己随机命名的资源，绝不做全局 Docker prune。
+- 严格校验脱敏证据里的项目所属候选与客体身份，任一动作失败、
+  状态与资源不一致或清理未完成，都不能标记
+  `offline_docker_compose_fixture=PASS`。仍保留
+  `full_app_compose_install_lifecycle=NOT_RUN`、
+  `m0_release_decision=NO_GO`。
+
+**严格界限：**这只验收一次性客体内的 Docker/Compose 底座及
+容器状态，不是 GPUPanel AppStore/AppInstall 的接单、TaskDB、审批、
+UNKNOWN 持久化、并发冲突、容器副作用回执或真实用户业务服务，
+不能勾选 G5 退出条件。下一步才是通过 GPUPanel 的真实受认证 API
+联动操作与明确的任务结果/资源证据核对。
