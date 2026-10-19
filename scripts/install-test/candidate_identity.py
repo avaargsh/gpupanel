@@ -9,6 +9,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 from pathlib import Path
 import re
 import shlex
@@ -26,7 +27,7 @@ def _regular_sha256(path: Path) -> str:
     if not stat.S_ISREG(path.lstat().st_mode):
         raise ValueError("candidate binary must be a regular file: " + str(path))
     with path.open("rb") as stream:
-        if not stat.S_ISREG(__import__("os").fstat(stream.fileno()).st_mode):
+        if not stat.S_ISREG(os.fstat(stream.fileno()).st_mode):
             raise ValueError("candidate binary changed type")
         return hashlib.file_digest(stream, "sha256").hexdigest()
 
