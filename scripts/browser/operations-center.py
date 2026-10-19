@@ -211,7 +211,7 @@ with sync_playwright() as p:
         for name, node, method in remote_requests
     ), remote_requests
     assert not state["mutations"], state["mutations"]
-    assert state["evidence_requests"] == 2, state["evidence_requests"]
+    # Old attempt, exact attempt, then explicit user refresh: three read-only GETs.\n    assert state["evidence_requests"] == 3, state["evidence_requests"]
     assert state["host_reads"] >= 2 and state["task_reads"] >= 2
     page.set_viewport_size({"width": 640, "height": 800})
     assert page.evaluate("document.documentElement.scrollWidth <= innerWidth")
