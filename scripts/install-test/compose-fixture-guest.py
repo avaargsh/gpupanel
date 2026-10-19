@@ -25,6 +25,26 @@ def call(args, *, cwd=None):
     result = subprocess.run(args, cwd=cwd, capture_output=True, text=True,
                             timeout=75, check=False)
     if result.returncode:
+        # Only a fixed phase identifier may leave the private guest.
+        # Never print arguments, paths, container logs or Docker stderr.
+        import sys
+        if args[:2] == ["docker", "build"]:
+            phase = "image-build"
+        elif args[:2] == ["docker", "inspect"]:
+            phase = "inspect"
+        elif args[:2] == ["docker", "ps"]:
+            phase = "ps"
+        elif args[:3] == ["docker", "image", "rm"]:
+            phase = "image-remove"
+        elif args[:3] == ["docker", "image", "ls"]:
+            phase = "image-list"
+        elif args[:2] == ["docker", "compose"]:
+            phase = next((verb for verb in
+                          ("up", "ps", "logs", "exec", "stop", "start",
+                           "restart", "down") if verb in args), "compose")
+        else:
+            phase = "other"
+        print("GUEST_COMPOSE_STEP_FAILED=" + phase, file=sys.stderr)
         raise RuntimeError("isolated Docker fixture command failed")
     return result.stdout
 
