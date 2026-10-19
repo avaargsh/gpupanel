@@ -12,4 +12,5 @@ type AppInstallNameClaim struct {
     NameKey   string    `gorm:"primaryKey;size:255;not null" json:"-"`
     TaskID    string    `gorm:"not null;size:36" json:"-"`
     CreatedAt time.Time `json:"-"`
+    ExecutionStartedAt *time.Time `gorm:"index" json:"-"`
 }
