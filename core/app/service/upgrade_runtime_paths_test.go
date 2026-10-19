@@ -124,13 +124,16 @@ func TestG3ManualRollbackRefusesOnlineDBAndExecutableMutation(t *testing.T) {
 	}
 	for _, required := range []string{
 		`return errors.Join(failures...)`,
-		`record("database restore",`,
 		`record("core executable",`,
 		`record("agent executable",`,
 	} {
 		if !strings.Contains(string(src), required) {
-			t.Errorf("offline restore primitive must report failure; missing %q", required)
+			t.Errorf("staged executable rollback must report failure; missing %q", required)
 		}
+	}
+	if strings.Contains(string(src), `record("database restore",`) ||
+		strings.Contains(string(src), `files.CopyItem(true, true, dbBackup, dbPath)`) {
+		t.Fatal("neither manual nor automatic rollback may overwrite databases while Core is running")
 	}
 }
 
