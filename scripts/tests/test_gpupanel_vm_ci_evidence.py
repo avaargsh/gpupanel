@@ -68,6 +68,17 @@ class LiveVmEvidence(unittest.TestCase):
             "compose_install_lifecycle": "NOT_RUN",
             "private": "NEVER_EXPOSE_CONTAINER_TASK_LOG",
         }
+        self.app_rejection = {
+            "schema": "gpupanel.vm.appinstall-rejection.v1",
+            "kind": "REAL INSTALLED CORE+AGENT APPINSTALL REJECTION; NOT APP INSTALL",
+            "candidate": self.candidate,
+            "guest_machine_id_sha256": "d" * 64,
+            "nonexistent_app_detail_rejected": True,
+            "no_task_app_or_docker_mutation": True,
+            "app_install_success": "NOT_RUN",
+            "duplicate_task_replay": "NOT_RUN",
+            "release_decision": "NO_GO",
+        }
         self.restore = {
             "kind": "REAL GUEST POST-INSTALL OFFLINE SNAPSHOT RESTORE; PARTIAL G3/G6",
             "source_sha": self.source,
@@ -102,6 +113,7 @@ class LiveVmEvidence(unittest.TestCase):
         self.write("runtime-live.json", self.runtime)
         self.write("compose-live.json", self.compose)
         self.write("container-live.json", self.container)
+        self.write("app-rejection-live.json", self.app_rejection)
         self.write("restore-live.json", self.restore)
         (self.state / "ci-stages.txt").write_text(
             "\n".join(audit.STAGES) + "\n"
@@ -121,6 +133,7 @@ class LiveVmEvidence(unittest.TestCase):
         self.assertEqual(result["offline_docker_compose_fixture"], "PASS")
         self.assertEqual(result["post_install_offline_disk_restore"], "PASS")
         self.assertEqual(result["core_agent_docker_container_lifecycle"], "PARTIAL_PASS")
+        self.assertEqual(result["real_appinstall_missing_detail_rejection"], "PASS")
         self.assertEqual(result["upgrade_and_rollback"], "NOT_RUN")
         self.assertEqual(result["full_app_compose_install_lifecycle"], "NOT_RUN")
         self.assertEqual(result["independent_reviewer"], "NOT_ATTESTED")
@@ -243,7 +256,7 @@ class LiveVmEvidence(unittest.TestCase):
         self.assertEqual(failure.compose_stage(
             "GUEST_COMPOSE_STAGE=up release=GO\n"
         ), "unknown")
-        self.assertEqual(failure.SCRIPTS.keys(), {"browser", "runtime", "compose", "restore", "container"})
+        self.assertEqual(failure.SCRIPTS.keys(), {"browser", "runtime", "compose", "restore", "container", "app-rejection"})
 
     def test_compose_fixture_requires_guest_identity_and_does_not_certify_appinstall(self):
         for corrupted in (
@@ -347,6 +360,44 @@ class LiveVmEvidence(unittest.TestCase):
         )
         self.assertIn('"docker", "build", "--pull=false", "--network=none"', guest)
         self.assertIn('network_mode: none', guest)
+
+    def test_real_appinstall_negative_proof_fail_closed(self):
+        for fault in (
+            {"candidate": {**self.candidate, "source_sha": "0" * 40}},
+            {"guest_machine_id_sha256": "0" * 64},
+            {"nonexistent_app_detail_rejected": False},
+            {"no_task_app_or_docker_mutation": False},
+            {"app_install_success": "PASS"},
+            {"duplicate_task_replay": "PASS"},
+            {"release_decision": "GO"},
+            {"unexpected": "injected"},
+        ):
+            self.write("app-rejection-live.json", {**self.app_rejection, **fault})
+            output = self.summarise()
+            self.assertEqual(output["status"], "BLOCKED_OR_FAILED")
+            self.assertEqual(output["real_appinstall_missing_detail_rejection"], "NOT_ATTESTED")
+        self.write("app-rejection-live.json", self.app_rejection)
+        (self.state / "app-rejection-live.json").unlink()
+        self.assertEqual(self.summarise()["status"], "BLOCKED_OR_FAILED")
+
+    def test_live_negative_requires_owned_guest_and_never_claims_replay(self):
+        import ast
+        source = (ROOT / "scripts/install-test/app-rejection-live.py").read_text()
+        ast.parse(source)
+        self.assertIn("vm.owned_pid", source)
+        self.assertIn("candidate.verify_browser_chain", source)
+        self.assertIn("/api/v1/apps/install", source)
+        self.assertIn("after != before", source)
+        self.assertIn('"duplicate_task_replay": "NOT_RUN"', source)
+        runner = (ROOT / "scripts/install-test/ci-live-vm.sh").read_text()
+        self.assertLess(
+            runner.index("stage 'guest_agent_recovery'"),
+            runner.index("stage 'guest_app_install_denied_without_side_effects'"),
+        )
+        self.assertLess(
+            runner.index("stage 'guest_app_install_denied_without_side_effects'"),
+            runner.index("stage 'guest_compose_offline_lifecycle'"),
+        )
 
     def test_real_vm_runs_for_release_inputs_and_immutable_main_sha(self):
         import re
