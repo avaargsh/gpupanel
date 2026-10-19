@@ -22,6 +22,11 @@ on:
       - 'deploy/**'
       - 'scripts/**'
       - '.github/workflows/gpupanel-real-ubuntu-vm.yml'
+  # GitHub suppresses some events produced by GITHUB_TOKEN automation.
+  # A scheduled default-branch run is an independent safety net for merges
+  # that did not generate a push workflow. It is not a release approval.
+  schedule:
+    - cron: '43 13 * * *'
   workflow_dispatch:
 
 permissions:
