@@ -51,6 +51,30 @@ reconciled. Test this migration against a backed-up real TaskDB before any
 release or upgrade; never install this experimental branch onto a live
 production or inherited 1Panel host.
 
+## Read-only name claim recovery preflight
+
+`agent/app/service/app_install_name_review.go` provides
+`reviewAppInstallNameClaim(taskDB, appDB, name)` as an **unexposed internal
+read model**. It returns a redacted `AppInstallNameReview` with the durable
+name key, original Task UUID/status/resource ID, a bounded list of matching
+AppInstall IDs, and reason codes. It never returns Docker labels, secret
+application variables, logs or Compose content.
+
+Every result returns `verified=false`, `canRelease=false` and
+`observationalOnly=true`, including a Success Task, absent AppInstall row,
+missing name claim, damaged TaskDB linkage and DB query errors. AppDB scans
+are deliberately capped; saturation is not evidence that a name is unused.
+This read model neither examines Docker/volumes nor creates a release approval,
+CAS transition, journal entry or replayable authorization. It **must not** be
+treated as a complete safety verdict or exposed over HTTP without a separate
+admin authorization, redaction and rate-limit review.
+
+When the original Task has ResourceID zero, the existing
+`/apps/installed/evidence/{id}` is not applicable; this bounded preflight
+preserves the TaskID and warns that no persisted AppInstall association is
+available. For linked tasks, the independent resource evidence sheet can
+be used for human inspection, not as an automatic name-release trigger.
+
 ## Verification and remaining G5 work
 
 Tests should cover: concurrent distinct UUIDs/same name (case and whitespace),
