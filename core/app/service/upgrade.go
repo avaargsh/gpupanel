@@ -311,7 +311,7 @@ func (u *UpgradeService) Upgrade(req dto.Upgrade) error {
 			}
 		}
 
-		global.LOG.Info("upgrade successful!")
+		global.LOG.Warn("upgrade files staged; restart and Core/Agent health have NOT been verified")
 		dropBackupCopies()
 		xpack.MultiNodeProvider.AutoUpgradeWithMaster()
 		_ = settingRepo.Update("SystemVersion", req.Version)
@@ -340,7 +340,15 @@ func (u *UpgradeService) Rollback(req dto.OperateByID) error {
 	if err != nil {
 		return err
 	}
-	return u.handleRollback(backup, 3, svcInfo)
+	if err := verifyUpgradeBackupInventory(backup, svcInfo); err != nil {
+		return fmt.Errorf("refuse incomplete rollback snapshot: %w", err)
+	}
+	// Rollback is invoked by the running Core API. In-place restoration of
+	// SQLite and service binaries while their owners are running is not an
+	// offline recovery and can corrupt both DB and runtime state. The M0
+	// offline guest recovery path is independent; leave these assets intact
+	// until a stop-verified, separately operated rollback is implemented.
+	return fmt.Errorf("%w: online rollback is disabled until offline service-stop and database restore are verified", errUpgradeRuntimeOwnership)
 }
 
 type noteHelper struct {
