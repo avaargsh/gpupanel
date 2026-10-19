@@ -34,6 +34,8 @@ type serviceInfo struct {
 	agentName    string
 	selCoreName  string
 	selAgentName string
+	coreBinary   string
+	agentBinary  string
 }
 
 const minUpgradeFreeSpace = 500 << 20 // 500MB
@@ -64,13 +66,20 @@ func loadServiceInfo() (serviceInfo, error) {
 		global.LOG.Errorf("select agent init script failed: %v", err)
 		return serviceInfo{}, err
 	}
-	return serviceInfo{
+	info := serviceInfo{
 		basePath:     basePath,
 		coreName:     coreName,
 		agentName:    agentName,
 		selCoreName:  selCoreName,
 		selAgentName: selAgentName,
-	}, nil
+	}
+	// Resolve the actual installed executable, never the /usr/local/bin
+	// compatibility symlink, before touching backup/download/upgrade state.
+	info.coreBinary, info.agentBinary, err = upgradeRuntimePaths(global.CONF.Base.InstallDir, info)
+	if err != nil {
+		return serviceInfo{}, err
+	}
+	return info, nil
 }
 
 type UpgradeService struct{}
@@ -201,13 +210,13 @@ func (u *UpgradeService) Upgrade(req dto.Upgrade) error {
 
 		global.LOG.Info("backup original data successful, now start to upgrade!")
 
-		if err := files.CopyFileWithRename(path.Join(tmpDir, "gpupanel-core"), "/usr/local/bin/gpupanel-core"); err != nil {
+		if err := files.CopyFileWithRename(path.Join(tmpDir, "gpupanel-core"), svcInfo.coreBinary); err != nil {
 			global.LOG.Errorf("upgrade gpupanel-core failed, err: %v", err)
 			_ = settingRepo.Update("SystemStatus", "Free")
 			u.handleRollback(originalDir, 1, svcInfo)
 			return
 		}
-		if err := files.CopyFileWithRename(path.Join(tmpDir, "gpupanel-agent"), "/usr/local/bin/gpupanel-agent"); err != nil {
+		if err := files.CopyFileWithRename(path.Join(tmpDir, "gpupanel-agent"), svcInfo.agentBinary); err != nil {
 			global.LOG.Errorf("upgrade gpupanel-agent failed, err: %v", err)
 			_ = settingRepo.Update("SystemStatus", "Free")
 			u.handleRollback(originalDir, 1, svcInfo)
@@ -446,10 +455,10 @@ func checkUpgradeSpace() error {
 }
 
 func (u *UpgradeService) handleBackup(originalDir string, svcInfo serviceInfo) error {
-	if err := files.CopyItem(false, true, "/usr/local/bin/gpupanel-core", originalDir); err != nil {
+	if err := files.CopyItem(false, true, svcInfo.coreBinary, originalDir); err != nil {
 		return err
 	}
-	if err := files.CopyItem(false, true, "/usr/local/bin/gpupanel-agent", originalDir); err != nil {
+	if err := files.CopyItem(false, true, svcInfo.agentBinary, originalDir); err != nil {
 		return err
 	}
 	// pctl is no longer part of the GPUPanel runtime; skip backing up the legacy ctl binary.
@@ -481,10 +490,10 @@ func (u *UpgradeService) handleRollback(originalDir string, errStep int, svcInfo
 			global.LOG.Errorf("rollback gpupanel db failed, err: %v", err)
 		}
 	}
-	if err := files.CopyFileWithRename(path.Join(originalDir, "gpupanel-core"), "/usr/local/bin/gpupanel-core"); err != nil {
+	if err := files.CopyFileWithRename(path.Join(originalDir, "gpupanel-core"), svcInfo.coreBinary); err != nil {
 		global.LOG.Errorf("rollback gpupanel-core failed, err: %v", err)
 	}
-	if err := files.CopyFileWithRename(path.Join(originalDir, "gpupanel-agent"), "/usr/local/bin/gpupanel-agent"); err != nil {
+	if err := files.CopyFileWithRename(path.Join(originalDir, "gpupanel-agent"), svcInfo.agentBinary); err != nil {
 		global.LOG.Errorf("rollback gpupanel-agent failed, err: %v", err)
 	}
 	if errStep == 1 {
