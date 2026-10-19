@@ -264,21 +264,51 @@ func (u *UpgradeService) Upgrade(req dto.Upgrade) error {
 			return
 		}
 
-		if err := files.CopyItem(true, true, path.Join(tmpDir, "lang"), "/usr/local/bin"); err != nil {
-			global.LOG.Errorf("Update language files failed: %v", err)
+		// The disposable VM installer does not create /usr/local/bin/lang,
+		// and the release builder may omit GeoIP.mmdb. Only replace an
+		// asset that existed before the upgrade AND has a real backup.
+		// Never make rollback require deletion of a newly created asset.
+		langPath := "/usr/local/bin/lang"
+		langAllowed, langErr := shouldCopyOptionalUpgradeAsset(
+			langPath, path.Join(originalDir, "lang"), path.Join(tmpDir, "lang"), true)
+		if langErr != nil {
+			global.LOG.Errorf("upgrade refused: unsafe optional language files: %v", langErr)
+			_ = settingRepo.Update("SystemStatus", "Free")
+			if rollbackErr := u.handleRollback(originalDir, 3, svcInfo); rollbackErr != nil {
+				global.LOG.Errorf("automatic rollback incomplete: %v", rollbackErr)
+			}
+			return
+		}
+		if langAllowed {
+			if err := files.CopyItem(true, true, path.Join(tmpDir, "lang"), "/usr/local/bin"); err != nil {
+				global.LOG.Errorf("Update language files failed: %v", err)
+				_ = settingRepo.Update("SystemStatus", "Free")
+				if rollbackErr := u.handleRollback(originalDir, 4, svcInfo); rollbackErr != nil {
+					global.LOG.Errorf("automatic rollback incomplete: %v", rollbackErr)
+				}
+				return
+			}
+		}
+		geoPath := path.Join(global.CONF.Base.InstallDir, "gpupanel/geo/GeoIP.mmdb")
+		geoAllowed, geoErr := shouldCopyOptionalUpgradeAsset(
+			geoPath, path.Join(originalDir, "GeoIP.mmdb"), path.Join(tmpDir, "GeoIP.mmdb"), false)
+		if geoErr != nil {
+			global.LOG.Errorf("upgrade refused: unsafe optional GeoIP file: %v", geoErr)
 			_ = settingRepo.Update("SystemStatus", "Free")
 			if rollbackErr := u.handleRollback(originalDir, 4, svcInfo); rollbackErr != nil {
 				global.LOG.Errorf("automatic rollback incomplete: %v", rollbackErr)
 			}
 			return
 		}
-		if err := files.CopyFileWithRename(path.Join(tmpDir, "GeoIP.mmdb"), path.Join(global.CONF.Base.InstallDir, "gpupanel/geo/GeoIP.mmdb")); err != nil {
-			global.LOG.Warnf("Update GeoIP database failed: %v", err)
-			_ = settingRepo.Update("SystemStatus", "Free")
-			if rollbackErr := u.handleRollback(originalDir, 4, svcInfo); rollbackErr != nil {
-				global.LOG.Errorf("automatic rollback incomplete: %v", rollbackErr)
+		if geoAllowed {
+			if err := files.CopyFileWithRename(path.Join(tmpDir, "GeoIP.mmdb"), geoPath); err != nil {
+				global.LOG.Warnf("Update GeoIP database failed: %v", err)
+				_ = settingRepo.Update("SystemStatus", "Free")
+				if rollbackErr := u.handleRollback(originalDir, 4, svcInfo); rollbackErr != nil {
+					global.LOG.Errorf("automatic rollback incomplete: %v", rollbackErr)
+				}
+				return
 			}
-			return
 		}
 
 		global.LOG.Info("upgrade successful!")
@@ -496,8 +526,12 @@ func (u *UpgradeService) handleBackup(originalDir string, svcInfo serviceInfo) e
 		return err
 	}
 	// pctl is no longer part of the GPUPanel runtime; skip backing up the legacy ctl binary.
-	if err := files.CopyItem(true, true, "/usr/local/bin/lang", originalDir); err != nil {
+	if hasLang, err := optionalUpgradeAsset("/usr/local/bin/lang", true); err != nil {
 		return err
+	} else if hasLang {
+		if err := files.CopyItem(true, true, "/usr/local/bin/lang", originalDir); err != nil {
+			return err
+		}
 	}
 	if err := files.CopyItem(false, true, path.Join(svcInfo.basePath, svcInfo.coreName), originalDir); err != nil {
 		return err
@@ -508,8 +542,13 @@ func (u *UpgradeService) handleBackup(originalDir string, svcInfo serviceInfo) e
 	if err := files.CopyItem(true, true, path.Join(global.CONF.Base.InstallDir, "gpupanel/db"), originalDir); err != nil {
 		return err
 	}
-	if err := files.CopyItem(false, true, path.Join(global.CONF.Base.InstallDir, "gpupanel/geo/GeoIP.mmdb"), originalDir); err != nil {
+	geoInstalled := path.Join(global.CONF.Base.InstallDir, "gpupanel/geo/GeoIP.mmdb")
+	if hasGeo, err := optionalUpgradeAsset(geoInstalled, false); err != nil {
 		return err
+	} else if hasGeo {
+		if err := files.CopyItem(false, true, geoInstalled, originalDir); err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -553,8 +592,16 @@ func (u *UpgradeService) handleRollback(originalDir string, errStep int, svcInfo
 	if errStep == 3 {
 		return errors.Join(failures...)
 	}
-	record("language files", files.CopyItem(true, true, path.Join(originalDir, "lang"), "/usr/local/bin"))
-	record("GeoIP", files.CopyFileWithRename(path.Join(originalDir, "GeoIP.mmdb"), path.Join(global.CONF.Base.InstallDir, "gpupanel/geo/GeoIP.mmdb")))
+	if langSaved, err := optionalUpgradeAsset(path.Join(originalDir, "lang"), true); err != nil {
+		record("language backup", err)
+	} else if langSaved {
+		record("language files", files.CopyItem(true, true, path.Join(originalDir, "lang"), "/usr/local/bin"))
+	}
+	if geoSaved, err := optionalUpgradeAsset(path.Join(originalDir, "GeoIP.mmdb"), false); err != nil {
+		record("GeoIP backup", err)
+	} else if geoSaved {
+		record("GeoIP", files.CopyFileWithRename(path.Join(originalDir, "GeoIP.mmdb"), path.Join(global.CONF.Base.InstallDir, "gpupanel/geo/GeoIP.mmdb")))
+	}
 	return errors.Join(failures...)
 }
 
