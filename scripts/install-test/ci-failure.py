@@ -65,6 +65,17 @@ def main() -> int:
     raw = path.read_text(encoding="utf-8", errors="replace")[-200_000:]
     if sys.argv[1] == "compose":
         print("GUEST_COMPOSE_FAILURE_STAGE=" + compose_stage(raw) + " release=NO_GO")
+    if sys.argv[1] == "reinstall":
+        # The producer writes only fixed enum values, never guest command
+        # output. Match both entire lines and enum allowlists before echo.
+        marker = re.findall(
+            r"(?m)^REINSTALL_PREFLIGHT_DIAG exit=(ZERO|SSH_TRANSPORT|OTHER) "
+            r"report=(BLOCKED_JSON|OTHER_JSON|NON_JSON) release=NO_GO$",
+            raw,
+        )
+        if marker:
+            status, shape = marker[-1]
+            print(f"REINSTALL_PREFLIGHT_DIAG exit={status} report={shape} release=NO_GO")
     print(diagnostic(raw, basename))
     return 0
 
