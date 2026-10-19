@@ -1,5 +1,22 @@
 const zh = {
     opsCenter: {
+        hostReceipts: '主机受控操作（当前会话）',
+        agentTasks: 'Agent 持久执行任务（本机）',
+        agentScope: '来自现有任务日志 API，可能包含应用安装；不是当前会话审批，也不是 ACP Agent 任务。仅显示最新 20 条。',
+        emptyTasks: '最近的执行任务中暂无需关注的记录。',
+        taskUnnamed: '未命名执行任务',
+        taskLoadError: '执行任务日志读取失败。主机回执仍可独立查看，请重试查询。',
+        allTaskLogs: '全部任务日志',
+        openTaskLogs: '查看任务详情',
+        taskWarning: '执行结果异常或无法确定，请打开任务日志核对，不要重复触发安装或运维操作。',
+        unrecognized: '未知状态',
+        taskStates: {
+            Executing: '执行中',
+            Failed: '失败',
+            Unknown: '结果不确定',
+            Canceled: '已取消',
+            Success: '任务成功回执',
+        },
         title: '操作中心',
         description: '查看当前登录会话的本机受控操作：待确认、执行中、不确定与历史回执。',
         scope: '仅为 Host Operation 回执，不代表 Agent 长期任务或跨系统审批；没有自动执行。',
