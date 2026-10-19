@@ -54,9 +54,9 @@ func releaseProbeDigest(now time.Time, key, owner string, probe appInstallNameRe
 		!probe.NoActiveOperations {
 		return "", ErrAppInstallNameReleaseDenied
 	}
-	payload := fmt.Sprintf("gpupanel.g5.release.v1\n%s\n%s\n%s\n%t\n%t\n%t\n%t",
-		key, owner, probe.ObservedAt.UTC().Format(time.RFC3339Nano),
-		probe.DockerAbsent, probe.ComposeAbsent, probe.FilesystemAbsent, probe.NoActiveOperations)
+	payload := fmt.Sprintf("gpupanel.g5.release.v1\n%s\n%s\n%t\n%t\n%t\n%t",
+		key, owner, probe.DockerAbsent, probe.ComposeAbsent,
+		probe.FilesystemAbsent, probe.NoActiveOperations)
 	hash := sha256.Sum256([]byte(payload))
 	return hex.EncodeToString(hash[:]), nil
 }
