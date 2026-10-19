@@ -104,6 +104,90 @@ func TestG3BackupInventoryDeniesMissingEmptyOrRedirectedDB(t *testing.T) {
 	}
 }
 
+func TestG3BackupInventoryAllowsFreshInstallWithoutOptionalLanguageAndGeoIP(t *testing.T) {
+	original, svc := g3BackupFixture(t)
+	geo := filepath.Join(filepath.Dir(svc.coreBinary), "geo", "GeoIP.mmdb")
+	for _, target := range []string{filepath.Join(original, "lang"), filepath.Join(original, "GeoIP.mmdb"), geo} {
+		if err := os.RemoveAll(target); err != nil { t.Fatal(err) }
+	}
+	if err := verifyUpgradeBackupInventory(original, svc); err != nil {
+		t.Fatalf("normal fresh install missing optional language/GeoIP must not block upgrade: %v", err)
+	}
+}
+
+func TestG3BackupInventoryRequiresMatchingGeoIPWhenInstalled(t *testing.T) {
+	for _, kind := range []string{"only-installed", "only-backup", "symlink", "wrong-bytes"} {
+		t.Run(kind, func(t *testing.T) {
+			original, svc := g3BackupFixture(t)
+			installed := filepath.Join(filepath.Dir(svc.coreBinary), "geo", "GeoIP.mmdb")
+			saved := filepath.Join(original, "GeoIP.mmdb")
+			switch kind {
+			case "only-installed":
+				if err := os.Remove(saved); err != nil { t.Fatal(err) }
+			case "only-backup":
+				if err := os.Remove(installed); err != nil { t.Fatal(err) }
+			case "symlink":
+				if err := os.Remove(saved); err != nil { t.Fatal(err) }
+				if err := os.Symlink(installed, saved); err != nil { t.Fatal(err) }
+			case "wrong-bytes":
+				if err := os.WriteFile(saved, []byte("incorrect GeoIP snapshot"), 0600); err != nil { t.Fatal(err) }
+			}
+			if err := verifyUpgradeBackupInventory(original, svc); err == nil {
+				t.Fatalf("unsafe optional GeoIP state %s admitted", kind)
+			}
+		})
+	}
+}
+
+func TestG3UpgradeOptionalAssetsPreserveOriginalAbsence(t *testing.T) {
+	root := t.TempDir()
+	installed := filepath.Join(root, "installed")
+	snapshot := filepath.Join(root, "snapshot")
+	incoming := filepath.Join(root, "incoming")
+	if err := os.WriteFile(incoming, []byte("new GeoIP"), 0600); err != nil { t.Fatal(err) }
+	if yes, err := shouldCopyOptionalUpgradeAsset(installed, snapshot, incoming, false); yes || err != nil {
+		t.Fatalf("absent original must not introduce unrollbackable file: yes=%v err=%v",yes,err)
+	}
+	if err := os.WriteFile(installed, []byte("old GeoIP"), 0600); err != nil { t.Fatal(err) }
+	if yes, err := shouldCopyOptionalUpgradeAsset(installed, snapshot, incoming, false); yes || err == nil {
+		t.Fatalf("missing rollback copy was accepted: yes=%v err=%v",yes,err)
+	}
+	if err := os.WriteFile(snapshot, []byte("old GeoIP"), 0600); err != nil { t.Fatal(err) }
+	if yes, err := shouldCopyOptionalUpgradeAsset(installed, snapshot, incoming, false); !yes || err != nil {
+		t.Fatalf("valid existing asset and rollback copy rejected: yes=%v err=%v",yes,err)
+	}
+	if err := os.Remove(incoming); err != nil { t.Fatal(err) }
+	if yes, err := shouldCopyOptionalUpgradeAsset(installed, snapshot, incoming, false); yes || err != nil {
+		t.Fatalf("optional package asset absence rejected: yes=%v err=%v",yes,err)
+	}
+	if err := os.Symlink(installed, incoming); err != nil { t.Fatal(err) }
+	if yes, err := shouldCopyOptionalUpgradeAsset(installed, snapshot, incoming, false); yes || err == nil {
+		t.Fatalf("redirected new asset was accepted: yes=%v err=%v",yes,err)
+	}
+}
+
+func TestG3UpgradeOptionalLanguageDirectoryIsNotMandatory(t *testing.T) {
+	root := t.TempDir()
+	installed := filepath.Join(root, "lang")
+	snapshot := filepath.Join(root, "backup-lang")
+	incoming := filepath.Join(root, "incoming-lang")
+	if err := os.Mkdir(incoming, 0700); err != nil { t.Fatal(err) }
+	if yes, err := shouldCopyOptionalUpgradeAsset(installed, snapshot, incoming, true); yes || err != nil {
+		t.Fatalf("fresh install should not require /usr/local/bin/lang: yes=%v err=%v",yes,err)
+	}
+	for _, dir := range []string{installed,snapshot} {
+		if err := os.Mkdir(dir, 0700); err != nil { t.Fatal(err) }
+	}
+	if yes, err := shouldCopyOptionalUpgradeAsset(installed, snapshot, incoming, true); !yes || err != nil {
+		t.Fatalf("existing language with backup not upgraded: yes=%v err=%v",yes,err)
+	}
+	if err := os.Remove(incoming); err != nil { t.Fatal(err) }
+	if err := os.Symlink(installed,incoming); err != nil { t.Fatal(err) }
+	if yes, err := shouldCopyOptionalUpgradeAsset(installed,snapshot,incoming,true); yes || err == nil {
+		t.Fatalf("symlinked language payload accepted: yes=%v err=%v",yes,err)
+	}
+}
+
 func TestG3UpgradeGuardsDurableBackupAndRollbackLogBeforeWrites(t *testing.T) {
 	src, err := os.ReadFile("upgrade.go")
 	if err != nil { t.Fatal(err) }
