@@ -90,7 +90,7 @@ func validateOwnedUpgradePaths(installDir string, svc serviceInfo, expectedBase,
 // Only conventional version tokens from the release channel are admitted.
 // Version input is also a directory component; do not accept separators,
 // traversal, shell syntax, Unicode lookalikes or unbounded lengths.
-var upgradeVersionToken = regexp.MustCompile(`^v?[0-9]+(\\.[0-9]+){2}(-[A-Za-z0-9]+([._-][A-Za-z0-9]+)*)?$`)
+var upgradeVersionToken = regexp.MustCompile(`^v?[0-9]+(\.[0-9]+){2}(-[A-Za-z0-9]+([._-][A-Za-z0-9]+)*)?$`)
 
 func validateUpgradeVersion(version string) error {
 	if len(version) == 0 || len(version) > 96 || !upgradeVersionToken.MatchString(version) {
