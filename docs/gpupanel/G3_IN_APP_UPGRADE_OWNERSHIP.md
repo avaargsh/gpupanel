@@ -26,6 +26,9 @@ make any later downgrade ambiguous.
   Never write either compatibility symlink in `/usr/local/bin`.
 - Correct manual Rollback to address `BackupFile/original`, because the
   upgrade log stores the transaction parent, not its actual backup child.
+- Make the rollback handler accumulate and return restoration errors instead
+  of logging them and returning implicit success. Automatic rollback failures
+  are explicitly surfaced in service logs; this is not proof of guest health.
 - Protect these contracts with disposable Go tests for symlinks, mismatched
   service units, missing executable, unit ambiguity, wrong paths and aliases.
 - No Agent installation change; no live customer host action.
@@ -36,10 +39,11 @@ This does **not** establish a complete safe upgrade/rollback. The in-app
 upgrade still downloads asynchronously, modifies service files, copies DB
 backup directories while the server is running, relies on a remote
 artifact feed, and does not yet prove digest+signature authenticity,
-transactional DB recovery, rollback error propagation or service health after
-restart. In particular, `handleRollback` historically logs some failures
-rather than reporting a verified rollback success. Those behaviors must be
-audited and corrected before a production-ready G3 GO.
+transactional DB recovery, complete rollback verification or service health after
+restart. In particular, even with propagated file-level rollback errors, this
+does not prove an offline-consistent SQLite database restore, complete
+runtime health, or safe rollback ordering. Those behaviors must be audited
+and corrected before a production-ready G3 GO.
 
 Next: run a **fresh** disposable Ubuntu 24.04 VM, build two pinned
 release candidates, preserve machine/data fingerprints, apply one upgrade,
