@@ -82,7 +82,9 @@ ENTRANCE=""
 LANGUAGE=""
 USE_SYSTEMD=1
 SKIP_CONFIG=0
-BIND_ADDRESS="0.0.0.0"
+# G3 is a personal workstation / disposable VM pilot. Remote unauthenticated
+# HTTP access is not an acceptable implicit installation default.
+BIND_ADDRESS="127.0.0.1"
 AUTO_PROVISION=enabled
 APPROVE_DISPOSABLE_VM_INSTALL=0
 EXPLICIT_PAYLOAD=0

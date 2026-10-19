@@ -22,6 +22,21 @@ class LocalDeployContract(unittest.TestCase):
         self.assertIn("'install authorization denied' in repeated.stdout", runtime)
         self.assertIn("assert pid_before == pid_after", runtime)
 
+    def test_g3_default_is_loopback_and_public_http_is_opt_in_only(self):
+        # Source-level installation guard: this test never starts a daemon
+        # or modifies a host. Real first-login/TLS acceptance is G4 NOT RUN.
+        src = INSTALLER.read_text(encoding="utf-8")
+        self.assertIn('BIND_ADDRESS="127.0.0.1"', src)
+        self.assertNotIn('BIND_ADDRESS="0.0.0.0"', src)
+        self.assertIn('--bind-address) BIND_ADDRESS=', src)
+        self.assertIn('case "$BIND_ADDRESS" in 127.0.0.1|0.0.0.0)', src)
+        self.assertIn('if [ "$BIND_ADDRESS" = "127.0.0.1" ]; then', src)
+        self.assertIn('info "loopback-only binding; firewall unchanged"', src)
+        # A deliberately requested remote bind remains a lab-only operation;
+        # the standalone installer still requires the explicit VM approval.
+        self.assertIn('APPROVE_DISPOSABLE_VM_INSTALL=0', src)
+        self.assertIn('[ "$APPROVE_DISPOSABLE_VM_INSTALL" = "1" ] || die', src)
+
     def test_preflight_precedes_host_mutation_and_private_log_never_retains_password(self):
         src = INSTALLER.read_text(encoding="utf-8")
         start = src.index("\ninit_install_log\nbanner")
