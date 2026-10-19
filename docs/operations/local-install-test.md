@@ -146,3 +146,49 @@ make install-test-stop
 
 发布前还需要独立证明备份、完整 Docker/App 生命周期、中断升级与无损恢复。
 本地 VM 成功不自动使 M0 全部 GO，也不替代不可变 Git 来源与远程 CI。
+
+## 单一不可变候选：G4 浏览器 → G6 恢复前置门禁
+
+从本次切片起，`browser.py` 和 `runtime.py` 不再仅仅因为服务
+`active` 或页面返回 200 就允许累计 G4/G6 证据。
+
+- **当前源码必须是干净 Git 工作树**：读取 `git rev-parse HEAD`，
+  拒绝未提交和未跟踪源码改动；忽略目录下的私有 VM 状态除外。
+  源码哈希不是安装包发布签名。
+- **本机生成的两份二进制都必须匹配当前 VM**：对
+  `build/gpupanel-core`、`build/gpupanel-agent` 与客体
+  `/opt/gpupanel/gpupanel-{core,agent}` 分别计算 SHA-256，
+  只要任一缺失、为符号链接、摘要格式错误或不一致，就在浏览器
+  登录前拒绝验收。
+- **浏览器仍连接已安装的真实服务，无 API mock**。在已有登录、
+  匿名拒绝、CSRF 拒绝、Host/Docker 与已安装应用的检查之外，
+  访问 `/operations`，核验 **真实 Core Session** 下
+  `GET /hosts/operations` 和经 CSRF 保护的
+  `POST /logs/tasks/search` 返回受支持列表，禁止页面暗中
+  发起执行/审批/安装重试类请求。保存只含受限布尔断言、
+  源码 SHA 和两个二进制摘要的 `browser-live.json`；不保存
+  操作回执原始内容、凭据或任务日志。
+- **恢复脚本在第一次修改 Agent 服务之前**，检查当前洁净候选
+  与浏览器记录的源码/二进制相同，并重新读取 VM 中的两个
+  已安装二进制及客体 machine-id 的 SHA-256。任一证据缺失、
+  属于另一份源码或另一台客体，拒绝执行后续故障注入。
+
+在获授权的当前一次性 Ubuntu 24.04 VM 上，顺序执行：
+
+```bash
+# 首先按本页完成固定候选构建、G3 安装和私有凭据保存
+python3 scripts/install-test/browser.py
+python3 scripts/install-test/runtime.py
+```
+
+此顺序不允许用某一天的旧 CI PASS 代替当前 VM 二进制指纹。
+必须审阅 `.local/install-test/browser-live.json` 和
+`.local/install-test/runtime-live.json`，确保两者的
+`candidate.source_sha`、`candidate.binary_sha256` 与客体
+`guest_machine_id_sha256` 完全一致；检查所有服务/资源操作
+是否真实由已安装版本完成，之后再制作/核对独立恢复证据。
+
+以上仍**不构成完整 G3–G6 通过**：没有自动完成升级回滚、
+真实 App/Compose 安装/卸载、磁盘满/下载中断、用户 Workspace
+恢复，也没有独立操作员放行。CI 的单元测试只验证门禁拒绝逻辑，
+不冒充实际运行的 KVM 或 Ubuntu VM。
