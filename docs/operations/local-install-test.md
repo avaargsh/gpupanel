@@ -294,3 +294,37 @@ UNKNOWN 持久化、并发冲突、容器副作用回执或真实用户业务服
 跨主机恢复或完整 App/Compose 数据恢复。发布决策继续
 `NO_GO`，仍须 G3 的升级回滚、G5 的 GPUPanel API
 AppInstall/Compose 端到端，以及独立操作员验收。
+
+## 2026-10-19 — G5 实机 Core→Agent→Docker 容器片段
+
+本阶段接入独立的真实 GPUPanel Core API 容器操作测试，
+**不是**直接用 Docker CLI 伪装成平台容器生命周期。
+
+在已经完成真实登录、Agent 故障恢复、离线 Compose 生命周期之后，
+`ci-live-vm.sh` 从同一个获授权 Ubuntu VM 内的发行版
+`busybox-static` 导入本地离线镜像。脚本
+`scripts/install-test/container.py` 使用现有的登录会话和 CSRF，
+先确认匿名创建被拒绝，再为唯一任务 UUID 执行创建、停止、启动、
+重启、删除。每一步须同时满足以下证据：
+
+- GPUPanel Core API 接受操作；
+- Agent 持久 TaskDB 查到同一 UUID、`Container` 范围与操作类型，
+  且任务完成状态确为 `Success`；
+- 客体 Docker 对运行、退出或删除结果的独立检查一致。
+
+**实机发现的契约：**`ContainerCreate` 必须明确携带
+`networks`，没有该属性，Agent 会拒绝加载配置，任务变为
+`Failed`。离线 fixture 使用 `networks: [{network: none}]`，
+并通过 Docker Inspect 单独检查 `HostConfig.NetworkMode=none`，
+既保证创建请求合法，又不引入外部网络、主机端口与镜像拉取。
+
+验收报告只读取脱敏的任务 UUID 数量、步骤状态、候选二进制、
+同一 guest 身份与不可泄露的固定断言。新的容器步骤后，
+**原有安装后离线磁盘恢复仍是必需且独立的最终阶段**。
+任一阶段失败都不能产生 `PARTIAL_ACCEPTED`。
+
+无论这项容器级验证是否成功，`AppInstall`、真实应用市场与
+Compose API、跨 UUID 同名竞态、应用卸载以及升级回滚仍
+**NOT RUN / M0 NO-GO**。仅允许在一次性自有 VM 上测试；
+不使用生产 Docker 主机，不重试可能已执行的创建命令，
+不执行全局 Docker Prune。
