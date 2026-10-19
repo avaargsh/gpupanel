@@ -9,6 +9,7 @@ import (
 	"os"
 	"path"
 	"strings"
+	"syscall"
 )
 
 var errUpgradeArchiveRejected = errors.New("GPUPanel upgrade archive rejected")
@@ -35,8 +36,11 @@ func validateUpgradeArchive(filename, packageName string) error {
 		strings.ContainsAny(packageName, "\\/:") || strings.Contains(packageName, "..") {
 		return deny("invalid package root")
 	}
-	file, err := os.Open(filename)
-	if err != nil { return fmt.Errorf("%w: open archive: %v", errUpgradeArchiveRejected, err) }
+	// Refuse even a final-component symlink, including one swapped into place
+	// between inspection and opening (privileged update process).
+	descriptor, err := syscall.Open(filename, syscall.O_RDONLY|syscall.O_CLOEXEC|syscall.O_NOFOLLOW, 0)
+	if err != nil { return fmt.Errorf("%w: open non-redirected archive: %v", errUpgradeArchiveRejected, err) }
+	file := os.NewFile(uintptr(descriptor), filename)
 	defer file.Close()
 	stat, err := file.Stat()
 	if err != nil || !stat.Mode().IsRegular() || stat.Size() <= 0 || stat.Size() > maxUpgradeArchiveBytes {
