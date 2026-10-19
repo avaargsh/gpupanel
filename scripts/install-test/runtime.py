@@ -61,6 +61,7 @@ print(json.dumps({'marker_sha256':hashlib.sha256(p.read_bytes()).hexdigest(),'se
 candidate_before = candidate_identity.assert_installed_candidate(vm)
 checkout_commit = candidate_identity.source_checkout_commit(ROOT)
 guest_identity_before = candidate_identity.guest_identity_fingerprint(vm)
+attempt_before = candidate_identity.current_attempt(ROOT, STATE, vm=vm)
 result = {'kind': 'LIVE guest-only lifecycle; not complete App recovery acceptance'}
 expected = {scope: hashlib.file_digest((ROOT / 'build' / f'gpupanel-{scope}').open('rb'), 'sha256').hexdigest() for scope in ('core', 'agent')}
 installed = python('''import hashlib,json
@@ -134,7 +135,10 @@ if candidate_identity.source_checkout_commit(ROOT) != checkout_commit:
     raise RuntimeError('source checkout changed during lifecycle smoke')
 if candidate_identity.guest_identity_fingerprint(vm) != guest_identity_before:
     raise RuntimeError('guest identity changed during lifecycle smoke')
+if candidate_identity.current_attempt(ROOT, STATE, vm=vm)["attempt_id"] != attempt_before["attempt_id"]:
+    raise RuntimeError("active acceptance attempt changed during lifecycle smoke")
 result['candidate_commit'] = checkout_commit
 result['guest_identity_sha256'] = guest_identity_before
+result['attempt_id'] = attempt_before['attempt_id']
 (STATE / 'runtime-live.json').write_text(json.dumps(result, indent=2) + '\n')
 print(json.dumps(result, indent=2))
