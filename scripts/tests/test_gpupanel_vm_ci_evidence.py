@@ -166,7 +166,7 @@ class LiveVmEvidence(unittest.TestCase):
         self.assertIn('guest_identity = browser.get("guest_machine_id_sha256")', source)
         self.assertIn("from playwright.sync_api import", source)
         self.assertNotIn("page.route(", source)
-        self.assertIn('"network_mode: none', source)
+        self.assertIn("network_mode: none", source)
         self.assertIn("no_registry_pull", source)
         self.assertIn('"taskID": task_id', source)
         self.assertIn('"type": "Compose"', source)
