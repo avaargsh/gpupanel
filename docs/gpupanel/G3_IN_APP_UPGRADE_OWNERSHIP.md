@@ -29,6 +29,16 @@ make any later downgrade ambiguous.
 - Make the rollback handler accumulate and return restoration errors instead
   of logging them and returning implicit success. Automatic rollback failures
   are explicitly surfaced in service logs; this is not proof of guest health.
+- Reject release-version inputs that are not bounded conventional version
+  tokens **before constructing any filesystem path**. The old upgrade code
+  interpolated an API-provided version directly into a path and recursively
+  deleted that path. The new stage is created only with `mkdir` and will
+  **refuse to reuse an existing version stage**, preserving earlier rollback
+  snapshots and in-flight failure evidence.
+- Validate UpgradeLog's stored backup path as a canonical **single version
+  component within the owned upgrade root**. Reject path traversal, foreign
+  backup roots and symlinked backup directories before attempting restore.
+  The rejected inputs never authorize deleting or replacing host files.
 - Protect these contracts with disposable Go tests for symlinks, mismatched
   service units, missing executable, unit ambiguity, wrong paths and aliases.
 - No Agent installation change; no live customer host action.
