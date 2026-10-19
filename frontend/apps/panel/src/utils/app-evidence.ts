@@ -3,6 +3,7 @@ export interface AppEvidence {
     classification: 'CONSISTENT' | 'PARTIAL' | 'CONFLICT' | 'UNKNOWN';
     appStatus: string;
     taskStatus: string;
+    taskId: string;
     observedAt: string;
     reasons: string[];
     containers: { name: string; state: string }[];
@@ -29,6 +30,7 @@ export function parseAppEvidence(value: unknown, expectedId: number): AppEvidenc
         installId: expectedId,
         classification: data.classification as AppEvidence['classification'],
         appStatus: text(data.appStatus, true), taskStatus: text(data.taskStatus, true),
+        taskId: text(data.taskId, true),
         observedAt: text(data.observedAt), reasons: reasons.map((reason) => text(reason)),
         containers: containers.map((item) => { const row = record(item); return { name: text(row.name), state: text(row.state) }; }),
         verified: false,
