@@ -170,7 +170,7 @@ def begin_attempt(vm, root: Path = ROOT, state: Path = STATE) -> dict:
     try:
         with os.fdopen(fd, "w", encoding="utf-8") as stream:
             json.dump(record, stream, indent=2, sort_keys=True)
-            stream.write("\\n")
+            stream.write("\n")
             stream.flush()
             os.fsync(stream.fileno())
         os.replace(temporary, state / ATTEMPT_FILE)
