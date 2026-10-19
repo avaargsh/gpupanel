@@ -98,6 +98,26 @@ with sync_playwright() as play:
         timeout=20000
     )
 
+    def api_failure_stage(endpoint: str) -> str:
+        # Only constant stage names may enter CI's redacted failure summary.
+        # Never emit URLs, IDs, request bodies, response JSON or credentials.
+        named = {
+            "/apps/sync/local": "catalog-sync",
+            "/logs/tasks/search": "task-receipt",
+            "/apps/install": "install-admission",
+            "/apps/installed/op": "uninstall-operation",
+        }
+        if endpoint in named:
+            return named[endpoint]
+        for prefix, stage in (
+            ("/apps/detail/node/", "detail-lookup"),
+            ("/apps/installed/evidence/", "resource-evidence"),
+            ("/apps/installed/info/", "installed-info"),
+        ):
+            if endpoint.startswith(prefix):
+                return stage
+        return "unknown"
+
     def request(method: str, endpoint: str, body: dict | None = None,
                 success=True):
         allowed_post = {
@@ -128,6 +148,8 @@ with sync_playwright() as play:
         }""", {"method": method, "endpoint": endpoint, "body": body})
         accepted = response.get("http") == 200 and response.get("code") == 200
         if success and not accepted:
+            print("G5_APP_API_FAILURE_STAGE=" + api_failure_stage(endpoint) +
+                  " release=NO_GO", flush=True)
             raise RuntimeError("scoped Core App API refused the expected operation")
         if not success and accepted:
             raise RuntimeError("Core accepted a deliberately invalid AppInstall")
