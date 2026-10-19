@@ -2,6 +2,7 @@ package service
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -213,13 +214,21 @@ func (u *UpgradeService) Upgrade(req dto.Upgrade) error {
 		if err := files.CopyFileWithRename(path.Join(tmpDir, "gpupanel-core"), svcInfo.coreBinary); err != nil {
 			global.LOG.Errorf("upgrade gpupanel-core failed, err: %v", err)
 			_ = settingRepo.Update("SystemStatus", "Free")
-			u.handleRollback(originalDir, 1, svcInfo)
+			if rollbackErr := u.handleRollback(originalDir, 1, svcInfo); rollbackErr != nil {
+
+				global.LOG.Errorf("automatic rollback incomplete: %v", rollbackErr)
+
+			}
 			return
 		}
 		if err := files.CopyFileWithRename(path.Join(tmpDir, "gpupanel-agent"), svcInfo.agentBinary); err != nil {
 			global.LOG.Errorf("upgrade gpupanel-agent failed, err: %v", err)
 			_ = settingRepo.Update("SystemStatus", "Free")
-			u.handleRollback(originalDir, 1, svcInfo)
+			if rollbackErr := u.handleRollback(originalDir, 1, svcInfo); rollbackErr != nil {
+
+				global.LOG.Errorf("automatic rollback incomplete: %v", rollbackErr)
+
+			}
 			return
 		}
 
@@ -229,26 +238,42 @@ func (u *UpgradeService) Upgrade(req dto.Upgrade) error {
 		if err := files.CopyItem(false, true, path.Join(initScriptPath, svcInfo.selCoreName), svcInfo.basePath); err != nil {
 			global.LOG.Errorf("upgrade %s failed, err: %v", svcInfo.coreName, err)
 			_ = settingRepo.Update("SystemStatus", "Free")
-			u.handleRollback(originalDir, 3, svcInfo)
+			if rollbackErr := u.handleRollback(originalDir, 3, svcInfo); rollbackErr != nil {
+
+				global.LOG.Errorf("automatic rollback incomplete: %v", rollbackErr)
+
+			}
 			return
 		}
 		if err := files.CopyItem(false, true, path.Join(initScriptPath, svcInfo.selAgentName), svcInfo.basePath); err != nil {
 			global.LOG.Errorf("upgrade %s failed, err: %v", svcInfo.agentName, err)
 			_ = settingRepo.Update("SystemStatus", "Free")
-			u.handleRollback(originalDir, 3, svcInfo)
+			if rollbackErr := u.handleRollback(originalDir, 3, svcInfo); rollbackErr != nil {
+
+				global.LOG.Errorf("automatic rollback incomplete: %v", rollbackErr)
+
+			}
 			return
 		}
 
 		if err := files.CopyItem(true, true, path.Join(tmpDir, "lang"), "/usr/local/bin"); err != nil {
 			global.LOG.Errorf("Update language files failed: %v", err)
 			_ = settingRepo.Update("SystemStatus", "Free")
-			u.handleRollback(originalDir, 4, svcInfo)
+			if rollbackErr := u.handleRollback(originalDir, 4, svcInfo); rollbackErr != nil {
+
+				global.LOG.Errorf("automatic rollback incomplete: %v", rollbackErr)
+
+			}
 			return
 		}
 		if err := files.CopyFileWithRename(path.Join(tmpDir, "GeoIP.mmdb"), path.Join(global.CONF.Base.InstallDir, "gpupanel/geo/GeoIP.mmdb")); err != nil {
 			global.LOG.Warnf("Update GeoIP database failed: %v", err)
 			_ = settingRepo.Update("SystemStatus", "Free")
-			u.handleRollback(originalDir, 4, svcInfo)
+			if rollbackErr := u.handleRollback(originalDir, 4, svcInfo); rollbackErr != nil {
+
+				global.LOG.Errorf("automatic rollback incomplete: %v", rollbackErr)
+
+			}
 			return
 		}
 
@@ -277,8 +302,7 @@ func (u *UpgradeService) Rollback(req dto.OperateByID) error {
 	}
 	// BackupFile records the upgrade transaction directory; the actual
 	// sealed files were copied into its "original" child.
-	u.handleRollback(path.Join(log.BackupFile, "original"), 3, svcInfo)
-	return nil
+	return u.handleRollback(path.Join(log.BackupFile, "original"), 3, svcInfo)
 }
 
 type noteHelper struct {
@@ -482,44 +506,48 @@ func (u *UpgradeService) handleBackup(originalDir string, svcInfo serviceInfo) e
 	return nil
 }
 
-func (u *UpgradeService) handleRollback(originalDir string, errStep int, svcInfo serviceInfo) {
-	_ = settingRepo.Update("SystemStatus", "Free")
-	dbPath := path.Join(global.CONF.Base.InstallDir, "gpupanel")
-	if _, err := os.Stat(path.Join(originalDir, "db")); err == nil {
-		if err := os.Chmod(path.Join(originalDir, "db"), 0700); err != nil {
-			global.LOG.Errorf("set rollback db dir permissions failed, err: %v", err)
-		} else if err := files.CopyItem(true, true, path.Join(originalDir, "db"), dbPath); err != nil {
-			global.LOG.Errorf("rollback gpupanel db failed, err: %v", err)
+func (u *UpgradeService) handleRollback(originalDir string, errStep int, svcInfo serviceInfo) error {
+	// Partial restoration must be visible to API callers and upstream
+	// upgrade logs. Keep attempting independent steps, but never return a
+	// successful rollback when any required asset could not be restored.
+	var failures []error
+	record := func(action string, err error) {
+		if err == nil {
+			return
 		}
+		global.LOG.Errorf("rollback %s failed: %v", action, err)
+		failures = append(failures, fmt.Errorf("%s: %w", action, err))
 	}
-	if err := files.CopyFileWithRename(path.Join(originalDir, "gpupanel-core"), svcInfo.coreBinary); err != nil {
-		global.LOG.Errorf("rollback gpupanel-core failed, err: %v", err)
+	record("reset status", settingRepo.Update("SystemStatus", "Free"))
+	dbPath := path.Join(global.CONF.Base.InstallDir, "gpupanel")
+	dbBackup := path.Join(originalDir, "db")
+	if info, err := os.Lstat(dbBackup); err != nil {
+		record("missing database backup", err)
+	} else if !info.IsDir() || info.Mode()&os.ModeSymlink != 0 {
+		record("database backup identity", errUpgradeRuntimeOwnership)
+	} else if err := os.Chmod(dbBackup, 0700); err != nil {
+		record("database backup permissions", err)
+	} else {
+		record("database restore", files.CopyItem(true, true, dbBackup, dbPath))
 	}
-	if err := files.CopyFileWithRename(path.Join(originalDir, "gpupanel-agent"), svcInfo.agentBinary); err != nil {
-		global.LOG.Errorf("rollback gpupanel-agent failed, err: %v", err)
-	}
+	record("core executable", files.CopyFileWithRename(path.Join(originalDir, "gpupanel-core"), svcInfo.coreBinary))
+	record("agent executable", files.CopyFileWithRename(path.Join(originalDir, "gpupanel-agent"), svcInfo.agentBinary))
 	if errStep == 1 {
-		return
+		return errors.Join(failures...)
 	}
-	// pctl is no longer part of the GPUPanel runtime; skip restoring the legacy ctl binary.
+	// pctl is no longer part of GPUPanel runtime. Never alter its
+	// compatibility symlink as a side effect of restoring binaries.
 	if errStep == 2 {
-		return
+		return errors.Join(failures...)
 	}
-	if err := files.CopyFileWithRename(path.Join(originalDir, svcInfo.coreName), path.Join(svcInfo.basePath, svcInfo.coreName)); err != nil {
-		global.LOG.Errorf("rollback %s failed, err: %v", svcInfo.coreName, err)
-	}
-	if err := files.CopyFileWithRename(path.Join(originalDir, svcInfo.agentName), path.Join(svcInfo.basePath, svcInfo.agentName)); err != nil {
-		global.LOG.Errorf("rollback %s failed, err: %v", svcInfo.agentName, err)
-	}
+	record(svcInfo.coreName, files.CopyFileWithRename(path.Join(originalDir, svcInfo.coreName), path.Join(svcInfo.basePath, svcInfo.coreName)))
+	record(svcInfo.agentName, files.CopyFileWithRename(path.Join(originalDir, svcInfo.agentName), path.Join(svcInfo.basePath, svcInfo.agentName)))
 	if errStep == 3 {
-		return
+		return errors.Join(failures...)
 	}
-	if err := files.CopyItem(true, true, path.Join(originalDir, "lang"), "/usr/local/bin"); err != nil {
-		global.LOG.Errorf("rollback language files failed, err: %v", err)
-	}
-	if err := files.CopyFileWithRename(path.Join(originalDir, "GeoIP.mmdb"), path.Join(global.CONF.Base.InstallDir, "gpupanel/geo/GeoIP.mmdb")); err != nil {
-		global.LOG.Errorf("rollback GeoIP database failed, err: %v", err)
-	}
+	record("language files", files.CopyItem(true, true, path.Join(originalDir, "lang"), "/usr/local/bin"))
+	record("GeoIP", files.CopyFileWithRename(path.Join(originalDir, "GeoIP.mmdb"), path.Join(global.CONF.Base.InstallDir, "gpupanel/geo/GeoIP.mmdb")))
+	return errors.Join(failures...)
 }
 
 func (u *UpgradeService) loadVersionByMode(developer, currentVersion string) (string, string, string) {
