@@ -17,9 +17,17 @@ func verifyUpgradeBackupInventory(originalDir string, svc serviceInfo) error {
 	if err := regularUpgradeBackupDir(originalDir); err != nil {
 		return fmt.Errorf("rollback snapshot root: %w", err)
 	}
-	for _, name := range []string{"db", "lang"} {
-		if err := regularUpgradeBackupDir(filepath.Join(originalDir, name)); err != nil {
-			return fmt.Errorf("rollback %s directory: %w", name, err)
+	if err := regularUpgradeBackupDir(filepath.Join(originalDir, "db")); err != nil {
+		return fmt.Errorf("rollback db directory: %w", err)
+	}
+	// Language bundles are not installed on a fresh M0 workstation,
+	// so a missing language rollback snapshot is valid. A present
+	// snapshot must still be a normal directory, never a redirection.
+	if present, err := optionalUpgradeAsset(filepath.Join(originalDir, "lang"), true); err != nil {
+		return fmt.Errorf("rollback language directory: %w", err)
+	} else if present {
+		if err := regularUpgradeBackupDir(filepath.Join(originalDir, "lang")); err != nil {
+			return err
 		}
 	}
 	if err := verifyUpgradeDBInventory(filepath.Join(filepath.Dir(svc.coreBinary), "db"),
@@ -31,8 +39,7 @@ func verifyUpgradeBackupInventory(originalDir string, svc serviceInfo) error {
 		{svc.agentBinary, filepath.Join(originalDir, "gpupanel-agent")},
 		{filepath.Join(svc.basePath, svc.coreName), filepath.Join(originalDir, svc.coreName)},
 		{filepath.Join(svc.basePath, svc.agentName), filepath.Join(originalDir, svc.agentName)},
-		{filepath.Join(filepath.Dir(svc.coreBinary), "geo", "GeoIP.mmdb"),
-			filepath.Join(originalDir, "GeoIP.mmdb")},
+
 	}
 	for _, pair := range pairs {
 		expected, err := regularUpgradeFileHash(pair[0])
@@ -45,6 +52,27 @@ func verifyUpgradeBackupInventory(originalDir string, svc serviceInfo) error {
 		}
 		if actual != expected {
 			return fmt.Errorf("rollback snapshot mismatch: %s", filepath.Base(pair[1]))
+		}
+	}
+	// GeoIP is an optional runtime download, not present in all release
+	// packages. It may be absent from BOTH installed and rollback state,
+	// but a present installed GeoIP must have an identical saved copy.
+	geoSource := filepath.Join(filepath.Dir(svc.coreBinary), "geo", "GeoIP.mmdb")
+	geoBackup := filepath.Join(originalDir, "GeoIP.mmdb")
+	hasSource, err := optionalUpgradeAsset(geoSource, false)
+	if err != nil { return err }
+	hasBackup, err := optionalUpgradeAsset(geoBackup, false)
+	if err != nil { return err }
+	if hasSource != hasBackup {
+		return fmt.Errorf("%w: installed GeoIP and rollback inventory differ", errUpgradeRuntimeOwnership)
+	}
+	if hasSource {
+		a, err := regularUpgradeFileHash(geoSource)
+		if err != nil { return err }
+		b, err := regularUpgradeFileHash(geoBackup)
+		if err != nil { return err }
+		if a != b {
+			return fmt.Errorf("%w: GeoIP backup digest mismatch", errUpgradeRuntimeOwnership)
 		}
 	}
 	return nil
