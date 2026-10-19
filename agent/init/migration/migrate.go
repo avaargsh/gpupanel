@@ -121,6 +121,7 @@ func InitTaskDB() {
 	m := gormigrate.New(global.TaskDB, gormigrate.DefaultOptions, []*gormigrate.Migration{
 		migrations.AddTaskTable,
 		migrations.AddHostOperations,
+		migrations.AddAppInstallNameClaims,
 	})
 	if err := m.Migrate(); err != nil {
 		global.LOG.Error(err)
