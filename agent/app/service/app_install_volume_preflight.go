@@ -36,84 +36,8 @@ type appInstallVolumeList func(context.Context) ([]*volume.Volume, []string, err
 
 const maxReleaseVolumeScan = 4096
 
-var g5MachineID = regexp.MustCompile(`^[0-9a-f]{32}package service
-
-import (
-	"context"
-	"crypto/sha256"
-	"encoding/hex"
-	"errors"
-	"net/url"
-	"os"
-	"regexp"
-	"strings"
-	"time"
-
-	"github.com/avaargsh/GPUPanel/agent/app/model"
-	"github.com/avaargsh/GPUPanel/agent/global"
-	"github.com/avaargsh/GPUPanel/agent/utils/docker"
-	"github.com/docker/docker/api/types/volume"
-	"gorm.io/gorm"
-)
-
-// AppInstallVolumePreflight is ONE configured daemon's read-only volume
-// inventory. It never proves absence of bind mounts, remote plugin state,
-// other daemons, active operations, or anything that authorizes release.
-type AppInstallVolumePreflight struct {
-	NameKey         string    `json:"nameKey"`
-	HostFingerprint string    `json:"hostFingerprint,omitempty"`
-	ObservedAt      time.Time `json:"observedAt"`
-	CheckedCount    int       `json:"checkedCount"`
-	VolumeAbsent    bool      `json:"volumeAbsent"`
-	Verified        bool      `json:"verified"`
-	CanRelease      bool      `json:"canRelease"`
-	Reasons         []string  `json:"reasons"`
-}
-
-type appInstallVolumeList func(context.Context) ([]*volume.Volume, []string, error)
-
-const maxReleaseVolumeScan = 4096
-
-)
-var g5HostHash = regexp.MustCompile(`^[0-9a-f]{64}package service
-
-import (
-	"context"
-	"crypto/sha256"
-	"encoding/hex"
-	"errors"
-	"net/url"
-	"os"
-	"regexp"
-	"strings"
-	"time"
-
-	"github.com/avaargsh/GPUPanel/agent/app/model"
-	"github.com/avaargsh/GPUPanel/agent/global"
-	"github.com/avaargsh/GPUPanel/agent/utils/docker"
-	"github.com/docker/docker/api/types/volume"
-	"gorm.io/gorm"
-)
-
-// AppInstallVolumePreflight is ONE configured daemon's read-only volume
-// inventory. It never proves absence of bind mounts, remote plugin state,
-// other daemons, active operations, or anything that authorizes release.
-type AppInstallVolumePreflight struct {
-	NameKey         string    `json:"nameKey"`
-	HostFingerprint string    `json:"hostFingerprint,omitempty"`
-	ObservedAt      time.Time `json:"observedAt"`
-	CheckedCount    int       `json:"checkedCount"`
-	VolumeAbsent    bool      `json:"volumeAbsent"`
-	Verified        bool      `json:"verified"`
-	CanRelease      bool      `json:"canRelease"`
-	Reasons         []string  `json:"reasons"`
-}
-
-type appInstallVolumeList func(context.Context) ([]*volume.Volume, []string, error)
-
-const maxReleaseVolumeScan = 4096
-
-)
+var g5MachineID = regexp.MustCompile(`^[0-9a-f]{32}$`)
+var g5HostHash = regexp.MustCompile(`^[0-9a-f]{64}$`)
 
 // observerHostFingerprint pseudonymizes the local machine-id, never returning
 // the raw machine identifier. This is host correlation NOT cryptographic proof.
