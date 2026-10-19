@@ -22,6 +22,18 @@ CLASS = re.compile(r"^(AssertionError|AttributeError|FileNotFoundError|"
                    r"playwright\._impl\._errors\.[A-Za-z]+Error):")
 
 
+COMPOSE_STAGE = re.compile(
+    r"(?m)^GUEST_COMPOSE_STAGE=(image-build|inspect|ps|image-remove|"
+    r"image-list|up|logs|exec|stop|start|restart|down|compose|other|unknown) "
+    r"release=NO_GO$"
+)
+
+
+def compose_stage(raw: str) -> str:
+    hits = COMPOSE_STAGE.findall(raw)
+    return hits[-1] if hits else "unknown"
+
+
 def diagnostic(raw: str, basename: str) -> str:
     positions = [
         match.group(2) for match in LINE.finditer(raw)
@@ -47,8 +59,10 @@ def main() -> int:
               "exception_class=NO_PRIVATE_LOG release=NO_GO")
         return 0
     # Only the synthesized constant tokens are printed.
-    print(diagnostic(path.read_text(encoding="utf-8", errors="replace")[-200_000:],
-                     basename))
+    raw = path.read_text(encoding="utf-8", errors="replace")[-200_000:]
+    if sys.argv[1] == "compose":
+        print("GUEST_COMPOSE_FAILURE_STAGE=" + compose_stage(raw) + " release=NO_GO")
+    print(diagnostic(raw, basename))
     return 0
 
 
