@@ -198,6 +198,15 @@ func (u *UpgradeService) Upgrade(req dto.Upgrade) error {
 		defer func() {
 			_ = os.Remove(downloadDir)
 		}()
+		// Verify every path/type/bound before any privileged extraction.
+		// The transport archive is not publisher-authenticated yet, so
+		// this is only a structural safety preflight (G3 remains NO-GO).
+		archiveRoot := strings.TrimSuffix(fileName, ".tar.gz")
+		if err := validateUpgradeArchive(path.Join(downloadDir, fileName), archiveRoot); err != nil {
+			global.LOG.Errorf("upgrade archive rejected before extraction: %v", err)
+			_ = settingRepo.Update("SystemStatus", "Free")
+			return
+		}
 		if err := files.HandleUnTar(downloadDir+"/"+fileName, downloadDir, ""); err != nil {
 			global.LOG.Errorf("decompress file failed, err: %v", err)
 			_ = settingRepo.Update("SystemStatus", "Free")
