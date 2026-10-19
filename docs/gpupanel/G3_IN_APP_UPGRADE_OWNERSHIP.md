@@ -2,8 +2,9 @@
 
 The real Ubuntu 24.04 QEMU job #140 installed Core and Agent into
 `/opt/gpupanel/gpupanel-{core,agent}`, with systemd `ExecStart` directly
-using those paths. The installer also creates compatibility symbolic links at
-`/usr/local/bin/gpupanel-{core,agent}`.
+using those paths. Earlier disposable installers also created global
+compatibility symbolic links; the current development installer deliberately
+**creates no global binary or control aliases** (see `DEV_RUNTIME_LAYOUT.md`).
 
 **Previously** the in-app Upgrade/Rollback code passed the symbolic link path
 to `CopyFileWithRename`, which copies to `destination.tmp` and then calls
@@ -23,7 +24,7 @@ make any later downgrade ambiguous.
   `/etc/systemd/system`) during this initial pilot. Different base
   directories/managers fail closed, instead of writing to a guessed path.
 - Back up, install and roll back the **same validated runtime targets**.
-  Never write either compatibility symlink in `/usr/local/bin`.
+  Keep all binary writes inside `/opt/gpupanel`; compatibility links are no longer created.
 - Correct the original backup path to `BackupFile/original`, rather than
   the transaction parent. **The running Core API now refuses an online manual
   Rollback after read-only snapshot validation**. Writing SQLite files and

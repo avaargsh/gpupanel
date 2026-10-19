@@ -98,7 +98,7 @@ cp "$ROOT/deploy/systemd/gpupanel-core.service" "$PKG_DIR/initscript/"
 cp "$ROOT/deploy/systemd/gpupanel-agent.service" "$PKG_DIR/initscript/"
 
 # lang/ holds the shell-side message files the in-app upgrade copies to
-# /usr/local/bin/lang.
+# /opt/gpupanel/lang.
 if [ -d "$LANG_SRC" ]; then
     cp "$LANG_SRC"/*.yaml "$PKG_DIR/lang/"
 else
