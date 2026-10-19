@@ -79,6 +79,26 @@ def guest_installed_digests(vm) -> dict[str, str]:
     return validate_digests(json.loads(response.stdout))
 
 
+def guest_identity_fingerprint(vm) -> str:
+    """Pseudonymous stable guest identity; never write the raw machine-id.
+
+    This checks cross-receipt coherence only. It cannot authenticate the guest,
+    distinguish clones sharing a machine-id, or replace independent observation.
+    """
+    if not vm.owned_pid("qemu.pid", str(vm.STATE / "disk.qcow2")):
+        raise RuntimeError("task-owned disposable VM is not running")
+    response = subprocess.run(
+        vm.ssh_args() + [shlex.join(["cat", "/etc/machine-id"])],
+        check=True, capture_output=True, text=True, timeout=20,
+    )
+    machine_id = response.stdout.strip()
+    if not re.fullmatch(r"[0-9a-f]{32}", machine_id) or machine_id == "0" * 32:
+        raise ValueError("guest machine-id is missing or malformed")
+    return hashlib.sha256(
+        b"gpupanel.m0.guest.v1\x00" + machine_id.encode("ascii")
+    ).hexdigest()
+
+
 def assert_installed_candidate(vm, root: Path = ROOT) -> dict[str, str]:
     built = local_build_digests(root)
     installed = guest_installed_digests(vm)
@@ -112,6 +132,14 @@ def review_candidate(root: Path = ROOT, state: Path = STATE) -> dict:
             raise ValueError(name + " observed a different installed candidate")
         if receipt.get("candidate_commit") != commit:
             raise ValueError(name + " checkout commit does not match candidate")
+    fingerprints = []
+    for name, receipt in (("browser", browser), ("runtime", runtime)):
+        fingerprint = receipt.get("guest_identity_sha256")
+        if not isinstance(fingerprint, str) or not SHA256.fullmatch(fingerprint):
+            raise ValueError(name + " missing valid guest identity fingerprint")
+        fingerprints.append(fingerprint)
+    if fingerprints[0] != fingerprints[1]:
+        raise ValueError("browser and runtime belong to different guest identities")
     for required in ("live_login_and_httponly_entrance", "anonymous_core_host_evidence_denied",
                      "invalid_csrf_denied", "live_core_agent_host_api"):
         if browser.get(required) is not True:
@@ -124,6 +152,7 @@ def review_candidate(root: Path = ROOT, state: Path = STATE) -> dict:
         "candidate_consistent": True,
         "candidate_commit": commit,
         "binary_sha256": expected,
+        "guest_identity_sha256": fingerprints[0],
         "scope": "G4 browser + limited G6 agent lifecycle receipts only",
         "m0_release_ready": False,
         "g3_install_upgrade_rollback": "NOT_VERIFIED",
