@@ -19,15 +19,21 @@ var errUpgradeRuntimeOwnership = errors.New("GPUPanel in-app upgrade refused: in
 // Other service managers/custom base dirs fail BEFORE the download/backup
 // transaction until their actual service unit ownership is tested.
 func upgradeRuntimePaths(installDir string, svc serviceInfo) (string, string, error) {
+	return validateOwnedUpgradePaths(installDir, svc, "/opt", "/etc/systemd/system")
+}
+
+// validateOwnedUpgradePaths has injectable expected paths solely to test
+// refusal/selection against disposable fixture files, without changing /opt.
+func validateOwnedUpgradePaths(installDir string, svc serviceInfo, expectedBase, expectedUnits string) (string, string, error) {
 	deny := func(detail string) (string, string, error) {
 		return "", "", fmt.Errorf("%w: %s", errUpgradeRuntimeOwnership, detail)
 	}
-	if installDir != "/opt" ||
+	if installDir != expectedBase ||
 		filepath.Clean(installDir) != installDir ||
-		filepath.Clean(svc.basePath) != "/etc/systemd/system" ||
+		filepath.Clean(svc.basePath) != expectedUnits ||
 		!strings.HasSuffix(svc.coreName, ".service") ||
 		!strings.HasSuffix(svc.agentName, ".service") {
-		return deny("only the default /opt Ubuntu systemd installation is eligible")
+		return deny("service manager or installation base differs from the reviewed systemd installation")
 	}
 	root := filepath.Join(installDir, "gpupanel")
 	actualRoot, err := filepath.EvalSymlinks(root)
