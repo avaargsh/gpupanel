@@ -1,6 +1,33 @@
 import type { LocaleResource } from './zh';
 
 const en: LocaleResource = {
+    opsCenter: {
+        title: 'Operations Center',
+        description: 'Review this login session’s local controlled operations and receipts.',
+        scope: 'Host Operation receipts only, not autonomous Agent tasks or cross-system approvals. No automatic execution.',
+        tasks: 'Needs attention',
+        confirmations: 'Pending confirmation',
+        activity: 'All activity',
+        receipts: 'Operation receipts',
+        retention: 'Only the last 50 session-scoped receipts returned by Core. Core status is not independent effect verification.',
+        localOnly: 'Remote host tasks are not supported. Local receipts are not fetched for this node.',
+        emptyView: 'No receipts in this view.',
+        target: 'Resource',
+        created: 'Created',
+        expired: 'Expired plan',
+        expiredHint: 'This plan expired. Create a new plan on the Host Operations screen; do not execute the old one.',
+        uncertain: 'Outcome is unknown. Inspect the receipt and the target; never automatically repeat execution.',
+        reviewInHost: 'Review in Host Operations',
+        inspectReceipt: 'Inspect original receipt',
+        states: {
+            planned: 'Pending confirmation',
+            running: 'Running',
+            completed: 'Completed (not necessarily verified)',
+            verified: 'Verified',
+            failed: 'Failed',
+            unknown: 'Unknown outcome',
+        },
+    },
     hostOps: {
         "title": "Diagnostics & operations",
         "localOnly": "Local host only. Remote execution is unavailable.",
