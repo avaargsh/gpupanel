@@ -96,6 +96,28 @@ chmod 0600 "$STATE/install.raw.log"
 python3 scripts/install-test/record_credentials.py
 stage 'guest_fresh_install'
 
+# G3 read-only guest fact check: the installed systemd services must refer
+# to real owned binaries under /opt/gpupanel. /usr/local/bin binaries are
+# lookup-only compatibility symlinks, never in-app upgrade write targets.
+# This does not perform or certify A→B→A upgrade or rollback.
+if ! python3 scripts/install-test/vm.py ssh -- sudo sh -euc '
+  [ "$(readlink -f /opt/gpupanel)" = /opt/gpupanel ]
+  for role in core agent; do
+    binary="/opt/gpupanel/gpupanel-$role"
+    alias="/usr/local/bin/gpupanel-$role"
+    unit="/etc/systemd/system/gpupanel-$role.service"
+    [ -f "$binary" ] && [ -x "$binary" ] && [ ! -L "$binary" ]
+    [ -L "$alias" ] && [ "$(readlink "$alias")" = "$binary" ]
+    [ -f "$unit" ] && [ ! -L "$unit" ]
+    [ "$(grep -Fxc "ExecStart=$binary" "$unit")" = 1 ]
+    [ "$(grep -Fxc "WorkingDirectory=/opt/gpupanel" "$unit")" = 1 ]
+  done
+' > "$STATE/upgrade-runtime-identity.raw.log" 2>&1; then
+  echo 'BLOCKED: installed guest runtime ownership differs from reviewed systemd layout' >&2
+  exit 3
+fi
+echo 'G3 real guest runtime identity checked (read-only); upgrade/rollback NOT_RUN'
+
 # A real browser against installed Core+Agent with no route mocks, then
 # guest-only controlled restart/SIGKILL/recovery.
 if ! python3 scripts/install-test/browser.py > "$STATE/browser.raw.log" 2>&1; then
