@@ -2,11 +2,13 @@
 from __future__ import annotations
 
 import importlib.util
+import sys
 from pathlib import Path
 import unittest
 
 ROOT = Path(__file__).resolve().parents[2]
 SOURCE = ROOT / "scripts/install-test/release-transfer.py"
+sys.path.insert(0, str(SOURCE.parent))
 spec = importlib.util.spec_from_file_location("gpupanel_release_transfer", SOURCE)
 transfer = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(transfer)
