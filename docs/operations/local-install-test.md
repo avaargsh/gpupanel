@@ -412,3 +412,35 @@ GPL 许可审计通过或真实生产主机升级可用。报告永远保持
 测试入口：`python3 -m unittest scripts/tests/test_gpupanel_vm_release_transfer.py`。
 只对实际通过的完整、同一 commit VM 工作流记录 G3 的安装包传输
 片段，不能跨 PR 复用历史证据。
+
+## G5 实机增量：GPUPanel Compose API → Agent TaskDB → Docker
+
+新文件 `scripts/install-test/compose-api-live.py` 在 **同一源码 SHA、
+同一客体 machine-id、同一份 Core/Agent 安装二进制**的
+真实登录、Agent 恢复和容器 API 实测之后运行：
+
+- 从该 VM 内已导入的本地 `gpupanel-m0-fixture:local` 镜像创建
+  一个唯一命名的 Compose 项目；配置 `pull_policy: never`、
+  `network_mode: none`、无端口发布、只读根文件系统、无新增权限。
+- 匿名 POST Compose 创建必须被拒绝；登录后通过受 CSRF 保护
+  的 `POST /api/v1/containers/compose` 创建；用独立 UUID
+  核对 Agent `Compose / TaskCreate / Success` 持久任务回执。
+- 从真实 Core `/containers/compose/search` 确认项目记录和
+  专属配置路径，再从 guest Docker inspect 独立确认项目标签、
+  镜像、运行状态、network mode、privileged 和端口绑定。
+- 通过 Core Compose 操作 API 依次 stop/start/restart，
+  每次向 Docker 观察真实容器状态；最后使用
+  `operation=delete, withFile=false, force=false`，仅针对
+  本次项目，确认容器和数据库项目记录均已消失。不允许全局
+  `docker prune`，不能碰用户现有 Compose 项目。
+- 失败时只输出脱敏的源码行号和异常类，不公开任务日志、
+  登录凭据、Compose 原始内容或 guest Docker 输出。
+- 只有 `compose-api-live.json` 的确切项目、Guest、TaskDB
+  和 6 步结论全部匹配，`ci-evidence.json` 才允许
+  `core_agent_compose_api_lifecycle=PARTIAL_PASS`；
+  缺失、跨主机、跨版本、执行未完或凭空标注 PASS 均拒绝。
+
+**这不是完整 G5 AppStore/AppInstall 生命周期**，只是 GPUPanel
+Compose API 的真实服务端、任务和 Docker 资源纵向闭环。
+未覆盖应用市场部署、应用卸载/重装与迁移、真实 GPU、
+升级回滚或独立操作员放行，因此完整 M0 仍为 NO-GO。

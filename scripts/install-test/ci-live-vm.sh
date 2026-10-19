@@ -136,6 +136,15 @@ if ! python3 scripts/install-test/container.py > "$STATE/container.raw.log" 2>&1
 fi
 stage 'real_core_agent_container_lifecycle'
 
+# GPUPanel's *authenticated Compose API*, not a direct docker-compose CLI,
+# now owns the project/task. It uses the prior local BusyBox image, forbids
+# network/host ports and checks TaskDB + Docker + exact record cleanup.
+if ! python3 scripts/install-test/compose-api-live.py > "$STATE/compose-api.raw.log" 2>&1; then
+    python3 scripts/install-test/ci-failure.py compose-api
+    exit 1
+fi
+stage 'real_core_agent_compose_api_lifecycle'
+
 # Only the disposable guest disk is fault-injected and cold-restored.
 # A sealed post-install checkpoint is independently validated before
 # replacing the task-owned disk; the prior disk is retained for review.
