@@ -574,17 +574,12 @@ func (u *UpgradeService) handleRollback(originalDir string, errStep int, svcInfo
 		failures = append(failures, fmt.Errorf("%s: %w", action, err))
 	}
 	record("reset status", settingRepo.Update("SystemStatus", "Free"))
-	dbPath := path.Join(global.CONF.Base.InstallDir, "gpupanel")
-	dbBackup := path.Join(originalDir, "db")
-	if info, err := os.Lstat(dbBackup); err != nil {
-		record("missing database backup", err)
-	} else if !info.IsDir() || info.Mode()&os.ModeSymlink != 0 {
-		record("database backup identity", errUpgradeRuntimeOwnership)
-	} else if err := os.Chmod(dbBackup, 0700); err != nil {
-		record("database backup permissions", err)
-	} else {
-		record("database restore", files.CopyItem(true, true, dbBackup, dbPath))
-	}
+	// This handler is only reached before the upgrade's own service restart.
+	// No database migration has been approved in that window, so reverting
+	// staged Core/Agent files must NEVER copy an unproven SQLite snapshot
+	// over databases still used by this Core and the running Agent. Full DB
+	// restoration is an offline, separately authorized G3/G6 procedure.
+	// The snapshot is preserved for an operator; do not delete or overwrite it.
 	record("core executable", files.CopyFileWithRename(path.Join(originalDir, "gpupanel-core"), svcInfo.coreBinary))
 	record("agent executable", files.CopyFileWithRename(path.Join(originalDir, "gpupanel-agent"), svcInfo.agentBinary))
 	if errStep == 1 {
