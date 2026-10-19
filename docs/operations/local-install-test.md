@@ -382,3 +382,33 @@ GitHub 可能延迟、跳过 scheduled workflow，管理员也可以禁用它。
 即使同版本 PARTIAL_ACCEPTED，真正的 AppInstall G5、
 产品升级/回滚、完整用户工作区恢复及人工发布签核仍未完成，
 **GPUPanel M0 一律 NO-GO**。
+
+
+## 2026-10-19 — G3 原始安装包的 guest 传输完整性门禁
+
+真实 VM CI 从当前 **GitHub commit** 构建
+`gpupanel-ci-<commit-prefix>-linux-amd64.tar.gz`，随后通过只作用于专属
+guest 的 `vm.py copy` 传入 `/tmp`。在解包或执行任何安装器代码之前，
+`scripts/install-test/release-transfer.py` 会：
+
+- 核对干净 checkout 的完整 SHA、固定格式的安装包文件名、
+  非符号链接的本机构建归档；
+- 在 guest 内以非 root 身份对**收到的实际归档文件**重新计算 SHA-256，
+  同时读取 guest machine-id 摘要，与 host 计算值和后续真实浏览器
+  记录的 guest 身份绑定；
+- 将仅包含两边 SHA、源码 SHA、guest 身份摘要与
+  `signature_proof=NOT_ATTESTED` 的证据写入私有
+  `release-transfer.json`；成功后才能解包、预检和继续安装；
+- 让最终的 `ci-evidence.json` 在文件缺失、摘要不同、guest 不同、
+  记录字段伪造或步骤乱序时 **BLOCKED_OR_FAILED**，而不是
+  `PARTIAL_ACCEPTED`。
+
+**校验边界**：相等的 SHA-256 证明这次 runner→guest 传输期间
+归档字节一致，**不证明**产物由可信构建者签名、上游依赖可复现、
+GPL 许可审计通过或真实生产主机升级可用。报告永远保持
+`release_package_signature=NOT_ATTESTED` 与
+`m0_release_decision=NO_GO`。
+
+测试入口：`python3 -m unittest scripts/tests/test_gpupanel_vm_release_transfer.py`。
+只对实际通过的完整、同一 commit VM 工作流记录 G3 的安装包传输
+片段，不能跨 PR 复用历史证据。

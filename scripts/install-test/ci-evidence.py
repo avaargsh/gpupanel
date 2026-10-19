@@ -20,6 +20,7 @@ STAGES = (
     "task_owned_vm_booted",
     "guest_docker_ready",
     "offline_checkpoint_sealed",
+    "guest_release_archive_verified",
     "guest_read_only_preflight_accepted",
     "guest_fresh_install",
     "real_installed_browser",
@@ -57,6 +58,7 @@ def summarize(state: Path, *, run_completed: bool, source_sha: str) -> dict:
     browser = _load(state / "browser-live.json")
     runtime = _load(state / "runtime-live.json")
     prepared = _load(state / "ubuntu2404/image-provenance.json")
+    release = _load(state / "release-transfer.json")
     compose = _load(state / "compose-live.json")
     container = _load(state / "container-live.json")
     restore = _load(state / "restore-live.json")
@@ -64,10 +66,36 @@ def summarize(state: Path, *, run_completed: bool, source_sha: str) -> dict:
         isinstance(source_sha, str) and len(source_sha) == 40
         and all(char in "0123456789abcdef" for char in source_sha)
     )
+    expected_archive = f"gpupanel-ci-{source_sha[:12]}-linux-amd64.tar.gz"
+    release_ok = (
+        valid_source
+        and isinstance(release, dict)
+        and set(release) == {
+            "schema", "source_sha", "archive_name", "local_release_sha256",
+            "guest_release_sha256", "guest_machine_id_sha256",
+            "signature_proof",
+        }
+        and release.get("schema") == "gpupanel.vm.release-transfer.v1"
+        and release.get("source_sha") == source_sha
+        and release.get("archive_name") == expected_archive
+        and isinstance(release.get("local_release_sha256"), str)
+        and len(release["local_release_sha256"]) == 64
+        and all(c in "0123456789abcdef" for c in release["local_release_sha256"])
+        and release.get("guest_release_sha256") == release["local_release_sha256"]
+        and isinstance(release.get("guest_machine_id_sha256"), str)
+        and len(release["guest_machine_id_sha256"]) == 64
+        and all(c in "0123456789abcdef" for c in release["guest_machine_id_sha256"])
+        and release.get("signature_proof") == "NOT_ATTESTED"
+        and isinstance(browser, dict)
+        and release["guest_machine_id_sha256"] ==
+            browser.get("guest_machine_id_sha256")
+    )
     browser_ok = (
         isinstance(browser, dict)
         and browser.get("kind") == "LIVE local VM; no intercepted APIs"
         and browser.get("candidate", {}).get("source_sha") == source_sha
+        and release_ok
+        and browser.get("guest_machine_id_sha256") == release["guest_machine_id_sha256"]
         and browser.get("live_operations_center_read_only") is True
         and browser.get("browser_page_errors") == []
     )
@@ -144,7 +172,7 @@ def summarize(state: Path, *, run_completed: bool, source_sha: str) -> dict:
         and restore.get("m0_release_decision") == "NO_GO"
     )
     success = (
-        run_completed and valid_source and sequence_ok
+        run_completed and valid_source and release_ok and sequence_ok
         and marks == list(STAGES) and browser_ok and runtime_ok and compose_ok
         and container_ok and restore_ok
         and isinstance(prepared, dict)
@@ -161,6 +189,11 @@ def summarize(state: Path, *, run_completed: bool, source_sha: str) -> dict:
         "status": "PARTIAL_ACCEPTED" if success else "BLOCKED_OR_FAILED",
         "stages_completed": marks if sequence_ok else [],
         "stage_sequence_verified": sequence_ok,
+        "guest_release_transfer": "MATCHED" if release_ok else "NOT_ATTESTED",
+        "release_archive_sha256": (
+            release["local_release_sha256"] if release_ok else None
+        ),
+        "release_package_signature": "NOT_ATTESTED",
         "source_binary_sha256": {
             name: bin_hashes.get(name) if isinstance(bin_hashes.get(name), str) else None
             for name in ("core", "agent")
