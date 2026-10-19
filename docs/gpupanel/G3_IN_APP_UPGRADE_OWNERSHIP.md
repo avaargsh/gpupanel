@@ -33,6 +33,11 @@ make any later downgrade ambiguous.
 - Make the rollback handler accumulate and return restoration errors instead
   of logging them and returning implicit success. Automatic rollback failures
   are explicitly surfaced in service logs; this is not proof of guest health.
+- **Automatic rollback before the service restart restores only the owned
+  binaries and service files, not the live SQLite database.** A database
+  rollback requires a stopped-service, independently reviewed offline
+  procedure. The TaskDB/CoreDB backup data remains for investigation and
+  is not overwritten during a staged binary failure.
 - Reject release-version inputs that are not bounded conventional version
   tokens **before constructing any filesystem path**. The old upgrade code
   interpolated an API-provided version directly into a path and recursively
