@@ -37,6 +37,22 @@ resp = subprocess.run(vm.ssh_args() + [shlex.join(command)], capture_output=True
                       text=True, timeout=300)
 if resp.returncode:
     # Do not expose raw Docker stderr or guest data in public CI logs.
+    # Permit only an allowlisted guest source line and error *class*.
+    import re
+    import sys
+    positions = re.findall(
+        r'File "[^"\\n]*/compose-fixture-guest\\.py", line ([1-9][0-9]{0,4})',
+        resp.stderr,
+    )
+    classes = re.findall(
+        r'^(RuntimeError|AssertionError|FileNotFoundError|'
+        r'PermissionError|subprocess\\.TimeoutExpired|OSError):',
+        resp.stderr, re.MULTILINE,
+    )
+    line = positions[-1] if positions else "UNKNOWN"
+    klass = classes[-1] if classes else "UNCLASSIFIED"
+    print(f"GUEST_COMPOSE_FAILURE source=compose-fixture-guest.py:{line} "
+          f"exception_class={klass} release=NO_GO", file=sys.stderr)
     raise RuntimeError("guest Docker Compose fixture failed; inspect private CI log")
 proof = json.loads(resp.stdout)
 expected = {
