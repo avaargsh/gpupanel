@@ -344,6 +344,20 @@ class LiveVmEvidence(unittest.TestCase):
             ROOT / "scripts/install-test/ci-evidence.py"
         ).read_text())
 
+    def test_scheduled_latest_main_rechecks_automation_merged_code(self):
+        flow = (ROOT / ".github/workflows/gpupanel-real-ubuntu-vm.yml").read_text()
+        self.assertIn("  schedule:\n    - cron: '43 13 * * *'", flow)
+        self.assertIn("  workflow_dispatch:", flow)
+        self.assertIn("  push:\n    branches: [main]", flow)
+        # Scheduled workflows use GitHub's current default branch commit.
+        # Never replace GITHUB_SHA with the PR source SHA or a cached value.
+        live = (ROOT / "scripts/install-test/ci-live-vm.sh").read_text()
+        self.assertIn('$(git rev-parse HEAD)', live)
+        self.assertIn('"$GITHUB_SHA"', live)
+        evidence = (ROOT / "scripts/install-test/ci-evidence.py").read_text()
+        self.assertIn('source_sha=os.environ.get("GITHUB_SHA", "")', evidence)
+        self.assertIn('"m0_release_decision": "NO_GO"', evidence)
+
     def test_workflow_only_uploads_redacted_json(self):
         flow = (ROOT / ".github/workflows/gpupanel-real-ubuntu-vm.yml").read_text()
         self.assertIn("persist-credentials: false", flow)
