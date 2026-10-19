@@ -120,6 +120,18 @@ if ! python3 scripts/install-test/compose-live.py > "$STATE/compose.raw.log" 2>&
 fi
 stage 'guest_compose_offline_lifecycle'
 
-# A successful run is a G3 fresh-install + G4 slice + G6 Agent slice only.
+# Complement the Docker Compose engine fixture with real authenticated
+# GPUPanel Core→Agent→Docker operations and persisted distinct task receipts.
+# Import an Ubuntu-signed local busybox-static rootfs; no registry pull.
+python3 scripts/install-test/vm.py ssh -- sudo tar -C / --dereference -cf /tmp/gpupanel-m0-busybox.tar bin/busybox
+python3 scripts/install-test/vm.py ssh -- sudo docker import /tmp/gpupanel-m0-busybox.tar gpupanel-m0-fixture:local
+stage 'guest_core_fixture_image_prepared'
+if ! python3 scripts/install-test/container.py > "$STATE/container.raw.log" 2>&1; then
+    python3 scripts/install-test/ci-failure.py container
+    exit 1
+fi
+stage 'real_core_agent_container_lifecycle'
+
+# Even passing both fixtures is NOT GPUPanel AppInstall G5 acceptance.
 # G5 GPUPanel AppInstall, upgrade/rollback and full data restore stay NOT RUN.
 echo 'LIVE VM partial acceptance PASSED; M0 release decision remains NO_GO'
