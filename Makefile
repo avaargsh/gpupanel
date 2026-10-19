@@ -76,7 +76,7 @@ build_on_local: clean_assets build_frontend build_core_on_darwin build_agent_on_
 deploy:
 	$(BASE_PATH)/deploy/build.sh
 
-# 安装到 /opt（需 root）；等价于 deploy/install.sh
+# 实验安装入口默认拒绝（需显式一次性 VM 授权）；严禁用 make install 绕过 G3。
 install:
 	sudo $(BASE_PATH)/deploy/install.sh
 
@@ -92,8 +92,9 @@ install:
 # 只停前端：   make dev-stop
 # 自定义端口： make dev DEV_WEB_PORT=5173 PANEL_PORT=9999
 #
-# 说明：后端是编译型 Go 二进制，源码改动后需 `make build_all && sudo make install`，
-# 再 `pctl restart`（或 `make dev-backend`）才会生效；本目标不会改动已安装服务。
+# 说明：后端是编译型 Go 二进制，源码改动需重新构建并在一次性 VM 单独验收。
+# `sudo make install` 默认被安装器安全拒绝，不能作为迭代升级或发布步骤。
+# 参见 docs/operations/local-install-test.md；本开发目标不会改动已安装服务。
 DEV_WEB_HOST ?= 0.0.0.0
 DEV_WEB_PORT ?= 4005
 PANEL_PORT   ?= 9999

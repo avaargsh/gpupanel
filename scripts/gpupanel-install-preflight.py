@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Read-only collision preflight for future GPUPanel Ubuntu single-host installer.
 
-This checker does not install or modify any services. Even a PASS is not a
-production installer approval: runtime namespace isolation is not yet done.
+This checker does not install or modify any services. Even a PASS is not
+installation approval: real VM rollback and host ownership remain unverified.
 """
 from __future__ import annotations
 
@@ -26,7 +26,58 @@ GPUPANEL_PATHS = ("usr/local/bin/pctl", "usr/local/bin/gpupanel-core",
                   "etc/gpupanel", "opt/gpupanel", "var/lib/gpupanel",
                   "etc/systemd/system/gpupanel.service",
                   "etc/systemd/system/gpupanel-agent.service")
-RUNTIME_PATHS = OLD_PATHS + GPUPANEL_PATHS
+# A panel can be installed as a vendor unit, generated in /run, or enabled
+# through a *.wants symlink even when /etc/systemd/system/<name> is absent.
+# This is only a bounded on-disk inventory, not a live systemctl state check.
+PANEL_UNIT_NAMES = (
+    "1panel.service", "1panel-agent.service",
+    "gpupanel.service", "gpupanel-core.service", "gpupanel-agent.service",
+)
+SYSTEMD_UNIT_LOCATIONS = (
+    "usr/lib/systemd/system", "run/systemd/system",
+    "etc/systemd/system/multi-user.target.wants",
+    "etc/systemd/system/default.target.wants",
+    "etc/systemd/system/sockets.target.wants",
+)
+RUNTIME_PATHS = OLD_PATHS + GPUPANEL_PATHS + tuple(
+    f"{directory}/{name}"
+    for directory in SYSTEMD_UNIT_LOCATIONS
+    for name in PANEL_UNIT_NAMES
+)
+# Linux task names are limited to TASK_COMM_LEN (15 visible characters).
+# This can detect unregistered live binaries but is not an authoritative
+# systemd/process ownership check (processes can rename themselves).
+PANEL_PROCESS_NAMES = frozenset((
+    "1panel", "1panel-agent", "gpupanel", "gpupanel-core", "gpupanel-agent",
+))
+
+
+def known_panel_process_names(root: Path) -> list[str]:
+    """Read bounded /proc/<pid>/comm metadata only; never shell out or signal."""
+    proc = root / "proc"
+    if proc.is_symlink() or not proc.is_dir():
+        return []
+    found = set()
+    try:
+        candidates = proc.iterdir()
+        for entry in candidates:
+            if not entry.name.isdecimal() or entry.is_symlink():
+                continue
+            comm = entry / "comm"
+            if comm.is_symlink():
+                continue
+            try:
+                with comm.open("r", encoding="utf-8") as stream:
+                    name = stream.read(64).strip()
+            except (OSError, UnicodeError):
+                # Short-lived PID / hidepid permissions: a missed PID does
+                # not establish that no panel is running.
+                continue
+            if name in PANEL_PROCESS_NAMES:
+                found.add(name)
+    except OSError:
+        return sorted(found)
+    return sorted(found)
 
 
 def unsafe_runtime_path_parents(root: Path) -> list[str]:
@@ -80,6 +131,13 @@ def inspect_host(root: Path, free_bytes: int | None = None, experimental_ubuntu_
     else:
         add("runtime_collision", "PASS", "No known 1Panel or GPUPanel runtime targets detected",
             "This is a bounded collision inventory, not installer approval")
+    active_names = known_panel_process_names(root)
+    if active_names:
+        add("running_panel_process", "BLOCKED", "Known panel process names: " + ", ".join(active_names),
+            "Stop and investigate existing service/data ownership in a disposable VM; never overwrite")
+    else:
+        add("running_panel_process", "UNKNOWN", "No known panel process name observed in bounded /proc metadata",
+            "A process snapshot is not a live systemd inventory or proof that no panel is running")
     redirected = unsafe_runtime_path_parents(root)
     if redirected:
         add("runtime_path_symlink", "BLOCKED", "Runtime path parents are symlinks: " + ", ".join(redirected),

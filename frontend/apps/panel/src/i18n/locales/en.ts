@@ -7,6 +7,7 @@ const en: LocaleResource = {
         "description": "Preview a fixed operation, inspect the exact target and impact, then confirm. No arbitrary shell commands.",
         "operation": "Operation",
         "diagnose": "Diagnose this host",
+        "containerDiagnose": "Inspect one container (read-only)",
         "restart": "Restart one container",
         "start": "Start one container",
         "stop": "Stop one container",
@@ -23,7 +24,44 @@ const en: LocaleResource = {
         "noOutput": "No execution output recorded.",
         "review": "Review this plan",
         "planError": "Unable to prepare this operation. Verify the target and retry the preview.",
-        "uncertain": "Outcome is not confirmed. Query this receipt and inspect the target; do not repeat execution automatically."
+        "uncertain": "Outcome is not confirmed. Query this receipt and inspect the target; do not repeat execution automatically.",
+        "containerDiagnosis": {
+            "title": "Read-only container evidence",
+            "invalid": "Container evidence is missing, mismatched or invalid. Unvalidated raw output is hidden.",
+            "status": "Docker status",
+            "running": "Running",
+            "exitCode": "Exit code",
+            "oom": "OOM killed",
+            "health": "Health check",
+            "observedAt": "Observed at (UTC)",
+            "yes": "Yes",
+            "no": "No",
+            "guidance": {
+                "title": "Review suggestions (operator action required)",
+                "memoryPressure": "Docker reported OOMKilled. Review container limits and host memory pressure; this alone does not establish root cause.",
+                "healthProbe": "Docker reported an unhealthy check. Review probe configuration, service dependencies and startup readiness.",
+                "nonzeroExit": "The container exited non-zero. Review authorized startup logs; exit code 137 alone is not proof of an OOM kill.",
+                "unstableState": "The container is paused, restarting or dead. Review state transitions and dependent services before any action.",
+                "stopped": "The container stopped with exit code 0. Check whether that matches the intended lifecycle.",
+                "insufficientEvidence": "This snapshot shows no definitive failure signal. If symptoms persist, review authorized logs and time-series data."
+            },
+            "disclaimer": "Only a Docker Inspect snapshot for this exact container; no environment, mounts, arguments, or raw logs. Not a root-cause or remediation proof."
+        },
+        "diagnosis": {
+            "title": "Read-only local host snapshot",
+            "invalid": "No valid structured observation is available. Unvalidated raw output is hidden.",
+            "system": "Operating system",
+            "kernel": "Kernel",
+            "architecture": "Architecture",
+            "uptime": "Uptime",
+            "disk": "Root filesystem used",
+            "accelerators": "Accelerator inventory",
+            "unavailable": "Collection unavailable",
+            "notReported": "No reliable observation",
+            "noneReported": "No devices reported (hardware absence not proven)",
+            "reportedCount": "{{count}} device(s) reported",
+            "disclaimer": "This is only a read-only operation receipt, not independent attestation, root cause analysis, or proof of remediation."
+        }
 },
 
     workbench: {

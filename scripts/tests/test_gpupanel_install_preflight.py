@@ -59,6 +59,78 @@ class InstallPreflightTests(unittest.TestCase):
         self.assertIn("/etc/systemd/system", next(
             x["detail"] for x in result["checks"] if x["code"] == "runtime_path_symlink"))
 
+    def test_vendor_systemd_unit_blocks_without_etc_unit(self):
+        unit = self.root / "usr/lib/systemd/system/1panel.service"
+        unit.parent.mkdir(parents=True)
+        unit.write_text("[Unit]\nDescription=Legacy panel\n")
+        result = mod.inspect_host(self.root, free_bytes=mod.MIN_FREE_BYTES)
+        self.assertIn("runtime_collision", result["blockers"])
+        self.assertIn("/usr/lib/systemd/system/1panel.service", next(
+            x["detail"] for x in result["checks"] if x["code"] == "runtime_collision"))
+        self.assertFalse(result["safe_to_install"])
+
+    def test_dangling_enabled_service_symlink_blocks(self):
+        unit = self.root / "etc/systemd/system/multi-user.target.wants/gpupanel-core.service"
+        unit.parent.mkdir(parents=True)
+        unit.symlink_to("/missing-or-removed-gpupanel-unit")
+        result = mod.inspect_host(self.root, free_bytes=mod.MIN_FREE_BYTES)
+        self.assertIn("runtime_collision", result["blockers"])
+        self.assertFalse(result["installable"])
+
+    def test_runtime_systemd_unit_blocks(self):
+        unit = self.root / "run/systemd/system/gpupanel-agent.service"
+        unit.parent.mkdir(parents=True)
+        unit.write_text("[Unit]\nDescription=Panel agent\n")
+        self.assertIn("runtime_collision", mod.inspect_host(
+            self.root, free_bytes=mod.MIN_FREE_BYTES)["blockers"])
+
+    def test_vendor_unit_parent_redirect_blocks_without_leaf(self):
+        parent = self.root / "usr/lib"
+        parent.mkdir(parents=True)
+        (parent / "systemd").symlink_to("/missing-systemd-parent")
+        result = mod.inspect_host(self.root, free_bytes=mod.MIN_FREE_BYTES)
+        self.assertIn("runtime_path_symlink", result["blockers"])
+        self.assertFalse(result["safe_to_install"])
+
+    def test_running_legacy_panel_blocks_without_any_disk_unit(self):
+        proc = self.root / "proc/321"
+        proc.mkdir(parents=True)
+        (proc / "comm").write_text("1panel-agent\n")
+        result = mod.inspect_host(self.root, free_bytes=mod.MIN_FREE_BYTES)
+        self.assertIn("running_panel_process", result["blockers"])
+        self.assertFalse(result["safe_to_install"])
+        self.assertEqual(next(
+            x["detail"] for x in result["checks"] if x["code"] == "running_panel_process"
+        ), "Known panel process names: 1panel-agent")
+
+    def test_process_inventory_does_not_claim_clean_host_on_empty_proc(self):
+        (self.root / "proc").mkdir()
+        result = mod.inspect_host(self.root, free_bytes=mod.MIN_FREE_BYTES)
+        observation = next(
+            x for x in result["checks"] if x["code"] == "running_panel_process")
+        self.assertEqual(observation["state"], "UNKNOWN")
+        self.assertFalse(result["installable"])
+
+    def test_process_inventory_never_follows_proc_pid_symlink(self):
+        external = self.root / "external"
+        external.mkdir()
+        (external / "comm").write_text("gpupanel-core\n")
+        proc = self.root / "proc"
+        proc.mkdir()
+        (proc / "123").symlink_to(external, target_is_directory=True)
+        result = mod.inspect_host(self.root, free_bytes=mod.MIN_FREE_BYTES)
+        self.assertNotIn("running_panel_process", result["blockers"])
+        self.assertEqual(next(
+            x["state"] for x in result["checks"] if x["code"] == "running_panel_process"
+        ), "UNKNOWN")
+
+    def test_unrecognized_task_name_does_not_false_positive(self):
+        proc = self.root / "proc/7"
+        proc.mkdir(parents=True)
+        (proc / "comm").write_text("gpu-monitor\n")
+        self.assertNotIn("running_panel_process", mod.inspect_host(
+            self.root, free_bytes=mod.MIN_FREE_BYTES)["blockers"])
+
     def test_symlink_dangling_collision_blocks(self):
         (self.root / "etc/1panel").symlink_to("/missing-link-on-purpose")
         result = mod.inspect_host(self.root, free_bytes=mod.MIN_FREE_BYTES)

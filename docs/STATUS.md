@@ -1,6 +1,27 @@
 # GPUPanel 当前工程状态
 
-> 更新：2026-10-17；本轮合并以远端 `main @ 79be44b85e80` 为基线。**这是唯一默认状态入口**，变更后须核对最新 SHA/Actions/实际二进制再更新。本页不宣称后续提交自动通过旧验收。
+> 更新：2026-10-18；最近完成源码合并的固定基线为 `main @ 8b390e3ed1528604c79022f2ee21962ba39a6d07`（#125）。**这是唯一默认状态入口**，并非实时分支指针；后续 HEAD、Actions 和实际安装二进制必须分别核对。源码成功合并不等于 G3–G6 真实验收。
+
+## 2026-10-18 已合入主线的源码增量（非发布验收）
+
+| PR / 合并 SHA | 用户可见增量 | 当前证据边界 |
+| --- | --- | --- |
+| [#121](https://github.com/avaargsh/gpupanel/pull/121) · `6116a08e` | Docker 诊断的状态/时间戳输入白名单 | PR 与推送 CI；未独立验证实际 Ubuntu 安装 |
+| [#122](https://github.com/avaargsh/gpupanel/pull/122) · `9a6d38f7` | Host 本机只读诊断的结构化回执 | 受保护 Core/Agent 既有路径 + 模拟浏览器；非现场闭环 |
+| [#123](https://github.com/avaargsh/gpupanel/pull/123) · `9b6d86be` | 指定容器 Docker Inspect 只读证据、人工排查建议 | 真实隔离 Docker canary 与模拟浏览器；不能证明根因或自动修复 |
+| [#115](https://github.com/avaargsh/gpupanel/pull/115) · `30c4a919` | 安装默认拒绝、显式一次性 VM 实验授权、保守碰撞/包完整性检查、VM 文档与重复安装验收契约 | 该 PR 的完整必需 CI PASS；合并后推送 CI 单独检查；真实 G3 升级/回滚 NOT RUN |
+| [#125](https://github.com/avaargsh/gpupanel/pull/125) · `8b390e3e` | 一次性 Ubuntu VM 停机后的独立 QCOW2 检查点、来源及 SHA-256 校验、带锁启停与检查点负向测试 | 源码及模拟 QEMU 契约 CI PASS；真实 QEMU 快照、恢复和数据一致性 NOT RUN |
+
+这些能力**已经合入源码**，但尚未对同一个安装候选完成真实登录、
+Core→Agent→Docker/App 生命周期、授权拒绝和中断恢复的统一证据采集。
+`--approve-disposable-vm-install` 仅供人工审核的可销毁 Ubuntu 24.04
+测试 VM 使用；该选项不是生产部署授权，普通安装默认拒绝。
+
+仍需优先完成 [#69](https://github.com/avaargsh/gpupanel/issues/69)
+以及 [#70](https://github.com/avaargsh/gpupanel/issues/70)
+G3 安装/升级/回滚、[#72](https://github.com/avaargsh/gpupanel/issues/72)
+G4/G6 真实认证/恢复、[#71](https://github.com/avaargsh/gpupanel/issues/71)
+G5 AppInstall UNKNOWN/重复请求验收。不要把不同版本的 PASS 拼为 M0 GO。
 
 ## 产品与发布：M0 NO-GO
 

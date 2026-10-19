@@ -36,7 +36,7 @@ func (e Engine) Plan(ctx context.Context, owner string, req PlanRequest) (Receip
 	if owner == "" || !validKey.MatchString(req.Key) {
 		return Receipt{}, ErrDenied
 	}
-	if (req.Kind != Diagnose && req.Kind != Restart && req.Kind != Start && req.Kind != Stop) || (req.Kind == Diagnose && req.Target != "local") || (req.Kind != Diagnose && !fullContainerID.MatchString(req.Target)) {
+	if (req.Kind != Diagnose && req.Kind != ContainerDiagnose && req.Kind != Restart && req.Kind != Start && req.Kind != Stop) || (req.Kind == Diagnose && req.Target != "local") || (req.Kind != Diagnose && !fullContainerID.MatchString(req.Target)) {
 		return Receipt{}, ErrDenied
 	}
 	var existing Receipt

@@ -70,7 +70,7 @@ export default function ContainerList({ onOpenLogs, onOpenExec }: ContainerListP
     const eligibleForControlledOperation = (id: string) =>
         currentNode === 'local' && /^[a-f0-9]{64}$/.test(id) &&
         !pendingOperation && !unresolvedContainerOperationExists();
-    const openControlledOperation = (kind: 'start' | 'stop' | 'restart', id: string) => {
+    const openControlledOperation = (kind: 'diagnose' | 'start' | 'stop' | 'restart', id: string) => {
         if (!eligibleForControlledOperation(id)) return;
         navigate(`/host?tab=operations&operationKind=container.${kind}&operationTarget=${id}`);
     };
@@ -540,6 +540,12 @@ export default function ContainerList({ onOpenLogs, onOpenExec }: ContainerListP
                                                                 <DropdownMenuGroup>
                                                                     <DropdownMenuItem onSelect={() => setDetail(row)}>
                                                                         {t('container.actions.detail')}
+                                                                    </DropdownMenuItem>
+                                                                    <DropdownMenuItem
+                                                                        disabled={!eligibleForControlledOperation(row.containerID)}
+                                                                        onSelect={() => openControlledOperation('diagnose', row.containerID)}
+                                                                    >
+                                                                        {t('hostOps.containerDiagnose')}
                                                                     </DropdownMenuItem>
                                                                     {isRunning && (
                                                                         <DropdownMenuItem

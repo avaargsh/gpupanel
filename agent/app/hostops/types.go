@@ -8,6 +8,7 @@ import (
 )
 
 const Diagnose = "host.diagnose"
+const ContainerDiagnose = "container.diagnose"
 const Restart = "container.restart"
 const Start = "container.start"
 const Stop = "container.stop"

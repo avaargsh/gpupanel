@@ -10,6 +10,8 @@ import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAppSelector } from '@/store/hooks';
 import { useSearchParams } from 'react-router-dom';
+import HostDiagnosisReport from './HostDiagnosisReport';
+import ContainerDiagnosisReport from './ContainerDiagnosisReport';
 import {
     useGetHostOperationsQuery,
     usePlanHostOperationMutation,
@@ -25,7 +27,7 @@ export default function HostOperations() {
     const target = /^[a-f0-9]{64}$/.test(requestedTarget) ? requestedTarget : '';
     const requestedKind = params.get('operationKind');
     const kind = target
-        ? (requestedKind === 'container.start' || requestedKind === 'container.stop' || requestedKind === 'container.restart'
+        ? (requestedKind === 'container.diagnose' || requestedKind === 'container.start' || requestedKind === 'container.stop' || requestedKind === 'container.restart'
             ? requestedKind : 'container.restart')
         : 'host.diagnose';
     return node === 'local' ? (
@@ -109,6 +111,7 @@ function LocalOperations({ initialKind, initialTarget }: { initialKind: string; 
                                     String(
                                         [
                                             { value: 'host.diagnose', label: t('hostOps.diagnose') },
+                                            { value: 'container.diagnose', label: t('hostOps.containerDiagnose') },
                                             { value: 'container.restart', label: t('hostOps.restart') },
                                             { value: 'container.start', label: t('hostOps.start') },
                                             { value: 'container.stop', label: t('hostOps.stop') },
@@ -122,6 +125,7 @@ function LocalOperations({ initialKind, initialTarget }: { initialKind: string; 
                             </NativeSelectOption>
                             {[
                                 { value: 'host.diagnose', label: t('hostOps.diagnose') },
+                                            { value: 'container.diagnose', label: t('hostOps.containerDiagnose') },
                                 { value: 'container.restart', label: t('hostOps.restart') },
                                             { value: 'container.start', label: t('hostOps.start') },
                                             { value: 'container.stop', label: t('hostOps.stop') },
@@ -170,7 +174,7 @@ function LocalOperations({ initialKind, initialTarget }: { initialKind: string; 
                                 <Button
                                     onClick={() => void execute()}
                                     className="ml-3"
-                                    variant={'destructive'}
+                                    variant={preview.kind === 'host.diagnose' || preview.kind === 'container.diagnose' ? 'default' : 'destructive'}
                                     type={'button'}
                                     disabled={busy || expired || !!error || executing.isLoading}
                                 >
@@ -178,7 +182,11 @@ function LocalOperations({ initialKind, initialTarget }: { initialKind: string; 
                                     {t('hostOps.confirm')}
                                 </Button>
                             )}
-                            {preview.output && <pre className="log-output">{preview.output}</pre>}
+                            {preview.output && (preview.kind === 'host.diagnose'
+                                ? <HostDiagnosisReport output={preview.output} />
+                                : preview.kind === 'container.diagnose'
+                                    ? <ContainerDiagnosisReport output={preview.output} target={preview.target} />
+                                    : <pre className="log-output">{preview.output}</pre>)}
                             {preview.error && <p role="alert">{preview.error}</p>}
                         </div>
                     )}
@@ -226,7 +234,11 @@ function LocalOperations({ initialKind, initialTarget }: { initialKind: string; 
                                 </p>
                                 {row.error && <p role="alert">{row.error}</p>}
                                 {row.state === 'unknown' && <p>{t('hostOps.uncertain')}</p>}
-                                <pre className="log-output">{row.output || t('hostOps.noOutput')}</pre>
+                                {row.output && row.kind === 'host.diagnose'
+                                    ? <HostDiagnosisReport output={row.output} />
+                                    : row.output && row.kind === 'container.diagnose'
+                                        ? <ContainerDiagnosisReport output={row.output} target={row.target} />
+                                        : <pre className="log-output">{row.output || t('hostOps.noOutput')}</pre>}
                                 {row.state === 'planned' && (
                                     <Button
                                         onClick={() => {

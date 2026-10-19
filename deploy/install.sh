@@ -8,6 +8,11 @@
 #                   [--password PASS] [--entrance PATH] [--language CODE]
 #                   [--no-systemd] [--skip-config] [--bind-address 127.0.0.1|0.0.0.0]
 #                   [--experimental-ubuntu-26] [--no-auto-provision]
+#                   [--approve-disposable-vm-install]
+#
+# Without explicit disposable-VM acceptance, this installer exits BEFORE
+# running any artifact-supplied code. Run preflight separately as non-root.
+# This is a laboratory override, never production release approval.
 #
 # Self-contained: works from a source checkout (deploy/install.sh) and from an
 # extracted release tarball (gpupanel-<version>-<os>-<arch>/install.sh).
@@ -79,15 +84,18 @@ USE_SYSTEMD=1
 SKIP_CONFIG=0
 BIND_ADDRESS="0.0.0.0"
 AUTO_PROVISION=enabled
+APPROVE_DISPOSABLE_VM_INSTALL=0
+EXPLICIT_PAYLOAD=0
 PREFLIGHT_ARGS=()
 
 while [ $# -gt 0 ]; do
     case "$1" in
         --no-auto-provision) AUTO_PROVISION=disabled; shift ;;
+        --approve-disposable-vm-install) APPROVE_DISPOSABLE_VM_INSTALL=1; shift ;;
         --bind-address) BIND_ADDRESS="${2:-}"; shift 2 ;;
         --experimental-ubuntu-26) PREFLIGHT_ARGS+=(--experimental-ubuntu-26); shift ;;
         --base-dir)  BASE_DIR="${2:-}"; shift 2 ;;
-        --payload)   PAYLOAD="${2:-}"; shift 2 ;;
+        --payload)   PAYLOAD="${2:-}"; EXPLICIT_PAYLOAD=1; shift 2 ;;
         --port)      PORT="${2:-}"; shift 2 ;;
         --username)  USERNAME="${2:-}"; shift 2 ;;
         --password)  PASSWORD="${2:-}"; shift 2 ;;
@@ -107,6 +115,13 @@ case "$BASE_DIR" in
     *) die "--base-dir must be an absolute path (got: $BASE_DIR)" ;;
 esac
 BASE_DIR="${BASE_DIR%/}"
+[ -n "$BASE_DIR" ] || die "refuse the filesystem root as installation base-dir"
+
+# The payload may contain a Python checker. Never execute package-controlled
+# code as root merely because a caller tried the install command without
+# authorizing a disposable VM. A separate non-root preflight invocation is
+# the diagnostic entrypoint, NOT install.sh's default behavior.
+[ "$APPROVE_DISPOSABLE_VM_INSTALL" = "1" ] || die "GPUPanel install authorization denied before running any payload or preflight code. First run the read-only GPUPanel preflight separately as a normal user; only use --approve-disposable-vm-install on an isolated, snapshotted Ubuntu 24.04 test VM."
 
 [ "$(id -u)" = "0" ] || die "install.sh must run as root (try: sudo $0 $*)"
 
@@ -125,6 +140,11 @@ UNIT_DIR="/etc/systemd/system"
 # 2. this script's own directory (extracted tarball, or a flattened payload)
 # 3. the newest build/release/gpupanel-* from a source checkout
 # 4. the raw build/ binaries from a source checkout
+[ "$EXPLICIT_PAYLOAD" = "0" ] || [ -n "$PAYLOAD" ] || die "--payload requires a non-empty directory"
+# Full release payloads are atomic: never silently use repo fallbacks when
+# their required files are absent. Only implicit raw build/ source mode may
+# combine locally compiled binaries with source-controlled config/units.
+SOURCE_BUILD_MODE=0
 if [ -z "$PAYLOAD" ]; then
     if [ -f "$SCRIPT_DIR/gpupanel-core" ]; then
         PAYLOAD="$SCRIPT_DIR"
@@ -134,17 +154,34 @@ if [ -z "$PAYLOAD" ]; then
             PAYLOAD="$_cand"
         elif [ -f "$ROOT/build/gpupanel-core" ]; then
             PAYLOAD="$ROOT/build"
+            SOURCE_BUILD_MODE=1
         fi
     fi
 fi
 [ -n "$PAYLOAD" ] || die "no release payload found; pass --payload DIR or run deploy/build.sh first"
 
-# In payload mode use $PAYLOAD/<name>; otherwise fall back to the repo files.
+# A supplied or auto-discovered release must be complete and not symlinked.
+# Otherwise pick() would splice release binaries together with unrelated
+# source-checkout pctl, units and Python preflight (a provenance violation).
+if [ "$SOURCE_BUILD_MODE" = "0" ]; then
+    [ -d "$PAYLOAD" ] && [ ! -L "$PAYLOAD" ] || die "release payload directory must be an ordinary directory"
+    [ ! -L "$PAYLOAD/initscript" ] || die "release unit directory must not be a symlink"
+    for rel in gpupanel-core gpupanel-agent pctl app.yaml gpupanel-install-preflight.py \
+               initscript/gpupanel-core.service initscript/gpupanel-agent.service; do
+        [ -f "$PAYLOAD/$rel" ] && [ ! -L "$PAYLOAD/$rel" ] \
+            || die "incomplete or redirected release payload: $rel"
+    done
+fi
+
+# Source fallback is allowed only for an *implicit* raw source build. A
+# complete release never falls back to another checkout or package.
 pick() {
-    if [ -n "$PAYLOAD" ] && [ -f "$PAYLOAD/$1" ]; then
-        echo "$PAYLOAD/$1"
+    if [ "$SOURCE_BUILD_MODE" = "0" ]; then
+        printf '%s\n' "$PAYLOAD/$1"
+    elif [ -f "$PAYLOAD/$1" ]; then
+        printf '%s\n' "$PAYLOAD/$1"
     else
-        echo "$2"
+        printf '%s\n' "$2"
     fi
 }
 
@@ -225,7 +262,52 @@ detect_ip() {
 PREFLIGHT="$(pick gpupanel-install-preflight.py "$ROOT/scripts/gpupanel-install-preflight.py")"
 [ -f "$PREFLIGHT" ] || die "missing reviewed collision preflight"
 command -v python3 >/dev/null || die "Python 3 is required for read-only preflight"
-python3 "$PREFLIGHT" --json "${PREFLIGHT_ARGS[@]}" || die "preflight blocked; installation was not started"
+# The explicitly approved VM path still must validate the complete
+# conservative diagnostic JSON before writing to any host path. Exit 0 alone
+# is never sufficient; required BLOCKED/UNKNOWN cannot be overridden.
+PREFLIGHT_JSON="$(python3 "$PREFLIGHT" --json "${PREFLIGHT_ARGS[@]}")" || die "preflight blocked; installation was not started"
+printf '%s\n' "$PREFLIGHT_JSON"
+GPUPANEL_PREFLIGHT_JSON="$PREFLIGHT_JSON" python3 - "$APPROVE_DISPOSABLE_VM_INSTALL" <<'PY_INSTALL_APPROVAL' || die "GPUPanel install authorization denied; no host mutation"
+import json
+import os
+import sys
+
+def deny(reason):
+    raise SystemExit("GPUPanel install denied: " + reason)
+
+try:
+    report = json.loads(os.environ["GPUPANEL_PREFLIGHT_JSON"])
+    if not isinstance(report, dict) or report.get("product") != "GPUPanel" or report.get("phase") != "pre-install-diagnostics-only":
+        deny("unrecognized preflight report")
+    if report.get("installable") is not False or report.get("safe_to_install") is not False:
+        deny("preflight diagnosis was incorrectly presented as installation approval")
+    checks = report["checks"]
+    blockers = report["blockers"]
+    if not isinstance(checks, list) or not isinstance(blockers, list) or blockers:
+        deny("blocked or malformed diagnostic result")
+    states = {}
+    for item in checks:
+        if not isinstance(item, dict) or not isinstance(item.get("code"), str) or item.get("state") not in ("PASS", "BLOCKED", "UNKNOWN"):
+            deny("malformed safety check")
+        if item["code"] in states:
+            deny("duplicate safety check")
+        states[item["code"]] = item
+    if any(item["state"] == "BLOCKED" for item in checks):
+        deny("blocked safety check without consistent blockers list")
+    # No unsupported OS, experimental 26.04, unknown capacity or collision
+    # ambiguity may silently become an installer PASS.
+    required = ("operating_system", "runtime_collision", "runtime_path_symlink", "disk_space")
+    if any(states.get(code, {}).get("state") != "PASS" for code in required):
+        deny("OS/collision/disk checks are not all PASS")
+    if states["operating_system"].get("detail") != "Ubuntu 24.04":
+        deny("only a disposable Ubuntu 24.04 VM is in scope")
+    # Future scanners may add strong collision checks. If present, a definite
+    # BLOCKED result is rejected above; UNKNOWN remains diagnostic, not proof.
+    if sys.argv[1] != "1":
+        deny("provide --approve-disposable-vm-install after independently verifying VM isolation, ownership and rollback")
+except (ValueError, KeyError, TypeError) as exc:
+    deny("invalid preflight JSON or missing safety fields")
+PY_INSTALL_APPROVAL
 python3 - "$BASE_DIR" <<'PYCODE'
 import pathlib, sys
 base = pathlib.Path(sys.argv[1])

@@ -5,6 +5,7 @@ const zh = {
         "description": "先预览固定操作，核对完整目标和影响，再确认执行。不接受任意 Shell 命令。",
         "operation": "操作类型",
         "diagnose": "诊断本机",
+        "containerDiagnose": "诊断指定容器（只读）",
         "restart": "重启指定容器",
         "start": "启动指定容器",
         "stop": "停止指定容器",
@@ -21,7 +22,44 @@ const zh = {
         "noOutput": "暂无已记录的执行输出。",
         "review": "查看并核对计划",
         "planError": "无法准备操作，请检查目标后重新预览。",
-        "uncertain": "执行结果尚未确认。请查询该回执并核对目标，不要自动重复执行。"
+        "uncertain": "执行结果尚未确认。请查询该回执并核对目标，不要自动重复执行。",
+        "containerDiagnosis": {
+            "title": "容器只读故障证据",
+            "invalid": "容器证据缺失、与目标不符或格式异常。已隐藏原始输出。",
+            "status": "Docker 状态",
+            "running": "正在运行",
+            "exitCode": "退出码",
+            "oom": "OOM 终止",
+            "health": "健康检查",
+            "observedAt": "观测时间（UTC）",
+            "yes": "是",
+            "no": "否",
+            "guidance": {
+                "title": "排查建议（需人工核对）",
+                "memoryPressure": "观测到 OOMKilled 标记。请人工检查容器内存限制与宿主内存压力；仅凭该标记不能确定根因。",
+                "healthProbe": "观测到健康检查异常。请检查探针配置、依赖服务及应用启动过程。",
+                "nonzeroExit": "容器非零退出。请人工查看启动日志和退出背景；退出码 137 本身不证明 OOM。",
+                "unstableState": "容器处于暂停、重启中或异常终止状态。请先确认运行状态变化和依赖环境。",
+                "stopped": "容器已停止且退出码为 0。请确认这是否符合预期运行模式。",
+                "insufficientEvidence": "当前快照没有明确异常信号；如问题持续，请结合时间序列和已授权日志进一步排查。"
+            },
+            "disclaimer": "仅为指定容器的 Docker Inspect 状态快照：不采集环境变量、挂载、命令或原始日志；不证明故障根因或修复成功。"
+        },
+        "diagnosis": {
+            "title": "本机只读诊断摘要",
+            "invalid": "诊断回执缺少有效的结构化数据，不展示未经校验的原始输出。",
+            "system": "操作系统",
+            "kernel": "内核版本",
+            "architecture": "处理器架构",
+            "uptime": "运行时间",
+            "disk": "根文件系统使用率",
+            "accelerators": "加速器信息",
+            "unavailable": "采集不可用",
+            "notReported": "未提供可靠观测",
+            "noneReported": "未报告设备（不代表没有硬件）",
+            "reportedCount": "报告 {{count}} 个设备",
+            "disclaimer": "这只是本机执行回执中的只读观察，不是独立核验、根因诊断或修复成功证明。"
+        }
 },
 
     workbench: {
