@@ -102,6 +102,23 @@ func TestG3UpgradeRejectsUnexpectedServiceManagerAndBase(t *testing.T) {
 	}
 }
 
+func TestG3ManualRollbackUsesOriginalSubdirectoryAndReturnsFailure(t *testing.T) {
+	src, err := os.ReadFile("upgrade.go")
+	if err != nil { t.Fatal(err) }
+	for _, required := range []string{
+		`path.Join(log.BackupFile, "original")`,
+		`return u.handleRollback(path.Join(log.BackupFile, "original"), 3, svcInfo)`,
+		`return errors.Join(failures...)`,
+		`record("database restore",`,
+		`record("core executable",`,
+		`record("agent executable",`,
+	} {
+		if !strings.Contains(string(src), required) {
+			t.Errorf("manual rollback must report incomplete restore; missing %q",required)
+		}
+	}
+}
+
 func TestG3UpgradeNeverWritesCompatibilityPath(t *testing.T){
 	src,err:=os.ReadFile("upgrade.go")
 	if err!=nil{t.Fatal(err)}
