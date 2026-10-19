@@ -32,8 +32,8 @@ func validateOwnedUpgradePaths(installDir string, svc serviceInfo, expectedBase,
 	if installDir != expectedBase ||
 		filepath.Clean(installDir) != installDir ||
 		filepath.Clean(svc.basePath) != expectedUnits ||
-		!strings.HasSuffix(svc.coreName, ".service") ||
-		!strings.HasSuffix(svc.agentName, ".service") {
+		svc.coreName != "gpupanel-core.service" ||
+		svc.agentName != "gpupanel-agent.service" {
 		return deny("service manager or installation base differs from the reviewed systemd installation")
 	}
 	root := filepath.Join(installDir, "gpupanel")
