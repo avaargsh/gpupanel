@@ -20,18 +20,23 @@ local = candidate.local_candidate(ROOT)
 remote_probe = """import hashlib,json
 from pathlib import Path
 names=('core','agent')
-print(json.dumps({name:hashlib.file_digest(
-    (Path('/opt/gpupanel')/('gpupanel-'+name)).open('rb'),
-    'sha256').hexdigest() for name in names}))
+print(json.dumps({
+    'binary_sha256': {name:hashlib.file_digest(
+        (Path('/opt/gpupanel')/('gpupanel-'+name)).open('rb'),
+        'sha256').hexdigest() for name in names},
+    'machine_id_sha256': hashlib.sha256(Path('/etc/machine-id').read_bytes()).hexdigest()
+}))
 """
 installed = json.loads(subprocess.check_output(
     vm.ssh_args() + [shlex.join(['sudo', 'python3', '-c', remote_probe])],
     text=True, timeout=35,
 ))
-candidate.verify_installed(local, installed)
+candidate.verify_installed(local, installed['binary_sha256'])
+assert candidate.SHA256.fullmatch(installed['machine_id_sha256'])
 result = {
     'kind': 'LIVE local VM; no intercepted APIs',
     'target': credentials['url'], 'candidate': local,
+    'guest_machine_id_sha256': installed['machine_id_sha256'],
 }
 
 
