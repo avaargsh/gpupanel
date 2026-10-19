@@ -109,6 +109,18 @@ if ! python3 scripts/install-test/runtime.py > "$STATE/runtime.raw.log" 2>&1; th
 fi
 stage 'guest_agent_recovery'
 
-# A successful run is a G3 fresh-install + G4 slice + G6 Agent slice only.
-# G5 real AppInstall, upgrade/rollback and full data restore stay NOT RUN.
+# Real authorized Core→Agent container lifecycle, with NO registry pulls:
+# busybox-static comes from signed Ubuntu apt packages inside this VM only.
+python3 scripts/install-test/vm.py ssh -- sudo env DEBIAN_FRONTEND=noninteractive apt-get install -y -qq busybox-static
+python3 scripts/install-test/vm.py ssh -- sudo tar -C / --dereference -cf /tmp/gpupanel-m0-busybox.tar bin/busybox
+python3 scripts/install-test/vm.py ssh -- sudo docker import /tmp/gpupanel-m0-busybox.tar gpupanel-m0-fixture:local
+stage 'guest_docker_fixture_image_prepared'
+if ! python3 scripts/install-test/container.py > "$STATE/container.raw.log" 2>&1; then
+    python3 scripts/install-test/ci-failure.py container
+    exit 1
+fi
+stage 'real_core_agent_container_lifecycle'
+
+# Even a fully green run is G5 CONTAINER-only, not AppInstall/Compose.
+# Upgrade/rollback, full data restore and independent review remain NOT RUN.
 echo 'LIVE VM partial acceptance PASSED; M0 release decision remains NO_GO'
