@@ -145,6 +145,7 @@ class LiveVmEvidence(unittest.TestCase):
         self.assertIn("if after != before:", script)
         runner = (ROOT / "scripts/install-test/ci-live-vm.sh").read_text()
         self.assertIn("python3 scripts/install-test/reinstall-denial.py", runner)
+        self.assertIn("python3 scripts/install-test/ci-failure.py reinstall", runner)
         self.assertLess(runner.index("stage 'guest_reinstall_collision_denied'"),
                         runner.index("stage 'guest_compose_offline_lifecycle'"))
         faults = [
@@ -254,7 +255,7 @@ class LiveVmEvidence(unittest.TestCase):
         self.assertEqual(failure.compose_stage(
             "GUEST_COMPOSE_STAGE=up release=GO\n"
         ), "unknown")
-        self.assertEqual(failure.SCRIPTS.keys(), {"browser", "runtime", "compose", "restore", "container"})
+        self.assertEqual(failure.SCRIPTS.keys(), {"browser", "runtime", "compose", "restore", "container", "reinstall"})
 
     def test_compose_fixture_requires_guest_identity_and_does_not_certify_appinstall(self):
         for corrupted in (
