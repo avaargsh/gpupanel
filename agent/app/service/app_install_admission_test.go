@@ -251,6 +251,21 @@ func TestAppInstallNameNormalizationDeniesEmptyAndTooLong(t *testing.T) {
     if err != nil || key != "jupyter" { t.Fatalf("normalized=%q err=%v", key, err) }
 }
 
+func TestAppInstallTaskAdmissionRejectsEmptyIDWithoutOrphanNameClaim(t *testing.T) {
+    db, _ := appInstallAdmissionDB(t)
+    for _, id := range []string{"", "NOT-A-UUID", "AAAAAAAA-AAAA-4AAA-8AAA-AAAAAAAAAAAA"} {
+        if err := claimAppInstallTask(db, id, "jupyter"); !errors.Is(err, ErrAppInstallTaskID) {
+            t.Fatalf("invalid task ID %q admitted: %v", id, err)
+        }
+    }
+    var tasks, claims int64
+    if err := db.Model(&model.Task{}).Count(&tasks).Error; err != nil { t.Fatal(err) }
+    if err := db.Model(&model.AppInstallNameClaim{}).Count(&claims).Error; err != nil { t.Fatal(err) }
+    if tasks != 0 || claims != 0 {
+        t.Fatalf("invalid Task ID left task/name claim: tasks=%d claims=%d", tasks, claims)
+    }
+}
+
 func TestAppInstallTaskAdmissionUnavailableFailsClosed(t *testing.T) {
 	if err := claimAppInstallTask(nil, "44444444-4444-4444-8444-444444444444", "app"); err == nil {
 		t.Fatal("unavailable TaskDB admitted installation")
