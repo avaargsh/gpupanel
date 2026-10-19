@@ -76,11 +76,13 @@ with sync_playwright() as play:
         credentials["url"] + "/api/v1/containers",
         data={"name": container_name, "image": image_name},
     )
-    if probe.status not in (401, 403) and (
-        probe.headers.get("content-type", "").startswith("application/json")
-        and probe.json().get("code") == 200
-    ):
-        raise RuntimeError("anonymous container create was admitted")
+    if probe.status not in (401, 403):
+        if "application/json" not in probe.headers.get("content-type", ""):
+            raise RuntimeError("anonymous create denial cannot be proven")
+        response = probe.json()
+        if probe.status != 200 or not isinstance(response, dict) or response.get("code") == 200:
+            raise RuntimeError("anonymous create denial cannot be proven")
+        # Non-success application code is the only accepted HTTP-200 denial.
     anonymous.close()
     context = browser_instance.new_context()
     page = context.new_page()
