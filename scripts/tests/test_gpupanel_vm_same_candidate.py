@@ -1,4 +1,5 @@
 """Disposable VM same-candidate G4→G6 gate; NO host install occurs."""
+import ast
 import importlib.util
 from pathlib import Path
 import subprocess
@@ -101,6 +102,19 @@ class SameCandidateContract(unittest.TestCase):
     def test_real_browser_and_recovery_scripts_bind_before_effects(self):
         browser = (ROOT / "scripts/install-test/browser.py").read_text()
         runtime = (ROOT / "scripts/install-test/runtime.py").read_text()
+        # These scripts are not directly executed by the unprivileged CI.
+        # Parse their code and the embedded guest preflight Python so syntax
+        # errors cannot first surface during an authorized VM run.
+        ast.parse(browser)
+        ast.parse(runtime)
+        tree = ast.parse(browser)
+        probe = next(node.value.value for node in tree.body
+                     if isinstance(node, ast.Assign)
+                     and any(isinstance(t, ast.Name) and t.id == 'remote_probe'
+                             for t in node.targets))
+        ast.parse(probe)
+        self.assertIn("running service executable differs from installed file", probe)
+        self.assertIn("running service executable differs from installed file", runtime)
         self.assertNotIn("page.route(", browser)
         self.assertIn("candidate.verify_installed(local, installed['binary_sha256'])", browser)
         self.assertIn("live_operations_center_read_only", browser)
