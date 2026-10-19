@@ -196,7 +196,7 @@ class LiveVmEvidence(unittest.TestCase):
             guest.index('(folder / "Dockerfile").write_text('),
         )
         self.assertIn('"docker", "build", "--pull=false", "--network=none"', guest)
-        self.assertIn('"network_mode: none', guest)
+        self.assertIn('network_mode: none', guest)
 
     def test_workflow_only_uploads_redacted_json(self):
         flow = (ROOT / ".github/workflows/gpupanel-real-ubuntu-vm.yml").read_text()
