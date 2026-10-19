@@ -49,6 +49,13 @@ if resp.returncode:
         r'PermissionError|subprocess[.]TimeoutExpired|OSError):',
         resp.stderr, re.MULTILINE,
     )
+    phases = re.findall(
+        r'^GUEST_COMPOSE_STEP_FAILED=(image-build|inspect|ps|image-remove|'
+        r'image-list|up|logs|exec|stop|start|restart|down|compose|other)$',
+        resp.stderr, re.MULTILINE,
+    )
+    phase = phases[-1] if phases else "unknown"
+    print(f"GUEST_COMPOSE_STAGE={phase} release=NO_GO", file=sys.stderr)
     line = positions[-1] if positions else "UNKNOWN"
     klass = classes[-1] if classes else "UNCLASSIFIED"
     print(f"GUEST_COMPOSE_FAILURE source=compose-fixture-guest.py:{line} "
