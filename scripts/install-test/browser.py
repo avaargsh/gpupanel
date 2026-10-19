@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Live browser smoke against only the task-owned installed VM, without API mocks."""
 import json
+import candidate_identity
 from pathlib import Path
 from playwright.sync_api import sync_playwright, expect
 import vm
@@ -12,6 +13,8 @@ if not vm.owned_pid('qemu.pid', str(vm.STATE / 'disk.qcow2')):
 credentials = json.loads((STATE / 'credentials.json').read_text())
 if credentials['url'] != f'http://127.0.0.1:{vm.PANEL_PORT}':
     raise SystemExit('Refuse a non-fixture target')
+binary_before = candidate_identity.assert_installed_candidate(vm)
+checkout_commit = candidate_identity.source_checkout_commit(ROOT)
 result = {'kind': 'LIVE local VM; no intercepted APIs', 'target': credentials['url']}
 
 
@@ -82,5 +85,11 @@ with sync_playwright() as playwright:
     result['browser_page_errors'] = errors
     context.close()
     browser.close()
+if candidate_identity.assert_installed_candidate(vm) != binary_before:
+    raise RuntimeError('installed candidate binary changed during live browser smoke')
+if candidate_identity.source_checkout_commit(ROOT) != checkout_commit:
+    raise RuntimeError('source checkout changed during live browser smoke')
+result['binary_sha256'] = binary_before
+result['candidate_commit'] = checkout_commit
 (STATE / 'browser-live.json').write_text(json.dumps(result, indent=2) + '\n')
 print(json.dumps(result, indent=2))
