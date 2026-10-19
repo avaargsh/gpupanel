@@ -19,7 +19,7 @@ func Init() {
 func initLang() {
 	fileOp := files.NewFileOp()
 	initGeo()
-	isLangExist := fileOp.Stat("/usr/local/bin/lang/zh.sh")
+	isLangExist := fileOp.Stat(path.Join(global.CONF.Base.InstallDir, "gpupanel/lang/zh.sh"))
 	if isLangExist {
 		return
 	}
@@ -57,7 +57,7 @@ func initLang() {
 			downloadLangFromRemote(fileOp)
 			return
 		}
-		if err := cmd.NewCommandMgr().Run("cp", "-r", path.Join(tmpPath, "lang"), "/usr/local/bin/"); err != nil {
+		if err := cmd.NewCommandMgr().Run("cp", "-r", path.Join(tmpPath, "lang"), path.Join(global.CONF.Base.InstallDir, "gpupanel")); err != nil {
 			global.LOG.Errorf("load lang from package failed, %v", err)
 			return
 		}
@@ -91,18 +91,18 @@ func loadRestorePath(upgradeDir string) (string, error) {
 
 func downloadLangFromRemote(fileOp files.FileOp) {
 	path := fmt.Sprintf("%s/language/lang.tar.gz", global.ResourceURL())
-	if err := fileOp.DownloadFile(path, "/usr/local/bin/lang.tar.gz"); err != nil {
+	if err := fileOp.DownloadFile(path, path.Join(global.CONF.Base.InstallDir, "gpupanel/lang.tar.gz")); err != nil {
 		global.LOG.Errorf("download lang.tar.gz failed, err: %v", err)
 		return
 	}
-	if !fileOp.Stat("/usr/local/bin/lang.tar.gz") {
+	if !fileOp.Stat(path.Join(global.CONF.Base.InstallDir, "gpupanel/lang.tar.gz")) {
 		global.LOG.Error("download lang.tar.gz failed, no such file")
 		return
 	}
-	if err := cmd.NewCommandMgr().Run("tar", "zxvfC", "/usr/local/bin/lang.tar.gz", "/usr/local/bin/"); err != nil {
+	if err := cmd.NewCommandMgr().Run("tar", "zxvfC", path.Join(global.CONF.Base.InstallDir, "gpupanel/lang.tar.gz"), path.Join(global.CONF.Base.InstallDir, "gpupanel")); err != nil {
 		global.LOG.Errorf("decompress lang.tar.gz failed, %v", err)
 		return
 	}
-	_ = os.Remove("/usr/local/bin/lang.tar.gz")
+	_ = os.Remove(path.Join(global.CONF.Base.InstallDir, "gpupanel/lang.tar.gz"))
 	global.LOG.Info("download lang successful")
 }
