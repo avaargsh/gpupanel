@@ -168,6 +168,42 @@ func TestNameReleaseDeniesBadApprovalAndMidReviewTaskChange(t *testing.T) {
 	assertNoRelease(t,taskDB)
 }
 
+func TestNameReleaseFailsIfPostApprovalResourceObservationChanges(t *testing.T) {
+	taskDB, appDB := releaseTestDB(t)
+	addNameOwner(t, taskDB, "jupyter", releaseTaskID, constant.StatusSuccess, 0)
+	attempts := 0
+	observer := func(ctx context.Context, key, owner string) (appInstallNameReleaseProbe, error) {
+		attempts++
+		p, err := releaseObserver()(ctx, key, owner)
+		if attempts == 2 { p.DockerAbsent = false }
+		return p, err
+	}
+	if err := releaseAppInstallNameAfterReview(context.Background(), taskDB, appDB,
+		releaseTestRequest(), observer, releaseApprover()); !errors.Is(err, ErrAppInstallNameReleaseDenied) {
+		t.Fatalf("changing Docker evidence did not block release: %v", err)
+	}
+	if attempts != 2 { t.Fatalf("release did not reobserve after approval: %d", attempts) }
+	assertNoRelease(t, taskDB)
+}
+
+func TestNameReleaseWithoutTrustedObserverOrApproverFailsClosed(t *testing.T) {
+	taskDB, appDB := releaseTestDB(t)
+	addNameOwner(t, taskDB, "jupyter", releaseTaskID, constant.StatusSuccess, 0)
+	for _, pair := range []struct {
+		observe appInstallNameReleaseObserver
+		approve appInstallNameReleaseApprover
+	}{
+		{nil, releaseApprover()},
+		{releaseObserver(), nil},
+	} {
+		if err := releaseAppInstallNameAfterReview(context.Background(), taskDB, appDB,
+			releaseTestRequest(), pair.observe, pair.approve); !errors.Is(err, ErrAppInstallNameReleaseDenied) {
+			t.Fatalf("untrusted missing dependency released owner: %v", err)
+		}
+	}
+	assertNoRelease(t, taskDB)
+}
+
 func TestNameReleaseAuditSchemaMissingFailsBeforeCAS(t *testing.T) {
 	taskDB, appDB := releaseTestDB(t)
 	addNameOwner(t, taskDB, "jupyter", releaseTaskID, constant.StatusSuccess, 0)
