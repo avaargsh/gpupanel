@@ -96,6 +96,7 @@ with sync_playwright() as playwright:
     assert denied(invalid), 'invalid CSRF was accepted'
     result['invalid_csrf_denied'] = True
     result['invalid_csrf_http_status'] = invalid.status
+    page.screenshot(path=str(STATE / 'dashboard-live.png'), full_page=True)
     # Exercise the *installed* Operations Center, not the Vite/mocked suite.
     # Its two sources must each be reachable through the authenticated Core.
     unexpected_mutations = []
@@ -140,7 +141,6 @@ with sync_playwright() as playwright:
         'content_recorded': False,
     }
     page.screenshot(path=str(STATE / 'operations-center-live.png'), full_page=True)
-    page.screenshot(path=str(STATE / 'dashboard-live.png'), full_page=True)
     page.goto(credentials['url'] + '/apps')
     page.wait_for_load_state('networkidle')
     expect(page.get_by_role('tab', name='Installed', exact=True)).to_be_visible()
