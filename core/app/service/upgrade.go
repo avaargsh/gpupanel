@@ -141,6 +141,9 @@ func (u *UpgradeService) SearchUpgrade() (*dto.UpgradeInfo, error) {
 }
 
 func (u *UpgradeService) LoadNotes(req dto.Upgrade) (string, error) {
+	if err := validateUpgradeVersion(req.Version); err != nil {
+		return "", err
+	}
 	mode := global.CONF.Base.Mode
 	if strings.Contains(req.Version, "beta") {
 		mode = "beta"
@@ -153,6 +156,9 @@ func (u *UpgradeService) LoadNotes(req dto.Upgrade) (string, error) {
 }
 
 func (u *UpgradeService) Upgrade(req dto.Upgrade) error {
+	if err := validateUpgradeVersion(req.Version); err != nil {
+		return err
+	}
 	global.LOG.Info("start to upgrade now...")
 	itemArch, err := loadArch()
 	if err != nil {
@@ -166,16 +172,14 @@ func (u *UpgradeService) Upgrade(req dto.Upgrade) error {
 		return err
 	}
 
-	baseDir := path.Join(global.CONF.Base.InstallDir, fmt.Sprintf("gpupanel/tmp/upgrade/%s", req.Version))
+	// Never erase a previous rollback backup or concurrent transaction.
+	// Version is validated BEFORE any filesystem mutation.
+	baseDir, err := createUpgradeStage(global.CONF.Base.InstallDir, req.Version)
+	if err != nil {
+		return err
+	}
 	downloadDir := path.Join(baseDir, "downloads")
-	_ = os.RemoveAll(baseDir)
 	originalDir := path.Join(baseDir, "original")
-	if err := os.MkdirAll(downloadDir, os.ModePerm); err != nil {
-		return err
-	}
-	if err := os.MkdirAll(originalDir, os.ModePerm); err != nil {
-		return err
-	}
 
 	mode := global.CONF.Base.Mode
 	if strings.Contains(req.Version, "beta") {
@@ -290,7 +294,11 @@ func (u *UpgradeService) Rollback(req dto.OperateByID) error {
 	}
 	// BackupFile records the upgrade transaction directory; the actual
 	// sealed files were copied into its "original" child.
-	return u.handleRollback(path.Join(log.BackupFile, "original"), 3, svcInfo)
+	backup, err := validateUpgradeBackupPath(global.CONF.Base.InstallDir, log.BackupFile)
+	if err != nil {
+		return err
+	}
+	return u.handleRollback(backup, 3, svcInfo)
 }
 
 type noteHelper struct {
