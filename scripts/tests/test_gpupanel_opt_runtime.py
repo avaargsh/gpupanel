@@ -79,7 +79,7 @@ class OptOnlyRuntimeLayout(unittest.TestCase):
                          "shell -e suppresses failure for non-final AND-list commands")
         for line in guest.splitlines():
             if line.strip().startswith("test "):
-                self.assertRegex(line, r"\\|\\| exit [0-9]+$",
+                self.assertRegex(line, r"\|\| exit [0-9]+$",
                                  "every guest check must fail independently")
 
     def test_bash_scripts_are_syntactically_valid_without_host_mutation(self):
