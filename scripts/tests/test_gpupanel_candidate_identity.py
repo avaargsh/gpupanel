@@ -98,8 +98,8 @@ class CandidateIdentityTests(unittest.TestCase):
 
     def test_begin_rotates_attempt_and_refuses_stale_receipts(self):
         self.write_receipts()
-        with patch.object(ci, "source_checkout_commit", return_value=self.commit), \\
-             patch.object(ci, "assert_installed_candidate", return_value=self.digests), \\
+        with patch.object(ci, "source_checkout_commit", return_value=self.commit), \
+             patch.object(ci, "assert_installed_candidate", return_value=self.digests), \
              patch.object(ci, "guest_identity_fingerprint", return_value=self.guest_identity):
             result = ci.begin_attempt(object(), self.root, self.state)
             self.assertNotEqual(result["attempt_id"], self.attempt_id)
@@ -111,8 +111,8 @@ class CandidateIdentityTests(unittest.TestCase):
     def test_begin_does_not_touch_existing_receipts(self):
         self.write_receipts()
         previous = (self.state / "browser-live.json").read_bytes()
-        with patch.object(ci, "source_checkout_commit", return_value=self.commit), \\
-             patch.object(ci, "assert_installed_candidate", return_value=self.digests), \\
+        with patch.object(ci, "source_checkout_commit", return_value=self.commit), \
+             patch.object(ci, "assert_installed_candidate", return_value=self.digests), \
              patch.object(ci, "guest_identity_fingerprint", return_value=self.guest_identity):
             ci.begin_attempt(object(), self.root, self.state)
         self.assertEqual((self.state / "browser-live.json").read_bytes(), previous)
