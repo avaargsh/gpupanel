@@ -71,6 +71,14 @@ def main() -> int:
             "WEBKIT_DISABLE_DMABUF_RENDERER": "1",
             "PYTHONNOUSERSITE": "1",
         })
+        # GitHub-hosted runners may deny unprivileged user namespaces.
+        # This WebKit debug bypass is strictly scoped to this disposable CI
+        # Xvfb process and MUST NEVER appear in the normal desktop binary.
+        if os.getenv("GPUPANEL_CI_WEBKIT_UNSANDBOXED") == "1":
+            if os.getenv("GITHUB_ACTIONS") != "true":
+                raise SmokeFailure("WebKit sandbox bypass is permitted only in GitHub Actions smoke")
+            env["WEBKIT_DISABLE_SANDBOX_THIS_IS_DANGEROUS"] = "1"
+            print("CI_ONLY_WEBKIT_UNSANDBOXED: native window test, NOT production sandbox acceptance")
         # Openbox provides window focus semantics; Xvfb itself has no WM.
         wm = subprocess.Popen(["openbox", "--sm-disable"], env=env,
                               stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
