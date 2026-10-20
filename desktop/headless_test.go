@@ -19,6 +19,8 @@ func TestHeadlessWorkstationCliAdmission(t *testing.T) {
 		{"--run", "bash"},
 		{"--uv-tool-install=" + strings.Repeat("0", 64)},
 		{"--uv-project-create=" + strings.Repeat("0", 64)},
+		{"--open-project-terminal=../invalid"},
+		{"--open-project-editor=not-created"},
 	} {
 		if output, err := headless(input); err == nil {
 			t.Fatalf("unapproved/malformed mutation unexpectedly succeeded: %#v %s", input, output)
@@ -54,5 +56,21 @@ func TestHeadlessRefusesUnverifiedReceipts(t *testing.T) {
 	}
 	if !isVerifiedHeadlessReceipt(`{"status":"VERIFIED","executed":true}`) {
 		t.Fatal("explicit VERIFIED receipt rejected")
+	}
+}
+
+func TestHeadlessNativeLaunchReceiptMustBeDispatchOnly(t *testing.T) {
+	for _, output := range []string{"", "{}", "not-json",
+		`{"status":"OPTIONAL_APP_MISSING"}`,
+		`{"status":"VERIFIED"}`,
+		`{"note":"LAUNCH_REQUESTED","status":"UNKNOWN"}`,
+	} {
+		if _, err := headlessLaunchReceipt(output, nil); err == nil {
+			t.Fatalf("incorrectly accepted native launch receipt: %q", output)
+		}
+	}
+	valid := `{"status":"LAUNCH_REQUESTED","verifiedGUI":false}`
+	if result, err := headlessLaunchReceipt(valid, nil); err != nil || result != valid {
+		t.Fatalf("valid dispatch not accepted: %q %v", result, err)
 	}
 }
