@@ -59,15 +59,15 @@ export default function AgentSessionsPage() {
         <header className="workbench-heading">
             <div>
                 <h1>Agent Sessions</h1>
-                <p>Codex 原生会话记录 · 单机用户态只读预览</p>
+                <p>Codex 原生会话与 app-server 单次状态快照 · 本地只读预览</p>
             </div>
             <Badge variant="secondary">本地导入</Badge>
         </header>
         <Alert>
             <ShieldAlert aria-hidden="true" />
             <AlertDescription>
-                此页面不访问 Host 文件系统、不启动 Agent，也不向服务器上传会话历史。
-                清单只证明存在本机 Codex 记录，<strong>不证明 Agent 正在执行</strong>，更不是审批或执行权限。
+                此页面不通过 Host 扫描文件、不执行 Codex 命令，也不上传会话历史。
+                即使 app-server 返回 active/idle，也仅代表本次新观察进程的相对状态，<strong>不证明其他 Codex 进程正在运行或停止</strong>；不得据此审批或执行。
             </AlertDescription>
         </Alert>
 
@@ -86,10 +86,16 @@ export default function AgentSessionsPage() {
                 <CardContent className="space-y-3">
                     <p className="text-sm text-muted-foreground">
                         在你自己登录的普通 Ubuntu 开发账号终端中执行下面的命令；不要使用 sudo。
-                        输出不包含提示词、命令内容和工作目录全路径。
+                        输出不包含提示词、命令内容和工作目录全路径。可以选择旧 rollout 清单或新的 app-server RPC 快照。
                     </p>
                     <pre className="log-output" aria-label="会话只读导出命令">
                         {'python3 scripts/gpupanel-codex-sessions.py list > codex-sessions.json'}
+                    </pre>
+                    <p className="text-sm text-muted-foreground">
+                        可选：运行 Codex app-server 的单次只读 RPC 探测（会在用户账号下启动并停止新的 app-server 进程，可能执行 Codex 初始化；不会连接你已运行的进程）。
+                    </p>
+                    <pre className="log-output" aria-label="app-server 快照命令">
+                        {'python3 scripts/gpupanel-codex-appserver.py list > codex-appserver.json'}
                     </pre>
                     <label className="flex flex-col gap-2 text-sm">
                         <span className="font-medium">选择刚导出的 JSON 文件</span>
@@ -113,7 +119,7 @@ export default function AgentSessionsPage() {
                 <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-2">
                     <CardTitle className="flex items-center gap-2">
                         <FileJson2 className="size-4" aria-hidden="true" />
-                        原生会话记录（{inventory.sessions.length}）
+                        {inventory.schemaVersion === 2 ? 'app-server 快照' : 'Rollout 记录'}（{inventory.sessions.length}）
                     </CardTitle>
                     <Button variant="outline" size="sm" onClick={() => {
                         epoch.current += 1;
@@ -125,8 +131,11 @@ export default function AgentSessionsPage() {
                     </Button>
                 </CardHeader>
                 <CardContent className="space-y-2">
+                    {inventory.hasMore && <p role="status" className="text-xs text-muted-foreground">
+                        当前仅显示第一页，原生列表仍有后续数据；不代表已发现全部会话。
+                    </p>}
                     {inventory.sessions.length === 0 && <p role="status" className="py-6 text-sm text-muted-foreground">
-                        未找到符合格式的 Codex rollout 会话记录；不表示本机没有运行中的 Agent。
+                        当前快照未返回任何会话；不表示其他 Codex 进程没有正在运行的任务。
                     </p>}
                     {inventory.sessions.map((item) => <div key={item.sessionId}
                         className="flex flex-wrap items-start justify-between gap-3 rounded-lg border border-border p-4">
@@ -137,7 +146,12 @@ export default function AgentSessionsPage() {
                                 Codex · 记录时间：{item.startedAt}
                             </p>
                         </div>
-                        <Badge variant="outline">运行状态未知</Badge>
+                        <div className="flex flex-col items-end gap-1">
+                            <Badge variant="outline">全局运行状态未知</Badge>
+                            {item.observerStatus && <span className="text-xs text-muted-foreground">
+                                本次观察进程：{item.observerStatus}
+                            </span>}
+                        </div>
                     </div>)}
                 </CardContent>
             </Card>}
