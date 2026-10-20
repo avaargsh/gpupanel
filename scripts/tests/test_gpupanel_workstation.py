@@ -74,10 +74,10 @@ class WorkstationTests(unittest.TestCase):
             return SimpleNamespace(returncode=1, stdout="", stderr="failed")
         plan = ws.install_plan(self.profile, runner=fake, os_ok=True)
         self.assertEqual(plan["status"], "READY_FOR_APPROVAL")
-        self.assertEqual(plan["command"][:3], ["pkexec", "/usr/bin/apt-get", "install"])
+        self.assertEqual(plan["command"][:3], ["/usr/bin/pkexec", "/usr/bin/apt-get", "install"])
         self.assertEqual(ws.install_apt(self.profile, "wrong", runner=fake, os_ok=True)["status"], "REFUSED_PLAN_MISMATCH")
         with mock.patch.object(ws.os, "geteuid", return_value=1000), \
-             mock.patch.object(ws.shutil, "which", return_value="/usr/bin/pkexec"):
+             mock.patch.object(ws.Path, "is_file", return_value=True):
             result = ws.install_apt(self.profile, plan["planDigest"], runner=fake, os_ok=True)
         self.assertEqual(result["status"], "UNKNOWN")
         self.assertTrue(result["executed"])
