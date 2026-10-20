@@ -139,5 +139,7 @@ func streamNativeEvents(ctx context.Context, output io.Writer, duration time.Dur
 			}
 		}
 	}
+	if ctx.Err() != nil { return ctx.Err() }
+	if time.Now().Before(deadline) { return errors.New("native reconnection budget exhausted") }
 	return nil
 }
