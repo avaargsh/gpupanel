@@ -207,9 +207,12 @@ func (u *UpgradeService) Upgrade(req dto.Upgrade) error {
 			global.LOG.Errorf("automatic rollback incomplete; upgrade remains blocked: %v", err)
 			return
 		}
-		if err := releaseUpgradeAdmission(settingRepo.UpdateIfMatch); err != nil {
-			global.LOG.Errorf("rollback completed but admission remains unresolved: %v", err)
-		}
+		// Copying old binaries/units is NOT an independently verified rollback:
+		// Core and Agent may still be running the prior or partially upgraded
+		// processes, and the SQLite snapshot was intentionally not restored.
+		// Preserve the persistent Upgrading hold until a separately observed,
+		// authorized offline recovery confirms service and data state.
+		global.LOG.Warn("rollback files copied but runtime/database recovery remains unverified; upgrade admission remains blocked")
 	}
 	go func() {
 		if err := files.DownloadFileWithProxyStream(downloadPath+"/"+fileName, downloadDir+"/"+fileName); err != nil {
@@ -319,7 +322,10 @@ func (u *UpgradeService) Upgrade(req dto.Upgrade) error {
 		}
 
 		global.LOG.Warn("upgrade files staged; restart and Core/Agent health have NOT been verified")
-		dropBackupCopies()
+		// A restart request is not post-restart health or data-recovery proof.
+		// Do not prune previous rollback snapshots while the upgrade remains
+		// under a durable Upgrading hold. A separate verified reconciliation
+		// must decide when retention/cleanup is safe.
 		xpack.MultiNodeProvider.AutoUpgradeWithMaster()
 		_ = settingRepo.Update("SystemVersion", req.Version)
 		_ = global.AgentDB.Model(&model.Setting{}).Where("key = ?", "SystemVersion").Updates(map[string]interface{}{"value": req.Version}).Error
