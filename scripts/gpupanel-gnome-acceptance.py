@@ -130,6 +130,12 @@ def private_report(report: dict, home: Path) -> Path:
         if path.is_symlink() or (path.exists() and not path.is_dir()):
             raise ValueError("linked or unsafe acceptance directory")
         path.mkdir(mode=0o700, exist_ok=True)
+        # mkdir(mode=...) does not tighten permissions on an existing directory.
+        # Fail closed rather than writing evidence into a shared/user-mismatched path.
+        info = os.lstat(path)
+        if (not stat.S_ISDIR(info.st_mode) or stat.S_ISLNK(info.st_mode)
+                or info.st_uid != os.geteuid() or (info.st_mode & 0o077)):
+            raise ValueError("acceptance directory must be owned by this user and mode 0700")
     filename = "gnome-wayland-" + time.strftime("%Y%m%dT%H%M%S", time.gmtime()) + ".json"
     target = dest / filename
     fd = os.open(target, os.O_WRONLY | os.O_CREAT | os.O_EXCL |
