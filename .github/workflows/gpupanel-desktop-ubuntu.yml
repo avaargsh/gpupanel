@@ -57,6 +57,22 @@ jobs:
           go mod verify
           go test ./...
           go build -trimpath -o "$RUNNER_TEMP/gpupanel-desktop-preview" .
+      - name: Prove binary read-only doctor without source, display or Docker
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/clean-home"
+          cd "$RUNNER_TEMP"
+          HOME="$RUNNER_TEMP/clean-home" "$RUNNER_TEMP/gpupanel-desktop-preview" --doctor > doctor.json
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          report = json.loads(Path("doctor.json").read_text())
+          assert report["status"] == "READY", report
+          assert len(report["profileDigest"]) == 64
+          assert report["requires"] == {"core": False, "docker": False, "kubernetes": False}
+          print("Standalone binary doctor PASS: no source checkout, display, Docker, Core or K8s")
+          PY
       - name: Prepare unsigned relocatable Ubuntu preview archive
         shell: bash
         run: |
