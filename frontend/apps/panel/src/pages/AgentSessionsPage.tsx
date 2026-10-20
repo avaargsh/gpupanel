@@ -215,6 +215,13 @@ export default function AgentSessionsPage() {
                     <pre className="log-output" aria-label="已运行 app-server 只读查询命令">
                         {'cd core && go run ./cmd/codex-observer --endpoint ws://127.0.0.1:4222 > ../codex-attached.json'}
                     </pre>
+                    <p className="text-xs text-muted-foreground">
+                        如果该 app-server 启用了原生 WebSocket Token 鉴权，请在你自己的 Ubuntu 普通用户终端中增加私有 Token 文件参数。
+                        Token 不要填写在网页、URL、命令行明文参数或导出的 JSON 中。
+                    </p>
+                    <pre className="log-output" aria-label="启用鉴权的 app-server 只读查询命令">
+                        {'cd core && go run ./cmd/codex-observer --endpoint ws://127.0.0.1:4222 --auth-token-file "$HOME/.codex/gpupanel-ws-token" > ../codex-attached.json'}
+                    </pre>
                     <p className="text-sm text-muted-foreground">
                         可以运行有限次数的本机只读观察，将其输出保存为 .ndjson 文件：
                         导入后只展示<strong>最后一条观察结果</strong>；这是已保存记录，不是网页实时订阅。
