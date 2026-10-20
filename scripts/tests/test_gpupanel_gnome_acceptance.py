@@ -74,9 +74,13 @@ class AcceptanceTests(unittest.TestCase):
         self.assertIn("WAYLAND_SOCKET_MISSING", validate(
             socket=SimpleNamespace(st_mode=stat.S_IFREG | 0o600, st_uid=1000),
         )["reasons"])
-        self.assertIn("WAYLAND_SOCKET_UNTRUSTED", validate(
+        # Socket mode bits can be permissive on a valid implementation; the
+        # private 0700 runtime directory is the reachability boundary.
+        permissive_socket = validate(
             socket=SimpleNamespace(st_mode=stat.S_IFSOCK | 0o666, st_uid=1000),
-        )["reasons"])
+        )
+        self.assertEqual(permissive_socket["status"], "ELIGIBLE_FOR_MANUAL_CHECK")
+        self.assertNotIn("WAYLAND_SOCKET_UNTRUSTED", permissive_socket["reasons"])
         self.assertIn("WAYLAND_SOCKET_UNTRUSTED", validate(
             socket=SimpleNamespace(st_mode=stat.S_IFSOCK | 0o600, st_uid=1001),
         )["reasons"])
