@@ -57,7 +57,7 @@ def app_api_stage(raw: str) -> str:
 # debugging, not a permission to retry any possibly executed installation.
 G5_APP_EVIDENCE_CODE = re.compile(
     r"(?m)^G5_APP_EVIDENCE_FAILURE_CODE=(malformed|install-id|task-id|"
-    r"task-status|app-status|classification|verification-flag|"
+    r"task-status|app-status|classification|classification-container-malformed|"\n    r"classification-container-empty|classification-container-count|"\n    r"classification-container-state|classification-other|verification-flag|"
     r"container-count|container-state) release=NO_GO$"
 )
 
