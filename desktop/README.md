@@ -9,7 +9,7 @@
 要求：Ubuntu 24.04、Go 1.26+、GTK4、WebKitGTK 6.0。Wails GUI 本身需要图形库，但不依赖 Docker。
 
     sudo apt update
-    sudo apt install build-essential pkg-config libgtk-4-dev libwebkitgtk-6.0-dev
+    sudo apt install build-essential pkg-config libgtk-4-dev libwebkitgtk-6.0-dev fonts-noto-cjk
     go install github.com/wailsapp/wails/v3/cmd/wails3@v3.0.0-beta.30
     cd desktop
     go mod tidy
@@ -29,10 +29,25 @@ PR 的 GitHub Actions `GPUPanel Desktop Ubuntu Preview` 会在 Ubuntu 24.04 amd6
     tar -xzf gpupanel-desktop-preview-ubuntu24-amd64.tar.gz -C ~/GPUPanel/desktop-preview
     cat ~/GPUPanel/desktop-preview/build/provenance.txt
     # 若缺少 Wails 图形依赖，先通过 Ubuntu apt 源安装：
-    sudo apt install python3 libgtk-4-1 libwebkitgtk-6.0-4
+    sudo apt install python3 libgtk-4-1 libwebkitgtk-6.0-4 fonts-noto-cjk
     ~/GPUPanel/desktop-preview/bin/gpupanel-desktop
 
 不需要克隆 GPUPanel 仓库，也不调用 GPUPanel 系统安装器。**SHA-256 只能校验传输完整性，不能证明 GitHub Artifact 的发布者身份**；此流程不具有包签名、DEB 安装/卸载/升级和离线供应链审核。GUI 图形登录、Polkit 以及对用户真实目录的读写尚需 Ubuntu 桌面真机验收。CI 中的临时私有脚本与内嵌默认 Profile 哈希由 Go 测试和 Git 仓库对应文件比对，防止漂移。测试仍不会证明完整工作区数据已恢复。
+
+## GNOME 用户应用菜单快捷方式（显式授权）
+
+在 `~/GPUPanel/desktop-preview/bin/gpupanel-desktop` 启动的桌面预览里，使用 `06 · DESKTOP MENU` 的“检查桌面入口计划”→审查 SHA-256 与目标路径→“确认创建桌面快捷方式”。
+
+- 仅写入 `~/.local/share/applications/gpupanel-workstation-preview.desktop`，无 root、Polkit 或 `sudo`，不会启用后台服务。
+- 不允许从 `go run` 等临时可执行文件位置注册快捷方式；只能是用户明确解压的标准预览路径。
+- 若安装目录或可执行文件是软链接、安装位置变化、批准摘要变化、目标文件已存在则拒绝。不覆盖已有菜单配置。
+- 没有图标资源打包和 `.deb` 系统级安装能力；这是一个当前用户可选择添加的预览菜单入口。
+
+## Ubuntu 图形测试边界
+
+GitHub Actions 在 Xvfb + Openbox 下实际启动 GTK4/WebKitGTK，并检查窗口标题、尺寸、键盘 Tab 事件和截图。Ubuntu Runner 对非特权用户命名空间有限制，会使 WebKitGTK Bubblewrap 沙箱启动失败。**只有单次 GitHub Actions 烟测进程**在检查到 `GITHUB_ACTIONS=true` 后才使用 WebKit 官方危险调试开关；应用源码、安装包、用户桌面启动均不设置该变量。此测试只证明合成 X11 图形环境可呈现窗口，**不证明正常沙箱下的 GNOME/Wayland 真机可用性**。
+
+首次 Xvfb 截图发现最小 Ubuntu Runner 中文缺字，需安装 `fonts-noto-cjk`；预览运行说明明确要求该依赖。字体只是界面显示依赖，不涉及 GPU、Docker 或远程 Core。
 
 ## 本地 CLI
 
@@ -109,6 +124,7 @@ PR 的 GitHub Actions `GPUPanel Desktop Ubuntu Preview` 会在 Ubuntu 24.04 amd6
 | 无 Docker / Core / K8s 的本地模式 | Python 契约测试；GUI NOT RUN |
 | Ubuntu 非 root + Polkit 系统安装及恢复 | NOT RUN |
 | 源码目录外的内嵌工具 Doctor/Profile 操作 | Go 契约测试；真实新机 GUI NOT RUN |
+| Xvfb 单次不启沙箱图形窗口/键盘/截图 | GitHub Ubuntu CI；不等于正常沙箱 GUI |
 | Wails 桌面实机 GTK/WebKit/终端/IDE 启动 | NOT RUN |
 | 国内离线镜像缓存与真实软件安装 | NOT RUN（此前仅有工具和合成制品测试） |
 | DevPod 浏览器 IDE 真实创建/停止/恢复 | NOT RUN |
