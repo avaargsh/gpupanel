@@ -24,6 +24,11 @@ func isVerifiedHeadlessReceipt(output string) bool {
 	return json.Unmarshal([]byte(output), &receipt) == nil && receipt.Status == "VERIFIED"
 }
 
+func headlessReceiptHasStatus(output, expected string) bool {
+	var receipt struct { Status string `json:"status"` }
+	return json.Unmarshal([]byte(output), &receipt) == nil && receipt.Status == expected
+}
+
 // The OS accepting a process start request is a distinct state from an
 // optional app missing or a verified GUI session.
 func headlessLaunchReceipt(result string, err error) (string, error) {
@@ -57,8 +62,44 @@ func headless(args []string) (string, error) {
 	case "--uv-project-status":
 		return service.UvProjectStatus()
 	case "--help":
-		return "GPUPanel Desktop: GUI | --doctor | --versions | --uv-tool-plan | --uv-tool-status | --uv-tool-install=SHA256 | --uv-project-plan | --uv-project-status | --uv-project-create=SHA256 | --open-project-terminal=NAME | --open-project-editor=NAME\n", nil
+		return "GPUPanel Desktop: GUI | --doctor | --versions | --uv-tool-plan | --uv-tool-status | --uv-tool-install=SHA256 | --uv-project-plan | --uv-project-status | --uv-project-create=SHA256 | --open-project-terminal=NAME | --open-project-editor=NAME | --source-plan=NAME | --source-export=NAME:SHA256 | --source-inspect=FILE | --source-restore=FILE:SHA256\n", nil
 	default:
+		// Source transfer CLI uses the exact Wails service methods and the same
+		// plan/ZIP digests. No free-form filesystem paths or commands.
+		if strings.HasPrefix(args[0], "--source-plan=") {
+			name := strings.TrimPrefix(args[0], "--source-plan=")
+			return service.SourcePlan(name)
+		}
+		if strings.HasPrefix(args[0], "--source-export=") {
+			pieces := strings.SplitN(strings.TrimPrefix(args[0], "--source-export="), ":", 2)
+			if len(pieces) != 2 || !projectPattern.MatchString(pieces[0]) ||
+				!digestPattern.MatchString(pieces[1]) {
+				return "", errors.New("invalid source export approval")
+			}
+			value, err := service.SourceExport(pieces[0], pieces[1])
+			if err != nil { return "", err }
+			if !headlessReceiptHasStatus(value, "EXPORTED") {
+				return "", errors.New("source export did not succeed")
+			}
+			return value, nil
+		}
+		if strings.HasPrefix(args[0], "--source-inspect=") {
+			filename := strings.TrimPrefix(args[0], "--source-inspect=")
+			return service.SourceInspect(filename)
+		}
+		if strings.HasPrefix(args[0], "--source-restore=") {
+			pieces := strings.SplitN(strings.TrimPrefix(args[0], "--source-restore="), ":", 2)
+			if len(pieces) != 2 || !sourceBundlePattern.MatchString(pieces[0]) ||
+				!digestPattern.MatchString(pieces[1]) {
+				return "", errors.New("invalid source restore approval")
+			}
+			value, err := service.SourceRestore(pieces[0], pieces[1])
+			if err != nil { return "", err }
+			if !isVerifiedHeadlessReceipt(value) {
+				return "", errors.New("source restore was not independently verified")
+			}
+			return value, nil
+		}
 		// Headless launch actions exist for bounded real-process acceptance
 		// with stub binaries. They call the identical service methods used
 		// by Wails; the result is LAUNCH_REQUESTED, never a GUI success claim.
