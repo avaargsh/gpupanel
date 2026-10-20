@@ -16,7 +16,10 @@ func TestObserverEndpointRequiresExplicitLoopbackNoCredentials(t *testing.T) {
 		"ws://192.168.1.10:4222", "wss://127.0.0.1:4222",
 		"ws://127.0.0.1:80", "ws://127.0.0.1:65536",
 		"ws://user:secret@127.0.0.1:4222",
+		"ws://127.0.0.1:4222/",
 		"ws://127.0.0.1:4222/private",
+		"ws://127.0.0.1:4222?",
+		"ws://127.0.0.1:4222#",
 		"ws://127.0.0.1:4222/?token=private",
 		"ws://127.0.0.1:4222/#fragment",
 	} {
