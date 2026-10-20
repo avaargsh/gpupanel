@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import importlib.util
+import os
 from pathlib import Path
 import socket
 import struct
@@ -52,14 +53,17 @@ class PeerCredentialTests(unittest.TestCase):
         with self.assertRaises(module.PeerIdentityUnavailable):
             module.read_peer_credentials(fake)
 
-    @unittest.skipUnless(hasattr(socket, "SO_PEERCRED"), "Linux SO_PEERCRED required")
+    @unittest.skipUnless(
+        hasattr(socket, "SO_PEERCRED") and os.geteuid() != 0,
+        "Linux SO_PEERCRED and a non-root test process are required",
+    )
     def test_kernel_credentials_over_unix_socketpair(self):
         left, right = socket.socketpair(socket.AF_UNIX, socket.SOCK_STREAM)
         try:
             peer = module.read_peer_credentials(left)
-            self.assertEqual(peer.pid, __import__("os").getpid())
-            self.assertEqual(peer.uid, __import__("os").geteuid())
-            self.assertEqual(peer.gid, __import__("os").getegid())
+            self.assertEqual(peer.pid, os.getpid())
+            self.assertEqual(peer.uid, os.geteuid())
+            self.assertEqual(peer.gid, os.getegid())
         finally:
             left.close()
             right.close()
