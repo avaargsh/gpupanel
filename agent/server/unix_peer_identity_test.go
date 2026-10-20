@@ -5,6 +5,7 @@ import (
 	"net"
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 )
 
@@ -25,6 +26,9 @@ func TestUnixPeerIdentityCaptureRejectsTCP(t *testing.T) {
 }
 
 func TestUnixPeerIdentityCaptureFromUnixSocket(t *testing.T) {
+	if runtime.GOOS != "linux" {
+		t.Skip("SO_PEERCRED capture is Linux-specific")
+	}
 	path := filepath.Join(t.TempDir(), "peer.sock")
 	listener, err := net.Listen("unix", path)
 	if err != nil {
