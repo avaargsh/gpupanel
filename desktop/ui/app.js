@@ -65,7 +65,7 @@ show('output', '从检查环境开始。无需 Docker、远程 Core 或 Kubernet
 
 $('bundle-export').addEventListener('click', () => {
   const name = $('project').value.trim();
-  if (window.confirm('仅备份项目的白名单配置和锁文件，绝不覆盖同名 Bundle。\\n项目：' + name + '\\n请自行检查源文件是否包含敏感值。')) {
+  if (window.confirm('仅备份项目的白名单配置和锁文件，绝不覆盖同名 Bundle。\n项目：' + name + '\n请自行检查源文件是否包含敏感值。')) {
     action('BundleExport', [name]);
   }
 });
@@ -89,7 +89,7 @@ $('bundle-inspect').addEventListener('click', () => {
 $('bundle-restore').addEventListener('click', () => {
   if (!bundleDigest) return;
   const filename = $('bundle-file').value.trim();
-  if (window.confirm('仅恢复白名单项目文件到新目录，不覆盖同名项目。\\nBundle：' + filename + '\\nSHA-256: ' + bundleDigest)) {
+  if (window.confirm('仅恢复白名单项目文件到新目录，不覆盖同名项目。\nBundle：' + filename + '\nSHA-256: ' + bundleDigest)) {
     action('BundleRestore', [filename, bundleDigest], () => { bundleDigest = ''; });
   }
 });
