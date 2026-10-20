@@ -1,4 +1,4 @@
-"""Tests for fail-closed kernel peer credential extraction."""
+"Tests for fail-closed kernel peer credential extraction."""
 from __future__ import annotations
 
 import importlib.util
@@ -78,3 +78,5 @@ class PeerCredentialTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+# CI verification commit: no test behavior changes; exercises the feat/** push trigger.
