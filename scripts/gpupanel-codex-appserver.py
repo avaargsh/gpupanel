@@ -114,7 +114,8 @@ def project_threads(result: dict) -> dict:
                 or identifier in seen or isinstance(created, bool)
                 or not isinstance(created, (int, float)) or not 946684800 <= created <= 4102444800
                 or not isinstance(status, dict)
-                or status.get("type") not in ALLOWED_STATUSES):
+                or not isinstance(status.get("type"), str)
+                or status["type"] not in ALLOWED_STATUSES):
             raise ProbeUnavailable("invalid native thread identity/status")
         seen.add(identifier)
         label = "未标记项目"
