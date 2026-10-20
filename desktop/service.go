@@ -3,10 +3,8 @@ package main
 import (
 	"errors"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"regexp"
-	"strings"
 	"time"
 )
 
@@ -62,39 +60,3 @@ func (s *DesktopService) DevpodPlan(projectName string) (string, error) {
 	return runProfile(20*time.Second, "devpod-plan", filepath.Join(home, "GPUPanel/projects", projectName))
 }
 
-func (s *DesktopService) OpenTerminal() error {
-	terminal, err := exec.LookPath("gnome-terminal")
-	if err != nil {
-		return errors.New("未找到 GNOME Terminal，请安装或使用系统终端")
-	}
-	home, err := os.UserHomeDir()
-	if err != nil {
-		return err
-	}
-	return exec.Command(terminal, "--working-directory="+home).Start()
-}
-
-func (s *DesktopService) OpenEditor() error {
-	var binary string
-	for _, name := range []string{"code", "codium"} {
-		if path, err := exec.LookPath(name); err == nil {
-			binary = path
-			break
-		}
-	}
-	if binary == "" {
-		return errors.New("未安装 VS Code / VSCodium，本机 IDE 是可选项")
-	}
-	home, err := os.UserHomeDir()
-	if err != nil {
-		return err
-	}
-	path := filepath.Join(home, "GPUPanel", "projects")
-	if st, err := os.Stat(path); err != nil || !st.IsDir() {
-		path = home
-	}
-	if strings.Contains(path, "\x00") {
-		return errors.New("无效目录")
-	}
-	return exec.Command(binary, "--new-window", path).Start()
-}
