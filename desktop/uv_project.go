@@ -15,10 +15,13 @@ type uvProjectReceipt struct {
 	Executed bool `json:"executed"`
 }
 
-func uvProjectCall(timeout time.Duration, verb string, approve bool) (string, uvProjectReceipt, error) {
+func uvProjectCall(timeout time.Duration, verb string, approvedDigest string) (string, uvProjectReceipt, error) {
 	args := []string{verb, "--json"}
-	if approve {
-		args = append(args, "--approve")
+	if approvedDigest != "" {
+		if verb != "create" || !digestPattern.MatchString(approvedDigest) {
+			return "", uvProjectReceipt{}, errors.New("unsupported project approval")
+		}
+		args = append(args, "--approve", "--approve-digest", approvedDigest)
 	}
 	output, err := runEmbeddedPython(timeout, "gpupanel-uv-project.py", args...)
 	var record uvProjectReceipt
@@ -31,7 +34,8 @@ func uvProjectCall(timeout time.Duration, verb string, approve bool) (string, uv
 	case "READY_FOR_APPROVAL", "MISSING_UV", "REFUSED_EXISTS",
 		"PYTHON_UNAVAILABLE", "APPROVAL_REQUIRED", "VERIFIED", "MODIFIED",
 		"ABSENT", "UNMANAGED", "UV_TIMEOUT", "UV_UNAVAILABLE", "UV_FAILED",
-		"INVALID_TEMPLATE", "PUBLISHED_UNVERIFIED", "UNSUPPORTED_USER":
+		"INVALID_TEMPLATE", "PUBLISHED_UNVERIFIED", "UNSUPPORTED_USER",
+		"REFUSED_PLAN_MISMATCH":
 		return output, record, nil
 	default:
 		if err != nil {
@@ -42,12 +46,12 @@ func uvProjectCall(timeout time.Duration, verb string, approve bool) (string, uv
 }
 
 func (s *DesktopService) UvProjectPlan() (string, error) {
-	output, _, err := uvProjectCall(15*time.Second, "plan", false)
+	output, _, err := uvProjectCall(15*time.Second, "plan", "")
 	return output, err
 }
 
 func (s *DesktopService) UvProjectStatus() (string, error) {
-	output, _, err := uvProjectCall(15*time.Second, "status", false)
+	output, _, err := uvProjectCall(15*time.Second, "status", "")
 	return output, err
 }
 
@@ -60,6 +64,6 @@ func (s *DesktopService) UvProjectCreate(approvedDigest string) (string, error) 
 	if review.Status != "READY_FOR_APPROVAL" || review.PlanDigest != approvedDigest {
 		return "", errors.New("项目创建计划变化、缺少 uv 或目录已存在，拒绝继续")
 	}
-	result, _, err := uvProjectCall(150*time.Second, "create", true)
+	result, _, err := uvProjectCall(150*time.Second, "create", approvedDigest)
 	return result, err
 }
