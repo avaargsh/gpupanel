@@ -36,7 +36,7 @@ jobs:
         run: python3 scripts/gpupanel-workstation.py doctor > /tmp/workstation-doctor.json
 
   desktop-build:
-    name: Wails v3 compile (not GUI acceptance)
+    name: Wails v3 self-contained preview build (not GUI acceptance)
     runs-on: ubuntu-24.04
     timeout-minutes: 25
     steps:
@@ -54,9 +54,38 @@ jobs:
         working-directory: desktop
         run: |
           go mod tidy
+          go mod verify
           go test ./...
-          go build -o "$RUNNER_TEMP/gpupanel-desktop-preview" .
+          go build -trimpath -o "$RUNNER_TEMP/gpupanel-desktop-preview" .
+      - name: Prepare unsigned relocatable Ubuntu preview archive
+        shell: bash
+        run: |
+          set -euo pipefail
+          stage="$RUNNER_TEMP/gpupanel-desktop-preview-root"
+          mkdir -p "$stage/bin" "$stage/licenses" "$stage/build"
+          install -m 0755 "$RUNNER_TEMP/gpupanel-desktop-preview" "$stage/bin/gpupanel-desktop"
+          install -m 0644 desktop/README.md "$stage/README.md"
+          install -m 0644 desktop/go.mod desktop/go.sum "$stage/build/"
+          install -m 0644 LICENSE NOTICE.md "$stage/licenses/"
+          sha256sum "$stage/bin/gpupanel-desktop" > "$stage/build/binary.sha256"
+          printf "source_head=%s\ncheckout_sha=%s\nplatform=ubuntu-24.04-amd64\nstatus=UNSIGNED_PREVIEW_NOT_RELEASED\n" \
+            "${{ github.event.pull_request.head.sha || github.sha }}" "$(git rev-parse HEAD)" \
+            > "$stage/build/provenance.txt"
+          archive="$RUNNER_TEMP/gpupanel-desktop-preview-ubuntu24-amd64.tar.gz"
+          tar -czf "$archive" -C "$stage" .
+          sha256sum "$archive" > "$archive.sha256"
+          tar -tzf "$archive" >/dev/null
+      - name: Upload checksumed source-preview binary (no release)
+        uses: actions/upload-artifact@v4
+        with:
+          name: gpupanel-desktop-ubuntu24-amd64-preview
+          path: |
+            ${{ runner.temp }}/gpupanel-desktop-preview-ubuntu24-amd64.tar.gz
+            ${{ runner.temp }}/gpupanel-desktop-preview-ubuntu24-amd64.tar.gz.sha256
+          if-no-files-found: error
+          retention-days: 7
       - name: Clarify acceptance status
         run: |
-          echo "Compiled a source-preview artifact only."
-          echo "No native GUI, Polkit install, offline restore, Docker/provider or production release acceptance ran."
+          echo "Unsigned preview archive uploaded with SHA-256; contents are not a published package."
+          echo "CLI-only embedded Python check runs in Go tests without a source checkout."
+          echo "No native GUI, Polkit install, full offline restore, Docker/provider or production release acceptance ran."
