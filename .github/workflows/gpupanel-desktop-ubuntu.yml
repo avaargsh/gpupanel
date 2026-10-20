@@ -75,6 +75,10 @@ jobs:
           PY
       - name: Exercise native GTK4/WebKit window under isolated Xvfb session
         shell: bash
+        # GitHub runners restrict bwrap user namespaces; WebKit's debug bypass
+        # is scoped to this CI process, NEVER the distributed desktop binary.
+        env:
+          GPUPANEL_CI_WEBKIT_UNSANDBOXED: "1"
         run: |
           set -euo pipefail
           xvfb-run -a -s "-screen 0 1366x900x24" dbus-run-session -- \
@@ -122,4 +126,4 @@ jobs:
         run: |
           echo "Unsigned preview archive uploaded with SHA-256; contents are not a published package."
           echo "CLI-only embedded Python check runs in Go tests without a source checkout."
-          echo "Xvfb native window/keyboard smoke ran. No human GNOME/Wayland GUI, Polkit install, full offline restore, Docker/provider or production release acceptance ran."
+          echo "CI-only unsandboxed WebKit Xvfb smoke ran. No production-sandbox GNOME/Wayland GUI, Polkit install, full offline restore, Docker/provider or production release acceptance ran."
