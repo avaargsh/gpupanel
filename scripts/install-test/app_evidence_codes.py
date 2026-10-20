@@ -20,7 +20,20 @@ def classify_app_install_evidence(value: object, install_id: int, task_id: str) 
     if value.get("appStatus") != "Running":
         return "app-status"
     if value.get("classification") != "CONSISTENT":
-        return "classification"
+        # Never expose actual resource identifiers or API payloads in public CI.
+        # A fixed subcategory narrows investigation without authorizing success.
+        containers = value.get("containers")
+        if not isinstance(containers, list):
+            return "classification-container-malformed"
+        if not containers:
+            return "classification-container-empty"
+        if len(containers) != 1:
+            return "classification-container-count"
+        if not isinstance(containers[0], dict):
+            return "classification-container-malformed"
+        if containers[0].get("state") != "running":
+            return "classification-container-state"
+        return "classification-other"
     if value.get("verified") is not False:
         return "verification-flag"
     containers = value.get("containers")
