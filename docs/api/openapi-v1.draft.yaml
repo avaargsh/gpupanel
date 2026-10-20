@@ -1,0 +1,115 @@
+openapi: 3.1.0
+info:
+  title: GPUPanel API
+  version: 1.0.0-draft
+  description: >-
+    Independent GPUPanel contract. This is a design-first draft, not an assertion
+    that the endpoints are implemented. Upstream 1Panel compatibility is not promised.
+servers:
+  - url: /api/gpupanel/v1
+security:
+  - bearerAuth: []
+paths:
+  /tasks/{taskId}:
+    get:
+      operationId: getTask
+      summary: Read durable asynchronous task status
+      parameters:
+        - name: taskId
+          in: path
+          required: true
+          schema:
+            type: string
+            minLength: 1
+      responses:
+        '200':
+          description: Durable task observation; success does not imply resource convergence
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /app-installations/{installationId}/evidence:
+    get:
+      operationId: getAppInstallationEvidence
+      summary: Observe installation consistency independently of task status
+      parameters:
+        - name: installationId
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+      responses:
+        '200':
+          description: Observation only; clients must verify consistency and resource identity
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InstallationEvidence'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+  schemas:
+    ApiError:
+      type: object
+      additionalProperties: false
+      required: [error]
+      properties:
+        error:
+          type: object
+          additionalProperties: false
+          required: [code, message, requestId]
+          properties:
+            code: {type: string, pattern: '^[A-Z][A-Z0-9_]*$'}
+            message: {type: string}
+            requestId: {type: string}
+    Task:
+      type: object
+      additionalProperties: false
+      required: [taskId, status]
+      properties:
+        taskId: {type: string}
+        status:
+          type: string
+          enum: [pending, running, success, failed, unknown]
+    InstallationEvidence:
+      type: object
+      additionalProperties: false
+      required: [installationId, taskId, classification, verified]
+      properties:
+        installationId: {type: integer, minimum: 1}
+        taskId: {type: string}
+        classification:
+          type: string
+          enum: [CONSISTENT, INCONSISTENT, UNKNOWN]
+        verified: {type: boolean}
+  responses:
+    Unauthorized:
+      description: Authentication required
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/ApiError'}
+    Forbidden:
+      description: Permission denied
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/ApiError'}
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/ApiError'}
