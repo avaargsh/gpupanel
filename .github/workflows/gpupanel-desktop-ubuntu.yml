@@ -44,6 +44,36 @@ jobs:
       - name: Read-only Ubuntu doctor
         run: python3 scripts/gpupanel-workstation.py doctor > /tmp/workstation-doctor.json
 
+  uv-real-archive:
+    name: Official pinned uv -> offline user install -> real project
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download pinned official archive (never execute a remote script)
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$HOME/.cache/gpupanel/uv"
+          curl -fL --retry 2 --retry-delay 2 --connect-timeout 10 --max-time 120 \
+            'https://releases.astral.sh/github/uv/releases/download/0.13.3/uv-x86_64-unknown-linux-gnu.tar.gz' \
+            -o "$HOME/.cache/gpupanel/uv/uv-x86_64-unknown-linux-gnu.tar.gz"
+          echo 'e4f169ec380f1793b898a6f1fcbacd22db25cf7ca0349a6e96ffb85b69998d04  '"$HOME/.cache/gpupanel/uv/uv-x86_64-unknown-linux-gnu.tar.gz" | sha256sum --check --status
+      - name: Verify archive and install as normal user with plan approval
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/gpupanel-uv-distribution.py plan > "$RUNNER_TEMP/uv-plan.json"
+          digest="$(python3 -c 'import json,sys; d=json.load(open(sys.argv[1])); assert d["status"]=="READY_FOR_APPROVAL",d; print(d["planDigest"])' "$RUNNER_TEMP/uv-plan.json")"
+          python3 scripts/gpupanel-uv-distribution.py install --approve-digest "$digest" > "$RUNNER_TEMP/uv-install.json"
+          python3 -c 'import json,sys; d=json.load(open(sys.argv[1])); assert d["status"]=="VERIFIED",d' "$RUNNER_TEMP/uv-install.json"
+          python3 scripts/gpupanel-uv-distribution.py status > "$RUNNER_TEMP/uv-status.json"
+          python3 -c 'import json,sys; d=json.load(open(sys.argv[1])); assert d["status"]=="VERIFIED",d' "$RUNNER_TEMP/uv-status.json"
+          "$HOME/GPUPanel/tools/uv/0.13.3/bin/uv" --version | grep -Fx 'uv 0.13.3'
+          echo "$HOME/GPUPanel/tools/uv/0.13.3/bin" >> "$GITHUB_PATH"
+      - name: Exercise real offline uv init, lock and run
+        run: python3 -m unittest discover -s scripts/tests -p 'test_gpupanel_uv_project.py' -v
+
   desktop-build:
     name: Wails v3 self-contained preview build (not GUI acceptance)
     runs-on: ubuntu-24.04
