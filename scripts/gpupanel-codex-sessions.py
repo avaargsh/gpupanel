@@ -27,23 +27,57 @@ class InventoryUnavailable(Exception):
     pass
 
 
-def owned_dir(path: Path, uid: int, *, optional: bool = False) -> bool:
+from contextlib import contextmanager, ExitStack
+
+DIR_FLAGS = os.O_RDONLY | getattr(os, "O_DIRECTORY", 0) | getattr(os, "O_NOFOLLOW", 0) | getattr(os, "O_CLOEXEC", 0)
+FILE_FLAGS = os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0) | getattr(os, "O_NONBLOCK", 0) | getattr(os, "O_CLOEXEC", 0)
+
+
+def verify_directory(fd: int, uid: int) -> None:
+    details = os.fstat(fd)
+    if (not stat.S_ISDIR(details.st_mode) or details.st_uid != uid
+            or details.st_mode & 0o022):
+        raise InventoryUnavailable("unsafe or foreign-owned directory")
+
+
+@contextmanager
+def owned_directory(path: Path, uid: int):
+    """Open the home directory itself without following a final symlink."""
     try:
-        item = path.lstat()
+        fd = os.open(path, DIR_FLAGS)
+    except OSError as exc:
+        raise InventoryUnavailable("required account directory unavailable") from exc
+    try:
+        verify_directory(fd, uid)
+        yield fd
+    finally:
+        os.close(fd)
+
+
+@contextmanager
+def child_directory(parent_fd: int, name: str, uid: int, *, optional: bool = False):
+    """Open a child relative to an already pinned directory descriptor."""
+    try:
+        fd = os.open(name, DIR_FLAGS, dir_fd=parent_fd)
     except FileNotFoundError:
         if optional:
-            return False
+            yield None
+            return
         raise InventoryUnavailable("required account directory unavailable")
-    if (not stat.S_ISDIR(item.st_mode) or item.st_uid != uid
-            or item.st_mode & 0o022):
-        raise InventoryUnavailable("unsafe or foreign-owned directory")
-    return True
-
-
-def first_metadata(path: Path, uid: int) -> dict | None:
-    # O_NOFOLLOW + fstat fences a replaced symlink at open time.
+    except OSError as exc:
+        raise InventoryUnavailable("unsafe or unavailable account directory") from exc
     try:
-        fd = os.open(path, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK)
+        verify_directory(fd, uid)
+        yield fd
+    finally:
+        os.close(fd)
+
+
+def first_metadata_at(parent_fd: int, name: str, uid: int) -> dict | None:
+    # Open relative to a pinned parent directory; O_NOFOLLOW and fstat fence
+    # symlinks and file replacement at the final component.
+    try:
+        fd = os.open(name, FILE_FLAGS, dir_fd=parent_fd)
         with os.fdopen(fd, "rb") as handle:
             details = os.fstat(handle.fileno())
             if (not stat.S_ISREG(details.st_mode) or details.st_uid != uid
@@ -89,57 +123,55 @@ def first_metadata(path: Path, uid: int) -> dict | None:
 
 
 def scan(home: Path, uid: int) -> dict:
-    owned_dir(home, uid)
-    codex = home / ".codex"
-    root = codex / "sessions"
-    if not owned_dir(codex, uid, optional=True):
-        return {"schemaVersion": 1, "source": "local-user-codex-rollouts",
-                "readOnly": True, "liveStatusVerified": False, "sessions": []}
-    if not owned_dir(root, uid, optional=True):
-        return {"schemaVersion": 1, "source": "local-user-codex-rollouts",
-                "readOnly": True, "liveStatusVerified": False, "sessions": []}
-
     found: list[dict] = []
     seen: set[str] = set()
     visited = 0
 
-    def children(folder: Path) -> list[Path]:
+    def children(folder_fd: int) -> list[str]:
         nonlocal visited
-        result: list[Path] = []
-        for child in folder.iterdir():
-            visited += 1
-            if visited > MAX_FILES:
-                raise InventoryUnavailable("too many local rollout entries")
-            result.append(child)
-        return result
+        try:
+            names = os.listdir(folder_fd)
+        except OSError as exc:
+            raise InventoryUnavailable("unable to inspect owned session archive") from exc
+        visited += len(names)
+        if visited > MAX_FILES:
+            raise InventoryUnavailable("too many local rollout entries")
+        return names
 
-    try:
-        for year in children(root):
-            if not (year.name.isascii() and year.name.isdecimal()
-                    and len(year.name) == 4):
+    with ExitStack() as stack:
+        home_fd = stack.enter_context(owned_directory(home, uid))
+        codex_fd = stack.enter_context(child_directory(home_fd, ".codex", uid, optional=True))
+        if codex_fd is None:
+            return {"schemaVersion": 1, "source": "local-user-codex-rollouts",
+                    "readOnly": True, "liveStatusVerified": False, "sessions": []}
+        root_fd = stack.enter_context(child_directory(codex_fd, "sessions", uid, optional=True))
+        if root_fd is None:
+            return {"schemaVersion": 1, "source": "local-user-codex-rollouts",
+                    "readOnly": True, "liveStatusVerified": False, "sessions": []}
+
+        for year_name in children(root_fd):
+            if not (year_name.isascii() and year_name.isdecimal() and len(year_name) == 4):
                 continue
-            owned_dir(year, uid)
-            for month in children(year):
-                if not (len(month.name) == 2 and month.name.isascii()
-                        and month.name.isdecimal() and 1 <= int(month.name) <= 12):
-                    continue
-                owned_dir(month, uid)
-                for day in children(month):
-                    if not (len(day.name) == 2 and day.name.isascii()
-                            and day.name.isdecimal() and 1 <= int(day.name) <= 31):
+            with child_directory(root_fd, year_name, uid) as year_fd:
+                for month_name in children(year_fd):
+                    if not (len(month_name) == 2 and month_name.isascii()
+                            and month_name.isdecimal() and 1 <= int(month_name) <= 12):
                         continue
-                    owned_dir(day, uid)
-                    for path in children(day):
-                        if not ROLL_OUT.fullmatch(path.name):
-                            continue
-                        meta = first_metadata(path, uid)
-                        if not meta or meta["sessionId"] in seen:
-                            continue
-                        seen.add(meta["sessionId"])
-                        found.append(meta)
-    except OSError as exc:
-        raise InventoryUnavailable("unable to inspect owned session archive") from exc
-    # A rollout record never proves that a process is currently executing.
+                    with child_directory(year_fd, month_name, uid) as month_fd:
+                        for day_name in children(month_fd):
+                            if not (len(day_name) == 2 and day_name.isascii()
+                                    and day_name.isdecimal() and 1 <= int(day_name) <= 31):
+                                continue
+                            with child_directory(month_fd, day_name, uid) as day_fd:
+                                for name in children(day_fd):
+                                    if not ROLL_OUT.fullmatch(name):
+                                        continue
+                                    meta = first_metadata_at(day_fd, name, uid)
+                                    if not meta or meta["sessionId"] in seen:
+                                        continue
+                                    seen.add(meta["sessionId"])
+                                    found.append(meta)
+
     found.sort(key=lambda item: (item["startedAt"], item["sessionId"]), reverse=True)
     return {"schemaVersion": 1, "source": "local-user-codex-rollouts",
             "readOnly": True, "liveStatusVerified": False,
