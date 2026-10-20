@@ -93,10 +93,14 @@ func consumeNative(ctx context.Context, conn *websocket.Conn, snap snapshot,
 }
 
 func eventStream(ctx context.Context, output io.Writer, raw string, seconds, attempts int) error {
+	return eventStreamAuthenticated(ctx, output, raw, seconds, attempts, "")
+}
+
+func eventStreamAuthenticated(ctx context.Context, output io.Writer, raw string, seconds, attempts int, token string) error {
 	if _, err := endpoint(raw); err != nil { return err }
 	if seconds < 15 || seconds > 90 { return errors.New("invalid event observation duration") }
 	return streamNativeEvents(ctx, output, time.Duration(seconds)*time.Second, attempts,
-		func() (*websocket.Conn, snapshot, error) { return openObserverSocket(raw) })
+		func() (*websocket.Conn, snapshot, error) { return openAuthenticatedObserverSocket(raw, token) })
 }
 
 // streamNativeEvents emits an NDJSON watch-compatible envelope. Even a clean
