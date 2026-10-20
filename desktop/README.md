@@ -43,6 +43,23 @@ PR 的 GitHub Actions `GPUPanel Desktop Ubuntu Preview` 会在 Ubuntu 24.04 amd6
 - 若安装目录或可执行文件是软链接、安装位置变化、批准摘要变化、目标文件已存在则拒绝。不覆盖已有菜单配置。
 - 没有图标资源打包和 `.deb` 系统级安装能力；这是一个当前用户可选择添加的预览菜单入口。
 
+## Polkit 授权与系统包安装：失败状态契约
+
+桌面 `03 · INSTALL` 中先检查 apt 计划，再审核 SHA-256 并显式授权。固定命令调用系统 `/usr/bin/pkexec --disable-internal-agent /usr/bin/apt-get install --no-install-recommends -y ...`，只支持白名单软件包，不接受自由输入；该开关要求现有图形 Polkit 代理，**禁止意外回退为终端密码代理**。apt 软件源和版本仍由主机配置决定，没有包版本/仓库快照锁定。
+
+| 回执状态 | 是否进入 apt | 后续动作 |
+| --- | --- | --- |
+| `AUTH_CANCELLED` | 否（pkexec 126：用户关闭/取消授权） | 尊重取消；重新检查计划才可再次申请 |
+| `AUTH_NOT_GRANTED` | 否（pkexec 127：未获授权或认证异常） | 检查桌面 Polkit 代理/策略；不自动提权 |
+| `POLKIT_UNAVAILABLE` / `ROOT_REFUSED` | 否 | 检查普通用户会话与 `pkexec` 安装 |
+| `REFUSED_PLAN_MISMATCH` | 否 | 重新生成并核对安装摘要 |
+| `UNKNOWN` | 可能已经执行/部分执行 | **先人工对账 dpkg 与 `/var/log/apt/history.log`，不自动重试** |
+| `VERIFIED` | 是 | `apt-get` 返回 0 且重新读取全部期望包均显示已安装 |
+
+`pkexec` 的 126/127 语义参见 [Polkit 官方参考](https://polkit.pages.freedesktop.org/polkit/pkexec.1.html)。不会把子进程 stdout/stderr、主机环境变量、口令或 Polkit 诊断全文直接写入 GUI 回执。Go 服务仅允许结构化白名单状态；未经复核的“成功”不会被采信。发起安装后前端立即消费掉审批摘要，无论成功还是拒绝，都必须手动重新检查才可再请求。
+
+**自动化范围**：Python Mock 测试覆盖取消、拒绝、超时、apt 部分失败、全部包完成后的验证；Go 测试覆盖结构化收据和冲突状态。这不是“在真实 GNOME/Wayland 上弹出过 Polkit 授权对话框”的证据。用户桌面真机上还需分别验收取消、拒绝、成功与会话异常，且必须事先确认测试 apt 源、目标机器和管理员授权。
+
 ## Ubuntu 图形测试边界
 
 GitHub Actions 在 Xvfb + Openbox 下实际启动 GTK4/WebKitGTK，并检查窗口标题、尺寸、键盘 Tab 事件和截图。Ubuntu Runner 对非特权用户命名空间有限制，会使 WebKitGTK Bubblewrap 沙箱启动失败。**只有单次 GitHub Actions 烟测进程**在检查到 `GITHUB_ACTIONS=true` 后才使用 WebKit 官方危险调试开关；应用源码、安装包、用户桌面启动均不设置该变量。此测试只证明合成 X11 图形环境可呈现窗口，**不证明正常沙箱下的 GNOME/Wayland 真机可用性**。
