@@ -6,6 +6,20 @@ import (
 	"testing"
 )
 
+func TestPolkitConcurrentAuthorizationIsDenied(t *testing.T) {
+	s := &DesktopService{}
+	if !s.claimInstallSlot() { t.Fatal("first authorization slot unavailable") }
+	if s.claimInstallSlot() { t.Fatal("concurrent Polkit request entered apt slot") }
+	// Even a syntactically approved digest must not execute in parallel.
+	_, err := s.InstallPackages(strings.Repeat("a", 64))
+	if err == nil || !strings.Contains(err.Error(), "禁止并发") {
+		t.Fatalf("concurrent request not rejected: %v", err)
+	}
+	s.releaseInstallSlot()
+	if !s.claimInstallSlot() { t.Fatal("slot should be available after completion") }
+	s.releaseInstallSlot()
+}
+
 func TestPolkitNormalizedReceipts(t *testing.T) {
 	for _, tc := range []struct {
 		name string
