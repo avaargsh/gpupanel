@@ -14,7 +14,7 @@ func TestObserverEndpointRequiresExplicitLoopbackNoCredentials(t *testing.T) {
 	for _, address := range []string{
 		"", "ws://localhost:4222", "ws://0.0.0.0:4222",
 		"ws://192.168.1.10:4222", "wss://127.0.0.1:4222",
-		"ws://127.0.0.1:80", "ws://127.0.0.1:65536",
+		"ws://127.0.0.1:80", "ws://127.0.0.1:65536", "ws://127.0.0.1:04222",
 		"ws://user:secret@127.0.0.1:4222",
 		"ws://127.0.0.1:4222/",
 		"ws://127.0.0.1:4222/private",
