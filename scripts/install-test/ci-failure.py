@@ -64,6 +64,17 @@ G5_APP_EVIDENCE_CODE = re.compile(
 )
 
 
+G5_APP_DOCKER_STATE = re.compile(
+    r"(?m)^G5_APP_DOCKER_STATE=(running|created|exited|restarting|paused|"
+    r"removing|dead|missing|other|unavailable) release=NO_GO$"
+)
+
+
+def app_docker_state(raw: str) -> str:
+    hits = G5_APP_DOCKER_STATE.findall(raw)
+    return hits[-1] if hits else "unknown"
+
+
 def app_evidence_code(raw: str) -> str:
     hits = G5_APP_EVIDENCE_CODE.findall(raw)
     return hits[-1] if hits else "unknown"
@@ -100,6 +111,7 @@ def main() -> int:
     if sys.argv[1] == "app-install":
         print("G5_APP_API_FAILURE_STAGE=" + app_api_stage(raw) + " release=NO_GO")
         print("G5_APP_EVIDENCE_FAILURE_CODE=" + app_evidence_code(raw) + " release=NO_GO")
+        print("G5_APP_DOCKER_STATE=" + app_docker_state(raw) + " release=NO_GO")
     print(diagnostic(raw, basename))
     return 0
 
