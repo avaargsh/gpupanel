@@ -71,7 +71,8 @@ func endpoint(raw string) (string, error) {
 		return "", errors.New("only an explicit 127.0.0.1 WebSocket endpoint is allowed")
 	}
 	port, err := strconv.Atoi(u.Port())
-	if err != nil || port < 1024 || port > 65535 || !strings.HasPrefix(raw, "ws://127.0.0.1:") {
+	if err != nil || port < 1024 || port > 65535 || u.Port() != strconv.Itoa(port) ||
+		!strings.HasPrefix(raw, "ws://127.0.0.1:") {
 		return "", errors.New("invalid loopback port")
 	}
 	return "ws://" + net.JoinHostPort("127.0.0.1", strconv.Itoa(port)), nil
