@@ -6,7 +6,9 @@ on:
       - "desktop/**"
       - "profiles/ubuntu24-workstation.v1.json"
       - "scripts/gpupanel-workstation.py"
+      - "scripts/gpupanel-workspace-bundle.py"
       - "scripts/tests/test_gpupanel_workstation.py"
+      - "scripts/tests/test_gpupanel_workspace_bundle.py"
       - ".github/workflows/gpupanel-desktop-ubuntu.yml"
   workflow_dispatch:
 
@@ -21,7 +23,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Python profile checks (no system changes)
-        run: python3 -m unittest discover -s scripts/tests -p 'test_gpupanel_workstation.py' -v
+        run: |
+          python3 -m unittest discover -s scripts/tests -p 'test_gpupanel_workstation.py' -v
+          python3 -m unittest discover -s scripts/tests -p 'test_gpupanel_workspace_bundle.py' -v
       - name: Validate embedded frontend source
         run: node --check desktop/ui/app.js
       - name: Read-only Ubuntu doctor
