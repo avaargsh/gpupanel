@@ -12,7 +12,7 @@ function show(id, value) {
 }
 function setBusy(value, label) {
   busy = value;
-  ['refresh', 'terminal', 'editor', 'restore', 'install', 'devpod', 'bundle-export', 'bundle-inspect', 'bundle-restore', 'profile-backup', 'profile-inspect', 'profile-import'].forEach((name) => {
+  ['refresh', 'terminal', 'editor', 'restore', 'install', 'devpod', 'bundle-export', 'bundle-inspect', 'bundle-restore', 'profile-backup', 'profile-inspect', 'profile-import', 'versions'].forEach((name) => {
     $(name).disabled = value || (name === 'install' && !installDigest) || (name === 'restore' && !profileDigest) || (name === 'bundle-restore' && !bundleDigest) || (name === 'profile-import' && !profileImportDigest);
   });
   $('operation-state').textContent = label;
@@ -123,4 +123,13 @@ $('profile-import').addEventListener('click', () => {
     $('profile-import').disabled = true;
     action('ProfileImport', [approved]);
   }
+});
+
+$('versions').addEventListener('click', () => {
+  action('Versions', [], (report) => {
+    show('version-report', (report.tools ?? []).map(x =>
+      (x.status === 'VERSION_REPORTED' ? '✓ ' : '○ ') +
+      x.tool + ': ' + (x.version ?? x.status)).join('\n') +
+      '\n仅核对 CLI 版本，不验证 Docker Daemon 或开发工具是否完整可用');
+  });
 });
