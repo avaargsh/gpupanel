@@ -68,6 +68,9 @@ class AcceptanceTests(unittest.TestCase):
         self.assertIn("UNTRUSTED_RUNTIME_DIR", validate(
             directory=SimpleNamespace(st_mode=stat.S_IFDIR | 0o700, st_uid=1001),
         )["reasons"])
+        self.assertIn("UNTRUSTED_RUNTIME_DIR", validate(
+            directory=SimpleNamespace(st_mode=stat.S_IFDIR | 0o755, st_uid=1000),
+        )["reasons"])
         self.assertIn("WAYLAND_SOCKET_MISSING", validate(
             socket=SimpleNamespace(st_mode=stat.S_IFREG | 0o600, st_uid=1000),
         )["reasons"])
