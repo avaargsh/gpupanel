@@ -69,6 +69,44 @@ GitHub Actions 在 Xvfb + Openbox 下实际启动 GTK4/WebKitGTK，并检查窗�
 - export：导出 Profile JSON；不包含工作区文件、IDE 插件、SSH 私钥或 Token。
 - devpod-plan：只需 DevPod CLI 和现成的 devcontainer.json 才能展示 openvscode 浏览器 IDE 的预检计划。本地 Docker 并非 SSH/云 Provider 的先决条件；真实 Provider/容器/端口开放都需要另行人工授权及验收。
 
+## 本地项目 → 终端与 IDE（无容器）
+
+在桌面 `04 · OPTIONAL` 的“项目目录名”输入框填入已经存在的 `~/GPUPanel/projects/<项目名>`，例如 `uv-python-starter`。顶部的“在所选项目打开终端”和“在所选项目打开 IDE”分别选择已安装的 GNOME Terminal/Ptyxis 与 VS Code/VSCodium。
+
+- Go 层只通过参数列表启动明确列入白名单的本地程序，不调用 Shell、不运行项目内容、不连接 GPU/Core/Docker/Kubernetes。
+- 严格检查项目名和从 HOME 到项目目录的每一级路径，遇到缺失目录、符号链接、路径穿越时拒绝。
+- 命令启动成功只返回 `LAUNCH_REQUESTED`，不宣称 GUI 已打开或 IDE 的插件、扩展已经可用；未安装程序返回 `OPTIONAL_APP_MISSING`。
+- 在真实 Ubuntu 会话中检查“终端工作目录正确、IDE 打开正确项目、关闭与重启后源码仍在”，属于独立的实机验收项。Go 单测验证 argv、安全和缺程序状态，Xvfb CI 不代表真实 GNOME/Wayland 操作成功。
+
+## 已校验发行版的离线 uv 安装（用户目录）
+
+GPUPanel 仅审核一个固定的上游版本：**uv 0.13.3 / Linux x86_64 GNU**。官方发布页：[astral-sh/uv 0.13.3](https://github.com/astral-sh/uv/releases/tag/0.13.3)。
+
+官方归档 SHA-256（从本版上游官方校验文件审核并写入程序）：
+
+    e4f169ec380f1793b898a6f1fcbacd22db25cf7ca0349a6e96ffb85b69998d04
+
+将官方原版 tar.gz（可通过国内镜像或离线 U 盘迁移，但**不得重新打包**）放在：
+
+    ~/.cache/gpupanel/uv/uv-x86_64-unknown-linux-gnu.tar.gz
+
+可选的官方直连下载方式（只是下载，不执行安装脚本）：
+
+    mkdir -p ~/.cache/gpupanel/uv
+    curl --proto '=https' --tlsv1.2 -fL 'https://releases.astral.sh/github/uv/releases/download/0.13.3/uv-x86_64-unknown-linux-gnu.tar.gz' -o ~/.cache/gpupanel/uv/uv-x86_64-unknown-linux-gnu.tar.gz
+
+在桌面 `08 · VERIFIED TOOLS` 点击“检查 uv 安装包”→审查结果和计划 SHA-256→明确授权安装→“验证已安装 uv”。也可以在源码仓库运行：
+
+    python3 scripts/gpupanel-uv-distribution.py plan
+    python3 scripts/gpupanel-uv-distribution.py install --approve-digest <planDigest>
+    python3 scripts/gpupanel-uv-distribution.py status
+
+- 只允许 Ubuntu 24.04 x64、固定文件名和写死的上游归档 SHA-256；不接受用户上传的 hash 当成新的信任基准。
+- 解析压缩包时拒绝符号链接、越界路径、重复 uv 文件和异常体积，最终只复制检查过的 `uv` 二进制，而非解压运行脚本。
+- 安装到 `~/GPUPanel/tools/uv/0.13.3/bin/uv`，用户目录内原子发布、禁止覆盖、无需 sudo。GPUPanel Desktop 只在本地回执与二进制 SHA-256 一致时，将该 uv 的目录优先加入**自己的子进程 PATH**；不修改用户 `.bashrc`。
+- 无网络时仍能校验、安装缓存制品。若不希望通过桌面管理 uv，可以继续使用独立安装的 uv，缺失时不会阻断桌面基础能力。
+- SHA-256 固定内容完整性和人工审查的来源约定，仍不能替代未来正式的签名、上游 Attestation 验证及镜像仓库治理。真实官方压缩包分发、断网安装和完整 uv 创建/运行仍需目标 Ubuntu 验收。
+
 ## Profile 迁移：从旧电脑到新电脑
 
 旧机 CLI 导出至用户自己维护的备份目录：
@@ -143,6 +181,8 @@ Desktop 将 Python 执行器及其 Catalog 验证依赖内嵌到桌面二进制�
 | Wails 桌面实机 GTK/WebKit/终端/IDE 启动 | NOT RUN |
 | 国内离线镜像缓存与真实软件安装 | NOT RUN（此前仅有工具和合成制品测试） |
 | DevPod 浏览器 IDE 真实创建/停止/恢复 | NOT RUN |
+| 本地项目终端 / IDE 原生启动 | Go argv/路径契约；实际桌面 NOT RUN |
+| 固定 SHA-256 的 uv 离线安装 | 归档/篡改/原子发布单测；官方制品真机 NOT RUN |
 | 离线创建本地 uv 项目 | Go/CLI 预览契约；uv 真机生成按条件执行 |
 | 离线骨架锁文件/配置快照与新目录恢复 | 具备源码与单测，真实跨机 NOT RUN |
 | 跨机器无密钥 Profile 导出/预检/导入 | Ubuntu CLI 合约测试；GUI 真机 NOT RUN |
