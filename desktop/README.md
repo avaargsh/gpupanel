@@ -17,7 +17,7 @@
     wails3 doctor
     go run .
 
-从仓库根目录或 desktop 目录运行开发源码。现在 **Wails Go 二进制内嵌经过仓库测试校验的 Python 执行器和默认 Profile**，复制到没有 GPUPanel 源码的目录时也能执行本地 `doctor`、Profile 与项目骨架功能。仍需 Ubuntu 系统 Python 3 以及 GTK4/WebKitGTK 运行库，但不需要 Docker、Core、Agent 或 Kubernetes。go.sum 仍须联网生成并审查后锁定进 Git；**当前不是生产签名发布包**。
+从仓库根目录或 desktop 目录运行开发源码。现在 **Wails Go 二进制内嵌经过仓库测试校验的 Python 执行器和默认 Profile**，复制到没有 GPUPanel 源码的目录时也能执行本地 `doctor`、Profile 与项目骨架功能。仍需 Ubuntu 系统 Python 3 以及 GTK4/WebKitGTK 运行库，但不需要 Docker、Core、Agent 或 Kubernetes。Go 依赖版本与校验和已由 Ubuntu 预览构建确认并提交至 `desktop/go.mod`、`desktop/go.sum`，CI 以 `-mod=readonly` 验证；**当前仍不是生产签名发布包**。
 
 ## 可移植 Ubuntu x86_64 预览二进制（非正式安装包）
 
