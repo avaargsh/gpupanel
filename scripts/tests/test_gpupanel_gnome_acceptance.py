@@ -105,6 +105,15 @@ class AcceptanceTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 gnome.private_report(report, home)
 
+    def test_existing_shared_directory_is_refused(self):
+        with tempfile.TemporaryDirectory() as directory:
+            home = Path(directory)
+            root = home / "GPUPanel"
+            root.mkdir(mode=0o700)
+            root.chmod(0o755)
+            with self.assertRaisesRegex(ValueError, "mode 0700"):
+                gnome.private_report({"status": "test"}, home)
+
     def test_manual_session_never_runs_on_runner_sandbox_bypass(self):
         with mock.patch.object(gnome, "reviewed_binary") as verifier, \
              mock.patch.object(gnome.subprocess, "Popen") as start:
