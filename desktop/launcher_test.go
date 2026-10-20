@@ -68,3 +68,49 @@ func TestLauncherRejectsUnsafePathAndOutsideLocation(t *testing.T) {
 	}
 	if _, _, err := launcherProposal(home, binary); err != nil { t.Fatal(err) }
 }
+
+func TestLauncherApprovalIncludesActualBinaryDigest(t *testing.T) {
+	home, binary := fixtureLauncher(t)
+	review, _, err := launcherProposal(home, binary)
+	if err != nil || len(review.BinarySHA256) != 64 {
+		t.Fatalf("binary digest was not reviewed: %+v %v", review, err)
+	}
+	if err := os.WriteFile(binary, []byte("replaced executable"), 0755); err != nil { t.Fatal(err) }
+	changed, _, err := launcherProposal(home, binary)
+	if err != nil { t.Fatal(err) }
+	if changed.PlanDigest == review.PlanDigest || changed.BinarySHA256 == review.BinarySHA256 {
+		t.Fatal("binary replacement did not invalidate launcher approval")
+	}
+	if _, err := installLauncher(home, binary, review.PlanDigest); err == nil {
+		t.Fatal("stale approval allowed changed binary")
+	}
+	if _, err := os.Stat(review.Target); !os.IsNotExist(err) {
+		t.Fatal("rejected install wrote a shortcut")
+	}
+	if _, err := installLauncher(home, binary, changed.PlanDigest); err != nil {
+		t.Fatalf("new reviewed executable rejected: %v", err)
+	}
+	exists, _, err := launcherProposal(home, binary)
+	if err != nil || exists.Status != "EXISTS_NO_OVERWRITE" || exists.PlanDigest != "" {
+		t.Fatalf("existing shortcut should not return reusable install approval: %+v %v", exists, err)
+	}
+}
+
+func TestLauncherRejectsSymlinkMenuTarget(t *testing.T) {
+	home, binary := fixtureLauncher(t)
+	target := filepath.Join(home, ".local", "share", "applications", launcherFile)
+	if err := os.MkdirAll(filepath.Dir(target), 0700); err != nil { t.Fatal(err) }
+	victim := filepath.Join(home, "victim")
+	if err := os.WriteFile(victim, []byte("untouched"), 0600); err != nil { t.Fatal(err) }
+	if err := os.Symlink(victim, target); err != nil { t.Fatal(err) }
+	review, _, err := launcherProposal(home, binary)
+	if err != nil || review.Status != "EXISTS_NO_OVERWRITE" {
+		t.Fatalf("preexisting symlink not detected: %+v %v", review, err)
+	}
+	if _, err := installLauncher(home, binary, review.PlanDigest); err == nil {
+		t.Fatal("symlinked menu entry accepted")
+	}
+	if got, err := os.ReadFile(victim); err != nil || string(got) != "untouched" {
+		t.Fatal("shortcut install modified symlink victim")
+	}
+}
