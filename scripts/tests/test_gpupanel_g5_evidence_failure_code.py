@@ -39,7 +39,7 @@ class G5EvidenceFailureCodeTests(unittest.TestCase):
             ({"taskId": "PRIVATE_TASK"}, "task-id"),
             ({"taskStatus": "Executing"}, "task-status"),
             ({"appStatus": "Pending"}, "app-status"),
-            ({"classification": "PARTIAL"}, "classification"),
+            ({"classification": "PARTIAL"}, "classification-other"),\n            ({"classification": "PARTIAL", "containers": []}, "classification-container-empty"),\n            ({"classification": "PARTIAL", "containers": "PRIVATE"}, "classification-container-malformed"),\n            ({"classification": "PARTIAL", "containers": [{"state": "exited"}]}, "classification-container-state"),
             ({"verified": True}, "verification-flag"),
             ({"containers": []}, "container-count"),
             ({"containers": [{"state": "exited", "name": "PRIVATE"}]}, "container-state"),
