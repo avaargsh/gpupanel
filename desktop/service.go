@@ -1,14 +1,11 @@
 package main
 
 import (
-	"context"
 	"errors"
-	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"regexp"
-	"runtime"
 	"strings"
 	"time"
 )
@@ -20,49 +17,8 @@ var projectPattern = regexp.MustCompile("^[a-zA-Z0-9][a-zA-Z0-9_-]{0,63}$")
 // It does not bridge privileged Agent/Core API or arbitrary shell commands.
 type DesktopService struct{}
 
-func sourceScript() (string, error) {
-	cwd, err := os.Getwd()
-	if err != nil {
-		return "", err
-	}
-	for _, base := range []string{cwd, filepath.Dir(cwd)} {
-		path := filepath.Join(base, "scripts", "gpupanel-workstation.py")
-		st, err := os.Lstat(path)
-		if err == nil && st.Mode().IsRegular() {
-			return path, nil
-		}
-	}
-	return "", errors.New("没有找到源码工作区；当前预览仅支持从 GPUPanel 仓库根目录或 desktop/ 启动")
-}
-
 func runProfile(timeout time.Duration, args ...string) (string, error) {
-	if runtime.GOOS != "linux" {
-		return "", errors.New("目前只支持 Ubuntu Linux")
-	}
-	path, err := sourceScript()
-	if err != nil {
-		return "", err
-	}
-	python, err := exec.LookPath("python3")
-	if err != nil {
-		return "", errors.New("本机未安装 Python 3")
-	}
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
-	defer cancel()
-	cmd := exec.CommandContext(ctx, python, append([]string{path}, args...)...)
-	cmd.Env = []string{"HOME=" + os.Getenv("HOME"), "PATH=" + os.Getenv("PATH"), "LANG=C.UTF-8"}
-	// Do not combine stderr from package installers with UI-visible output.
-	output, err := cmd.Output()
-	if ctx.Err() != nil {
-		return "", errors.New("操作状态 UNKNOWN；请独立检查本机状态，禁止直接重试")
-	}
-	if len(output) > 64*1024 {
-		return "", errors.New("本地工具输出超过限制")
-	}
-	if err != nil {
-		return string(output), fmt.Errorf("本地操作未通过：%w", err)
-	}
-	return string(output), nil
+	return runEmbeddedPython(timeout, "gpupanel-workstation.py", args...)
 }
 
 func (s *DesktopService) Overview() (string, error) {
