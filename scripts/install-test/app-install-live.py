@@ -214,6 +214,23 @@ with sync_playwright() as play:
         evidence, install_id, install_task
     )
     if evidence_code != "ok":
+        # Independent Docker observation; emit only a fixed, privacy-safe state.
+        if evidence_code == "classification-container-state":
+            entries = evidence.get("containers", [])
+            container_name = entries[0].get("name") if entries else None
+            docker_state = "unavailable"
+            if isinstance(container_name, str) and container_name.startswith("GPUPanel-"):
+                observed = guest(["sudo", "docker", "inspect", "--format",
+                                  "{{.State.Status}}", container_name], check=False)
+                if observed in ("running", "created", "exited", "restarting",
+                                "paused", "removing", "dead"):
+                    docker_state = observed
+                elif observed:
+                    docker_state = "other"
+                else:
+                    docker_state = "missing"
+            print("G5_APP_DOCKER_STATE=" + docker_state +
+                  " release=NO_GO", flush=True)
         # The CI summarizer may output ONLY this fixed category, not the
         # response object, the app name or the user/task/container identity.
         print("G5_APP_EVIDENCE_FAILURE_CODE=" + evidence_code +
