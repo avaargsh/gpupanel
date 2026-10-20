@@ -43,7 +43,7 @@ func runEmbeddedPython(timeout time.Duration, script string, args ...string) (st
 		return "", errors.New("桌面预览当前仅支持 Ubuntu Linux")
 	}
 	switch script {
-	case "gpupanel-workstation.py", "gpupanel-workspace-bundle.py", "gpupanel-uv-project.py", "gpupanel-uv-distribution.py":
+	case "gpupanel-workstation.py", "gpupanel-workspace-bundle.py", "gpupanel-uv-project.py", "gpupanel-uv-distribution.py", "gpupanel-source-snapshot.py":
 	default:
 		return "", errors.New("执行器不在允许列表")
 	}
