@@ -68,9 +68,16 @@ class AcceptanceTests(unittest.TestCase):
         self.assertIn("UNTRUSTED_RUNTIME_DIR", validate(
             directory=SimpleNamespace(st_mode=stat.S_IFDIR | 0o700, st_uid=1001),
         )["reasons"])
-        self.assertIn("UNTRUSTED_RUNTIME_DIR", validate(
+        exposed_runtime = validate(
             directory=SimpleNamespace(st_mode=stat.S_IFDIR | 0o755, st_uid=1000),
-        )["reasons"])
+        )
+        self.assertIn("UNTRUSTED_RUNTIME_DIR", exposed_runtime["reasons"])
+        self.assertFalse(exposed_runtime["assertions"]["wayland"])
+        wrong_owner_socket = validate(
+            socket=SimpleNamespace(st_mode=stat.S_IFSOCK | 0o600, st_uid=1001),
+        )
+        self.assertIn("WAYLAND_SOCKET_UNTRUSTED", wrong_owner_socket["reasons"])
+        self.assertFalse(wrong_owner_socket["assertions"]["wayland"])
         self.assertIn("WAYLAND_SOCKET_MISSING", validate(
             socket=SimpleNamespace(st_mode=stat.S_IFREG | 0o600, st_uid=1000),
         )["reasons"])
