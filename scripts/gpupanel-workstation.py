@@ -73,6 +73,39 @@ def load(path):
     return p
 
 
+# Bounded read-only version audit: absolute argv, no shell, no daemon query.
+# CLI versions do not establish healthy services or a reproducible toolchain.
+VERSION_ARGS = {
+    "git": ["--version"], "python3": ["--version"],
+    "uv": ["--version"], "node": ["--version"], "go": ["version"],
+    "docker": ["--version"], "code": ["--version"],
+}
+
+
+def versions(*, which=shutil.which, runner=subprocess.run):
+    result = []
+    for name, arguments in VERSION_ARGS.items():
+        path = which(name)
+        if not path:
+            result.append({"tool": name, "status": "NOT_FOUND", "version": None})
+            continue
+        try:
+            process = runner([path, *arguments], capture_output=True, text=True,
+                             timeout=2, check=False)
+            output = (process.stdout or process.stderr or "").strip().splitlines()
+            text = output[0] if output else ""
+            # Never render arbitrary escape sequences, multiline diagnostics or secrets.
+            if (process.returncode != 0 or not text or len(text) > 160 or
+                    any(ord(ch) < 32 or ord(ch) > 126 for ch in text)):
+                result.append({"tool": name, "status": "VERSION_UNVERIFIED", "version": None})
+            else:
+                result.append({"tool": name, "status": "VERSION_REPORTED", "version": text})
+        except (OSError, subprocess.TimeoutExpired, UnicodeError):
+            result.append({"tool": name, "status": "VERSION_UNVERIFIED", "version": None})
+    return {"status": "READ_ONLY", "tools": result, "daemonChecked": False,
+            "note": "Reported CLI version only; no Docker/IDE/GPU/service health verified"}
+
+
 def ubuntu24():
     try:
         lines = dict(line.split("=", 1) for line in
@@ -193,7 +226,7 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description="GPUPanel offline-first Ubuntu workstation")
     parser.add_argument("--profile", type=Path)
     sub = parser.add_subparsers(dest="command", required=True)
-    for name in ("doctor", "plan", "install-plan", "install", "restore", "env", "export", "devpod-plan"):
+    for name in ("doctor", "plan", "versions", "install-plan", "install", "restore", "env", "export", "devpod-plan"):
         action = sub.add_parser(name)
         if name in ("install", "restore"):
             action.add_argument("--approve-digest", default="")
@@ -206,6 +239,8 @@ def main(argv=None):
         p = load(args.profile or (CONFIG if CONFIG.exists() else DEFAULT_PROFILE))
         if args.command in ("doctor", "plan"):
             result = inspect(p)
+        elif args.command == "versions":
+            result = versions()
         elif args.command == "install-plan":
             result = install_plan(p)
         elif args.command == "install":
@@ -226,7 +261,7 @@ def main(argv=None):
             result = {"status": "EXPORTED", "path": str(target), "profileDigest": digest(p)}
         print(json.dumps(result, indent=2, ensure_ascii=False))
         success = {"READY", "READY_FOR_APPROVAL", "VERIFIED", "VERIFIED_EXISTING",
-                   "EXPORTED", "ALREADY_INSTALLED", "READY_FOR_PROVIDER_CHECK"}
+                   "EXPORTED", "ALREADY_INSTALLED", "READY_FOR_PROVIDER_CHECK", "READ_ONLY"}
         return 0 if result["status"] in success else 2
     except (WorkstationError, OSError, ValueError) as exc:
         print(json.dumps({"status": "REFUSED", "reason": str(exc)}, ensure_ascii=False), file=sys.stderr)
