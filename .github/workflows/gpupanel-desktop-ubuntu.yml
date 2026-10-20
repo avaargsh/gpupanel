@@ -83,7 +83,7 @@ jobs:
           install -m 0644 desktop/README.md "$stage/README.md"
           install -m 0644 desktop/go.mod desktop/go.sum "$stage/build/"
           install -m 0644 LICENSE NOTICE.md "$stage/licenses/"
-          sha256sum "$stage/bin/gpupanel-desktop" > "$stage/build/binary.sha256"
+          (cd "$stage" && sha256sum bin/gpupanel-desktop > build/binary.sha256)
           printf "source_head=%s\ncheckout_sha=%s\nplatform=ubuntu-24.04-amd64\nstatus=UNSIGNED_PREVIEW_NOT_RELEASED\n" \
             "${{ github.event.pull_request.head.sha || github.sha }}" "$(git rev-parse HEAD)" \
             > "$stage/build/provenance.txt"
