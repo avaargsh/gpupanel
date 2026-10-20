@@ -7,15 +7,19 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
     parseNativeInventory,
+    parseNativeWatch,
+    type ImportedWatchRecord,
     type ImportedNativeInventory,
 } from '@/utils/nativeSessions';
 
 const LIMIT_BYTES = 1024 * 1024;
+const WATCH_LIMIT_BYTES = 4 * 1024 * 1024;
 
 /** An imported local file is an untrusted *snapshot*, not a remote discovery API. */
 export default function AgentSessionsPage() {
     const node = useAppSelector((s) => s.ui.currentNode) || 'local';
     const [inventory, setInventory] = useState<ImportedNativeInventory | null>(null);
+    const [watchReport, setWatchReport] = useState<ImportedWatchRecord | null>(null);
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
     const epoch = useRef(0);
@@ -25,6 +29,7 @@ export default function AgentSessionsPage() {
         // Do not retain an import across node scope changes or stale async reads.
         epoch.current += 1;
         setInventory(null);
+        setWatchReport(null);
         setError('');
         setLoading(false);
     }, [node]);
@@ -36,16 +41,27 @@ export default function AgentSessionsPage() {
         event.currentTarget.value = '';
         const request = ++epoch.current;
         setInventory(null);
+        setWatchReport(null);
         setError('');
         if (!file || !local) return;
-        if (file.size > LIMIT_BYTES) {
-            setError('文件超过 1 MiB 上限，未读取任何内容。');
+        const isWatch = file.name.toLowerCase().endsWith('.ndjson');
+        if (file.size > (isWatch ? WATCH_LIMIT_BYTES : LIMIT_BYTES)) {
+            setError('文件超过导入大小上限，未读取任何内容。');
             return;
         }
         setLoading(true);
         try {
-            const imported = parseNativeInventory(await file.text());
-            if (request === epoch.current) setInventory(imported);
+            const text = await file.text();
+            if (isWatch) {
+                const report = parseNativeWatch(text);
+                if (request === epoch.current) {
+                    setWatchReport(report);
+                    setInventory(report.inventory);
+                }
+            } else {
+                const imported = parseNativeInventory(text);
+                if (request === epoch.current) setInventory(imported);
+            }
         } catch (caught) {
             if (request === epoch.current) {
                 setError(caught instanceof Error ? caught.message : '清单读取失败');
@@ -104,16 +120,23 @@ export default function AgentSessionsPage() {
                     <pre className="log-output" aria-label="已运行 app-server 只读查询命令">
                         {'cd core && go run ./cmd/codex-observer --endpoint ws://127.0.0.1:4222 > ../codex-attached.json'}
                     </pre>
+                    <p className="text-sm text-muted-foreground">
+                        可以运行有限次数的本机只读观察，将其输出保存为 .ndjson 文件：
+                        导入后只展示<strong>最后一条观察结果</strong>；这是已保存记录，不是网页实时订阅。
+                    </p>
+                    <pre className="log-output" aria-label="有限次数原生观察命令">
+                        {'cd core && go run ./cmd/codex-observer --endpoint ws://127.0.0.1:4222 --watch --samples 12 --interval-seconds 5 > ../codex-observations.ndjson'}
+                    </pre>
                     <label className="flex flex-col gap-2 text-sm">
                         <span className="font-medium">选择刚导出的 JSON 文件</span>
-                        <input type="file" accept=".json,application/json" disabled={loading}
+                        <input type="file" accept=".json,.ndjson,application/json" disabled={loading}
                             onChange={(event) => { void onFile(event); }}
                             className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm
                                        file:mr-3 file:rounded-md file:border-0 file:bg-muted file:px-3
                                        file:py-1 file:text-foreground focus-visible:outline-2" />
                     </label>
                     <p className="text-xs text-muted-foreground">
-                        所有数据只保存在当前浏览器页面的内存中。刷新、退出或切换节点后需要重新导入。
+                        所有数据只保存在当前浏览器页面的内存中。刷新、退出或切换节点后需要重新导入。普通 JSON ≤1 MiB；NDJSON ≤4 MiB。
                     </p>
                 </CardContent>
             </Card>
@@ -122,6 +145,14 @@ export default function AgentSessionsPage() {
                 <AlertDescription role="alert">{error}</AlertDescription>
             </Alert>}
             {loading && <p role="status" className="text-sm text-muted-foreground">正在解析本地文件…</p>}
+            {watchReport && !loading && <Alert variant={watchReport.observation === 'unavailable' ? 'destructive' : 'default'}>
+                <AlertDescription role="status">
+                    已保存的第 {watchReport.sequence} 次观察（{watchReport.observedAt}）：
+                    {watchReport.observation === 'unavailable'
+                        ? ' 原生服务当次不可用；旧会话已从展示中清除。'
+                        : ' 获得一次只读快照，不代表浏览器正在实时连接 Codex。'}
+                </AlertDescription>
+            </Alert>}
             {inventory && !loading && <Card>
                 <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-2">
                     <CardTitle className="flex items-center gap-2">
@@ -131,6 +162,7 @@ export default function AgentSessionsPage() {
                     <Button variant="outline" size="sm" onClick={() => {
                         epoch.current += 1;
                         setInventory(null);
+                        setWatchReport(null);
                         setError('');
                     }}>
                         <RefreshCw aria-hidden="true" />
