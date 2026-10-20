@@ -102,13 +102,17 @@ def main() -> int:
                     # The input path is exercised; no privileged or install button is activated.
                     checked(["xdotool", "windowactivate", "--sync", wid])
                     checked(["xdotool", "key", "--clearmodifiers", "Tab"])
-                    time.sleep(2)
+                    # The first focusable element is the read-only environment
+                    # check. Dispatch Enter so the screenshot can be reviewed
+                    # for real Wails bridge results, not merely static HTML.
+                    checked(["xdotool", "key", "--clearmodifiers", "Return"])
+                    time.sleep(4)
                     checked(["scrot", "-z", str(args.screenshot.resolve())])
                     if args.screenshot.stat().st_size < 1024 or args.screenshot.open("rb").read(8) != b"\x89PNG\r\n\x1a\n":
                         raise SmokeFailure("missing/invalid GUI screenshot")
                     if app.poll() is not None:
                         raise SmokeFailure(f"window process exited: {app.returncode}")
-                    print("GUI_XVFB_WINDOW_PASS: title, geometry, keyboard dispatch, screenshot")
+                    print("GUI_XVFB_WINDOW_PASS: title, geometry, keyboard activation attempted, screenshot for bridge review")
                     return 0
                 finally:
                     app.terminate()
