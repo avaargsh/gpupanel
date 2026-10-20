@@ -207,9 +207,15 @@ def run_manual(binary: Path, pre: dict, *, expected: str) -> int:
     # Never propagate CI's deliberate bypass into a real user session.
     print("Opening GPUPanel Desktop directly in the current real GNOME/Wayland session.")
     print("WebKit sandbox bypass is NOT enabled. If it fails, record failure, don't bypass.")
-    process = subprocess.Popen([f"/proc/self/fd/{binary_fd}"], cwd=Path.home(), env=env,
-                               pass_fds=(binary_fd,),
-                               stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    try:
+        process = subprocess.Popen([f"/proc/self/fd/{binary_fd}"], cwd=Path.home(), env=env,
+                                   pass_fds=(binary_fd,),
+                                   stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    except BaseException:
+        # Popen can fail before a child exists (for example, exec format or
+        # resource exhaustion). Do not leak the verified executable descriptor.
+        os.close(binary_fd)
+        raise
     try:
         time.sleep(5)
         alive = process.poll() is None
