@@ -123,8 +123,8 @@ func TestAuthenticatedWebSocketRejectsMissingTokenAndNeverExportsIt(t *testing.T
 	}
 	encoded, err := json.Marshal(snap)
 	if err != nil { t.Fatal(err) }
-	if strings.Contains(encoded, token) || strings.Contains(encoded, "SECRET_SHOULD_NEVER_LEAK") ||
-		strings.Contains(encoded, "/home/") {
+	if strings.Contains(string(encoded), token) || strings.Contains(string(encoded), "SECRET_SHOULD_NEVER_LEAK") ||
+		strings.Contains(string(encoded), "/home/") {
 		t.Fatal("native secrets escaped authenticated projection")
 	}
 }
