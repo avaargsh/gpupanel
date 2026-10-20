@@ -231,6 +231,25 @@ with sync_playwright() as play:
                     docker_state = "missing"
             print("G5_APP_DOCKER_STATE=" + docker_state +
                   " release=NO_GO", flush=True)
+            # Cross-check by immutable local fixture image, independent of the
+            # Evidence API's possibly incorrect Compose container name.
+            fixture_ids = guest(["sudo", "docker", "ps", "-aq",
+                                 "--filter", "ancestor=" + FIXTURE_IMAGE],
+                                check=False).splitlines()
+            fixture_count = "zero" if not fixture_ids else (
+                "one" if len(fixture_ids) == 1 else "multiple")
+            print("G5_APP_FIXTURE_CONTAINER_COUNT=" + fixture_count +
+                  " release=NO_GO", flush=True)
+            if len(fixture_ids) == 1:
+                observed_by_id = guest(["sudo", "docker", "inspect", "--format",
+                                        "{{.State.Status}}", fixture_ids[0]],
+                                       check=False)
+                safe_states = ("running", "created", "exited", "restarting",
+                               "paused", "removing", "dead")
+                by_id_state = observed_by_id if observed_by_id in safe_states else "unknown"
+                print("G5_APP_FIXTURE_DOCKER_STATE=" + by_id_state +
+                      " release=NO_GO", flush=True)
+
         # The CI summarizer may output ONLY this fixed category, not the
         # response object, the app name or the user/task/container identity.
         print("G5_APP_EVIDENCE_FAILURE_CODE=" + evidence_code +
