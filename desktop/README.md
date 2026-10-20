@@ -34,6 +34,28 @@ PR 的 GitHub Actions `GPUPanel Desktop Ubuntu Preview` 会在 Ubuntu 24.04 amd6
 
 不需要克隆 GPUPanel 仓库，也不调用 GPUPanel 系统安装器。**SHA-256 只能校验传输完整性，不能证明 GitHub Artifact 的发布者身份**；此流程不具有包签名、DEB 安装/卸载/升级和离线供应链审核。GUI 图形登录、Polkit 以及对用户真实目录的读写尚需 Ubuntu 桌面真机验收。CI 中的临时私有脚本与内嵌默认 Profile 哈希由 Go 测试和 Git 仓库对应文件比对，防止漂移。测试仍不会证明完整工作区数据已恢复。
 
+## GNOME/Wayland 实机安全验收工具（独立交付，尚未验收）
+
+下载的 Ubuntu 预览压缩包额外包含 `acceptance/gnome-wayland.py`。它是独立 Python 3 脚本，**不要求 Git 仓库、不安装软件、绝不自动关闭 WebKit sandbox，也不会用 CI 的 Xvfb/Weston 结果替代 GNOME 实机结果**。
+
+在真正的 Ubuntu 24.04 GNOME **Wayland** 用户登录桌面中，先确认你拥有可信来源的下载包并完成其 SHA-256 核验，然后解压到 `~/GPUPanel/desktop-preview`：
+
+    python3 ~/GPUPanel/desktop-preview/acceptance/gnome-wayland.py --preflight
+
+预检会在以下条件下拒绝：root、不是 Ubuntu 24.04、不是 GNOME Wayland 会话、Wayland Unix socket 缺失/所有权不匹配、DBus 会话缺失、或环境含 `WEBKIT_DISABLE_SANDBOX_THIS_IS_DANGEROUS` / `GPUPANEL_CI_WEBKIT_UNSANDBOXED`。**预检就绪只代表有条件继续人工检查；不是沙箱生效或 GUI 可用证明。**
+
+审查 `build/binary.sha256` 和 `bin/gpupanel-desktop` 的哈希一致后，明确授权进行本地 GUI 观察：
+
+    cd ~/GPUPanel/desktop-preview
+    sha256sum -c build/binary.sha256
+    python3 acceptance/gnome-wayland.py --run \
+      --binary ./bin/gpupanel-desktop \
+      --expected-sha256 "$(cut -d' ' -f1 build/binary.sha256)"
+
+脚本仅在当前用户 GNOME 会话中运行审核过的二进制，提示人工观察中文页面、GNOME 菜单入口、本地终端和 IDE 是否打开正确项目。**不会代用户安装桌面菜单，不触发 Polkit/apt，不下载工具，不创建项目，不修改 IDE/终端状态以“伪造成功”。** 若环境缺条件/发现沙箱例外则立刻拒绝。报告作为 `RECORDED_REQUIRES_INDEPENDENT_REVIEW` 以 0600 权限保存在 `~/GPUPanel/acceptance/gnome-wayland-*.json`，内容仅包含有限状态及二进制摘要，不上传个人会话信息、环境变量、截图或日志。真实 WebKit 沙箱是否生效、Polkit 准许/拒绝、开机重启持久性仍需独立观测与审核，**不能靠回答 y 来宣称正式发布验收**。
+
+CI 只测试工具的拒绝语义、权限、hash/会话欺骗防护，并验证 GitHub Runner `--preflight` 必须返回 BLOCKED。脚本随每次预览 Artifact 重新打包；不在 CI 里伪装 GNOME 实机通过。
+
 ## GNOME 用户应用菜单快捷方式（显式授权）
 
 在 `~/GPUPanel/desktop-preview/bin/gpupanel-desktop` 启动的桌面预览里，使用 `06 · DESKTOP MENU` 的“检查桌面入口计划”→审查 SHA-256 与目标路径→“确认创建桌面快捷方式”。
@@ -245,6 +267,7 @@ Desktop 将 Python 执行器及其 Catalog 验证依赖内嵌到桌面二进制�
 | 源码目录外的内嵌工具 Doctor/Profile 操作 | Go 契约测试；真实新机 GUI NOT RUN |
 | Xvfb 单次不启沙箱图形窗口/键盘/截图 | GitHub Ubuntu CI；不等于正常沙箱 GUI |
 | 嵌套 Weston Wayland 原生窗口/协议/WebView/截图 | GitHub Ubuntu CI PASS；不等于 GNOME/正常沙箱 GUI |
+| 正常沙箱的 GNOME/Wayland 实机安全验收 | 已包含手动验收脚本；真实用户桌面 NOT RUN |
 | Wails 桌面实机 GTK/WebKit/终端/IDE 启动 | NOT RUN |
 | 国内离线镜像缓存与真实软件安装 | NOT RUN（此前仅有工具和合成制品测试） |
 | DevPod 浏览器 IDE 真实创建/停止/恢复 | NOT RUN |
