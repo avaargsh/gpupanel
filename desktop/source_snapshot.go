@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"errors"
 	"path/filepath"
 	"regexp"
@@ -25,6 +26,18 @@ func (s *DesktopService) SourcePlan(projectName string) (string, error) {
 func (s *DesktopService) SourceExport(projectName, approvedDigest string) (string, error) {
 	if !projectPattern.MatchString(projectName) || !digestPattern.MatchString(approvedDigest) {
 		return "", errors.New("源码快照项目名称或批准摘要无效")
+	}
+	// No destination folders may be created until Go rechecks the current
+	// manifest SHA. Python independently checks it again before ZIP creation.
+	current, err := s.SourcePlan(projectName)
+	if err != nil { return "", err }
+	var review struct {
+		Status string `json:"status"`
+		Digest string `json:"manifestDigest"`
+	}
+	if json.Unmarshal([]byte(current), &review) != nil ||
+		review.Status != "READY_FOR_APPROVAL" || review.Digest != approvedDigest {
+		return "", errors.New("源码清单变化或审批摘要不匹配：拒绝导出")
 	}
 	dir, err := backupsDir(true)
 	if err != nil { return "", err }
