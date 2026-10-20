@@ -1,14 +1,10 @@
 package main
 
 import (
-	"context"
 	"errors"
-	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"regexp"
-	"runtime"
 	"time"
 )
 
@@ -38,37 +34,7 @@ func backupsDir(create bool) (string, error) {
 }
 
 func runWorkspaceBundle(timeout time.Duration, args ...string) (string, error) {
-	if runtime.GOOS != "linux" {
-		return "", errors.New("工作区备份当前只支持 Linux")
-	}
-	source, err := sourceScript()
-	if err != nil {
-		return "", err
-	}
-	script := filepath.Join(filepath.Dir(source), "gpupanel-workspace-bundle.py")
-	info, err := os.Lstat(script)
-	if err != nil || !info.Mode().IsRegular() {
-		return "", errors.New("工作区 Bundle 执行器不存在")
-	}
-	python, err := exec.LookPath("python3")
-	if err != nil {
-		return "", errors.New("未找到 Python 3")
-	}
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
-	defer cancel()
-	cmd := exec.CommandContext(ctx, python, append([]string{script}, args...)...)
-	cmd.Env = []string{"HOME=" + os.Getenv("HOME"), "PATH=" + os.Getenv("PATH"), "LANG=C.UTF-8"}
-	data, err := cmd.Output()
-	if ctx.Err() != nil {
-		return "", errors.New("Bundle 操作超时，需检查目标文件后再决定下一步")
-	}
-	if len(data) > 64*1024 {
-		return "", errors.New("Bundle 回执超过限制")
-	}
-	if err != nil {
-		return string(data), fmt.Errorf("Bundle 操作未完成：%w", err)
-	}
-	return string(data), nil
+	return runEmbeddedPython(timeout, "gpupanel-workspace-bundle.py", args...)
 }
 
 func (s *DesktopService) BundleExport(projectName string) (string, error) {
