@@ -14,7 +14,7 @@ export type ImportedNativeInventory = {
     readOnly: true;
     liveStatusVerified: false;
     sessions: ImportedNativeSession[];
-    observerScope?: 'new-app-server-process';
+    observerScope?: 'new-app-server-process' | 'attached-loopback-appserver';
     hasMore?: boolean;
 };
 
@@ -43,7 +43,8 @@ export function parseNativeInventory(text: string): ImportedNativeInventory {
     }
     const isRollout = data.schemaVersion === 1 && data.source === 'local-user-codex-rollouts';
     const isAppServer = data.schemaVersion === 2 && data.source === 'local-user-codex-appserver' &&
-        data.observerScope === 'new-app-server-process' && typeof data.hasMore === 'boolean';
+        (data.observerScope === 'new-app-server-process' ||
+         data.observerScope === 'attached-loopback-appserver') && typeof data.hasMore === 'boolean';
     if (!isRollout && !isAppServer) throw new Error('不兼容的 Codex 清单格式');
     if (isAppServer && data.sessions.length > 25) throw new Error('app-server 快照超过单页上限');
 
@@ -78,7 +79,7 @@ export function parseNativeInventory(text: string): ImportedNativeInventory {
     });
     return isAppServer ? {
         schemaVersion: 2, source: 'local-user-codex-appserver', readOnly: true,
-        liveStatusVerified: false, observerScope: 'new-app-server-process',
+        liveStatusVerified: false, observerScope: data.observerScope as 'new-app-server-process' | 'attached-loopback-appserver',
         hasMore: data.hasMore as boolean, sessions,
     } : {
         schemaVersion: 1, source: 'local-user-codex-rollouts', readOnly: true,
