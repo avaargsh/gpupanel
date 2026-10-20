@@ -74,6 +74,12 @@ class AcceptanceTests(unittest.TestCase):
         self.assertIn("WAYLAND_SOCKET_MISSING", validate(
             socket=SimpleNamespace(st_mode=stat.S_IFREG | 0o600, st_uid=1000),
         )["reasons"])
+        self.assertIn("WAYLAND_SOCKET_UNTRUSTED", validate(
+            socket=SimpleNamespace(st_mode=stat.S_IFSOCK | 0o666, st_uid=1000),
+        )["reasons"])
+        self.assertIn("WAYLAND_SOCKET_UNTRUSTED", validate(
+            socket=SimpleNamespace(st_mode=stat.S_IFSOCK | 0o600, st_uid=1001),
+        )["reasons"])
 
     def test_verified_binary_hash_vs_tampered_or_linked(self):
         with tempfile.TemporaryDirectory() as directory:
