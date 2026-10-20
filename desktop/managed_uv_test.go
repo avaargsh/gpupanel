@@ -28,15 +28,22 @@ func TestManagedUvUserLocalReceiptAndPath(t *testing.T) {
 	}
 	data, _ := json.Marshal(receipt)
 	if err := os.WriteFile(filepath.Join(root, "receipt.json"), data, 0600); err != nil { t.Fatal(err) }
-	dir, valid := verifiedManagedUvBin(home)
-	if !valid || dir != filepath.Join(root, "bin") { t.Fatal("valid pinned receipt refused") }
-	env := embeddedPythonEnv()
-	prefix := "PATH=" + dir + string(os.PathListSeparator) + "/usr/bin"
-	found := false
-	for _, part := range env { if part == prefix { found = true } }
-	if !found { t.Fatalf("verified uv not available in subprocess PATH: %#v", env) }
+	dir, valid := verifiedManagedUvBinWithExpectedDigest(home, receipt.BinarySHA256)
+	if !valid || dir != filepath.Join(root, "bin") {
+		t.Fatal("hermetic receipt verification rejected")
+	}
+	// The binary/receipt pair can be forged by the local user. Production
+	// admission MUST reject it unless the ELF equals the reviewed official sha.
+	if _, valid := verifiedManagedUvBin(home); valid {
+		t.Fatal("forged self-consistent binary and receipt were trusted")
+	}
+	for _, part := range embeddedPythonEnv() {
+		if strings.HasPrefix(part, "PATH=") && strings.Contains(part, filepath.Join(root, "bin")) {
+			t.Fatal("forged uv must not appear in subprocess PATH")
+		}
+	}
 	if err := os.WriteFile(program, []byte("tampered"), 0700); err != nil { t.Fatal(err) }
-	if _, valid := verifiedManagedUvBin(home); valid { t.Fatal("tampered uv binary trusted") }
+	if _, valid := verifiedManagedUvBinWithExpectedDigest(home, receipt.BinarySHA256); valid { t.Fatal("tampered uv binary trusted") }
 	for _, part := range embeddedPythonEnv() {
 		if strings.HasPrefix(part, "PATH=") && strings.Contains(part, filepath.Join(root, "bin")) {
 			t.Fatal("tampered uv must not override PATH")
