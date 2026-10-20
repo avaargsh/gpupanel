@@ -39,7 +39,8 @@ func makeWatchRecord(sequence int, now time.Time, snap snapshot, err error) watc
 	// Explicit reconnection has to independently re-query the native server.
 	// A successful JSON-RPC reply is not proof of global session liveness.
 	if err == nil && snap.Source == "local-user-codex-appserver" &&
-		snap.Scope == "attached-loopback-appserver" &&
+		(snap.Scope == "attached-loopback-appserver" ||
+		 snap.Scope == nativeUnixObserverScope) &&
 		snap.ReadOnly && !snap.Verified && len(snap.Sessions) <= maxRows {
 		record.Connection = "observed"
 		record.Snapshot = &snap
