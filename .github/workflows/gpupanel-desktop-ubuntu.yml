@@ -11,6 +11,7 @@ on:
       - "scripts/tests/test_gpupanel_workspace_bundle.py"
       - "scripts/tests/test_gpupanel_profile_transfer.py"
       - "scripts/tests/test_gpupanel_desktop_ui_contract.py"
+      - "scripts/tests/gpupanel_desktop_gui_smoke.py"
       - ".github/workflows/gpupanel-desktop-ubuntu.yml"
   workflow_dispatch:
 
@@ -44,7 +45,7 @@ jobs:
       - name: Install native Linux build dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y --no-install-recommends build-essential pkg-config libgtk-4-dev libwebkitgtk-6.0-dev
+          sudo apt-get install -y --no-install-recommends build-essential pkg-config libgtk-4-dev libwebkitgtk-6.0-dev xvfb xdotool openbox scrot dbus-x11
       - uses: actions/setup-go@v5
         with:
           go-version: '1.26'
@@ -72,6 +73,22 @@ jobs:
           assert report["requires"] == {"core": False, "docker": False, "kubernetes": False}
           print("Standalone binary doctor PASS: no source checkout, display, Docker, Core or K8s")
           PY
+      - name: Exercise native GTK4/WebKit window under isolated Xvfb session
+        shell: bash
+        run: |
+          set -euo pipefail
+          xvfb-run -a -s "-screen 0 1366x900x24" dbus-run-session -- \
+            python3 scripts/tests/gpupanel_desktop_gui_smoke.py \
+            "$RUNNER_TEMP/gpupanel-desktop-preview" \
+            "$RUNNER_TEMP/gpupanel-desktop-xvfb.png"
+      - name: Preserve non-sensitive GUI smoke screenshot
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gpupanel-desktop-xvfb-ubuntu24
+          path: ${{ runner.temp }}/gpupanel-desktop-xvfb.png
+          if-no-files-found: ignore
+          retention-days: 7
       - name: Prepare unsigned relocatable Ubuntu preview archive
         shell: bash
         run: |
@@ -103,4 +120,4 @@ jobs:
         run: |
           echo "Unsigned preview archive uploaded with SHA-256; contents are not a published package."
           echo "CLI-only embedded Python check runs in Go tests without a source checkout."
-          echo "No native GUI, Polkit install, full offline restore, Docker/provider or production release acceptance ran."
+          echo "Xvfb native window/keyboard smoke ran. No human GNOME/Wayland GUI, Polkit install, full offline restore, Docker/provider or production release acceptance ran."
