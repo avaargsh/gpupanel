@@ -74,8 +74,9 @@ def safe_relative(rel: str) -> bool:
     path = PurePosixPath(rel)
     if (not rel or rel.startswith("/") or "\\" in rel or
             len(rel.encode()) > 400 or len(path.parts) > 12 or
-            any(not SAFE_PART.fullmatch(part) or part in (".", "..")
-                for part in path.parts)):
+            any((not SAFE_PART.fullmatch(part) and
+                 not (part == path.name and part in EXACT)) or
+                part in (".", "..") for part in path.parts)):
         return False
     for part in path.parts:
         low = part.lower()
