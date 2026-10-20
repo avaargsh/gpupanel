@@ -17,7 +17,22 @@
     wails3 doctor
     go run .
 
-从仓库根目录或 desktop 目录运行。本切片 Go 服务需要查找仓库里的 Python 控制器，**尚未打包成无需源码树的独立可安装程序**。go.sum 仍须由联网 Ubuntu 构建并审核提交。
+从仓库根目录或 desktop 目录运行开发源码。现在 **Wails Go 二进制内嵌经过仓库测试校验的 Python 执行器和默认 Profile**，复制到没有 GPUPanel 源码的目录时也能执行本地 `doctor`、Profile 与项目骨架功能。仍需 Ubuntu 系统 Python 3 以及 GTK4/WebKitGTK 运行库，但不需要 Docker、Core、Agent 或 Kubernetes。go.sum 仍须联网生成并审查后锁定进 Git；**当前不是生产签名发布包**。
+
+## 可移植 Ubuntu x86_64 预览二进制（非正式安装包）
+
+PR 的 GitHub Actions `GPUPanel Desktop Ubuntu Preview` 会在 Ubuntu 24.04 amd64 生成**未签名、短期保留的预览压缩包**，附独立的 `*.sha256` 文件和产物内的源码提交信息。进入对应 [PR #162 Actions](https://github.com/avaargsh/gpupanel/pull/162/checks)，下载名为 `gpupanel-desktop-ubuntu24-amd64-preview` 的 Artifact。仅在可信的 Ubuntu 24.04 测试桌面上尝试，不要在生产机器使用。
+
+    # 将下载的 tar.gz 与 tar.gz.sha256 放在同一个目录
+    sha256sum -c gpupanel-desktop-preview-ubuntu24-amd64.tar.gz.sha256
+    mkdir -p ~/GPUPanel/desktop-preview
+    tar -xzf gpupanel-desktop-preview-ubuntu24-amd64.tar.gz -C ~/GPUPanel/desktop-preview
+    cat ~/GPUPanel/desktop-preview/build/provenance.txt
+    # 若缺少 Wails 图形依赖，先通过 Ubuntu apt 源安装：
+    sudo apt install python3 libgtk-4-1 libwebkitgtk-6.0-4
+    ~/GPUPanel/desktop-preview/bin/gpupanel-desktop
+
+不需要克隆 GPUPanel 仓库，也不调用 GPUPanel 系统安装器。**SHA-256 只能校验传输完整性，不能证明 GitHub Artifact 的发布者身份**；此流程不具有包签名、DEB 安装/卸载/升级和离线供应链审核。GUI 图形登录、Polkit 以及对用户真实目录的读写尚需 Ubuntu 桌面真机验收。CI 中的临时私有脚本与内嵌默认 Profile 哈希由 Go 测试和 Git 仓库对应文件比对，防止漂移。测试仍不会证明完整工作区数据已恢复。
 
 ## 本地 CLI
 
@@ -37,7 +52,7 @@
 - restore：只写当前用户的无凭据 JSON Profile，摘要不匹配、已存在不同数据或符号链接均拒绝，绝不覆盖文件。
 - env：输出临时 shell 会话中可手动选择的 HTTPS 镜像变量，不自动更改全局 apt/uv/npm/pip 配置。
 - export：导出 Profile JSON；不包含工作区文件、IDE 插件、SSH 私钥或 Token。
-- devpod-plan：有 DevPod、Docker CLI 和现成 devcontainer.json 时，仅展示基于 openvscode 的浏览器 IDE 启动计划；真实 Provider/容器/端口开放都需要另行人工授权及验收。
+- devpod-plan：只需 DevPod CLI 和现成的 devcontainer.json 才能展示 openvscode 浏览器 IDE 的预检计划。本地 Docker 并非 SSH/云 Provider 的先决条件；真实 Provider/容器/端口开放都需要另行人工授权及验收。
 
 ## Profile 迁移：从旧电脑到新电脑
 
@@ -73,7 +88,7 @@
 
 - ZIP 条目、逐文件 SHA-256、文件大小和项目名全部受限；验证失败不落盘。
 - 恢复只写入**不存在**的项目路径；Linux `renameat2(RENAME_NOREPLACE)` 独占发布，遇到已有目录一律拒绝覆盖。停电等操作结果不明时先检查目标目录。
-- Desktop 新增导出、检查、人工确认恢复入口，固定从 `~/GPUPanel/backups/` 读取。当前仍依赖源码树，不是交付完整工作区的一键备份工具。
+- Desktop 新增导出、检查、人工确认恢复入口，固定从 `~/GPUPanel/backups/` 读取。桌面预览已内嵌所需脚本，但这仍不是完整工作区的一键备份工具。
 - 后续真正恢复完整代码请结合受控 Git remote + 固定 commit，以及独立的数据备份方案；此功能不代替 Git、磁盘备份或凭据迁移。
 
 测试：
@@ -93,6 +108,7 @@
 | Profile 校验、拒绝不安全镜像和包、拒绝覆盖 | Python 单元测试 |
 | 无 Docker / Core / K8s 的本地模式 | Python 契约测试；GUI NOT RUN |
 | Ubuntu 非 root + Polkit 系统安装及恢复 | NOT RUN |
+| 源码目录外的内嵌工具 Doctor/Profile 操作 | Go 契约测试；真实新机 GUI NOT RUN |
 | Wails 桌面实机 GTK/WebKit/终端/IDE 启动 | NOT RUN |
 | 国内离线镜像缓存与真实软件安装 | NOT RUN（此前仅有工具和合成制品测试） |
 | DevPod 浏览器 IDE 真实创建/停止/恢复 | NOT RUN |
