@@ -3,6 +3,7 @@ const $ = (id) => document.getElementById(id);
 const call = (name, ...args) => Call.ByName('main.DesktopService.' + name, ...args);
 let profileDigest = '';
 let installDigest = '';
+let bundleDigest = '';
 let busy = false;
 
 function show(id, value) {
@@ -10,8 +11,8 @@ function show(id, value) {
 }
 function setBusy(value, label) {
   busy = value;
-  ['refresh', 'terminal', 'editor', 'restore', 'install', 'devpod'].forEach((name) => {
-    $(name).disabled = value || (name === 'install' && !installDigest) || (name === 'restore' && !profileDigest);
+  ['refresh', 'terminal', 'editor', 'restore', 'install', 'devpod', 'bundle-export', 'bundle-inspect', 'bundle-restore'].forEach((name) => {
+    $(name).disabled = value || (name === 'install' && !installDigest) || (name === 'restore' && !profileDigest) || (name === 'bundle-restore' && !bundleDigest);
   });
   $('operation-state').textContent = label;
 }
@@ -60,3 +61,34 @@ $('install').addEventListener('click', () => {
 });
 $('devpod').addEventListener('click', () => action('DevpodPlan', [$('project').value], (p) => show('devpod-result', p)));
 show('output', '从检查环境开始。无需 Docker、远程 Core 或 Kubernetes。');
+
+$('bundle-export').addEventListener('click', () => {
+  const name = $('project').value.trim();
+  if (window.confirm('仅备份项目的白名单配置和锁文件，绝不覆盖同名 Bundle。\\n项目：' + name + '\\n请自行检查源文件是否包含敏感值。')) {
+    action('BundleExport', [name]);
+  }
+});
+$('bundle-file').addEventListener('input', () => {
+  bundleDigest = '';
+  $('bundle-restore').disabled = true;
+});
+$('bundle-inspect').addEventListener('click', () => {
+  bundleDigest = '';
+  action('BundleInspect', [$('bundle-file').value.trim()], (p) => {
+    bundleDigest = p.status === 'READY_FOR_APPROVAL' ? p.bundleDigest : '';
+    show('bundle-plan', {
+      status: p.status,
+      project: p.project,
+      scope: p.scope,
+      sha256: p.bundleDigest,
+      files: (p.files ?? []).map(x => x.path),
+    });
+  });
+});
+$('bundle-restore').addEventListener('click', () => {
+  if (!bundleDigest) return;
+  const filename = $('bundle-file').value.trim();
+  if (window.confirm('仅恢复白名单项目文件到新目录，不覆盖同名项目。\\nBundle：' + filename + '\\nSHA-256: ' + bundleDigest)) {
+    action('BundleRestore', [filename, bundleDigest], () => { bundleDigest = ''; });
+  }
+});
