@@ -17,8 +17,6 @@ import (
 	"golang.org/x/sys/unix"
 )
 
-const nativeUnixObserverScope = "attached-owner-verified-unix-appserver"
-
 // nativeUnixPath accepts ONLY Codex's standard local control-socket rendezvous
 // beneath this non-root user's owned home. No arbitrary paths or /tmp search.
 func nativeUnixPath() (string, error) {
