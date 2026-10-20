@@ -94,8 +94,8 @@ class WorkstationTests(unittest.TestCase):
                     return SimpleNamespace(returncode=exit_code, stdout="", stderr="PRIVATE_AGENT_ERROR")
                 return SimpleNamespace(returncode=1, stdout="", stderr="")
             plan = ws.install_plan(self.profile, runner=runner, os_ok=True)
-            with self.subTest(exit_code=exit_code), \\
-                 mock.patch.object(ws.os, "geteuid", return_value=1000), \\
+            with self.subTest(exit_code=exit_code), \
+                 mock.patch.object(ws.os, "geteuid", return_value=1000), \
                  mock.patch.object(ws.Path, "is_file", return_value=True):
                 result = ws.install_apt(self.profile, plan["planDigest"], runner=runner, os_ok=True)
             self.assertEqual(result["status"], state)
@@ -111,8 +111,8 @@ class WorkstationTests(unittest.TestCase):
                     return SimpleNamespace(returncode=exit_code, stdout="private", stderr="SECRET")
                 return SimpleNamespace(returncode=1, stdout="", stderr="")
             plan = ws.install_plan(self.profile, runner=runner, os_ok=True)
-            with self.subTest(exit_code=exit_code), \\
-                 mock.patch.object(ws.os, "geteuid", return_value=1000), \\
+            with self.subTest(exit_code=exit_code), \
+                 mock.patch.object(ws.os, "geteuid", return_value=1000), \
                  mock.patch.object(ws.Path, "is_file", return_value=True):
                 result = ws.install_apt(self.profile, plan["planDigest"], runner=runner, os_ok=True)
             self.assertEqual(result["status"], "UNKNOWN")
@@ -125,7 +125,7 @@ class WorkstationTests(unittest.TestCase):
                 raise subprocess.TimeoutExpired(command, 240)
             return SimpleNamespace(returncode=1, stdout="", stderr="")
         plan = ws.install_plan(self.profile, runner=timed_out, os_ok=True)
-        with mock.patch.object(ws.os, "geteuid", return_value=1000), \\
+        with mock.patch.object(ws.os, "geteuid", return_value=1000), \
              mock.patch.object(ws.Path, "is_file", return_value=True):
             result = ws.install_apt(self.profile, plan["planDigest"], runner=timed_out, os_ok=True)
         self.assertEqual(result["status"], "UNKNOWN")
@@ -141,7 +141,7 @@ class WorkstationTests(unittest.TestCase):
                 return SimpleNamespace(returncode=0, stdout="install ok installed", stderr="")
             return SimpleNamespace(returncode=1, stdout="", stderr="")
         plan = ws.install_plan(self.profile, runner=runner, os_ok=True)
-        with mock.patch.object(ws.os, "geteuid", return_value=1000), \\
+        with mock.patch.object(ws.os, "geteuid", return_value=1000), \
              mock.patch.object(ws.Path, "is_file", return_value=True):
             outcome = ws.install_apt(self.profile, plan["planDigest"], runner=runner, os_ok=True)
         self.assertEqual(outcome["status"], "VERIFIED")
