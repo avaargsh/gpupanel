@@ -108,6 +108,28 @@ class AcceptanceTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 gnome.reviewed_binary(file, digest)
 
+
+    def test_open_reviewed_binary_pins_verified_inode(self):
+        with tempfile.TemporaryDirectory() as directory:
+            file = Path(directory) / "gpupanel-desktop"
+            file.write_bytes(b"verified executable")
+            file.chmod(0o700)
+            import hashlib
+            digest = hashlib.sha256(file.read_bytes()).hexdigest()
+            fd, metadata = gnome.open_reviewed_binary(file, digest)
+            try:
+                self.assertTrue(metadata["binaryHashMatched"])
+                original_inode = os.fstat(fd).st_ino
+                replacement = Path(directory) / "replacement"
+                replacement.write_bytes(b"replacement executable")
+                replacement.chmod(0o700)
+                replacement.replace(file)
+                self.assertEqual(os.fstat(fd).st_ino, original_inode)
+                with self.assertRaisesRegex(ValueError, "differs"):
+                    gnome.open_reviewed_binary(file, digest)
+            finally:
+                os.close(fd)
+
     def test_private_report_without_exposing_personal_environment(self):
         with tempfile.TemporaryDirectory() as directory:
             home = Path(directory)
