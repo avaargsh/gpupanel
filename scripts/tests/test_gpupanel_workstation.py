@@ -100,7 +100,7 @@ class WorkstationTests(unittest.TestCase):
         calls = []
         def fake(args, **kwargs):
             calls.append(args)
-            return SimpleNamespace(returncode=0, stdout="git version 2.47.0\\n", stderr="")
+            return SimpleNamespace(returncode=0, stdout="git version 2.47.0\n", stderr="")
         audit = ws.versions(which=lambda x: "/usr/bin/" + x if x in ("git", "docker") else None,
                             runner=fake)
         self.assertEqual(audit["status"], "READ_ONLY")
@@ -110,7 +110,7 @@ class WorkstationTests(unittest.TestCase):
 
     def test_version_escape_sequence_rejected(self):
         def malicious(args, **kwargs):
-            return SimpleNamespace(returncode=0, stdout="\\x1b[31msecret", stderr="")
+            return SimpleNamespace(returncode=0, stdout="\x1b[31msecret", stderr="")
         audit = ws.versions(which=lambda _: "/usr/bin/mock", runner=malicious)
         self.assertTrue(all(t["status"] == "VERSION_UNVERIFIED" for t in audit["tools"]))
 
