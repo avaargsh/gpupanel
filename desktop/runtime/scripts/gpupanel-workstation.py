@@ -146,25 +146,41 @@ def install_plan(profile, *, runner=subprocess.run, os_ok=None):
     state = ("UNSUPPORTED_OS" if observed["status"] != "READY" else
              ("ALREADY_INSTALLED" if not missing else "READY_FOR_APPROVAL"))
     return {"status": state, "planDigest": hashlib.sha256(canonical(plan)).hexdigest(),
-            "command": ["/usr/bin/pkexec", *args] if missing else [],
-            "note": "Uses the operator's configured apt sources; versions are not pinned"}
+            "command": ["/usr/bin/pkexec", "--disable-internal-agent", *args] if missing else [],
+            "note": "Uses operator-configured apt sources (versions unpinned). Requires an active graphical Polkit agent; no terminal agent fallback."}
 
 
 def install_apt(profile, approved, *, runner=subprocess.run, os_ok=None):
     plan = install_plan(profile, runner=runner, os_ok=os_ok)
     if plan["status"] != "READY_FOR_APPROVAL" or approved != plan["planDigest"]:
         return {"status": "REFUSED_PLAN_MISMATCH", "executed": False}
-    if os.geteuid() == 0 or not Path("/usr/bin/pkexec").is_file():
+    if os.geteuid() == 0:
+        return {"status": "ROOT_REFUSED", "executed": False}
+    if not Path("/usr/bin/pkexec").is_file():
         return {"status": "POLKIT_UNAVAILABLE", "executed": False}
     try:
         completed = runner(plan["command"], capture_output=True, text=True,
                            timeout=240, check=False)
     except (OSError, subprocess.TimeoutExpired):
-        return {"status": "UNKNOWN", "executed": True, "hint": "Inspect dpkg state before retry"}
+        return {"status": "UNKNOWN", "executed": True,
+                "reconciliationRequired": True,
+                "hint": "Polkit/apt process outcome unknown; inspect dpkg and apt logs before retry"}
+    # pkexec's documented 126/127 refer to dismissal or refusal/failure to
+    # obtain authorization. The requested apt command has not been accepted.
+    # No stderr, environment or secrets enter the UI receipt.
+    if completed.returncode == 126:
+        return {"status": "AUTH_CANCELLED", "executed": False,
+                "reconciliationRequired": False}
+    if completed.returncode == 127:
+        return {"status": "AUTH_NOT_GRANTED", "executed": False,
+                "reconciliationRequired": False}
     observed = [pkg for pkg in profile["aptPackages"] if installed(pkg, runner)]
-    return {"status": "VERIFIED" if completed.returncode == 0 and
-            len(observed) == len(profile["aptPackages"]) else "UNKNOWN",
-            "executed": True, "installed": observed, "hint": "On UNKNOWN inspect apt logs, no auto-retry"}
+    verified = completed.returncode == 0 and len(observed) == len(profile["aptPackages"])
+    return {"status": "VERIFIED" if verified else "UNKNOWN",
+            "executed": True, "installed": observed,
+            "reconciliationRequired": not verified,
+            "hint": "All packages observed" if verified else
+                    "apt returned non-success or post-check failed; independently inspect dpkg/apt logs; no auto-retry"}
 
 
 def restore(profile, approved, *, config=None, home=None):
