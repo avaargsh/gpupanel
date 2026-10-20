@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import {
     Box,
     Clock,
+    Bot,
     Code,
     Component,
     FileText,
@@ -27,6 +28,7 @@ export const navSections: NavSection[] = [
     { titleKey: 'workbench.personal', items: [
         { path: '/', labelKey: 'workbench.title', icon: navIcon(Home) },
         { path: '/projects', labelKey: 'workbench.projects', icon: navIcon(Folder) },
+        { path: '/agent-sessions', labelKey: 'workbench.agentSessions', icon: navIcon(Bot) },
         { path: '/environments', labelKey: 'workbench.environments', icon: navIcon(Layers), unavailable: true },
         { path: '/apps', labelKey: 'workbench.apps', icon: navIcon(LayoutGrid) },
         { path: '/host?tab=terminal', labelKey: 'workbench.terminal', icon: navIcon(Code) },

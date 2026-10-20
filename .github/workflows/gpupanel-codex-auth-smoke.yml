@@ -1,0 +1,101 @@
+name: GPUPanel Codex authenticated app-server smoke
+
+# Real upstream binary; disposable local-only CI environment, no API keys,
+# model calls, Repo secrets, Docker, privileged Host or remote service.
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'core/cmd/codex-observer/**'
+      - '.github/workflows/gpupanel-codex-auth-smoke.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  upstream-authenticated-loopback:
+    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: core/go.mod
+          cache-dependency-path: core/go.sum
+      - name: Install pinned official Codex CLI
+        run: |
+          set -eu
+          npm install -g --no-audit --no-fund @openai/codex@0.163.0
+          codex --version
+      - name: Real WebSocket auth and read-only DB-list handshake
+        working-directory: core
+        shell: bash
+        run: |
+          set -euo pipefail
+          umask 077
+          export NO_PROXY=127.0.0.1,localhost
+          export no_proxy=127.0.0.1,localhost
+          export HOME="${HOME:?}"
+          temp="$(mktemp -d "$HOME/.gpupanel-codex-upstream.XXXXXXXX")"
+          server_pid=""
+          finish() {
+            if [[ -n "$server_pid" ]]; then
+              kill "$server_pid" 2>/dev/null || true
+              wait "$server_pid" 2>/dev/null || true
+            fi
+            rm -rf -- "$temp"
+          }
+          trap finish EXIT
+          mkdir -m 700 "$temp/state"
+          export CODEX_HOME="$temp/state"
+          printf '' > "$CODEX_HOME/config.toml"
+          openssl rand -hex 32 > "$temp/token"
+          chmod 600 "$temp/token"
+          openssl rand -hex 32 > "$temp/bad-token"
+          chmod 600 "$temp/bad-token"
+          codex app-server --listen ws://127.0.0.1:42571 \
+            --ws-auth capability-token --ws-token-file "$temp/token" \
+            > "$temp/server.log" 2>&1 &
+          server_pid=$!
+          python3 - <<'PY'
+          import socket, time
+          deadline=time.monotonic()+20
+          while time.monotonic()<deadline:
+              try:
+                  conn=socket.create_connection(("127.0.0.1",42571),timeout=.5)
+                  conn.close()
+                  break
+              except OSError:
+                  time.sleep(.25)
+          else:
+              raise SystemExit("real Codex WebSocket did not listen")
+          PY
+          # No credential means no WebSocket upgrade; no silent fallback.
+          if go run ./cmd/codex-observer --endpoint ws://127.0.0.1:42571 \
+              > "$temp/unauth.json" 2> "$temp/unauth.err"; then
+            echo "FAIL: real Codex accepted unauthenticated observer"
+            exit 1
+          fi
+          if go run ./cmd/codex-observer --endpoint ws://127.0.0.1:42571 \
+              --auth-token-file "$temp/bad-token" \
+              > "$temp/wrong.json" 2> "$temp/wrong.err"; then
+            echo "FAIL: real Codex accepted wrong bearer"
+            exit 1
+          fi
+          go run ./cmd/codex-observer --endpoint ws://127.0.0.1:42571 \
+            --auth-token-file "$temp/token" > "$temp/observed.json"
+          python3 - "$temp/observed.json" <<'PY'
+          import json,sys
+          doc=json.load(open(sys.argv[1]))
+          assert doc["schemaVersion"]==2
+          assert doc["source"]=="local-user-codex-appserver"
+          assert doc["observerScope"]=="attached-loopback-appserver"
+          assert doc["readOnly"] is True and doc["liveStatusVerified"] is False
+          assert len(doc["sessions"])<=25
+          assert all(x["liveness"]=="unknown" for x in doc["sessions"])
+          print("PASS: actual Codex 0.163.0 token admission + DB-only read-only snapshot")
+          print("Rows:",len(doc["sessions"]))
+          PY

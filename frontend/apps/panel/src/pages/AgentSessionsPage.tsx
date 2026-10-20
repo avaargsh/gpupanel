@@ -1,0 +1,323 @@
+import { useEffect, useRef, useState, type ChangeEvent } from 'react';
+import { FileJson2, RefreshCw, ShieldAlert, Terminal } from 'lucide-react';
+import { readLocalWatchTail } from '@/utils/nativeWatchTail';
+import { useAppSelector } from '@/store/hooks';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+    parseNativeInventory,
+    parseNativeWatch,
+    type ImportedWatchRecord,
+    type ImportedNativeInventory,
+} from '@/utils/nativeSessions';
+
+const LIMIT_BYTES = 1024 * 1024;
+const WATCH_LIMIT_BYTES = 4 * 1024 * 1024;
+type LocalWatchHandle = { getFile(): Promise<File> };
+type LocalFilePicker = Window & {
+    showOpenFilePicker?: (options: { multiple: boolean }) => Promise<LocalWatchHandle[]>;
+};
+
+/** An imported local file is an untrusted *snapshot*, not a remote discovery API. */
+export default function AgentSessionsPage() {
+    const node = useAppSelector((s) => s.ui.currentNode) || 'local';
+    const [inventory, setInventory] = useState<ImportedNativeInventory | null>(null);
+    const [watchReport, setWatchReport] = useState<ImportedWatchRecord | null>(null);
+    const [error, setError] = useState('');
+    const [loading, setLoading] = useState(false);
+    const epoch = useRef(0);
+    const [following, setFollowing] = useState(false);
+    const [followStatus, setFollowStatus] = useState('');
+    const followRef = useRef<LocalWatchHandle | null>(null);
+    const followEpoch = useRef(0);
+    const followBusy = useRef(false);
+    const local = node === 'local';
+
+    useEffect(() => {
+        // Do not retain an import across node scope changes or stale async reads.
+        epoch.current += 1;
+        followEpoch.current += 1;
+        followRef.current = null;
+        setFollowing(false);
+        setFollowStatus('');
+        setInventory(null);
+        setWatchReport(null);
+        setError('');
+        setLoading(false);
+    }, [node]);
+
+    useEffect(() => () => { epoch.current += 1; followEpoch.current += 1; }, []);
+
+    // Only a user-selected local file handle is ever read. No background
+    // process, network request, browser storage or Core privilege is involved.
+    useEffect(() => {
+        if (!following || !local || !followRef.current) return;
+        const ticket = followEpoch.current;
+        const handle = followRef.current;
+        let stopped = false;
+        const refresh = async () => {
+            if (stopped || followBusy.current) return;
+            followBusy.current = true;
+            try {
+                const file = await handle.getFile();
+                if (file.size > WATCH_LIMIT_BYTES) throw new Error('本地记录超出 4 MiB 上限');
+                const result = readLocalWatchTail(await file.text(), parseNativeWatch);
+                if (stopped || ticket !== followEpoch.current) return;
+                setWatchReport(result.record);
+                setInventory(result.record?.inventory ?? null);
+                setError('');
+                setFollowStatus(result.state === 'pending' ? '等待第一条完整观察记录'
+                    : result.state === 'stale' ? '观察已超过 90 秒没有有效更新，旧状态已清除'
+                    : result.state === 'unavailable' ? '本次原生观察失败，旧会话已清除'
+                    : '正在读取本机文件；仅代表最新一次已完成的观察');
+            } catch {
+                if (!stopped && ticket === followEpoch.current) {
+                    followRef.current = null;
+                    followEpoch.current += 1;
+                    setFollowing(false);
+                    setInventory(null);
+                    setWatchReport(null);
+                    setFollowStatus('本机文件读取失败或权限已失效，跟随已停止');
+                }
+            } finally {
+                followBusy.current = false;
+            }
+        };
+        void refresh();
+        const id = window.setInterval(() => { void refresh(); }, 5000);
+        return () => { stopped = true; window.clearInterval(id); };
+    }, [following, local, node]);
+
+    const stopFollowing = () => {
+        followEpoch.current += 1;
+        followRef.current = null;
+        setFollowing(false);
+        setFollowStatus('');
+    };
+
+    const selectLiveFile = async () => {
+        if (!local || following) return;
+        const picker = (window as LocalFilePicker).showOpenFilePicker;
+        if (!picker) {
+            setError('当前浏览器不支持本机文件持续读取，请使用普通 NDJSON 手动导入。');
+            return;
+        }
+        const request = ++epoch.current;
+        try {
+            // Must happen directly in the click handler for browser user consent.
+            const handles = await picker.call(window, { multiple: false });
+            if (request !== epoch.current || !local || handles.length !== 1) return;
+            const file = await handles[0].getFile();
+            if (request !== epoch.current || !file.name.toLowerCase().endsWith('.ndjson')
+                || file.size > WATCH_LIMIT_BYTES) {
+                if (request === epoch.current) setError('仅可跟随 4 MiB 以内的 .ndjson 本机观察记录');
+                return;
+            }
+            stopFollowing();
+            followRef.current = handles[0];
+            followEpoch.current += 1;
+            setInventory(null);
+            setWatchReport(null);
+            setError('');
+            setFollowStatus('等待本机记录');
+            setFollowing(true);
+        } catch {
+            if (request === epoch.current) {
+                setError('没有获得本机文件访问权限，可继续手动导入。');
+            }
+        }
+    };
+
+    const onFile = async (event: ChangeEvent<HTMLInputElement>) => {
+        const file = event.currentTarget.files?.[0];
+        event.currentTarget.value = '';
+        const request = ++epoch.current;
+        stopFollowing();
+        setInventory(null);
+        setWatchReport(null);
+        setError('');
+        if (!file || !local) return;
+        const isWatch = file.name.toLowerCase().endsWith('.ndjson');
+        if (file.size > (isWatch ? WATCH_LIMIT_BYTES : LIMIT_BYTES)) {
+            setError('文件超过导入大小上限，未读取任何内容。');
+            return;
+        }
+        setLoading(true);
+        try {
+            const text = await file.text();
+            if (isWatch) {
+                const report = parseNativeWatch(text);
+                if (request === epoch.current) {
+                    setWatchReport(report);
+                    setInventory(report.inventory);
+                }
+            } else {
+                const imported = parseNativeInventory(text);
+                if (request === epoch.current) setInventory(imported);
+            }
+        } catch (caught) {
+            if (request === epoch.current) {
+                setError(caught instanceof Error ? caught.message : '清单读取失败');
+            }
+        } finally {
+            if (request === epoch.current) setLoading(false);
+        }
+    };
+
+    return <div className="workbench" aria-label="原生 Agent 会话">
+        <header className="workbench-heading">
+            <div>
+                <h1>Agent Sessions</h1>
+                <p>Codex 原生会话与 app-server 单次状态快照 · 本地只读预览</p>
+            </div>
+            <Badge variant="secondary">本地导入</Badge>
+        </header>
+        <Alert>
+            <ShieldAlert aria-hidden="true" />
+            <AlertDescription>
+                此页面不通过 Host 扫描文件、不执行 Codex 命令，也不上传会话历史。
+                app-server 的 active/idle 仅代表被连接的那个原生服务实例。<strong>不证明其他 Codex 进程正在运行或停止</strong>，也不授予 Agent 审批或执行权限。
+            </AlertDescription>
+        </Alert>
+
+        {!local ? <Alert variant="destructive">
+            <AlertDescription role="status">
+                此功能只允许 local 节点。切换到本机后重新选择清单文件；远程节点不会继承导入结果。
+            </AlertDescription>
+        </Alert> : <>
+            <Card>
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                        <Terminal className="size-4" aria-hidden="true" />
+                        从 Ubuntu 当前用户导出
+                    </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                    <p className="text-sm text-muted-foreground">
+                        在你自己登录的普通 Ubuntu 开发账号终端中执行下面的命令；不要使用 sudo。
+                        输出不包含提示词、命令内容和工作目录全路径。可以选择旧 rollout 清单或新的 app-server RPC 快照。
+                    </p>
+                    <pre className="log-output" aria-label="会话只读导出命令">
+                        {'python3 scripts/gpupanel-codex-sessions.py list > codex-sessions.json'}
+                    </pre>
+                    <p className="text-sm text-muted-foreground">
+                        可选：运行 Codex app-server 的单次只读 RPC 探测（会在用户账号下启动并停止新的 app-server 进程，可能执行 Codex 初始化；不会连接你已运行的进程）。
+                    </p>
+                    <pre className="log-output" aria-label="app-server 快照命令">
+                        {'python3 scripts/gpupanel-codex-appserver.py list > codex-appserver.json'}
+                    </pre>
+                    <p className="text-sm text-muted-foreground">
+                        如果你自己已启动了带 WebSocket 的 Codex app-server，可以在<strong>同一普通 Ubuntu 用户终端</strong>查询该明确指定的回环端口。
+                        这连接已有服务，而不是启动新的 Codex 进程；只查询一页，依然不会自动持续订阅。
+                    </p>
+                    <pre className="log-output" aria-label="已运行 app-server 只读查询命令">
+                        {'cd core && go run ./cmd/codex-observer --endpoint ws://127.0.0.1:4222 > ../codex-attached.json'}
+                    </pre>
+                    <p className="text-xs text-muted-foreground">
+                        如果该 app-server 启用了原生 WebSocket Token 鉴权，请在你自己的 Ubuntu 普通用户终端中增加私有 Token 文件参数。
+                        Token 不要填写在网页、URL、命令行明文参数或导出的 JSON 中。
+                    </p>
+                    <pre className="log-output" aria-label="启用鉴权的 app-server 只读查询命令">
+                        {'cd core && go run ./cmd/codex-observer --endpoint ws://127.0.0.1:4222 --auth-token-file "$HOME/.codex/gpupanel-ws-token" > ../codex-attached.json'}
+                    </pre>
+                    <p className="text-sm text-muted-foreground">
+                        可以运行有限次数的本机只读观察，将其输出保存为 .ndjson 文件：
+                        导入后只展示<strong>最后一条观察结果</strong>；这是已保存记录，不是网页实时订阅。
+                    </p>
+                    <pre className="log-output" aria-label="有限次数原生观察命令">
+                        {'cd core && go run ./cmd/codex-observer --endpoint ws://127.0.0.1:4222 --watch --samples 12 --interval-seconds 5 > ../codex-observations.ndjson'}
+                    </pre>
+                    <div className="space-y-2 rounded-lg border border-border p-3">
+                        <p className="text-sm font-medium">浏览器本地跟随观察文件（Chromium 可选）</p>
+                        <p className="text-xs text-muted-foreground">
+                            只在你主动选择文件后，每 5 秒重新读取本机 .ndjson。
+                            从不上传到 Core；文件超过 90 秒无有效观察会清除旧状态。
+                            切换节点、关闭页面或撤销文件权限后自动停止。
+                        </p>
+                        <div className="flex flex-wrap gap-2">
+                            <Button type="button" size="sm" variant="outline"
+                                disabled={following || loading} onClick={() => { void selectLiveFile(); }}>
+                                选择并跟随本机记录
+                            </Button>
+                            {following && <Button type="button" size="sm" variant="outline"
+                                onClick={() => {
+                                    stopFollowing();
+                                    setInventory(null);
+                                    setWatchReport(null);
+                                }}>停止本地跟随</Button>}
+                        </div>
+                        {followStatus && <p role="status" className="text-xs text-muted-foreground">{followStatus}</p>}
+                    </div>
+                    <label className="flex flex-col gap-2 text-sm">
+                        <span className="font-medium">选择刚导出的 JSON 文件</span>
+                        <input type="file" accept=".json,.ndjson,application/json" disabled={loading}
+                            onChange={(event) => { void onFile(event); }}
+                            className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm
+                                       file:mr-3 file:rounded-md file:border-0 file:bg-muted file:px-3
+                                       file:py-1 file:text-foreground focus-visible:outline-2" />
+                    </label>
+                    <p className="text-xs text-muted-foreground">
+                        所有数据只保存在当前浏览器页面的内存中。刷新、退出或切换节点后需要重新导入。普通 JSON ≤1 MiB；NDJSON ≤4 MiB。
+                    </p>
+                </CardContent>
+            </Card>
+            {error && <Alert variant="destructive">
+                <ShieldAlert aria-hidden="true" />
+                <AlertDescription role="alert">{error}</AlertDescription>
+            </Alert>}
+            {loading && <p role="status" className="text-sm text-muted-foreground">正在解析本地文件…</p>}
+            {watchReport && !loading && <Alert variant={watchReport.observation === 'unavailable' ? 'destructive' : 'default'}>
+                <AlertDescription role="status">
+                    已保存的第 {watchReport.sequence} 次观察（{watchReport.observedAt}）：
+                    {watchReport.observation === 'unavailable'
+                        ? ' 原生服务当次不可用；旧会话已从展示中清除。'
+                        : ' 获得一次只读快照，不代表浏览器正在实时连接 Codex。'}
+                </AlertDescription>
+            </Alert>}
+            {inventory && !loading && <Card>
+                <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-2">
+                    <CardTitle className="flex items-center gap-2">
+                        <FileJson2 className="size-4" aria-hidden="true" />
+                        {inventory.schemaVersion === 2 ? 'app-server 快照' : 'Rollout 记录'}（{inventory.sessions.length}）
+                    </CardTitle>
+                    <Button variant="outline" size="sm" onClick={() => {
+                        epoch.current += 1;
+                        stopFollowing();
+                        setInventory(null);
+                        setWatchReport(null);
+                        setError('');
+                    }}>
+                        <RefreshCw aria-hidden="true" />
+                        清除本地导入
+                    </Button>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                    {inventory.hasMore && <p role="status" className="text-xs text-muted-foreground">
+                        当前仅显示第一页，原生列表仍有后续数据；不代表已发现全部会话。
+                    </p>}
+                    {inventory.sessions.length === 0 && <p role="status" className="py-6 text-sm text-muted-foreground">
+                        当前快照未返回任何会话；不表示其他 Codex 进程没有正在运行的任务。
+                    </p>}
+                    {inventory.sessions.map((item) => <div key={item.sessionId}
+                        className="flex flex-wrap items-start justify-between gap-3 rounded-lg border border-border p-4">
+                        <div className="min-w-0 space-y-1">
+                            <p className="break-words text-sm font-medium">{item.projectLabel}</p>
+                            <p className="break-all font-mono text-xs text-muted-foreground">{item.sessionId}</p>
+                            <p className="text-xs text-muted-foreground">
+                                Codex · 记录时间：{item.startedAt}
+                            </p>
+                        </div>
+                        <div className="flex flex-col items-end gap-1">
+                            <Badge variant="outline">全局运行状态未知</Badge>
+                            {item.observerStatus && <span className="text-xs text-muted-foreground">
+                                {inventory.observerScope === 'attached-loopback-appserver' ? '所连 app-server' : '本次新观察进程'}：{item.observerStatus}
+                            </span>}
+                        </div>
+                    </div>)}
+                </CardContent>
+            </Card>}
+        </>}
+    </div>;
+}
