@@ -107,15 +107,16 @@ func filterContainersByExactName(containers []container.Summary, names map[strin
 }
 
 func (c Client) ListAllContainers() ([]container.Summary, error) {
-	var (
-		options container.ListOptions
-	)
-	options.All = true
-	containers, err := c.cli.ContainerList(context.Background(), options)
-	if err != nil {
-		return nil, err
+	return c.ListAllContainersWithContext(context.Background())
+}
+
+// ListAllContainersWithContext reads all Docker container states without
+// mutating them, with a caller-controlled deadline for G5 preflight.
+func (c Client) ListAllContainersWithContext(ctx context.Context) ([]container.Summary, error) {
+	if ctx == nil {
+		return nil, errors.New("Docker inventory context is required")
 	}
-	return containers, nil
+	return c.cli.ContainerList(ctx, container.ListOptions{All: true})
 }
 
 func (c Client) CreateNetwork(name string) error {
