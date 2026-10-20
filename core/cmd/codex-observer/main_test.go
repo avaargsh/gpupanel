@@ -158,13 +158,14 @@ func TestAuthenticatedObserverPinsDialToLoopbackAndOmitsProxy(t *testing.T) {
 		}
 	}));defer srv.Close()
 	addr:="ws"+strings.TrimPrefix(srv.URL,"http")
-	// Force a deliberately unusable proxy. The custom dialer must ignore it.
+	// Force a deliberately unusable proxy. The explicit direct dialer must
+	// ignore it and complete the authenticated loopback-only RPC handshake.
 	t.Setenv("HTTP_PROXY","http://127.0.0.1:1")
 	t.Setenv("http_proxy","http://127.0.0.1:1")
-	// Test server binds a non-loopback address in httptest's configuration
-	// on some environments; the production endpoint guard must reject it.
-	if _,err:=observeAuthenticated(addr,token);err==nil {
-		t.Fatal("non-loopback test endpoint unexpectedly accepted")
+	got,err:=observeAuthenticated(addr,token)
+	if err!=nil { t.Fatalf("authenticated loopback observation failed: %v",err) }
+	if len(got.Sessions)!=0 || got.Verified || got.Scope!="attached-loopback-appserver" {
+		t.Fatalf("unexpected authenticated projection: %+v",got)
 	}
-	if hits!=0 {t.Fatal("observer attempted a request outside authorized loopback")}
+	if hits!=1 { t.Fatalf("expected one direct authenticated request, got %d",hits) }
 }
