@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"sync"
 	"time"
 )
 
@@ -14,7 +15,26 @@ var projectPattern = regexp.MustCompile("^[a-zA-Z0-9][a-zA-Z0-9_-]{0,63}$")
 
 // DesktopService exposes only fixed, explicitly named user-local actions.
 // It does not bridge privileged Agent/Core API or arbitrary shell commands.
-type DesktopService struct{}
+type DesktopService struct {
+	installMu sync.Mutex
+	installInFlight bool
+}
+
+// A Polkit dialog may remain active for minutes. Prevent two concurrent
+// RPC invocations from prompting twice or racing apt's system lock.
+func (s *DesktopService) claimInstallSlot() bool {
+	s.installMu.Lock()
+	defer s.installMu.Unlock()
+	if s.installInFlight { return false }
+	s.installInFlight = true
+	return true
+}
+
+func (s *DesktopService) releaseInstallSlot() {
+	s.installMu.Lock()
+	s.installInFlight = false
+	s.installMu.Unlock()
+}
 
 func runProfile(timeout time.Duration, args ...string) (string, error) {
 	return runEmbeddedPython(timeout, "gpupanel-workstation.py", args...)
@@ -86,6 +106,10 @@ func (s *DesktopService) InstallPackages(planDigest string) (string, error) {
 	if !digestPattern.MatchString(planDigest) {
 		return "", errors.New("安装计划摘要无效")
 	}
+	if !s.claimInstallSlot() {
+		return "", errors.New("已有 Polkit/apt 操作等待完成，禁止并发授权或自动重试")
+	}
+	defer s.releaseInstallSlot()
 	output, err := runProfile(260*time.Second, "install", "--approve-digest", planDigest)
 	return normalizeAptReceipt(output, err)
 }
