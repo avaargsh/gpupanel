@@ -9,6 +9,8 @@ import (
 	"time"
 )
 
+const nativeUnixObserverScope = "attached-owner-verified-unix-appserver"
+
 const (
 	minWatchInterval = 3 * time.Second
 	maxWatchInterval = 60 * time.Second
