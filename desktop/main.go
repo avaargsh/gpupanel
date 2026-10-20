@@ -45,14 +45,24 @@ func headless(args []string) (string, error) {
 			if !digestPattern.MatchString(digest) {
 				return "", errors.New("invalid tool approval SHA-256")
 			}
-			return service.UvToolInstall(digest)
+			result, err := service.UvToolInstall(digest)
+			if err != nil { return "", err }
+			if !strings.Contains(result, "\"status\": \"VERIFIED\"") && !strings.Contains(result, "\"status\":\"VERIFIED\"") {
+				return "", errors.New("uv tool install was not independently verified")
+			}
+			return result, nil
 		}
 		if strings.HasPrefix(args[0], "--uv-project-create=") {
 			digest := strings.TrimPrefix(args[0], "--uv-project-create=")
 			if !digestPattern.MatchString(digest) {
 				return "", errors.New("invalid project approval SHA-256")
 			}
-			return service.UvProjectCreate(digest)
+			result, err := service.UvProjectCreate(digest)
+			if err != nil { return "", err }
+			if !strings.Contains(result, "\"status\": \"VERIFIED\"") && !strings.Contains(result, "\"status\":\"VERIFIED\"") {
+				return "", errors.New("uv project creation was not independently verified")
+			}
+			return result, nil
 		}
 		return "", errors.New("unsupported command; no arbitrary shell or privileged operation")
 	}
