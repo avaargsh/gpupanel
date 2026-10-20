@@ -152,3 +152,48 @@ the Web session to the kernel-validated OS UID, independently establish the
 native server endpoint's owner or authenticated identity, enforce per-thread
 access, keep a bounded state/event cursor, and fail closed on disconnect.
 Mobile/Relay writes remain deferred.
+
+## Bounded repeated observation (non-background polling)
+
+The manually attached, non-root Go client now supports a **finite** read-only
+watch mode. It does not subscribe to or consume raw native tool events;
+instead it reopens the explicitly chosen WebSocket and re-runs the **DB-only
+read RPC** for every sample. There is no persistent GPUPanel Core observer,
+Agent delegation or live Browser event channel.
+
+```bash
+cd /path/to/gpupanel/core
+go run ./cmd/codex-observer --endpoint ws://127.0.0.1:4222 \
+  --watch --samples 12 --interval-seconds 5 > ../codex-observations.ndjson
+```
+
+The process writes exactly one JSON record per attempt (`schemaVersion:1`,
+`source:local-user-codex-watch`, monotonically increasing `sequence`,
+`observedAt`, and `connection`):
+
+- `connection:observed`: a fresh, sanitized app-server snapshot is included
+  as `snapshot`; `liveStatusVerified` remains false even if the remote
+  native server reports `active` or `idle`.
+- `connection:unavailable`: `snapshot:null` and **no stale sessions** from
+  a previous successful observation. Native error text and raw Codex frames
+  are never written.
+- On the next successful sample, native IDs/status are fetched anew, not
+  inferred from cached results or automatically retried writes.
+
+Each RPC has its own 10-second total deadline, with 512 KiB maximum frame,
+100-frame notification budget and the previous one-page/25-thread bound.
+Only `--samples` 1–120 and `--interval-seconds` 3–60 are accepted.
+The CLI exits after the configured number of samples or Ctrl+C.
+No scheduler/systemd service, automatic retry daemon, mobile Relay or
+background monitoring is installed.
+
+**NDJSON is for local operator diagnostics only**, not the existing browser
+JSON file chooser. The current Agent Sessions UI still accepts one sanitized
+snapshot at a time. Native WebSocket peer ownership/authentication and
+real Codex event subscriptions remain distinct unfinished gates.
+
+Verification: `cd core && go test ./cmd/codex-observer -count=1` checks
+the sequence `observed → unavailable → observed` and asserts missing stale
+data/error details, cancellation, bounds and output-failure handling.
+Successful mock-based tests do not establish a native Codex instance's
+ownership or confirm a live Ubuntu browser-to-Codex connection.
