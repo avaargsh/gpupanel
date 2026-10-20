@@ -112,13 +112,31 @@ func validateUpgradeArchive(filename, packageName string) error {
 	for name, exists := range required {
 		if !exists { return deny("missing required release entry: " + name) }
 	}
-	// tar.Reader stops at its zero-block end marker. That may precede the
-	// gzip trailer, so Next() == io.EOF alone does NOT prove compressed
-	// integrity. Consume the remaining bounded gzip stream to validate its
-	// CRC32/ISIZE trailer and reject truncated or corrupted members BEFORE
-	// any privileged extraction. This is not a publisher signature.
-	if _, err := io.Copy(io.Discard, zr); err != nil {
-		return deny("invalid gzip trailer or trailing compressed payload")
+	// tar.Reader can stop at its zero-block end marker before gzip has
+	// checked CRC32/ISIZE. Consume the rest of the decompressed stream with
+	// a small *explicit* padding budget, and reject nonzero payload following
+	// TAR EOF (including a second gzip member). A compressed zip bomb after
+	// TAR EOF must not make the privileged scanner process unlimited bytes.
+	const maxUpgradeTarPadding = 1 << 20
+	var padding int64
+	buf := make([]byte, 32*1024)
+	for {
+		n, err := zr.Read(buf)
+		padding += int64(n)
+		if padding > maxUpgradeTarPadding {
+			return deny("excessive bytes after tar end marker")
+		}
+		for _, b := range buf[:n] {
+			if b != 0 {
+				return deny("nonzero bytes after tar end marker")
+			}
+		}
+		if errors.Is(err, io.EOF) {
+			break
+		}
+		if err != nil || n == 0 {
+			return deny("invalid gzip trailer or stalled trailing stream")
+		}
 	}
 	return nil
 }
