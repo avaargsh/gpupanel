@@ -39,6 +39,7 @@ class DesktopUIContractTests(unittest.TestCase):
             "ProfileBackup", "ProfileImportPlan", "ProfileImport",
             "BundleExport", "BundleInspect", "BundleRestore",
             "LauncherPlan", "LauncherInstall",
+            "UvProjectPlan", "UvProjectStatus", "UvProjectCreate",
         }
         source = "\n".join(file.read_text() for file in GO)
         for name in sorted(methods):
