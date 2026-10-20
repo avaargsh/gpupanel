@@ -53,6 +53,8 @@ func headless(args []string) (string, error) {
 		return runEmbeddedPython(25*time.Second, "gpupanel-workstation.py", "doctor")
 	case "--versions":
 		return runEmbeddedPython(25*time.Second, "gpupanel-workstation.py", "versions")
+	case "--launcher-plan":
+		return service.LauncherPlan()
 	case "--uv-tool-plan":
 		return service.UvToolPlan()
 	case "--uv-tool-status":
@@ -62,7 +64,7 @@ func headless(args []string) (string, error) {
 	case "--uv-project-status":
 		return service.UvProjectStatus()
 	case "--help":
-		return "GPUPanel Desktop: GUI | --doctor | --versions | --uv-tool-plan | --uv-tool-status | --uv-tool-install=SHA256 | --uv-project-plan | --uv-project-status | --uv-project-create=SHA256 | --open-project-terminal=NAME | --open-project-editor=NAME | --source-plan=NAME | --source-export=NAME:SHA256 | --source-inspect=FILE | --source-restore=FILE:SHA256\n", nil
+		return "GPUPanel Desktop: GUI | --doctor | --versions | --launcher-plan | --launcher-install=SHA256 | --uv-tool-plan | --uv-tool-status | --uv-tool-install=SHA256 | --uv-project-plan | --uv-project-status | --uv-project-create=SHA256 | --open-project-terminal=NAME | --open-project-editor=NAME | --source-plan=NAME | --source-export=NAME:SHA256 | --source-inspect=FILE | --source-restore=FILE:SHA256\n", nil
 	default:
 		// Source transfer CLI uses the exact Wails service methods and the same
 		// plan/ZIP digests. No free-form filesystem paths or commands.
@@ -116,6 +118,13 @@ func headless(args []string) (string, error) {
 				return "", errors.New("invalid local project name")
 			}
 			return headlessLaunchReceipt(service.OpenProjectEditor(project))
+		}
+		if strings.HasPrefix(args[0], "--launcher-install=") {
+			digest := strings.TrimPrefix(args[0], "--launcher-install=")
+			if !digestPattern.MatchString(digest) {
+				return "", errors.New("invalid desktop launcher approval")
+			}
+			return service.LauncherInstall(digest)
 		}
 		if strings.HasPrefix(args[0], "--uv-tool-install=") {
 			digest := strings.TrimPrefix(args[0], "--uv-tool-install=")
