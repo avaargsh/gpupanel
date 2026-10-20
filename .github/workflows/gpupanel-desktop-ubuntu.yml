@@ -25,6 +25,8 @@ on:
       - "scripts/tests/gpupanel_desktop_fresh_home_e2e.py"
       - "scripts/tests/gpupanel_desktop_native_app_e2e.py"
       - "scripts/tests/gpupanel_desktop_launcher_e2e.py"
+      - "scripts/gpupanel-gnome-acceptance.py"
+      - "scripts/tests/test_gpupanel_gnome_acceptance.py"
       - ".github/workflows/gpupanel-desktop-ubuntu.yml"
   workflow_dispatch:
 
@@ -47,6 +49,16 @@ jobs:
           python3 -m unittest discover -s scripts/tests -p 'test_gpupanel_desktop_ui_contract.py' -v
           python3 -m unittest discover -s scripts/tests -p 'test_gpupanel_uv_project.py' -v
           python3 -m unittest discover -s scripts/tests -p 'test_gpupanel_uv_distribution.py' -v
+          python3 -m unittest discover -s scripts/tests -p 'test_gpupanel_gnome_acceptance.py' -v
+      - name: CI may not pose as real GNOME/Wayland acceptance
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/gpupanel-gnome-acceptance.py --preflight > "$RUNNER_TEMP/gnome-preflight.json" && {
+            echo "ERROR: hosted CI unexpectedly passed real GNOME preflight"; exit 1;
+          } || code=$?
+          test "${code:-0}" -eq 3
+          python3 -c 'import json,sys; v=json.load(open(sys.argv[1])); assert v["status"]=="BLOCKED" and not v["realGuiVerified"] and not v["polkitVerified"],v; print("Hosted CI correctly remains NOT_ACCEPTED")' "$RUNNER_TEMP/gnome-preflight.json"
       - name: Validate embedded frontend source
         run: node --check desktop/ui/app.js
       - name: Read-only Ubuntu doctor
@@ -191,9 +203,10 @@ jobs:
         run: |
           set -euo pipefail
           stage="$RUNNER_TEMP/gpupanel-desktop-preview-root"
-          mkdir -p "$stage/bin" "$stage/licenses" "$stage/build"
+          mkdir -p "$stage/bin" "$stage/licenses" "$stage/build" "$stage/acceptance"
           install -m 0755 "$RUNNER_TEMP/gpupanel-desktop-preview" "$stage/bin/gpupanel-desktop"
           install -m 0644 desktop/README.md "$stage/README.md"
+          install -m 0755 scripts/gpupanel-gnome-acceptance.py "$stage/acceptance/gnome-wayland.py"
           install -m 0644 desktop/go.mod desktop/go.sum "$stage/build/"
           install -m 0644 LICENSE NOTICE.md "$stage/licenses/"
           (cd "$stage" && sha256sum bin/gpupanel-desktop > build/binary.sha256)
@@ -217,4 +230,5 @@ jobs:
         run: |
           echo "Unsigned preview archive uploaded with SHA-256; contents are not a published package."
           echo "CLI-only embedded Python check and real pinned uv fresh-HOME project restore both executed without a source checkout."
-          echo "CI-only unsandboxed WebKit Xvfb smoke ran. No production-sandbox GNOME/Wayland GUI, Polkit install, full offline restore, Docker/provider or production release acceptance ran."
+          echo "CI-only unsandboxed Xvfb/Weston ran; the real-GNOME acceptance kit is embedded, but not run on a user-owned GNOME session."
+          echo "No production-sandbox GNOME GUI, Polkit allow/deny, IDE lifecycle or full restore acceptance was asserted."
