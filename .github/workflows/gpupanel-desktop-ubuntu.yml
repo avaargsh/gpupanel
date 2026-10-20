@@ -1,0 +1,54 @@
+name: GPUPanel Desktop Ubuntu Preview
+
+on:
+  pull_request:
+    paths:
+      - "desktop/**"
+      - "profiles/ubuntu24-workstation.v1.json"
+      - "scripts/gpupanel-workstation.py"
+      - "scripts/tests/test_gpupanel_workstation.py"
+      - ".github/workflows/gpupanel-desktop-ubuntu.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  profile-contract:
+    name: User-local profile and no-container contracts
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Python profile checks (no system changes)
+        run: python3 -m unittest discover -s scripts/tests -p 'test_gpupanel_workstation.py' -v
+      - name: Validate embedded frontend source
+        run: node --check desktop/ui/app.js
+      - name: Read-only Ubuntu doctor
+        run: python3 scripts/gpupanel-workstation.py doctor > /tmp/workstation-doctor.json
+
+  desktop-build:
+    name: Wails v3 compile (not GUI acceptance)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install native Linux build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends build-essential pkg-config libgtk-4-dev libwebkitgtk-6.0-dev
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.26'
+          check-latest: false
+          cache: false
+      - name: Resolve Go dependencies and compile
+        working-directory: desktop
+        run: |
+          go mod tidy
+          go test ./...
+          go build -o "$RUNNER_TEMP/gpupanel-desktop-preview" .
+      - name: Clarify acceptance status
+        run: |
+          echo "Compiled a source-preview artifact only."
+          echo "No native GUI, Polkit install, offline restore, Docker/provider or production release acceptance ran."
