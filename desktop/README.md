@@ -22,6 +22,7 @@
 ## 本地 CLI
 
     python3 scripts/gpupanel-workstation.py doctor
+    python3 scripts/gpupanel-workstation.py versions
     python3 scripts/gpupanel-workstation.py install-plan
     python3 scripts/gpupanel-workstation.py env
     python3 scripts/gpupanel-workstation.py restore --approve-digest <profileDigest>
@@ -31,6 +32,7 @@
     python3 scripts/gpupanel-workstation.py devpod-plan "$HOME/GPUPanel/projects/my-project"
 
 - doctor：检查本机 PATH 和 dpkg 包安装状态；即使 Docker/Core/K8s 缺失，也不阻断本机基础能力。检查到命令存在不代表运行时已验收。
+- versions：用户显式点击才限时读取 Git/Python/uv/Node/Go/Docker CLI/VS Code 的版本输出；不连接 Docker Daemon，不启用远程服务，也不将命令存在误报成环境已验收。
 - install-plan → install：只允许所选 Profile 固定白名单的 apt 软件包。执行前要求计划摘要及 Polkit 授权，不向 WebView 暴露任意命令或 shell 字符串。失败或超时记录 UNKNOWN，拒绝自动重试；应核查 dpkg 和 apt 日志。
 - restore：只写当前用户的无凭据 JSON Profile，摘要不匹配、已存在不同数据或符号链接均拒绝，绝不覆盖文件。
 - env：输出临时 shell 会话中可手动选择的 HTTPS 镜像变量，不自动更改全局 apt/uv/npm/pip 配置。
