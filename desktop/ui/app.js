@@ -4,6 +4,7 @@ const call = (name, ...args) => Call.ByName('main.DesktopService.' + name, ...ar
 let profileDigest = '';
 let installDigest = '';
 let bundleDigest = '';
+let profileImportDigest = '';
 let busy = false;
 
 function show(id, value) {
@@ -11,8 +12,8 @@ function show(id, value) {
 }
 function setBusy(value, label) {
   busy = value;
-  ['refresh', 'terminal', 'editor', 'restore', 'install', 'devpod', 'bundle-export', 'bundle-inspect', 'bundle-restore'].forEach((name) => {
-    $(name).disabled = value || (name === 'install' && !installDigest) || (name === 'restore' && !profileDigest) || (name === 'bundle-restore' && !bundleDigest);
+  ['refresh', 'terminal', 'editor', 'restore', 'install', 'devpod', 'bundle-export', 'bundle-inspect', 'bundle-restore', 'profile-backup', 'profile-inspect', 'profile-import'].forEach((name) => {
+    $(name).disabled = value || (name === 'install' && !installDigest) || (name === 'restore' && !profileDigest) || (name === 'bundle-restore' && !bundleDigest) || (name === 'profile-import' && !profileImportDigest);
   });
   $('operation-state').textContent = label;
 }
@@ -90,5 +91,36 @@ $('bundle-restore').addEventListener('click', () => {
   const filename = $('bundle-file').value.trim();
   if (window.confirm('仅恢复白名单项目文件到新目录，不覆盖同名项目。\\nBundle：' + filename + '\\nSHA-256: ' + bundleDigest)) {
     action('BundleRestore', [filename, bundleDigest], () => { bundleDigest = ''; });
+  }
+});
+
+$('profile-backup').addEventListener('click', () => {
+  if (window.confirm('导出无凭据的工作站 Profile 到 ~/GPUPanel/backups/workstation-profile.json？\n已有文件将被拒绝覆盖。此文件不包含开发环境本身。')) {
+    action('ProfileBackup');
+  }
+});
+$('profile-inspect').addEventListener('click', () => {
+  profileImportDigest = '';
+  $('profile-import').disabled = true;
+  action('ProfileImportPlan', [], (p) => {
+    profileImportDigest = p.status === 'READY' ? p.profileDigest : '';
+    show('profile-import-plan', {
+      status: p.status,
+      sha256: p.profileDigest,
+      source: '~/GPUPanel/backups/workstation-profile.json',
+      tools: (p.tools ?? []).map(x => x.name),
+      aptMissing: p.apt?.missing ?? [],
+      mirrors: p.mirrors ?? {},
+      action: '仅保存 Profile；软件安装需单独确认',
+    });
+  });
+});
+$('profile-import').addEventListener('click', () => {
+  if (!profileImportDigest) return;
+  const approved = profileImportDigest;
+  if (window.confirm('导入旧电脑 Profile 到本机用户配置目录？\nSHA-256: ' + approved + '\n已有不同配置绝不覆盖。导入不会安装软件或设置全局镜像。')) {
+    profileImportDigest = '';
+    $('profile-import').disabled = true;
+    action('ProfileImport', [approved]);
   }
 });
