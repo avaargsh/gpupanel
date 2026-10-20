@@ -24,6 +24,7 @@ on:
       - "scripts/tests/gpupanel_desktop_wayland_smoke.py"
       - "scripts/tests/gpupanel_desktop_fresh_home_e2e.py"
       - "scripts/tests/gpupanel_desktop_native_app_e2e.py"
+      - "scripts/tests/gpupanel_desktop_launcher_e2e.py"
       - ".github/workflows/gpupanel-desktop-ubuntu.yml"
   workflow_dispatch:
 
@@ -95,7 +96,7 @@ jobs:
       - name: Install native Linux build dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y --no-install-recommends build-essential pkg-config libgtk-4-dev libwebkitgtk-6.0-dev xvfb xdotool openbox scrot dbus-x11 fonts-noto-cjk fontconfig weston
+          sudo apt-get install -y --no-install-recommends build-essential pkg-config libgtk-4-dev libwebkitgtk-6.0-dev xvfb xdotool openbox scrot dbus-x11 fonts-noto-cjk fontconfig weston desktop-file-utils
       - uses: actions/setup-go@v5
         with:
           go-version: '1.26'
@@ -140,6 +141,11 @@ jobs:
         run: |
           set -euo pipefail
           python3 scripts/tests/gpupanel_desktop_native_app_e2e.py "$RUNNER_TEMP/gpupanel-desktop-preview"
+      - name: Prove compiled binary installs an approved GNOME desktop menu entry
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/tests/gpupanel_desktop_launcher_e2e.py "$RUNNER_TEMP/gpupanel-desktop-preview"
       - name: Prove native binary transfers source between two fresh HOME locations
         shell: bash
         run: |
