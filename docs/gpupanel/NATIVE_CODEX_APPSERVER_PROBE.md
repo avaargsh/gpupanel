@@ -253,3 +253,57 @@ install its Chromium harness.
 Tests: `cd frontend && pnpm test && pnpm typecheck && pnpm build`.
 `nativeWatchTail.test.mjs` exercises partial tail, disconnect clearing,
 staleness/future clocks, invalid lines and oversize refusal.
+
+## Native status notifications on an existing connection (experimental)
+
+For a **trusted, already running** user-owned Codex app-server WebSocket,
+the observer can now use the same connection for the initial DB-only
+`thread/list` and subsequent `thread/status/changed` notifications.
+This avoids synthesizing activity states from polling intervals and
+never opens a privileged Core proxy:
+
+```bash
+umask 077
+cd /path/to/gpupanel/core
+go run ./cmd/codex-observer --endpoint ws://127.0.0.1:4222 \
+  --events --duration-seconds 60 --attempts 3 > ../codex-native-events.ndjson
+```
+
+Unlike `--watch`, `--events` keeps the selected native socket open to
+observe real server notifications. The initial status comes from a
+whitelisted `thread/list` page (25 rows); only status changes referring
+to those same native Thread IDs update its in-memory copy. Thread
+membership changes force a fresh list rather than inventing a new owner.
+`item/*`, approval requests, commands, reasoning, tool data and raw
+transcripts are ignored. Native frames are never exported verbatim.
+
+Each successful initial query or status update writes an existing
+`local-user-codex-watch` NDJSON record with
+`connection:"observed"`, `liveStatusVerified:false`, and
+`observerScope:"attached-loopback-appserver"`. The individual Thread
+status is observed **only on the chosen native app-server**; unrelated
+Codex processes and human approval authority remain unknown.
+
+A WebSocket closure, status parse failure, membership change, idle
+15-second read timeout or notification flood immediately emits an
+`unavailable` record with **no previous snapshot**. The observer then
+opens a new connection and obtains a **fresh DB-only** list before
+re-entering observed state. It is bounded to 1–5 attempts and a
+15–90-second observation period, 512 KiB frame budget,
+1000 notifications per connection and 120 output records. Exhausting
+the attempts exits nonzero. Normal completion also emits unavailable.
+Stopping the CLI terminates the experiment; no Core background task is
+installed.
+
+The existing manual NDJSON import and user-approved Chromium local file
+follow can read this format. Use a private output path and handle
+staleness/disconnects as uncertainty, never as thread completion or a
+go-ahead to approve an operation. The page will not attach or authenticate
+an app-server endpoint itself.
+
+This implementation has **in-process mock WebSocket protocol tests**,
+including `status/changed → disconnect → fresh thread/list` and
+secret suppression. It is not proof of a real Codex installation's
+WebSocket identity, account, native authorization or availability.
+Actual same-user upstream integration and dual-login acceptance remain
+separate NOT RUN gates. Do not expose this loopback socket over WAN.
