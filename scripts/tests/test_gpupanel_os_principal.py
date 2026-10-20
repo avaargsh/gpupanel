@@ -5,12 +5,14 @@ import importlib.util
 from pathlib import Path
 import socket
 import struct
+import sys
 import unittest
 from unittest.mock import Mock
 
 FILE = Path(__file__).resolve().parents[1] / "gpupanel_os_principal.py"
 spec = importlib.util.spec_from_file_location("gpupanel_os_principal", FILE)
 module = importlib.util.module_from_spec(spec)
+sys.modules[spec.name] = module
 assert spec.loader is not None
 spec.loader.exec_module(module)
 
