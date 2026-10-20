@@ -7,6 +7,7 @@ let bundleDigest = '';
 let profileImportDigest = '';
 let launcherDigest = '';
 let uvDigest = '';
+let uvToolDigest = '';
 let busy = false;
 
 function show(id, value) {
@@ -14,8 +15,8 @@ function show(id, value) {
 }
 function setBusy(value, label) {
   busy = value;
-  ['refresh', 'terminal', 'editor', 'restore', 'install', 'devpod', 'bundle-export', 'bundle-inspect', 'bundle-restore', 'profile-backup', 'profile-inspect', 'profile-import', 'versions', 'launcher-plan', 'launcher-install', 'uv-plan', 'uv-create', 'uv-status'].forEach((name) => {
-    $(name).disabled = value || (name === 'install' && !installDigest) || (name === 'restore' && !profileDigest) || (name === 'bundle-restore' && !bundleDigest) || (name === 'profile-import' && !profileImportDigest) || (name === 'launcher-install' && !launcherDigest) || (name === 'uv-create' && !uvDigest);
+  ['refresh', 'terminal', 'editor', 'restore', 'install', 'devpod', 'bundle-export', 'bundle-inspect', 'bundle-restore', 'profile-backup', 'profile-inspect', 'profile-import', 'versions', 'launcher-plan', 'launcher-install', 'uv-plan', 'uv-create', 'uv-status', 'uvtool-plan', 'uvtool-install', 'uvtool-status'].forEach((name) => {
+    $(name).disabled = value || (name === 'install' && !installDigest) || (name === 'restore' && !profileDigest) || (name === 'bundle-restore' && !bundleDigest) || (name === 'profile-import' && !profileImportDigest) || (name === 'launcher-install' && !launcherDigest) || (name === 'uv-create' && !uvDigest) || (name === 'uvtool-install' && !uvToolDigest);
   });
   $('operation-state').textContent = label;
 }
@@ -192,3 +193,31 @@ $('uv-create').addEventListener('click', () => {
 $('uv-status').addEventListener('click', () => {
   action('UvProjectStatus', [], (p) => show('uv-report', p));
 });
+
+$('uvtool-plan').addEventListener('click', () => {
+  uvToolDigest = '';
+  $('uvtool-install').disabled = true;
+  action('UvToolPlan', [], (p) => {
+    uvToolDigest = p.status === 'READY_FOR_APPROVAL' ? p.planDigest : '';
+    show('uvtool-report', {
+      status: p.status,
+      version: p.version,
+      cacheFile: p.archive,
+      officialURL: p.officialURL,
+      expectedSHA256: p.expectedSHA256,
+      destination: p.target,
+      planDigest: p.planDigest ?? '',
+      note: '仅从已验证的本地压缩包安装；下载或镜像源不自动获得信任',
+    });
+  });
+});
+$('uvtool-install').addEventListener('click', () => {
+  if (!uvToolDigest) return;
+  const approved = uvToolDigest;
+  if (window.confirm('仅从 SHA-256 验证通过的离线 uv 原版文件安装到当前用户目录？\n计划 SHA-256：' + approved + '\n不覆盖已安装版本或改写 shell 配置。')) {
+    uvToolDigest = '';
+    $('uvtool-install').disabled = true;
+    action('UvToolInstall', [approved], (p) => show('uvtool-report', p));
+  }
+});
+$('uvtool-status').addEventListener('click', () => action('UvToolStatus', [], (p) => show('uvtool-report', p)));
