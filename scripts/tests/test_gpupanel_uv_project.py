@@ -38,6 +38,20 @@ class UVProjectTest(unittest.TestCase):
                          "APPROVAL_REQUIRED")
         self.assertFalse(self.target.parent.exists())
 
+    def test_cli_approval_digest_is_rechecked_in_python_before_work(self):
+        calls = []
+        def must_not_run(*args, **kwargs):
+            calls.append(args)
+            raise AssertionError("uv process must never launch on wrong digest")
+        with patch.object(project.os, "geteuid", return_value=1000):
+            refused = project.create(self.target, self.home, True,
+                                     approved_digest="0" * 64,
+                                     uv_path="/usr/bin/uv", runner=must_not_run)
+        self.assertEqual(refused["status"], "REFUSED_PLAN_MISMATCH")
+        self.assertFalse(refused["executed"])
+        self.assertFalse(calls)
+        self.assertFalse(self.target.parent.exists())
+
     def test_preexisting_and_symlinked_projects_never_overwritten(self):
         self.target.parent.mkdir(parents=True)
         self.target.mkdir()
