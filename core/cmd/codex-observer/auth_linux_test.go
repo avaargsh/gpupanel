@@ -3,6 +3,7 @@
 package main
 
 import (
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -120,7 +121,7 @@ func TestAuthenticatedWebSocketRejectsMissingTokenAndNeverExportsIt(t *testing.T
 	if snap.Verified || snap.Sessions[0].Liveness != "unknown" {
 		t.Fatal("token was incorrectly promoted to global runtime authority")
 	}
-	encoded, err := jsonMarshalSnapshot(snap)
+	encoded, err := json.Marshal(snap)
 	if err != nil { t.Fatal(err) }
 	if strings.Contains(encoded, token) || strings.Contains(encoded, "SECRET_SHOULD_NEVER_LEAK") ||
 		strings.Contains(encoded, "/home/") {
