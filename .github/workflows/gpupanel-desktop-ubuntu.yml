@@ -63,6 +63,9 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          trap 'echo "Pinned archive test diagnostic:"; test ! -f "$RUNNER_TEMP/uv-plan.json" || cat "$RUNNER_TEMP/uv-plan.json"; test ! -f "$RUNNER_TEMP/uv-install.json" || cat "$RUNNER_TEMP/uv-install.json"' ERR
+          echo "First upstream member names (read-only):"
+          tar -tzf "$HOME/.cache/gpupanel/uv/uv-x86_64-unknown-linux-gnu.tar.gz" | head -n 14
           python3 scripts/gpupanel-uv-distribution.py plan > "$RUNNER_TEMP/uv-plan.json"
           digest="$(python3 -c 'import json,sys; d=json.load(open(sys.argv[1])); assert d["status"]=="READY_FOR_APPROVAL",d; print(d["planDigest"])' "$RUNNER_TEMP/uv-plan.json")"
           python3 scripts/gpupanel-uv-distribution.py install --approve-digest "$digest" > "$RUNNER_TEMP/uv-install.json"
