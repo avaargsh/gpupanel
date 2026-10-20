@@ -170,6 +170,14 @@ func (b *BaseApi) InstallApp(c *gin.Context) {
 	if err := helper.CheckBindAndValidate(&req, c); err != nil {
 		return
 	}
+	// Validate the caller's task identity before catalog lookups or any
+	// admission path. A malformed nonempty ID must never be hidden by a later
+	// detail lookup, and must be rejected before TaskDB/Docker side effects.
+	req.TaskID, err := service.NormalizeAppInstallTaskID(req.TaskID)
+	if err != nil {
+		helper.BadRequest(c, err)
+		return
+	}
 	retired, err := service.IsRetiredRemoteAppDetail(req.AppDetailId)
 	if err != nil {
 		helper.InternalServer(c, err)
@@ -181,11 +189,6 @@ func (b *BaseApi) InstallApp(c *gin.Context) {
 	}
 	// The TaskDB primary key is the durable replay fence. Reserve it before
 	// Install can create Docker networks, local files or AppInstall records.
-	req.TaskID, err = service.NormalizeAppInstallTaskID(req.TaskID)
-	if err != nil {
-		helper.BadRequest(c, err)
-		return
-	}
 	if err = service.ReserveAppInstallTask(req.TaskID, req.Name); err != nil {
 		if errors.Is(err, service.ErrAppInstallTaskReplay) || errors.Is(err, service.ErrAppInstallTaskID) ||
             errors.Is(err, service.ErrAppInstallNameReserved) || errors.Is(err, service.ErrAppInstallNameInvalid) {
