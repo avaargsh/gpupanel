@@ -114,6 +114,12 @@ export default function AgentSessionsPage() {
                         {'python3 scripts/gpupanel-codex-appserver.py list > codex-appserver.json'}
                     </pre>
                     <p className="text-sm text-muted-foreground">
+                        推荐：对自己的 Codex 本机 Unix Socket 进行 <strong>SO_PEERCRED 同 UID 核验</strong>后只读查询，不指定 TCP 端口。仅适用于运行并暴露了本机控制 Socket 的 Codex 版本。
+                    </p>
+                    <pre className="log-output" aria-label="Codex 原生 Unix Socket 只读查询命令">
+                        {'cd core && go run ./cmd/codex-observer --native-unix > ../codex-unix.json'}
+                    </pre>
+                    <p className="text-sm text-muted-foreground">
                         如果你自己已启动了带 WebSocket 的 Codex app-server，可以在<strong>同一普通 Ubuntu 用户终端</strong>查询该明确指定的回环端口。
                         这连接已有服务，而不是启动新的 Codex 进程；只查询一页，依然不会自动持续订阅。
                     </p>
@@ -188,7 +194,7 @@ export default function AgentSessionsPage() {
                         <div className="flex flex-col items-end gap-1">
                             <Badge variant="outline">全局运行状态未知</Badge>
                             {item.observerStatus && <span className="text-xs text-muted-foreground">
-                                {inventory.observerScope === 'attached-loopback-appserver' ? '所连 app-server' : '本次新观察进程'}：{item.observerStatus}
+                                {inventory.observerScope === 'attached-owner-verified-unix-appserver' ? '同 UID Unix Socket 原生服务' : inventory.observerScope === 'attached-loopback-appserver' ? '指定回环 app-server' : '本次新观察进程'}：{item.observerStatus}
                             </span>}
                         </div>
                     </div>)}
