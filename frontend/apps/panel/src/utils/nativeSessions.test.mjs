@@ -54,3 +54,49 @@ test('rejects giant and malformed files without partial rows', () => {
         sessions: Array.from({ length: 101 }, () => JSON.parse(snapshot()).sessions[0]),
     })), /不兼容/);
 });
+
+function appserverSnapshot(overrides = {}) {
+    return JSON.stringify({
+        schemaVersion: 2, source: 'local-user-codex-appserver',
+        readOnly: true, liveStatusVerified: false,
+        observerScope: 'new-app-server-process', hasMore: true,
+        sessions: [{
+            sessionId: 'thr_a',
+            runtimeKind: 'codex',
+            projectLabel: 'my-project',
+            startedAt: '2026-10-20T10:00:00Z',
+            liveness: 'unknown',
+            observerStatus: 'notLoaded',
+            preview: 'SECRET_PROMPT_NOT_TO_RENDER',
+        }],
+        ...overrides,
+    });
+}
+
+test('app-server snapshot retains only scoped state and omits preview', () => {
+    const parsed = parseNativeInventory(appserverSnapshot());
+    assert.equal(parsed.schemaVersion, 2);
+    assert.equal(parsed.observerScope, 'new-app-server-process');
+    assert.equal(parsed.hasMore, true);
+    assert.equal(parsed.liveStatusVerified, false);
+    assert.equal(parsed.sessions[0].sessionId, 'thr_a');
+    assert.equal(parsed.sessions[0].observerStatus, 'notLoaded');
+    assert.equal(parsed.sessions[0].liveness, 'unknown');
+    assert.ok(!JSON.stringify(parsed).includes('SECRET_PROMPT'));
+});
+
+test('untrusted app-server imports cannot claim globally running or remote authority', () => {
+    const original = JSON.parse(appserverSnapshot()).sessions[0];
+    for (const bad of [
+        { observerScope: 'existing-remote-server' },
+        { liveStatusVerified: true },
+        { sessions: [{ ...original, liveness: 'running' }] },
+        { sessions: [{ ...original, observerStatus: 'executing' }] },
+        { sessions: [{ ...original, sessionId: '../root' }] },
+        { sessions: Array.from({ length: 26 }, (_, i) => ({
+            ...original, sessionId: 'thr_' + i,
+        })) },
+    ]) {
+        assert.throws(() => parseNativeInventory(appserverSnapshot(bad)));
+    }
+});
