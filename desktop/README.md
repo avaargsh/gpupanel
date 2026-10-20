@@ -56,7 +56,7 @@ PR 的 GitHub Actions `GPUPanel Desktop Ubuntu Preview` 会在 Ubuntu 24.04 amd6
 | `UNKNOWN` | 可能已经执行/部分执行 | **先人工对账 dpkg 与 `/var/log/apt/history.log`，不自动重试** |
 | `VERIFIED` | 是 | `apt-get` 返回 0 且重新读取全部期望包均显示已安装 |
 
-`pkexec` 的 126/127 语义参见 [Polkit 官方参考](https://polkit.pages.freedesktop.org/polkit/pkexec.1.html)。不会把子进程 stdout/stderr、主机环境变量、口令或 Polkit 诊断全文直接写入 GUI 回执。Go 服务仅允许结构化白名单状态；未经复核的“成功”不会被采信。发起安装后前端立即消费掉审批摘要，无论成功还是拒绝，都必须手动重新检查才可再请求。
+`pkexec` 的 126/127 语义参见 [Polkit 官方参考](https://polkit.pages.freedesktop.org/polkit/pkexec.1.html)。不会把子进程 stdout/stderr、主机环境变量、口令或 Polkit 诊断全文直接写入 GUI 回执。Go 服务仅允许结构化白名单状态；未经复核的“成功”不会被采信。发起安装后前端立即消费掉审批摘要，无论成功还是拒绝，都必须手动重新检查才可再请求；Go 服务同时使用进程内互斥门禁，禁止重叠的 Polkit 提示或并发 apt RPC（不等于跨进程全局锁）。
 
 **自动化范围**：Python Mock 测试覆盖取消、拒绝、超时、apt 部分失败、全部包完成后的验证；Go 测试覆盖结构化收据和冲突状态。这不是“在真实 GNOME/Wayland 上弹出过 Polkit 授权对话框”的证据。用户桌面真机上还需分别验收取消、拒绝、成功与会话异常，且必须事先确认测试 apt 源、目标机器和管理员授权。
 
