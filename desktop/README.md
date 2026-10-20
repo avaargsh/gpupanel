@@ -87,6 +87,21 @@ GitHub Actions 在 Xvfb + Openbox 下实际启动 GTK4/WebKitGTK，并检查窗�
 
     python3 -m unittest discover -s scripts/tests -p 'test_gpupanel_profile_transfer.py' -v
 
+## 独立桌面创建本地 uv Python 工作区（不依赖 Docker）
+
+桌面页面新增 `07 · PYTHON WORKSPACE`：检查计划 → 审核摘要 → 用户确认创建 → 只读复核。复用仓库内已经有测试的 `gpupanel-uv-project.py`，而不是新编写项目模板引擎。
+
+- 目标固定为 `~/GPUPanel/projects/uv-python-starter`；只在目录不存在时创建。模板包含 `README.md`、`main.py`、`pyproject.toml`、`uv.lock` 和生成回执，不覆盖、删除既有项目。
+- 需要用户**先自行安装可信来源的 uv** 与 Ubuntu Python 3。没有 uv 时页面返回 `MISSING_UV`，不会调用安装脚本、强制依赖 Docker 或创建半成品项目。
+- `uv init` 和 `uv lock` 在离线模式中运行，拒绝下载 Python、第三方包和项目配置覆写；成功后须验证锁文件与生成回执。失败/超时不发布完整项目目录。
+- 当前仅提供标准 Python 入门工作区。并未实现第三方依赖在线安装、GPU 微调模板、源码仓库拉取或完整工作环境恢复。用户数据要单独备份。
+
+原仓库已包含 CLI 形式的独立验收：
+
+    python3 -m unittest discover -s scripts/tests -p 'test_gpupanel_uv_project.py' -v
+
+Desktop 将 Python 执行器及其 Catalog 验证依赖内嵌到桌面二进制，Go/CI 检查其字节与上游源码一致；可从未克隆 GPUPanel 的新电脑启动。CI 可能因未预装 uv 而跳过真实 `uv init/lock/run`，跳过不算真机项目安装通过。
+
 ## 新机项目骨架离线迁移（无 Docker）
 
 在旧电脑的普通 Ubuntu 用户目录中，选择已经存在的 `~/GPUPanel/projects/<project>` 项目。快照只包含固定白名单文件：`pyproject.toml`、`uv.lock`、`README.md`、`main.py`、Node/Go 锁文件、Dev Container 定义和 VS Code 扩展清单。不包含完整源码仓库、数据目录、虚拟环境、容器卷或 SSH 凭据。**白名单文件本身仍可能含敏感值，导出前必须由操作者人工检查。**
@@ -128,6 +143,7 @@ GitHub Actions 在 Xvfb + Openbox 下实际启动 GTK4/WebKitGTK，并检查窗�
 | Wails 桌面实机 GTK/WebKit/终端/IDE 启动 | NOT RUN |
 | 国内离线镜像缓存与真实软件安装 | NOT RUN（此前仅有工具和合成制品测试） |
 | DevPod 浏览器 IDE 真实创建/停止/恢复 | NOT RUN |
+| 离线创建本地 uv 项目 | Go/CLI 预览契约；uv 真机生成按条件执行 |
 | 离线骨架锁文件/配置快照与新目录恢复 | 具备源码与单测，真实跨机 NOT RUN |
 | 跨机器无密钥 Profile 导出/预检/导入 | Ubuntu CLI 合约测试；GUI 真机 NOT RUN |
 | 新机完整源码、数据和个人 IDE 设置/扩展恢复 | NOT IMPLEMENTED |
