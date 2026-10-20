@@ -8,7 +8,9 @@ on:
   workflow_dispatch:
 jobs:
   visual-smoke:
-    runs-on: ubuntu-latest
+    # Keep browser smoke on the same pinned Ubuntu baseline as VM acceptance.
+    # ubuntu-latest moved to Ubuntu 26.04 before Playwright 1.56 supported it.
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     permissions:
       contents: read
@@ -30,7 +32,7 @@ jobs:
         working-directory: frontend
       - name: Install Chromium test harness
         run: |
-          python3 -m pip install 'playwright==1.56.0'
+          python3 -m pip install 'playwright==1.63.0'
           python3 -m playwright install --with-deps chromium
       - name: Simulated browser functional and layout smoke
         run: python3 scripts/browser/run-react-tests.py
