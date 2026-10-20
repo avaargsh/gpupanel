@@ -48,8 +48,14 @@ $('refresh').addEventListener('click', async () => {
   });
   await action('MirrorEnvironment', [], (p) => show('mirrors', p));
 });
-$('terminal').addEventListener('click', () => action('OpenTerminal'));
-$('editor').addEventListener('click', () => action('OpenEditor'));
+$('terminal').addEventListener('click', () => {
+  const project = $('project').value.trim();
+  action('OpenProjectTerminal', [project]);
+});
+$('editor').addEventListener('click', () => {
+  const project = $('project').value.trim();
+  action('OpenProjectEditor', [project]);
+});
 $('restore').addEventListener('click', () => {
   if (!profileDigest) return;
   if (window.confirm('恢复无密钥 Profile 到当前用户配置目录？\nSHA-256: ' + profileDigest + '\n不会覆盖已有不同配置。')) {
