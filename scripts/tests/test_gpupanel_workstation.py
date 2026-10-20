@@ -96,6 +96,24 @@ class WorkstationTests(unittest.TestCase):
             self.assertEqual(planned["command"], ["devpod", "up", str(project), "--ide", "openvscode"])
             self.assertEqual(ws.devpod_plan(home, home=home)["status"], "INVALID_PROJECT")
 
+    def test_version_audit_is_bounded_and_never_queries_docker_daemon(self):
+        calls = []
+        def fake(args, **kwargs):
+            calls.append(args)
+            return SimpleNamespace(returncode=0, stdout="git version 2.47.0\\n", stderr="")
+        audit = ws.versions(which=lambda x: "/usr/bin/" + x if x in ("git", "docker") else None,
+                            runner=fake)
+        self.assertEqual(audit["status"], "READ_ONLY")
+        self.assertFalse(audit["daemonChecked"])
+        self.assertEqual(calls, [["/usr/bin/git", "--version"], ["/usr/bin/docker", "--version"]])
+        self.assertEqual(next(x for x in audit["tools"] if x["tool"] == "python3")["status"], "NOT_FOUND")
+
+    def test_version_escape_sequence_rejected(self):
+        def malicious(args, **kwargs):
+            return SimpleNamespace(returncode=0, stdout="\\x1b[31msecret", stderr="")
+        audit = ws.versions(which=lambda _: "/usr/bin/mock", runner=malicious)
+        self.assertTrue(all(t["status"] == "VERSION_UNVERIFIED" for t in audit["tools"]))
+
     def test_mirror_exports_session_only(self):
         lines = ws.env_lines(self.profile)
         self.assertIn("export UV_DEFAULT_INDEX=", lines)
