@@ -27,6 +27,9 @@ func TestEmbeddedSourceMigrationAcrossHomes(t *testing.T) {
 	if _, err := service.SourceExport("native-go", strings.Repeat("0", 64)); err == nil {
 		t.Fatal("changed snapshot approval was accepted")
 	}
+	if _, err := os.Stat(filepath.Join(first, "GPUPanel", "backups")); !os.IsNotExist(err) {
+		t.Fatal("failed approval must not create even the backup directory")
+	}
 	backup := filepath.Join(first, "GPUPanel", "backups", "native-go-source-v1.zip")
 	if _, err := os.Stat(backup); !os.IsNotExist(err) { t.Fatal("refused export wrote a ZIP") }
 
