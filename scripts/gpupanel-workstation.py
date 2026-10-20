@@ -113,7 +113,7 @@ def install_plan(profile, *, runner=subprocess.run, os_ok=None):
     state = ("UNSUPPORTED_OS" if observed["status"] != "READY" else
              ("ALREADY_INSTALLED" if not missing else "READY_FOR_APPROVAL"))
     return {"status": state, "planDigest": hashlib.sha256(canonical(plan)).hexdigest(),
-            "command": ["pkexec", *args] if missing else [],
+            "command": ["/usr/bin/pkexec", *args] if missing else [],
             "note": "Uses the operator's configured apt sources; versions are not pinned"}
 
 
@@ -121,7 +121,7 @@ def install_apt(profile, approved, *, runner=subprocess.run, os_ok=None):
     plan = install_plan(profile, runner=runner, os_ok=os_ok)
     if plan["status"] != "READY_FOR_APPROVAL" or approved != plan["planDigest"]:
         return {"status": "REFUSED_PLAN_MISMATCH", "executed": False}
-    if os.geteuid() == 0 or not shutil.which("pkexec"):
+    if os.geteuid() == 0 or not Path("/usr/bin/pkexec").is_file():
         return {"status": "POLKIT_UNAVAILABLE", "executed": False}
     try:
         completed = runner(plan["command"], capture_output=True, text=True,
