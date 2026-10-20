@@ -68,6 +68,43 @@ def fixture(action: str):
            action, "--guest-sha", guest_sha])
 
 
+def guest_inventory() -> dict:
+    """Read-only guest DB and Docker inventory around the invalid-ID probe."""
+    probe = """import json,sqlite3,subprocess
+from pathlib import Path
+db=Path('/opt/gpupanel/db')
+def count(path,table):
+ p=db/path
+ c=sqlite3.connect('file:'+str(p)+'?mode=ro',uri=True)
+ try:
+  value=c.execute('SELECT COUNT(*) FROM '+table).fetchone()[0]
+ finally:
+  c.close()
+ return value
+def docker(*args):
+ output=subprocess.check_output(['docker',*args],text=True,timeout=10)
+ return sorted(x for x in output.splitlines() if x)
+print(json.dumps({
+ 'apps':count('agent.db','app_installs'),
+ 'tasks':count('task.db','tasks'),
+ 'containers':docker('ps','-aq','--no-trunc'),
+ 'networks':docker('network','ls','-q','--no-trunc'),
+ 'volumes':docker('volume','ls','-q'),
+},sort_keys=True))
+"""
+    raw = guest(["sudo", "python3", "-c", probe])
+    values = json.loads(raw)
+    if (
+        type(values.get("apps")) is not int or values["apps"] < 0
+        or type(values.get("tasks")) is not int or values["tasks"] < 0
+        or any(not isinstance(values.get(key), list)
+               or not all(isinstance(v, str) for v in values[key])
+               for key in ("containers", "networks", "volumes"))
+    ):
+        raise RuntimeError("guest AppInstall admission inventory is not trustworthy")
+    return values
+
+
 local_image = guest(["sudo", "docker", "image", "inspect",
                      "--format", "{{.Id}}", FIXTURE_IMAGE])
 if not local_image.startswith("sha256:") or len(local_image) != 71:
@@ -120,7 +157,7 @@ with sync_playwright() as play:
         return "unknown"
 
     def request(method: str, endpoint: str, body: dict | None = None,
-                success=True):
+                success=True, *, raw_response=False, verify_rejection=True):
         allowed_post = {
             "/apps/sync/local", "/apps/install", "/apps/installed/op",
             "/logs/tasks/search",
@@ -152,9 +189,9 @@ with sync_playwright() as play:
             print("G5_APP_API_FAILURE_STAGE=" + api_failure_stage(endpoint) +
                   " release=NO_GO", flush=True)
             raise RuntimeError("scoped Core App API refused the expected operation")
-        if not success and accepted:
+        if not success and accepted and verify_rejection:
             raise RuntimeError("Core accepted a deliberately invalid AppInstall")
-        return response.get("data")
+        return response if raw_response else response.get("data")
 
     def await_task(task_id: str, scope: str, operation: str, timeout=85):
         deadline = time.monotonic() + timeout
@@ -189,13 +226,21 @@ with sync_playwright() as play:
     if type(detail_id) is not int or detail_id <= 0:
         raise RuntimeError("local catalog detail was not actually persisted")
 
-    # This rejected request is *not* a retry: malformed UUID must fail before
-    # durable task admission and must never leave AppInstall side effects.
-    request("POST", "/apps/install", {
-        "appDetailId": detail_id, "name": APP_NAME,
+    # Use a nonexistent detail so a broken/missing TaskID cannot deploy the
+    # fixture app. A correct malformed-ID guard rejects before any TaskDB write;
+    # if the proxy drops taskID, the inventory comparison catches any durable
+    # receipt or Docker/AppInstall mutation. Never retry this mutation.
+    inventory_before = guest_inventory()
+    rejected = request("POST", "/apps/install", {
+        "appDetailId": 2147483647, "name": APP_NAME,
         "params": {}, "taskID": "../invalid", "pullImage": False,
-    }, success=False)
-    steps.append("invalid_install_uuid_rejected")
+    }, success=False, raw_response=True, verify_rejection=False)
+    inventory_after = guest_inventory()
+    if rejected.get("http") == 200 and rejected.get("code") == 200:
+        raise RuntimeError("Core accepted a deliberately invalid AppInstall")
+    if inventory_after != inventory_before:
+        raise RuntimeError("invalid TaskID probe changed TaskDB/AppInstall or Docker inventory")
+    steps.append("invalid_install_uuid_rejected_without_side_effects")
 
     install_task = str(uuid4())
     observed_ids.append(install_task)
