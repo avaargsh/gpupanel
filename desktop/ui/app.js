@@ -5,6 +5,7 @@ let profileDigest = '';
 let installDigest = '';
 let bundleDigest = '';
 let profileImportDigest = '';
+let launcherDigest = '';
 let busy = false;
 
 function show(id, value) {
@@ -12,8 +13,8 @@ function show(id, value) {
 }
 function setBusy(value, label) {
   busy = value;
-  ['refresh', 'terminal', 'editor', 'restore', 'install', 'devpod', 'bundle-export', 'bundle-inspect', 'bundle-restore', 'profile-backup', 'profile-inspect', 'profile-import', 'versions'].forEach((name) => {
-    $(name).disabled = value || (name === 'install' && !installDigest) || (name === 'restore' && !profileDigest) || (name === 'bundle-restore' && !bundleDigest) || (name === 'profile-import' && !profileImportDigest);
+  ['refresh', 'terminal', 'editor', 'restore', 'install', 'devpod', 'bundle-export', 'bundle-inspect', 'bundle-restore', 'profile-backup', 'profile-inspect', 'profile-import', 'versions', 'launcher-plan', 'launcher-install'].forEach((name) => {
+    $(name).disabled = value || (name === 'install' && !installDigest) || (name === 'restore' && !profileDigest) || (name === 'bundle-restore' && !bundleDigest) || (name === 'profile-import' && !profileImportDigest) || (name === 'launcher-install' && !launcherDigest);
   });
   $('operation-state').textContent = label;
 }
@@ -132,4 +133,28 @@ $('versions').addEventListener('click', () => {
       x.tool + ': ' + (x.version ?? x.status)).join('\n') +
       '\n仅核对 CLI 版本，不验证 Docker Daemon 或开发工具是否完整可用');
   });
+});
+
+$('launcher-plan').addEventListener('click', () => {
+  launcherDigest = '';
+  $('launcher-install').disabled = true;
+  action('LauncherPlan', [], (p) => {
+    launcherDigest = p.status === 'READY_FOR_APPROVAL' ? p.planDigest : '';
+    show('launcher-report', {
+      status: p.status,
+      binary: p.binary,
+      target: p.target,
+      digest: p.planDigest ?? '',
+      note: '仅用户本地应用菜单；不覆盖已有文件，不安装系统服务',
+    });
+  });
+});
+$('launcher-install').addEventListener('click', () => {
+  if (!launcherDigest) return;
+  const approved = launcherDigest;
+  if (window.confirm('创建当前用户 GPUPanel Desktop 应用菜单快捷方式？\n计划 SHA-256：' + approved + '\n绝不覆盖已有文件。')) {
+    launcherDigest = '';
+    $('launcher-install').disabled = true;
+    action('LauncherInstall', [approved]);
+  }
 });
