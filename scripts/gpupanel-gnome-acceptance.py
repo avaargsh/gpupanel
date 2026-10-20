@@ -50,7 +50,10 @@ def preflight(env: dict[str, str], release: str, *, uid: int,
         reasons.append("WAYLAND_SOCKET_UNRESOLVED")
     else:
         if (runtime_stat is None or not stat.S_ISDIR(runtime_stat.st_mode)
-                or runtime_stat.st_uid != uid or stat.S_ISLNK(runtime_stat.st_mode)):
+                or runtime_stat.st_uid != uid or stat.S_ISLNK(runtime_stat.st_mode)
+                or (runtime_stat.st_mode & 0o077)):
+            # XDG_RUNTIME_DIR must be private to the session user. A shared
+            # runtime directory can expose Wayland/DBus sockets to other users.
             reasons.append("UNTRUSTED_RUNTIME_DIR")
         if (socket_stat is None or not stat.S_ISSOCK(socket_stat.st_mode)
                 or socket_stat.st_uid != uid):
