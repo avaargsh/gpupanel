@@ -49,6 +49,25 @@ GitHub Actions 在 Xvfb + Openbox 下实际启动 GTK4/WebKitGTK，并检查窗�
 
 首次 Xvfb 截图发现最小 Ubuntu Runner 中文缺字，需安装 `fonts-noto-cjk`；预览运行说明明确要求该依赖。字体只是界面显示依赖，不涉及 GPU、Docker 或远程 Core。
 
+## 无源码目录的真实新机 Python 工作流
+
+Ubuntu 24.04 x64 预览二进制支持固定的命令行入口，因此可以在**不克隆 GPUPanel 仓库、不启用 GUI、不安装 Docker/Core/Kubernetes**的普通用户 HOME 内完成：
+
+    ~/GPUPanel/desktop-preview/bin/gpupanel-desktop --doctor
+    ~/GPUPanel/desktop-preview/bin/gpupanel-desktop --uv-tool-plan
+    # 将上一步结果中的 planDigest 复制到确认动作：
+    ~/GPUPanel/desktop-preview/bin/gpupanel-desktop --uv-tool-install=<planDigest>
+    ~/GPUPanel/desktop-preview/bin/gpupanel-desktop --uv-tool-status
+    ~/GPUPanel/desktop-preview/bin/gpupanel-desktop --uv-project-plan
+    ~/GPUPanel/desktop-preview/bin/gpupanel-desktop --uv-project-create=<planDigest>
+    ~/GPUPanel/desktop-preview/bin/gpupanel-desktop --uv-project-status
+
+操作前需要将 **官方原版且 SHA-256 验证通过**的 `uv-x86_64-unknown-linux-gnu.tar.gz` 放至上文约定的用户缓存路径。工具校验同时固定上游压缩包与原始 ELF 可执行文件 SHA-256，回执中自填的二进制 SHA-256 **不构成独立授权**。
+
+项目创建前 Go 检查审批摘要，Python 执行器再次检查同一摘要；摘要变化、已存在项目、无 uv、用户修改或异常操作均拒绝自动覆盖。必须观察明确的 `VERIFIED` 回执，不能仅以进程能启动或命令退出为成功。
+
+GitHub Actions `Prove source-free desktop binary creates and runs a project with official uv` 使用真正编译的二进制、官方归档、全新 HOME 验证：错误摘要拒绝→uv 安装→创建/锁定项目→离线运行 `main.py`→修改项目后拒绝覆盖。该门禁只证明**个人 Python 最小可用闭环**，不证明 GUI、扩展、GPU/容器或完整跨设备恢复。
+
 ## 本地 CLI
 
     python3 scripts/gpupanel-workstation.py doctor
@@ -105,7 +124,7 @@ GPUPanel 仅审核一个固定的上游版本：**uv 0.13.3 / Linux x86_64 GNU**
 - 解析压缩包时拒绝符号链接、越界路径、重复 uv 文件和异常体积，最终只复制检查过的 `uv` 二进制，而非解压运行脚本。
 - 安装到 `~/GPUPanel/tools/uv/0.13.3/bin/uv`，用户目录内原子发布、禁止覆盖、无需 sudo。GPUPanel Desktop 只在本地回执与二进制 SHA-256 一致时，将该 uv 的目录优先加入**自己的子进程 PATH**；不修改用户 `.bashrc`。
 - 无网络时仍能校验、安装缓存制品。若不希望通过桌面管理 uv，可以继续使用独立安装的 uv，缺失时不会阻断桌面基础能力。
-- SHA-256 固定内容完整性和人工审查的来源约定，仍不能替代未来正式的签名、上游 Attestation 验证及镜像仓库治理。真实官方压缩包分发、断网安装和完整 uv 创建/运行仍需目标 Ubuntu 验收。
+- 固定发布归档与官方 ELF 双重 SHA-256；这确保当前审查的原版内容，不代替未来签名、上游 Attestation、源镜像治理或可执行代码安全审查。GitHub Ubuntu Runner 已跑过官方制品离线安装与完整 uv 项目创建/运行；**真实目标桌面及跨机器人工验收仍未完成**。
 
 ## Profile 迁移：从旧电脑到新电脑
 
