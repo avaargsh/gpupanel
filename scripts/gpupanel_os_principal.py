@@ -32,6 +32,10 @@ def read_peer_credentials(sock: socket.socket) -> PeerCredentials:
     """
     if not hasattr(socket, "SO_PEERCRED"):
         raise PeerIdentityUnavailable("SO_PEERCRED is unavailable on this platform")
+    # SO_PEERCRED is meaningful only for AF_UNIX sockets. Fail closed before
+    # querying the option so callers cannot accidentally pass TCP/other sockets.
+    if getattr(sock, "family", None) != socket.AF_UNIX:
+        raise PeerIdentityUnavailable("peer credentials require an AF_UNIX socket")
     try:
         raw = sock.getsockopt(
             socket.SOL_SOCKET, socket.SO_PEERCRED, struct.calcsize("3i")
