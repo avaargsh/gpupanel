@@ -53,10 +53,9 @@ jobs:
       - name: Resolve Go dependencies and compile
         working-directory: desktop
         run: |
-          go mod tidy
           go mod verify
-          go test ./...
-          go build -trimpath -o "$RUNNER_TEMP/gpupanel-desktop-preview" .
+          go test -mod=readonly ./...
+          go build -mod=readonly -trimpath -o "$RUNNER_TEMP/gpupanel-desktop-preview" .
       - name: Prove binary read-only doctor without source, display or Docker
         shell: bash
         run: |
@@ -89,7 +88,7 @@ jobs:
             > "$stage/build/provenance.txt"
           archive="$RUNNER_TEMP/gpupanel-desktop-preview-ubuntu24-amd64.tar.gz"
           tar -czf "$archive" -C "$stage" .
-          sha256sum "$archive" > "$archive.sha256"
+          (cd "$RUNNER_TEMP" && sha256sum gpupanel-desktop-preview-ubuntu24-amd64.tar.gz > gpupanel-desktop-preview-ubuntu24-amd64.tar.gz.sha256)
           tar -tzf "$archive" >/dev/null
       - name: Upload checksumed source-preview binary (no release)
         uses: actions/upload-artifact@v4
