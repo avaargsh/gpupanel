@@ -73,6 +73,37 @@ class CodexInventoryTests(unittest.TestCase):
         with self.assertRaises(inventory.InventoryUnavailable):
             inventory.scan(self.home, self.uid)
 
+    def test_directory_swap_cannot_redirect_open_archive_walk(self):
+        self.rollout(sid=SESSION_A)
+        outside = self.home / "outside"
+        outside.mkdir(mode=0o700)
+        outside_rollout = outside / "rollout-outside.jsonl"
+        outside_rollout.write_text(json.dumps({
+            "timestamp": "2026-10-20T11:00:00.000Z",
+            "type": "session_meta",
+            "payload": {"id": SESSION_B, "cwd": "/home/ubuntu/secret"},
+        }) + "\\n")
+        original_day = self.home / "day-original"
+        day_inode = self.day.stat().st_ino
+        real_listdir = os.listdir
+        swapped = False
+
+        def swap_path_after_open(directory):
+            nonlocal swapped
+            if (not swapped and isinstance(directory, int)
+                    and os.fstat(directory).st_ino == day_inode):
+                swapped = True
+                self.day.rename(original_day)
+                self.day.symlink_to(outside, target_is_directory=True)
+            return real_listdir(directory)
+
+        with patch.object(inventory.os, "listdir", side_effect=swap_path_after_open):
+            result = inventory.scan(self.home, self.uid)
+
+        self.assertTrue(swapped)
+        self.assertEqual([row["sessionId"] for row in result["sessions"]], [SESSION_A])
+        self.assertNotIn("secret", json.dumps(result))
+
     def test_rejects_malformed_uuid_and_huge_first_line(self):
         self.rollout(sid="not-a-uuid")
         self.assertEqual(inventory.scan(self.home, self.uid)["sessions"], [])
