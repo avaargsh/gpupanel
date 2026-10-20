@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { readLocalWatchTail } from './nativeWatchTail.ts';
+import { readLocalWatchTail as readTail } from './nativeWatchTail.ts';\nimport { parseNativeWatch } from './nativeSessions.ts';\nconst readLocalWatchTail = (text, now) => readTail(text, parseNativeWatch, now);
 
 const now = Date.parse('2026-10-20T12:00:10.000Z');
 function line(sequence, state, iso = '2026-10-20T12:00:00.000Z') {
