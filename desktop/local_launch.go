@@ -86,7 +86,13 @@ func startLocalProjectApp(kind, project string,
 }
 
 func startNativeProcess(binary string, args ...string) error {
-	return exec.Command(binary, args...).Start()
+	// Launch-and-release, rather than leaving an unreaped child attached to
+	// the long-running Wails process. Exit/GUI readiness remain UNKNOWN.
+	cmd := exec.Command(binary, args...)
+	if err := cmd.Start(); err != nil {
+		return err
+	}
+	return cmd.Process.Release()
 }
 
 func (s *DesktopService) OpenProjectTerminal(projectName string) (string, error) {
