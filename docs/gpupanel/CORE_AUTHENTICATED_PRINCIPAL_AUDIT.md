@@ -1,0 +1,44 @@
+# Core-to-Agent Authenticated Principal Audit
+
+Status: source audit only; no runtime authorization behavior changed.
+
+## Decision
+
+**Do not propagate an end-user OS principal to the Agent yet.** The current Core-to-Agent Unix socket identifies the connecting Core process, not the authenticated browser user. A browser-authenticated principal is available in selected Core handlers, but the reviewed proxy path does not yet define a signed, audience-bound, one-time assertion that the Agent can independently verify.
+
+This audit does not authorize any host operation and does not change the M0 gate: G3–G6 remain NO-GO.
+
+## Reviewed source paths
+
+- `core/middleware/session.go`
+- `core/init/router/proxy.go`
+- `core/init/router/proxy_host_operations.go`
+- `core/init/proxy/proxy.go`
+- `agent/server/server.go`
+- `agent/server/unix_peer_identity_linux.go` (PR #175)
+
+## Findings
+
+1. **Core has an authenticated session source, but only in the Core trust domain.** `SessionAuth` loads the session via `global.SESSION.Get(c)` and places the session object in Gin context. The proxy path separately calls `checkSession` for relevant requests and has narrow admin checks for host-operation paths. This is the right place to derive a future assertion, after auditing all bypasses and route-specific authentication modes; it is not evidence the Agent currently receives or verifies that identity.
+
+2. **The reverse proxy does not currently establish an Agent-verifiable principal assertion.** `core/init/proxy/proxy.go` rewrites the request for the Unix-socket transport and preserves/rewrites forwarding metadata. The reviewed code does not add a cryptographically authenticated, short-lived principal assertion with an explicit audience, resource/scope, nonce, and replay policy. Client-supplied headers such as `X-Panel-User` are not an acceptable substitute.
+
+3. **Agent-side `SO_PEERCRED` is transport evidence only.** The peer UID/PID/GID belong to the process that opened the Unix connection (normally Core). They must not be interpreted as the browser's user or used to choose a desktop session. The captured identity is not currently an end-user authorization check.
+
+4. **The reviewed route guards are narrow and do not generalize to every proxied endpoint.** `authorizeHostOperations` and `authorizeLocalAppEvidence` impose explicit local/admin restrictions on their own path families. Their existence must not be interpreted as a global policy for all Agent APIs. Any future principal assertion must be minted only after the relevant route has completed authentication and authorization.
+
+5. **No safe implementation shortcut was found.** Forwarding the session cookie, trusting forwarded user headers, mapping the Core service UID to a local account, or trusting a persisted observer/session inventory would create a false identity binding. The safe behavior while the chain is incomplete is `UNKNOWN/UNBOUND` and deny access to the proposed session projection.
+
+## Required design before wiring identity
+
+- Define a single Core helper that accepts only server-derived session context and an already-authorized, narrowly scoped operation; reject API-key/local-request/anonymous paths unless their authority is separately specified.
+- Define an Agent-verifiable assertion format and key lifecycle (issuer, audience, subject/principal ID, local UID, resource/session ID, explicit read-only scope, issued-at, short expiry, random nonce/JTI, signing-key rotation).
+- Store and verify the signing key outside client-controlled configuration; reject missing keys, invalid signatures, wrong issuer/audience/scope, expired/future-issued assertions, UID mismatch, and reused/replayed IDs. Do not add a permissive fallback.
+- Bind the assertion to the accepted connection/request and consume it once server-side; document the threat model for a compromised Core process and the fact that signatures do not protect against a fully compromised issuer.
+- Independently verify the native runtime's session owner and current liveness. A valid app assertion plus a valid Unix peer credential still does not prove a Codex/VS Code session belongs to that user.
+- Add negative tests for forged headers, unauthenticated/API-key requests, cross-user session selection, wrong audience/scope, expiry, replay, restart, stale/unknown session state, and Core service UID masquerading as a user.
+- Complete exact-SHA Ubuntu VM acceptance and independent review before changing M0 status.
+
+## Explicit non-claims
+
+This audit does not prove end-user-to-UID binding, native session ownership/liveness, same-UID isolation, package signature/attestation, or production readiness. No runtime tests were run for this documentation-only change.
