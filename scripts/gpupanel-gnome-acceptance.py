@@ -74,7 +74,9 @@ def preflight(env: dict[str, str], release: str, *, uid: int,
             "gnome": "NOT_GNOME_DESKTOP" not in reasons,
             "wayland": "NOT_WAYLAND_SESSION" not in reasons and
                        "WAYLAND_SOCKET_MISSING" not in reasons and
-                       "WAYLAND_SOCKET_UNRESOLVED" not in reasons,
+                       "WAYLAND_SOCKET_UNRESOLVED" not in reasons and
+                       "UNTRUSTED_RUNTIME_DIR" not in reasons and
+                       "WAYLAND_SOCKET_UNTRUSTED" not in reasons,
             "noExplicitSandboxBypass": "WEBKIT_SANDBOX_BYPASS_PRESENT" not in reasons,
         },
         "normalWebkitSandboxVerified": False,
