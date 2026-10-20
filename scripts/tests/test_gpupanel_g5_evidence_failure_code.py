@@ -82,12 +82,12 @@ class G5EvidenceFailureCodeTests(unittest.TestCase):
         for state in ("running", "created", "exited", "restarting", "paused",
                       "removing", "dead", "missing", "other", "unavailable"):
             self.assertEqual(failure.app_docker_state(
-                "G5_APP_DOCKER_STATE=" + state + " release=NO_GO\\n"
+                "G5_APP_DOCKER_STATE=" + state + " release=NO_GO\n"
             ), state)
         for invalid in (
-            "G5_APP_DOCKER_STATE=SECRET release=NO_GO\\n",
-            "G5_APP_DOCKER_STATE=running token=SECRET release=NO_GO\\n",
-            "G5_APP_DOCKER_STATE=running release=GO\\n",
+            "G5_APP_DOCKER_STATE=SECRET release=NO_GO\n",
+            "G5_APP_DOCKER_STATE=running token=SECRET release=NO_GO\n",
+            "G5_APP_DOCKER_STATE=running release=GO\n",
         ):
             self.assertEqual(failure.app_docker_state(invalid), "unknown")
 
