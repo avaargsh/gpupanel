@@ -74,7 +74,9 @@ def main() -> int:
         # Openbox provides window focus semantics; Xvfb itself has no WM.
         wm = subprocess.Popen(["openbox", "--sm-disable"], env=env,
                               stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        app_log = root / "app.log"
+        app_log = args.screenshot.with_suffix(".log")
+        if app_log.is_symlink() or app_log.exists():
+            raise SmokeFailure("refuse to overwrite GUI diagnostics")
         try:
             with app_log.open("wb") as output:
                 app = subprocess.Popen([str(binary)], cwd=root, env=env,
@@ -109,7 +111,9 @@ def main() -> int:
                         app.wait(timeout=3)
         except Exception:
             if app_log.exists():
-                print("Last app diagnostics:\n" + app_log.read_text(errors="replace")[-2000:])
+                diagnostic = app_log.read_text(errors="replace")
+                print("App diagnostic header:\\n" + diagnostic[:4500])
+                print("App diagnostic tail:\\n" + diagnostic[-4500:])
             raise
         finally:
             wm.terminate()
