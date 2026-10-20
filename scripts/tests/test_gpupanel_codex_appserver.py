@@ -51,7 +51,7 @@ class AppServerProbeTests(unittest.TestCase):
         self.assertEqual(result["sessions"], [{
             "sessionId": THREAD,
             "runtimeKind": "codex", "projectLabel": "my-project",
-            "startedAt": "2026-10-20T07:20:00Z", "liveness": "unknown",
+            "startedAt": "2026-10-20T10:00:00Z", "liveness": "unknown",
             "observerStatus": "notLoaded",
         }])
         serialized = json.dumps(result)
