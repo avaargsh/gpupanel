@@ -41,6 +41,7 @@ class ProfileTransferTests(unittest.TestCase):
         self.assertEqual(rc, 0, exported)
         self.assertEqual(exported["status"], "EXPORTED")
         self.assertTrue(source.is_file())
+        self.assertEqual(source.stat().st_mode & 0o777, 0o600, "Profile backups must never be world-readable")
 
         new_backup = self.new / "GPUPanel/backups"
         new_backup.mkdir(parents=True)
