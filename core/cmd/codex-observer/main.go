@@ -3,6 +3,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"flag"
@@ -11,6 +12,8 @@ import (
 	"net/url"
 	"os"
 	"os/user"
+	"os/signal"
+	"syscall"
 	"path"
 	"regexp"
 	"runtime"
@@ -178,12 +181,32 @@ func observe(raw string) (snapshot, error) {
 }
 
 func main() {
-	flag.Usage = func() { fmt.Fprintln(os.Stderr, "usage: codex-observer --endpoint ws://127.0.0.1:PORT") }
+	flag.Usage = func() {
+		fmt.Fprintln(os.Stderr, "usage: codex-observer --endpoint ws://127.0.0.1:PORT [--watch --samples 12 --interval-seconds 5]")
+	}
 	raw := flag.String("endpoint", "", "existing local Codex app-server websocket")
+	watchMode := flag.Bool("watch", false, "emit bounded read-only NDJSON observations; no persistent server")
+	samples := flag.Int("samples", 12, "watch-only, finite number of observations (1-120)")
+	interval := flag.Int("interval-seconds", 5, "watch-only, seconds between attempts (3-60)")
 	flag.Parse()
 	if flag.NArg()!=0 || *raw=="" || userFence()!=nil {
 		flag.Usage()
 		os.Exit(2)
+	}
+	if _,err:=endpoint(*raw);err!=nil {
+		flag.Usage()
+		os.Exit(2)
+	}
+	if *watchMode {
+		ctx,stop:=signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+		defer stop()
+		if err:=watch(ctx,os.Stdout,*samples,time.Duration(*interval)*time.Second,
+			func()(snapshot,error){return observe(*raw)});err!=nil &&
+			!errors.Is(err,context.Canceled) {
+			fmt.Fprintln(os.Stderr,"Bounded native observation stopped without further data")
+			os.Exit(2)
+		}
+		return
 	}
 	data,err := observe(*raw)
 	if err != nil {
