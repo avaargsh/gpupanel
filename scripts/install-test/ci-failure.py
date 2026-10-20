@@ -53,6 +53,20 @@ def app_api_stage(raw: str) -> str:
     return hits[-1] if hits else "unknown"
 
 
+# Only fixed categories may leave the private guest log. This is evidence
+# debugging, not a permission to retry any possibly executed installation.
+G5_APP_EVIDENCE_CODE = re.compile(
+    r"(?m)^G5_APP_EVIDENCE_FAILURE_CODE=(malformed|install-id|task-id|"
+    r"task-status|app-status|classification|verification-flag|"
+    r"container-count|container-state) release=NO_GO$"
+)
+
+
+def app_evidence_code(raw: str) -> str:
+    hits = G5_APP_EVIDENCE_CODE.findall(raw)
+    return hits[-1] if hits else "unknown"
+
+
 def diagnostic(raw: str, basename: str) -> str:
     positions = [
         match.group(2) for match in LINE.finditer(raw)
@@ -83,6 +97,7 @@ def main() -> int:
         print("GUEST_COMPOSE_FAILURE_STAGE=" + compose_stage(raw) + " release=NO_GO")
     if sys.argv[1] == "app-install":
         print("G5_APP_API_FAILURE_STAGE=" + app_api_stage(raw) + " release=NO_GO")
+        print("G5_APP_EVIDENCE_FAILURE_CODE=" + app_evidence_code(raw) + " release=NO_GO")
     print(diagnostic(raw, basename))
     return 0
 
