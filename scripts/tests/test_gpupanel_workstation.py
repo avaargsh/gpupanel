@@ -91,7 +91,7 @@ class WorkstationTests(unittest.TestCase):
                              "OPTIONAL_PROVIDER_MISSING")
             (project / ".devcontainer").mkdir()
             (project / ".devcontainer/devcontainer.json").write_text('{"image":"alpine"}')
-            planned = ws.devpod_plan(project, which=lambda _: "/usr/bin/x", home=home)
+            planned = ws.devpod_plan(project, which=lambda x: "/usr/bin/devpod" if x == "devpod" else None, home=home)
             self.assertEqual(planned["status"], "READY_FOR_PROVIDER_CHECK")
             self.assertEqual(planned["command"], ["devpod", "up", str(project), "--ide", "openvscode"])
             self.assertEqual(ws.devpod_plan(home, home=home)["status"], "INVALID_PROJECT")
