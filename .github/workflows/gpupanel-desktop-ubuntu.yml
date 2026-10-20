@@ -18,6 +18,7 @@ on:
       - "scripts/gpupanel-catalog.py"
       - "scripts/tests/test_gpupanel_uv_project.py"
       - "scripts/tests/gpupanel_desktop_gui_smoke.py"
+      - "scripts/tests/gpupanel_desktop_fresh_home_e2e.py"
       - ".github/workflows/gpupanel-desktop-ubuntu.yml"
   workflow_dispatch:
 
@@ -115,6 +116,17 @@ jobs:
           assert report["requires"] == {"core": False, "docker": False, "kubernetes": False}
           print("Standalone binary doctor PASS: no source checkout, display, Docker, Core or K8s")
           PY
+      - name: Prove source-free desktop binary creates and runs a project with official uv
+        shell: bash
+        run: |
+          set -euo pipefail
+          cache="$RUNNER_TEMP/official-uv.tar.gz"
+          curl --proto '=https' --tlsv1.2 -fL --retry 2 --connect-timeout 10 --max-time 120 \
+            'https://releases.astral.sh/github/uv/releases/download/0.13.3/uv-x86_64-unknown-linux-gnu.tar.gz' \
+            -o "$cache"
+          echo "e4f169ec380f1793b898a6f1fcbacd22db25cf7ca0349a6e96ffb85b69998d04  $cache" | sha256sum --check --status
+          python3 scripts/tests/gpupanel_desktop_fresh_home_e2e.py \
+            "$RUNNER_TEMP/gpupanel-desktop-preview" "$cache"
       - name: Exercise native GTK4/WebKit window under isolated Xvfb session
         shell: bash
         # GitHub runners restrict bwrap user namespaces; WebKit's debug bypass
@@ -167,5 +179,5 @@ jobs:
       - name: Clarify acceptance status
         run: |
           echo "Unsigned preview archive uploaded with SHA-256; contents are not a published package."
-          echo "CLI-only embedded Python check runs in Go tests without a source checkout."
+          echo "CLI-only embedded Python check and real pinned uv fresh-HOME project restore both executed without a source checkout."
           echo "CI-only unsandboxed WebKit Xvfb smoke ran. No production-sandbox GNOME/Wayland GUI, Polkit install, full offline restore, Docker/provider or production release acceptance ran."
