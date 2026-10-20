@@ -96,3 +96,59 @@ native app-server**, bounded subscriptions, per-session authorization and
 reconnection/reconciliation. A fresh subprocess snapshot cannot substitute
 for any of those. Until then, mobile Relay and approving native tool calls
 remain out of scope.
+
+## Explicit existing WebSocket app-server observer (opt-in experimental)
+
+An **additional** developer-operated Go CLI can now query an ALREADY running
+Codex app-server over a strictly validated loopback WebSocket. Unlike the
+original Python probe, it does **not** start a second native Codex process:
+
+```bash
+# First, separately launch or identify YOUR OWN existing native Codex
+# app-server configured to listen on an IPv4 loopback port. Never expose it
+# to the public network.
+cd /path/to/gpupanel/core
+go run ./cmd/codex-observer --endpoint ws://127.0.0.1:4222 > ../codex-attached.json
+```
+
+The process runs as the ordinary, non-root Ubuntu user who operates this
+app-server. It sends only `initialize`, `initialized` and a DB-only
+`thread/list` limited to 25 entries. It never sends `thread/resume`,
+`thread/start`, `turn/start`, approvals, shell commands, authentication
+tokens or environment secrets. No app-server process is spawned by the
+observer. The WebSocket has a 10-second whole-request budget and a 512 KiB
+per-frame limit. The exported page uses the existing schema v2 with
+`observerScope:attached-loopback-appserver`, but still sets
+`liveStatusVerified:false` and `liveness:unknown` because manual export
+is not independently attested by GPUPanel Core and is not a stream.
+
+Only the explicit form `ws://127.0.0.1:PORT` is accepted; IPv6, remote hosts,
+`wss://`, credentials, query strings, arbitrary paths and low ports are
+refused. The tool intentionally has **no automatic port discovery** and
+**does not authenticate a TCP listener's Linux process owner**. This is a
+manual trusted-local-machine PoC, not a multi-user safe attached process
+connector. Treat a listener with unknown ownership as untrusted; never share
+an unprotected loopback app-server beyond the developer's own trusted host.
+Newer Codex versions have optional native WebSocket authentication; this
+first tool does not handle such credentials and fails closed when rejected.
+Use a protected native deployment in later work rather than weakening the
+application's existing auth policy.
+
+The observation is tied to the **specific native server process chosen
+by the user**, not all Codex clients installed on the machine. Status changes
+after this one-shot export will **not** update in the browser; rerun the
+command and re-import to refresh. The browser uses field whitelisting and
+does not transmit the JSON file to GPUPanel Core/Relay.
+
+Protocol tests use a disposable in-process WebSocket mock, not a real
+upstream installation. Real Ubuntu + Codex WS integration remains
+**NOT RUN** until separately evidenced.
+
+## Next gate: same-UID authorization and real subscriptions
+
+Do not transform this user-run observer into a privileged Core proxy merely
+because a CLI can query a loopback port. Production integration must match
+the Web session to the kernel-validated OS UID, independently establish the
+native server endpoint's owner or authenticated identity, enforce per-thread
+access, keep a bounded state/event cursor, and fail closed on disconnect.
+Mobile/Relay writes remain deferred.
