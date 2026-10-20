@@ -19,6 +19,7 @@ on:
       - "scripts/tests/test_gpupanel_uv_project.py"
       - "scripts/tests/gpupanel_desktop_gui_smoke.py"
       - "scripts/tests/gpupanel_desktop_fresh_home_e2e.py"
+      - "scripts/tests/gpupanel_desktop_native_app_e2e.py"
       - ".github/workflows/gpupanel-desktop-ubuntu.yml"
   workflow_dispatch:
 
@@ -129,6 +130,11 @@ jobs:
           echo "e4f169ec380f1793b898a6f1fcbacd22db25cf7ca0349a6e96ffb85b69998d04  $cache" | sha256sum --check --status
           python3 scripts/tests/gpupanel_desktop_fresh_home_e2e.py \
             "$RUNNER_TEMP/gpupanel-desktop-preview" "$cache"
+      - name: Prove compiled binary invokes correct native project apps without GUI
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/tests/gpupanel_desktop_native_app_e2e.py "$RUNNER_TEMP/gpupanel-desktop-preview"
       - name: Exercise native GTK4/WebKit window under isolated Xvfb session
         shell: bash
         # GitHub runners restrict bwrap user namespaces; WebKit's debug bypass
