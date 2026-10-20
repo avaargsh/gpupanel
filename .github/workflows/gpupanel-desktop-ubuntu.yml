@@ -9,6 +9,7 @@ on:
       - "scripts/gpupanel-workspace-bundle.py"
       - "scripts/gpupanel-source-snapshot.py"
       - "scripts/tests/test_gpupanel_source_snapshot.py"
+      - "scripts/tests/gpupanel_desktop_source_fresh_home_e2e.py"
       - "scripts/tests/test_gpupanel_workstation.py"
       - "scripts/tests/test_gpupanel_workspace_bundle.py"
       - "scripts/tests/test_gpupanel_profile_transfer.py"
@@ -138,6 +139,11 @@ jobs:
         run: |
           set -euo pipefail
           python3 scripts/tests/gpupanel_desktop_native_app_e2e.py "$RUNNER_TEMP/gpupanel-desktop-preview"
+      - name: Prove native binary transfers source between two fresh HOME locations
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/tests/gpupanel_desktop_source_fresh_home_e2e.py "$RUNNER_TEMP/gpupanel-desktop-preview"
       - name: Exercise native GTK4/WebKit window under isolated Xvfb session
         shell: bash
         # GitHub runners restrict bwrap user namespaces; WebKit's debug bypass
