@@ -85,6 +85,25 @@ test('app-server snapshot retains only scoped state and omits preview', () => {
     assert.ok(!JSON.stringify(parsed).includes('SECRET_PROMPT'));
 });
 
+test('explicit attached-loopback observer import stays untrusted and sanitized', () => {
+    const parsed = parseNativeInventory(appserverSnapshot({
+        observerScope: 'attached-loopback-appserver',
+        sessions: [{
+            sessionId: 'thread-local-1',
+            runtimeKind: 'codex',
+            projectLabel: 'gpupanel',
+            startedAt: '2026-10-20T10:00:00Z',
+            liveness: 'unknown',
+            observerStatus: 'active',
+            prompt: 'SECRET_NEVER_EXPORT',
+        }],
+    }));
+    assert.equal(parsed.observerScope, 'attached-loopback-appserver');
+    assert.equal(parsed.liveStatusVerified, false);
+    assert.equal(parsed.sessions[0].liveness, 'unknown');
+    assert.ok(!JSON.stringify(parsed).includes('SECRET_NEVER_EXPORT'));
+});
+
 test('untrusted app-server imports cannot claim globally running or remote authority', () => {
     const original = JSON.parse(appserverSnapshot()).sessions[0];
     for (const bad of [
