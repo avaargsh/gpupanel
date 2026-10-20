@@ -221,6 +221,14 @@ func (u *UpgradeService) Upgrade(req dto.Upgrade) error {
 		defer func() {
 			_ = os.Remove(downloadDir)
 		}()
+		// Refuse malformed or redirected members before privileged extraction.
+		// This is a structural check, not authenticated publisher provenance.
+		archiveRoot := strings.TrimSuffix(fileName, ".tar.gz")
+		if err := validateUpgradeArchive(path.Join(downloadDir, fileName), archiveRoot); err != nil {
+			global.LOG.Errorf("upgrade archive rejected before extraction: %v", err)
+			releaseBeforeMutation()
+			return
+		}
 		if err := files.HandleUnTar(downloadDir+"/"+fileName, downloadDir, ""); err != nil {
 			global.LOG.Errorf("decompress file failed, err: %v", err)
 			releaseBeforeMutation()
