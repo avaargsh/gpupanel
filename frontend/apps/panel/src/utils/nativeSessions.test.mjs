@@ -104,6 +104,25 @@ test('explicit attached-loopback observer import stays untrusted and sanitized',
     assert.ok(!JSON.stringify(parsed).includes('SECRET_NEVER_EXPORT'));
 });
 
+test('same UID Unix app-server import still lacks browser attestation', () => {
+    const parsed = parseNativeInventory(appserverSnapshot({
+        observerScope: 'attached-owner-verified-unix-appserver',
+        sessions: [{
+            sessionId: 'local-thread-id',
+            runtimeKind: 'codex',
+            projectLabel: 'project',
+            startedAt: '2026-10-20T10:00:00Z',
+            liveness: 'unknown',
+            observerStatus: 'active',
+            prompt: 'PRIVATE_DO_NOT_IMPORT',
+        }],
+    }));
+    assert.equal(parsed.observerScope, 'attached-owner-verified-unix-appserver');
+    assert.equal(parsed.sessions[0].liveness, 'unknown');
+    assert.equal(parsed.liveStatusVerified, false);
+    assert.ok(!JSON.stringify(parsed).includes('PRIVATE_DO_NOT_IMPORT'));
+});
+
 test('untrusted app-server imports cannot claim globally running or remote authority', () => {
     const original = JSON.parse(appserverSnapshot()).sessions[0];
     for (const bad of [
