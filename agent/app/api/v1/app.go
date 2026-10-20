@@ -173,11 +173,12 @@ func (b *BaseApi) InstallApp(c *gin.Context) {
 	// Validate the caller's task identity before catalog lookups or any
 	// admission path. A malformed nonempty ID must never be hidden by a later
 	// detail lookup, and must be rejected before TaskDB/Docker side effects.
-	req.TaskID, err := service.NormalizeAppInstallTaskID(req.TaskID)
+	normalizedTaskID, err := service.NormalizeAppInstallTaskID(req.TaskID)
 	if err != nil {
 		helper.BadRequest(c, err)
 		return
 	}
+	req.TaskID = normalizedTaskID
 	retired, err := service.IsRetiredRemoteAppDetail(req.AppDetailId)
 	if err != nil {
 		helper.InternalServer(c, err)
