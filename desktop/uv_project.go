@@ -59,7 +59,7 @@ func (s *DesktopService) UvProjectCreate(approvedDigest string) (string, error) 
 	if !digestPattern.MatchString(approvedDigest) {
 		return "", errors.New("离线项目计划摘要无效")
 	}
-	_, review, err := uvProjectCall(15*time.Second, "plan", false)
+	_, review, err := uvProjectCall(15*time.Second, "plan", "")
 	if err != nil { return "", err }
 	if review.Status != "READY_FOR_APPROVAL" || review.PlanDigest != approvedDigest {
 		return "", errors.New("项目创建计划变化、缺少 uv 或目录已存在，拒绝继续")
