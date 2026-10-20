@@ -40,7 +40,9 @@ PR 的 GitHub Actions `GPUPanel Desktop Ubuntu Preview` 会在 Ubuntu 24.04 amd6
 
 - 仅写入 `~/.local/share/applications/gpupanel-workstation-preview.desktop`，无 root、Polkit 或 `sudo`，不会启用后台服务。
 - 不允许从 `go run` 等临时可执行文件位置注册快捷方式；只能是用户明确解压的标准预览路径。
-- 若安装目录或可执行文件是软链接、安装位置变化、批准摘要变化、目标文件已存在则拒绝。不覆盖已有菜单配置。
+- 计划摘要现在同时绑定 `Exec` 路径、桌面入口正文与**当前预览二进制的 SHA-256**；即使程序路径相同，审核后替换可执行文件也会使授权失效，必须重新审查。此校验不等于软件发布签名；未来修改安装文件仍需遵循可信更新流程。
+- 若安装目录或可执行文件是软链接、安装位置变化、批准摘要变化、目标文件已存在则拒绝。不覆盖已有菜单配置，安装计划也会明确返回 `EXISTS_NO_OVERWRITE`。
+- CI 使用**编译好的二进制**放入新 HOME 的固定预览路径，调用 `--launcher-plan`、`--launcher-install=SHA256`，先测试错误摘要与二进制篡改拒绝，再恢复审核版文件写入用户应用菜单，并由 `desktop-file-validate` 验证规范。该流程只证明 `.desktop` 文件可用和授权边界，不证明 GNOME Shell 已实际激活菜单或窗口。
 - 没有图标资源打包和 `.deb` 系统级安装能力；这是一个当前用户可选择添加的预览菜单入口。
 
 ## Polkit 授权与系统包安装：失败状态契约
