@@ -117,6 +117,38 @@ func TestG3ReleaseArchiveRejectsCorruptOrRedirectedFile(t *testing.T) {
 	}
 }
 
+// tar.Reader may return io.EOF at the TAR terminator before gzip has
+// validated the final CRC32/ISIZE trailer. A structurally safe but corrupted
+// archive must never reach privileged extraction.
+func TestG3ReleaseArchiveRejectsCorruptedOrTruncatedGzipTrailer(t *testing.T) {
+	for _, tc := range []struct {
+		name string
+		mutate func([]byte) []byte
+	}{
+		{"bad-crc", func(blob []byte) []byte {
+			blob[len(blob)-8] ^= 0x7f
+			return blob
+		}},
+		{"bad-uncompressed-size", func(blob []byte) []byte {
+			blob[len(blob)-4] ^= 0x40
+			return blob
+		}},
+		{"missing-trailer", func(blob []byte) []byte {
+			return blob[:len(blob)-7]
+		}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			file := writeG3Archive(t, g3ValidArchive())
+			raw, err := os.ReadFile(file)
+			if err != nil { t.Fatal(err) }
+			if err := os.WriteFile(file, tc.mutate(raw), 0600); err != nil { t.Fatal(err) }
+			if err := validateUpgradeArchive(file, g3Package); !errors.Is(err, errUpgradeArchiveRejected) {
+				t.Fatalf("gzip trailer corruption was admitted before extraction: %v", err)
+			}
+		})
+	}
+}
+
 func TestG3UpgradePreflightsArchiveBeforePrivilegedUntarAndBackup(t *testing.T) {
 	src,err:=os.ReadFile("upgrade.go")
 	if err!=nil{t.Fatal(err)}
