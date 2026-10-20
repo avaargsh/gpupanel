@@ -28,7 +28,20 @@ async function action(name, args = [], handler = null) {
     const value = typeof result === 'string' && result.trim().startsWith('{') ? JSON.parse(result) : result;
     if (handler) handler(value);
     show('output', value ?? '已请求原生应用打开；请检查桌面');
-    $('operation-state').textContent = '已返回（请核对实际状态）';
+    if (name === 'InstallPackages') {
+      const states = {
+        VERIFIED: '系统软件包已验证',
+        AUTH_CANCELLED: '用户取消授权 / 未执行',
+        AUTH_NOT_GRANTED: '未获得授权 / 未执行',
+        POLKIT_UNAVAILABLE: '没有可用 Polkit / 未执行',
+        ROOT_REFUSED: '禁止 root 启动 / 未执行',
+        REFUSED_PLAN_MISMATCH: '安装计划已变化 / 未执行',
+        UNKNOWN: '安装结果未知 / 必须先对账',
+      };
+      $('operation-state').textContent = states[value?.status] ?? '安装回执不可信 / 不可重试';
+    } else {
+      $('operation-state').textContent = '已返回（请核对实际状态）';
+    }
   } catch (error) {
     show('output', '未完成：' + String(error) + '。如操作结果未知，请先独立核对，不要直接重复安装。');
     $('operation-state').textContent = '未完成 / 状态未知';
@@ -66,7 +79,21 @@ $('restore').addEventListener('click', () => {
 $('install').addEventListener('click', () => {
   if (!installDigest) return;
   if (window.confirm('安装当前计划缺失的 Ubuntu 软件包？\nSHA-256: ' + installDigest + '\n将触发系统 Polkit 授权提示；状态 UNKNOWN 不可自动重试。')) {
-    action('InstallPackages', [installDigest], () => { installDigest = ''; });
+    const approved = installDigest;
+    installDigest = '';
+    $('install').disabled = true;
+    action('InstallPackages', [approved], (receipt) => {
+      show('install-plan', {
+        status: receipt.status,
+        executed: receipt.executed,
+        reconciliationRequired: receipt.reconciliationRequired ?? false,
+        installed: receipt.installed ?? [],
+        hint: receipt.hint ?? '取消或未获授权不会运行 apt；如需再次尝试请重新检查环境与计划',
+        nextAction: receipt.status === 'UNKNOWN'
+          ? '先人工核对 dpkg 状态与 /var/log/apt/history.log，不得自动重试'
+          : '若仍需安装，重新检查环境，审核新的 SHA-256，再经 Polkit 授权',
+      });
+    });
   }
 });
 $('devpod').addEventListener('click', () => action('DevpodPlan', [$('project').value], (p) => show('devpod-result', p)));
