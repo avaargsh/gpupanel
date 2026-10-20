@@ -37,6 +37,29 @@
 - export：导出 Profile JSON；不包含工作区文件、IDE 插件、SSH 私钥或 Token。
 - devpod-plan：有 DevPod、Docker CLI 和现成 devcontainer.json 时，仅展示基于 openvscode 的浏览器 IDE 启动计划；真实 Provider/容器/端口开放都需要另行人工授权及验收。
 
+## 新机项目骨架离线迁移（无 Docker）
+
+在旧电脑的普通 Ubuntu 用户目录中，选择已经存在的 `~/GPUPanel/projects/<project>` 项目。快照只包含固定白名单文件：`pyproject.toml`、`uv.lock`、`README.md`、`main.py`、Node/Go 锁文件、Dev Container 定义和 VS Code 扩展清单。不包含完整源码仓库、数据目录、虚拟环境、容器卷或 SSH 凭据。**白名单文件本身仍可能含敏感值，导出前必须由操作者人工检查。**
+
+旧机导出：
+
+    mkdir -p ~/GPUPanel/backups
+    python3 scripts/gpupanel-workspace-bundle.py export uv-python-starter ~/GPUPanel/backups/uv-python-starter-scaffold.zip
+
+将 ZIP 通过可信的移动存储复制到新机同名目录后，先检查并抄取 `bundleDigest`：
+
+    python3 scripts/gpupanel-workspace-bundle.py inspect ~/GPUPanel/backups/uv-python-starter-scaffold.zip
+    python3 scripts/gpupanel-workspace-bundle.py restore ~/GPUPanel/backups/uv-python-starter-scaffold.zip --approve-digest <bundleDigest>
+
+- ZIP 条目、逐文件 SHA-256、文件大小和项目名全部受限；验证失败不落盘。
+- 恢复只写入**不存在**的项目路径；Linux `renameat2(RENAME_NOREPLACE)` 独占发布，遇到已有目录一律拒绝覆盖。停电等操作结果不明时先检查目标目录。
+- Desktop 新增导出、检查、人工确认恢复入口，固定从 `~/GPUPanel/backups/` 读取。当前仍依赖源码树，不是交付完整工作区的一键备份工具。
+- 后续真正恢复完整代码请结合受控 Git remote + 固定 commit，以及独立的数据备份方案；此功能不代替 Git、磁盘备份或凭据迁移。
+
+测试：
+
+    python3 -m unittest discover -s scripts/tests -p 'test_gpupanel_workspace_bundle.py' -v
+
 **国内镜像分发尚未完成**：仓库原有 gpupanel-bootstrap.py 提供锁文件与 SHA-256 制品缓存/离线 Bundle 校验，但是目前尚无经过审核的真实应用制品清单，不能把镜像 URL 配置误认成可用的一键分发。
 
 ## 测试
@@ -53,7 +76,8 @@
 | Wails 桌面实机 GTK/WebKit/终端/IDE 启动 | NOT RUN |
 | 国内离线镜像缓存与真实软件安装 | NOT RUN（此前仅有工具和合成制品测试） |
 | DevPod 浏览器 IDE 真实创建/停止/恢复 | NOT RUN |
-| 新机工作区文件、IDE 扩展与密钥的全面迁移 | NOT IMPLEMENTED |
+| 离线骨架锁文件/配置快照与新目录恢复 | 具备源码与单测，真实跨机 NOT RUN |
+| 新机完整源码、数据和个人 IDE 设置/扩展恢复 | NOT IMPLEMENTED |
 | 原有 GPUPanel Host G3–G6 | 仍 M0 NO-GO |
 
 源码与模拟检查不能代替目标 Ubuntu 的真实终端会话/GUI/安装/恢复证明。不在生产 1Panel 主机上测试系统安装器。
