@@ -88,6 +88,10 @@ func (s *DesktopService) LauncherInstall(approved string) (string, error) {
 	if err != nil { return "", err }
 	executable, err := os.Executable()
 	if err != nil { return "", err }
+	return installLauncher(home, executable, approved)
+}
+
+func installLauncher(home, executable, approved string) (string, error) {
 	review, content, err := launcherProposal(home, executable)
 	if err != nil { return "", err }
 	if review.Status != "READY_FOR_APPROVAL" || len(approved) != 64 || approved != review.PlanDigest {
