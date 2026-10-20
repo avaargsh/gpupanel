@@ -134,6 +134,14 @@ def yes_no(question: str) -> bool:
 def private_report(report: dict, home: Path) -> Path:
     # Never include environment variables, usernames, terminal output, or
     # application logs in the report. Treat even this as user-owned data.
+    # Do not follow a replaced/symlinked HOME when writing local evidence.
+    try:
+        home_info = os.lstat(home)
+    except OSError as exc:
+        raise ValueError("home directory is unavailable") from exc
+    if (not stat.S_ISDIR(home_info.st_mode) or stat.S_ISLNK(home_info.st_mode)
+            or home_info.st_uid != os.geteuid()):
+        raise ValueError("home directory must be a real directory owned by this user")
     root = home / "GPUPanel"
     dest = root / "acceptance"
     for path in (root, dest):
