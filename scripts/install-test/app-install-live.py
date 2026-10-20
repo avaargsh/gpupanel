@@ -17,6 +17,7 @@ from uuid import uuid4
 
 from playwright.sync_api import expect, sync_playwright
 import candidate
+import app_evidence_codes
 import vm
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -209,18 +210,14 @@ with sync_playwright() as play:
     steps.append("real_appinstall_taskdb_success")
 
     evidence = request("GET", f"/apps/installed/evidence/{install_id}")
-    if not (
-        isinstance(evidence, dict)
-        and evidence.get("installId") == install_id
-        and evidence.get("taskId") == install_task
-        and evidence.get("taskStatus") == "Success"
-        and evidence.get("appStatus") == "Running"
-        and evidence.get("classification") == "CONSISTENT"
-        and evidence.get("verified") is False
-        and isinstance(evidence.get("containers"), list)
-        and len(evidence["containers"]) == 1
-        and evidence["containers"][0].get("state") == "running"
-    ):
+    evidence_code = app_evidence_codes.classify_app_install_evidence(
+        evidence, install_id, install_task
+    )
+    if evidence_code != "ok":
+        # The CI summarizer may output ONLY this fixed category, not the
+        # response object, the app name or the user/task/container identity.
+        print("G5_APP_EVIDENCE_FAILURE_CODE=" + evidence_code +
+              " release=NO_GO", flush=True)
         raise RuntimeError("AppInstall TaskDB/AppInstall/Docker evidence not consistent")
     name = evidence["containers"][0]["name"]
     if not isinstance(name, str) or not name.startswith("GPUPanel-"):
