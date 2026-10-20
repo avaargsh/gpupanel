@@ -63,7 +63,7 @@ export default function AgentSessionsPage() {
             try {
                 const file = await handle.getFile();
                 if (file.size > WATCH_LIMIT_BYTES) throw new Error('本地记录超出 4 MiB 上限');
-                const result = readLocalWatchTail(await file.text());
+                const result = readLocalWatchTail(await file.text(), parseNativeWatch);
                 if (stopped || ticket !== followEpoch.current) return;
                 setWatchReport(result.record);
                 setInventory(result.record?.inventory ?? null);
