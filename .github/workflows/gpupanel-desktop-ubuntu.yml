@@ -11,6 +11,10 @@ on:
       - "scripts/tests/test_gpupanel_workspace_bundle.py"
       - "scripts/tests/test_gpupanel_profile_transfer.py"
       - "scripts/tests/test_gpupanel_desktop_ui_contract.py"
+      - "scripts/gpupanel-uv-project.py"
+      - "scripts/gpupanel-catalog-workspace.py"
+      - "scripts/gpupanel-catalog.py"
+      - "scripts/tests/test_gpupanel_uv_project.py"
       - "scripts/tests/gpupanel_desktop_gui_smoke.py"
       - ".github/workflows/gpupanel-desktop-ubuntu.yml"
   workflow_dispatch:
@@ -31,6 +35,7 @@ jobs:
           python3 -m unittest discover -s scripts/tests -p 'test_gpupanel_workspace_bundle.py' -v
           python3 -m unittest discover -s scripts/tests -p 'test_gpupanel_profile_transfer.py' -v
           python3 -m unittest discover -s scripts/tests -p 'test_gpupanel_desktop_ui_contract.py' -v
+          python3 -m unittest discover -s scripts/tests -p 'test_gpupanel_uv_project.py' -v
       - name: Validate embedded frontend source
         run: node --check desktop/ui/app.js
       - name: Read-only Ubuntu doctor
