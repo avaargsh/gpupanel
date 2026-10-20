@@ -33,18 +33,23 @@ func readOwnedTokenFile(filename string) (string, error) {
 		return "", refuse
 	}
 	uid := uint32(os.Getuid())
-	// Every intermediate directory must be under the same verified UID.
+	// Include HOME itself: an attacker-writable home or symlink invalidates
+	// the trust boundary even when the final file has private permissions.
 	current := home
+	verifyDir := func(directory string) bool {
+		fi, err := os.Lstat(directory)
+		if err != nil || !fi.IsDir() || fi.Mode()&os.ModeSymlink != 0 ||
+			fi.Mode().Perm()&0o022 != 0 {
+			return false
+		}
+		info, ok := fi.Sys().(*syscall.Stat_t)
+		return ok && info.Uid == uid
+	}
+	if !verifyDir(current) { return "", refuse }
 	for _, part := range strings.Split(filepath.Dir(rel), string(filepath.Separator)) {
 		if part == "." { continue }
 		current = filepath.Join(current, part)
-		fi, err := os.Lstat(current)
-		if err != nil || !fi.IsDir() || fi.Mode()&os.ModeSymlink != 0 ||
-			fi.Mode().Perm()&0o022 != 0 {
-			return "", refuse
-		}
-		info, ok := fi.Sys().(*syscall.Stat_t)
-		if !ok || info.Uid != uid { return "", refuse }
+		if !verifyDir(current) { return "", refuse }
 	}
 	// O_NOFOLLOW protects against a final component replacement after Lstat.
 	fd, err := unix.Open(clean, unix.O_RDONLY|unix.O_NOFOLLOW|unix.O_CLOEXEC|unix.O_NONBLOCK, 0)
