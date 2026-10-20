@@ -205,3 +205,51 @@ the sequence `observed → unavailable → observed` and asserts missing stale
 data/error details, cancellation, bounds and output-failure handling.
 Successful mock-based tests do not establish a native Codex instance's
 ownership or confirm a live Ubuntu browser-to-Codex connection.
+
+## Optional same-browser local file follow (Chromium)
+
+For developers on the **same Ubuntu desktop as the browser**, start the finite,
+non-root observation CLI and save its output in your own private directory:
+
+```bash
+umask 077
+cd /path/to/gpupanel/core
+go run ./cmd/codex-observer --endpoint ws://127.0.0.1:4222 \
+  --watch --samples 120 --interval-seconds 5 > ../codex-observations.ndjson
+```
+
+In GPUPanel `/agent-sessions`, with the local node selected, click
+**选择并跟随本机记录**. Supported Chromium browsers can ask you to explicitly
+grant the page a read handle to this local `.ndjson` file. After this gesture,
+the page reads only that selected file at most every five seconds; it never
+contacts Core/Agent/Relay, opens native ports, installs a background daemon or
+uploads an observation. This is **local file follow**, not a Codex websocket
+subscription and not automatic persistent permission to read `~/.codex`.
+
+The reader accepts only complete, newline-terminated NDJSON records. A
+partially written terminal record is ignored until completed. Every completed
+record passes the original strict sequence/schema/inventory validation.
+Last native `connection:unavailable` clears displayed sessions; read errors,
+lost permission, over-limit files, bad complete lines, unexpected future clocks
+and observations older than 90 seconds also clear old data. A file that is
+never written or not yet newline-complete displays a waiting state, not a
+false empty verified session list. The maximum file is 4 MiB and 120 rows,
+and the native observer itself runs for at most 120 finite samples. When the
+file reaches its bound, **stop following and start a new file / CLI run**; the
+page deliberately does not trim or silently skip earlier rows.
+
+Use the UI's **停止本地跟随** action to release the handle; changing node,
+navigation away or closing the page also stops polling without persistence.
+Ordinary JSON/NDJSON manual import remains supported for Firefox/Safari,
+browsers without File System Access API, or when the user declines access.
+
+Security boundary: a manually selected file can be edited or forged by its
+owner. Nothing here turns it into a Core-certified live process status or
+authorization. The only displayed native status is the last explicitly
+connected app-server's observation, and `liveStatusVerified` stays false.
+Real browser click/keyboard acceptance is still **NOT RUN** if CI cannot
+install its Chromium harness.
+
+Tests: `cd frontend && pnpm test && pnpm typecheck && pnpm build`.
+`nativeWatchTail.test.mjs` exercises partial tail, disconnect clearing,
+staleness/future clocks, invalid lines and oversize refusal.
