@@ -102,18 +102,34 @@ def scan(home: Path, uid: int) -> dict:
     found: list[dict] = []
     seen: set[str] = set()
     visited = 0
+
+    def children(folder: Path) -> list[Path]:
+        nonlocal visited
+        result: list[Path] = []
+        for child in folder.iterdir():
+            visited += 1
+            if visited > MAX_FILES:
+                raise InventoryUnavailable("too many local rollout entries")
+            result.append(child)
+        return result
+
     try:
-        years = list(root.iterdir())
-        for year in years:
-            if not (year.name.isdecimal() and len(year.name) == 4):
+        for year in children(root):
+            if not (year.name.isascii() and year.name.isdecimal()
+                    and len(year.name) == 4):
                 continue
             owned_dir(year, uid)
-            for month in month_items(year, uid, 2, range(1, 13)):
-                for day in month_items(month, uid, 2, range(1, 32)):
-                    for path in day.iterdir():
-                        visited += 1
-                        if visited > MAX_FILES:
-                            raise InventoryUnavailable("too many local rollout files")
+            for month in children(year):
+                if not (len(month.name) == 2 and month.name.isascii()
+                        and month.name.isdecimal() and 1 <= int(month.name) <= 12):
+                    continue
+                owned_dir(month, uid)
+                for day in children(month):
+                    if not (len(day.name) == 2 and day.name.isascii()
+                            and day.name.isdecimal() and 1 <= int(day.name) <= 31):
+                        continue
+                    owned_dir(day, uid)
+                    for path in children(day):
                         if not ROLL_OUT.fullmatch(path.name):
                             continue
                         meta = first_metadata(path, uid)
@@ -128,16 +144,6 @@ def scan(home: Path, uid: int) -> dict:
     return {"schemaVersion": 1, "source": "local-user-codex-rollouts",
             "readOnly": True, "liveStatusVerified": False,
             "sessions": found[:MAX_RETURNED]}
-
-
-def month_items(parent: Path, uid: int, digits: int, valid: range) -> list[Path]:
-    result = []
-    for path in parent.iterdir():
-        if len(path.name) != digits or not path.name.isdecimal() or int(path.name) not in valid:
-            continue
-        owned_dir(path, uid)
-        result.append(path)
-    return result
 
 
 def main(argv: list[str] | None = None) -> int:
