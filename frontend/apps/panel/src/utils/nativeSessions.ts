@@ -45,6 +45,7 @@ export function parseNativeInventory(text: string): ImportedNativeInventory {
     const isAppServer = data.schemaVersion === 2 && data.source === 'local-user-codex-appserver' &&
         data.observerScope === 'new-app-server-process' && typeof data.hasMore === 'boolean';
     if (!isRollout && !isAppServer) throw new Error('不兼容的 Codex 清单格式');
+    if (isAppServer && data.sessions.length > 25) throw new Error('app-server 快照超过单页上限');
 
     const ids = new Set<string>();
     const sessions: ImportedNativeSession[] = data.sessions.map((row: unknown) => {
