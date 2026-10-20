@@ -49,6 +49,16 @@ class DesktopUIContractTests(unittest.TestCase):
                 self.assertIn("action('" + name + "'", frontend)
                 self.assertIn("func (s *DesktopService) " + name + "(", source)
 
+    def test_polkit_approval_consumed_and_distinct_statuses_visible(self):
+        source = JS.read_text()
+        self.assertIn("const approved = installDigest;", source)
+        self.assertIn("installDigest = '';", source)
+        self.assertIn("AUTH_CANCELLED:", source)
+        self.assertIn("AUTH_NOT_GRANTED:", source)
+        self.assertIn("UNKNOWN: '安装结果未知 / 必须先对账'", source)
+        self.assertIn("reconciliationRequired: receipt.reconciliationRequired", source)
+        self.assertIn("先人工核对 dpkg 状态", source)
+
     def test_native_workstation_has_no_required_core_endpoint(self):
         js = JS.read_text()
         self.assertNotIn("/api/v1", js)
