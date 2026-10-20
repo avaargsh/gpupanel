@@ -131,6 +131,7 @@ const en: LocaleResource = {
     "operations": "Management",
     "title": "Workbench",
     "projects": "My projects",
+    "agentSessions": "Agent sessions",
     "environments": "Environments",
     "apps": "Apps & models",
     "terminal": "Terminal",
