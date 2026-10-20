@@ -134,6 +134,17 @@ class AcceptanceTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "mode 0700"):
                 gnome.private_report({"status": "test"}, home)
 
+    def test_symlinked_home_is_refused_for_evidence(self):
+        with tempfile.TemporaryDirectory() as directory:
+            parent = Path(directory)
+            real_home = parent / "real-home"
+            real_home.mkdir()
+            linked_home = parent / "linked-home"
+            linked_home.symlink_to(real_home, target_is_directory=True)
+            with self.assertRaisesRegex(ValueError, "home directory"):
+                gnome.private_report({"status": "test"}, linked_home)
+            self.assertFalse((real_home / "GPUPanel").exists())
+
     def test_cli_preserves_symlink_for_binary_rejection(self):
         with tempfile.TemporaryDirectory() as directory:
             link = Path(directory) / "preview"
