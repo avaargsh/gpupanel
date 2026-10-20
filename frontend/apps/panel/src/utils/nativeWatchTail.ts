@@ -12,7 +12,9 @@ export type LocalTailResult = {
 
 // A writer may have appended half of a JSON record. Only completed newline-
 // terminated records can be shown. No incomplete line is promoted to success.
-export function readLocalWatchTail(\n    text: string, parseWatch: (input: string) => ImportedWatchRecord, now = Date.now(),\n): LocalTailResult {
+export function readLocalWatchTail(
+    text: string, parseWatch: (input: string) => ImportedWatchRecord, now = Date.now(),
+): LocalTailResult {
     if (new TextEncoder().encode(text).byteLength > MAX_BYTES) {
         throw new Error('本地观察文件超过 4 MiB 上限');
     }
