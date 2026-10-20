@@ -82,7 +82,7 @@ class CodexInventoryTests(unittest.TestCase):
             "timestamp": "2026-10-20T11:00:00.000Z",
             "type": "session_meta",
             "payload": {"id": SESSION_B, "cwd": "/home/ubuntu/secret"},
-        }) + "\\n")
+        }) + "\n")
         original_day = self.home / "day-original"
         day_inode = self.day.stat().st_ino
         real_listdir = os.listdir
