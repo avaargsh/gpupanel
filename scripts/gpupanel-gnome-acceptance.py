@@ -232,7 +232,7 @@ def main() -> int:
     if not args.binary or not args.expected_sha256:
         parser.error("--run requires --binary and --expected-sha256")
     try:
-        return run_manual(args.binary.resolve(), pre, expected=args.expected_sha256)
+        return run_manual(args.binary.absolute(), pre, expected=args.expected_sha256)
     except (OSError, ValueError) as exc:
         print("GNOME_ACCEPTANCE_REFUSED:", str(exc), file=sys.stderr)
         return 3
