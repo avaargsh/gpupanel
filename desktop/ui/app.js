@@ -8,6 +8,8 @@ let profileImportDigest = '';
 let launcherDigest = '';
 let uvDigest = '';
 let uvToolDigest = '';
+let sourceExportDigest = '';
+let sourceRestoreDigest = '';
 let busy = false;
 
 function show(id, value) {
@@ -15,8 +17,8 @@ function show(id, value) {
 }
 function setBusy(value, label) {
   busy = value;
-  ['refresh', 'terminal', 'editor', 'restore', 'install', 'devpod', 'bundle-export', 'bundle-inspect', 'bundle-restore', 'profile-backup', 'profile-inspect', 'profile-import', 'versions', 'launcher-plan', 'launcher-install', 'uv-plan', 'uv-create', 'uv-status', 'uvtool-plan', 'uvtool-install', 'uvtool-status'].forEach((name) => {
-    $(name).disabled = value || (name === 'install' && !installDigest) || (name === 'restore' && !profileDigest) || (name === 'bundle-restore' && !bundleDigest) || (name === 'profile-import' && !profileImportDigest) || (name === 'launcher-install' && !launcherDigest) || (name === 'uv-create' && !uvDigest) || (name === 'uvtool-install' && !uvToolDigest);
+  ['refresh', 'terminal', 'editor', 'restore', 'install', 'devpod', 'bundle-export', 'bundle-inspect', 'bundle-restore', 'profile-backup', 'profile-inspect', 'profile-import', 'versions', 'launcher-plan', 'launcher-install', 'uv-plan', 'uv-create', 'uv-status', 'uvtool-plan', 'uvtool-install', 'uvtool-status', 'source-plan', 'source-export', 'source-inspect', 'source-restore'].forEach((name) => {
+    $(name).disabled = value || (name === 'install' && !installDigest) || (name === 'restore' && !profileDigest) || (name === 'bundle-restore' && !bundleDigest) || (name === 'profile-import' && !profileImportDigest) || (name === 'launcher-install' && !launcherDigest) || (name === 'uv-create' && !uvDigest) || (name === 'uvtool-install' && !uvToolDigest) || (name === 'source-export' && !sourceExportDigest) || (name === 'source-restore' && !sourceRestoreDigest);
   });
   $('operation-state').textContent = label;
 }
@@ -248,3 +250,59 @@ $('uvtool-install').addEventListener('click', () => {
   }
 });
 $('uvtool-status').addEventListener('click', () => action('UvToolStatus', [], (p) => show('uvtool-report', p)));
+
+$('project').addEventListener('input', () => {
+  sourceExportDigest = '';
+  $('source-export').disabled = true;
+});
+$('source-plan').addEventListener('click', () => {
+  sourceExportDigest = '';
+  $('source-export').disabled = true;
+  const project = $('project').value.trim();
+  action('SourcePlan', [project], (p) => {
+    sourceExportDigest = p.status === 'READY_FOR_APPROVAL' ? p.manifestDigest : '';
+    show('source-report', {
+      status: p.status, project: p.project, scope: p.scope,
+      manifestDigest: p.manifestDigest, excludedEntries: p.excludedEntries,
+      files: (p.files ?? []).map(x => ({path: x.path, size: x.size})),
+      warning: '数据、密钥、.git、虚拟环境、依赖缓存及未列出的文件均不在快照内；请自行检查文件内容',
+    });
+  });
+});
+$('source-export').addEventListener('click', () => {
+  if (!sourceExportDigest) return;
+  const project = $('project').value.trim();
+  const digest = sourceExportDigest;
+  if (!window.confirm('导出受限源码快照？请核对计划 SHA-256：' + digest +
+    '\n将创建 ~/GPUPanel/backups/' + project + '-source-v1.zip，不覆盖已有文件。此文件不包含数据、密钥或完整 IDE 环境。')) return;
+  sourceExportDigest = '';
+  $('source-export').disabled = true;
+  action('SourceExport', [project, digest], (p) => show('source-report', p));
+});
+$('source-file').addEventListener('input', () => {
+  sourceRestoreDigest = '';
+  $('source-restore').disabled = true;
+});
+$('source-inspect').addEventListener('click', () => {
+  sourceRestoreDigest = '';
+  $('source-restore').disabled = true;
+  action('SourceInspect', [$('source-file').value.trim()], (p) => {
+    sourceRestoreDigest = p.status === 'READY_FOR_APPROVAL' ? p.bundleDigest : '';
+    show('source-restore-report', {
+      status: p.status, project: p.project, scope: p.scope,
+      bundleDigest: p.bundleDigest,
+      files: (p.files ?? []).map(x => ({path: x.path, size: x.size})),
+      warning: '只恢复经过验证的源码/锁文件；不执行任何文件，不覆盖已有项目',
+    });
+  });
+});
+$('source-restore').addEventListener('click', () => {
+  if (!sourceRestoreDigest) return;
+  const digest = sourceRestoreDigest;
+  const name = $('source-file').value.trim();
+  if (!window.confirm('原子恢复源码到全新项目目录？\n快照：' + name +
+    '\nZIP SHA-256：' + digest + '\n目标已存在时拒绝覆盖；不恢复密钥或数据。')) return;
+  sourceRestoreDigest = '';
+  $('source-restore').disabled = true;
+  action('SourceRestore', [name, digest], (p) => show('source-restore-report', p));
+});
