@@ -86,3 +86,67 @@ export function parseNativeInventory(text: string): ImportedNativeInventory {
         liveStatusVerified: false, sessions,
     };
 }
+
+/** One selected, completed NDJSON recording. Never treat it as a live stream. */
+export interface ImportedWatchRecord {
+    observation: 'observed' | 'unavailable';
+    observedAt: string;
+    sequence: number;
+    inventory: ImportedNativeInventory | null;
+}
+
+const MAX_WATCH_BYTES = 4 * 1024 * 1024;
+const MAX_WATCH_ROWS = 120;
+
+export function parseNativeWatch(text: string): ImportedWatchRecord {
+    if (new TextEncoder().encode(text).byteLength > MAX_WATCH_BYTES) {
+        throw new Error('观察记录超过 4 MiB 上限');
+    }
+    const trimmed = text.trimEnd();
+    if (!trimmed) throw new Error('观察记录为空');
+    const lines = trimmed.split('\n');
+    if (lines.length < 1 || lines.length > MAX_WATCH_ROWS) {
+        throw new Error('观察记录数量超限');
+    }
+    let last: ImportedWatchRecord | null = null;
+    let previousTime = Number.NEGATIVE_INFINITY;
+    for (const [index, line] of lines.entries()) {
+        let item: unknown;
+        try {
+            item = JSON.parse(line);
+        } catch {
+            throw new Error('观察记录包含不完整的 JSON 行');
+        }
+        if (!isRecord(item) || item.schemaVersion !== 1 ||
+            item.source !== 'local-user-codex-watch' ||
+            item.sequence !== index + 1 ||
+            item.liveStatusVerified !== false ||
+            (item.connection !== 'observed' && item.connection !== 'unavailable') ||
+            typeof item.observedAt !== 'string' || item.observedAt.length > 40) {
+            throw new Error('不兼容的观察记录');
+        }
+        const timestamp = Date.parse(item.observedAt);
+        if (!Number.isFinite(timestamp) || timestamp < previousTime) {
+            throw new Error('观察记录时间无效或倒序');
+        }
+        previousTime = timestamp;
+        if (item.connection === 'unavailable') {
+            if (item.snapshot !== null) throw new Error('断连记录包含未经验证的旧会话');
+            last = { observation: 'unavailable', sequence: index + 1,
+                observedAt: item.observedAt, inventory: null };
+            continue;
+        }
+        if (!isRecord(item.snapshot)) {
+            throw new Error('观察记录缺少原生服务快照');
+        }
+        const inventory = parseNativeInventory(JSON.stringify(item.snapshot));
+        if (inventory.schemaVersion !== 2 ||
+            inventory.observerScope !== 'attached-loopback-appserver') {
+            throw new Error('不兼容的原生服务观察范围');
+        }
+        last = { observation: 'observed', sequence: index + 1,
+            observedAt: item.observedAt, inventory };
+    }
+    if (last === null) throw new Error('观察记录为空');
+    return last;
+}
