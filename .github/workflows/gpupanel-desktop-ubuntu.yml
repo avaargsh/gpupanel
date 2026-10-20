@@ -74,6 +74,8 @@ jobs:
           python3 scripts/gpupanel-uv-distribution.py status > "$RUNNER_TEMP/uv-status.json"
           python3 -c 'import json,sys; d=json.load(open(sys.argv[1])); assert d["status"]=="VERIFIED",d' "$RUNNER_TEMP/uv-status.json"
           "$HOME/GPUPanel/tools/uv/0.13.3/bin/uv" --version | grep -E '^uv 0[.]13[.]3($|[[:space:]])'
+          echo "Reviewed official uv executable ELF SHA-256:"
+          sha256sum "$HOME/GPUPanel/tools/uv/0.13.3/bin/uv"
           echo "$HOME/GPUPanel/tools/uv/0.13.3/bin" >> "$GITHUB_PATH"
       - name: Exercise real offline uv init, lock and run
         run: python3 -m unittest discover -s scripts/tests -p 'test_gpupanel_uv_project.py' -v
