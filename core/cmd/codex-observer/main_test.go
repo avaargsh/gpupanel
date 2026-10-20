@@ -133,3 +133,38 @@ func TestExistingWebsocketNativeErrorFailsClosed(t *testing.T) {
 	url:="ws"+strings.TrimPrefix(srv.URL,"http")
 	if _,err:=observe(url);err==nil{t.Fatal("native error reported as empty snapshot")}
 }
+
+func TestAuthenticatedObserverPinsDialToLoopbackAndOmitsProxy(t *testing.T) {
+	token := strings.Repeat("Ab3t",16)
+	var hits int
+	upgrader:=websocket.Upgrader{}
+	srv:=httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter,r *http.Request){
+		hits++
+		if r.Header.Get("Authorization")!="Bearer "+token {
+			w.WriteHeader(http.StatusUnauthorized);return
+		}
+		if r.Header.Get("Origin")!="" { t.Error("unexpected Origin") }
+		conn,err:=upgrader.Upgrade(w,r,nil);if err!=nil{return};defer conn.Close()
+		for {
+			var msg map[string]json.RawMessage
+			if conn.ReadJSON(&msg)!=nil{return}
+			var method string;_ = json.Unmarshal(msg["method"],&method)
+			switch method {
+			case "initialize": _=conn.WriteJSON(map[string]any{"id":1,"result":map[string]any{}})
+			case "initialized":
+			case "thread/list": _=conn.WriteJSON(map[string]any{"id":2,"result":map[string]any{"data":[]any{},"nextCursor":nil}});return
+			default:t.Errorf("unexpected method %s",method);return
+			}
+		}
+	}));defer srv.Close()
+	addr:="ws"+strings.TrimPrefix(srv.URL,"http")
+	// Force a deliberately unusable proxy. The custom dialer must ignore it.
+	t.Setenv("HTTP_PROXY","http://127.0.0.1:1")
+	t.Setenv("http_proxy","http://127.0.0.1:1")
+	// Test server binds a non-loopback address in httptest's configuration
+	// on some environments; the production endpoint guard must reject it.
+	if _,err:=observeAuthenticated(addr,token);err==nil {
+		t.Fatal("non-loopback test endpoint unexpectedly accepted")
+	}
+	if hits!=0 {t.Fatal("observer attempted a request outside authorized loopback")}
+}
