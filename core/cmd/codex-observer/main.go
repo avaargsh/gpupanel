@@ -163,7 +163,14 @@ func openObserverSocket(raw string) (*websocket.Conn, snapshot, error) {
 func openAuthenticatedObserverSocket(raw, bearer string) (*websocket.Conn, snapshot, error) {
 	address, err := endpoint(raw)
 	if err != nil { return nil, snapshot{}, err }
-	dialer := websocket.Dialer{HandshakeTimeout:4*time.Second, EnableCompression:false}
+	dialer := websocket.Dialer{HandshakeTimeout:4*time.Second, EnableCompression:false,
+		Proxy:nil, NetDialContext: func(ctx context.Context, network, _ string) (net.Conn,error) {
+			// Ignore resolver/proxy/environment routing completely. Only connect
+			// to the explicitly authorized IPv4 loopback address.
+			return (&net.Dialer{Timeout:4*time.Second}).DialContext(ctx, "tcp4",
+				net.JoinHostPort("127.0.0.1", strings.TrimPrefix(address,"ws://127.0.0.1:")))
+		},
+	}
 	// No environment HTTP proxy or Origin header; even authenticated connections
 	// must remain on the exact local loopback transport.
 	var headers http.Header
