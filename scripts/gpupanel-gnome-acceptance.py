@@ -55,9 +55,12 @@ def preflight(env: dict[str, str], release: str, *, uid: int,
             # XDG_RUNTIME_DIR must be private to the session user. A shared
             # runtime directory can expose Wayland/DBus sockets to other users.
             reasons.append("UNTRUSTED_RUNTIME_DIR")
-        if (socket_stat is None or not stat.S_ISSOCK(socket_stat.st_mode)
-                or socket_stat.st_uid != uid):
+        if socket_stat is None or not stat.S_ISSOCK(socket_stat.st_mode):
             reasons.append("WAYLAND_SOCKET_MISSING")
+        elif socket_stat.st_uid != uid or (socket_stat.st_mode & 0o077):
+            # Wayland socket access is user-session authority; reject sockets
+            # readable/writable by group or other users even if owned by us.
+            reasons.append("WAYLAND_SOCKET_UNTRUSTED")
     if not env.get("DBUS_SESSION_BUS_ADDRESS", "").startswith("unix:"):
         reasons.append("SESSION_DBUS_UNAVAILABLE")
     return {
