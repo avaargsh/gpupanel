@@ -57,9 +57,11 @@ def preflight(env: dict[str, str], release: str, *, uid: int,
             reasons.append("UNTRUSTED_RUNTIME_DIR")
         if socket_stat is None or not stat.S_ISSOCK(socket_stat.st_mode):
             reasons.append("WAYLAND_SOCKET_MISSING")
-        elif socket_stat.st_uid != uid or (socket_stat.st_mode & 0o077):
-            # Wayland socket access is user-session authority; reject sockets
-            # readable/writable by group or other users even if owned by us.
+        elif socket_stat.st_uid != uid:
+            # The socket lives below the user's private (0700) runtime directory,
+            # which prevents other UIDs from traversing to it. Some legitimate
+            # Wayland implementations expose permissive socket mode bits; do not
+            # mistake those bits for reachability through a private parent path.
             reasons.append("WAYLAND_SOCKET_UNTRUSTED")
     if not env.get("DBUS_SESSION_BUS_ADDRESS", "").startswith("unix:"):
         reasons.append("SESSION_DBUS_UNAVAILABLE")
