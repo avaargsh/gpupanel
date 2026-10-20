@@ -75,7 +75,10 @@ class RpcClient:
                 if "method" in frame:
                     # Never answer unsolicited server-to-client requests or approvals.
                     continue
-                if frame.get("id") != expected_id or "error" in frame:
+                # JSON booleans compare equal to integers in Python (True == 1);
+                # reject bool/non-integer IDs rather than accepting a forged response.
+                response_id = frame.get("id")
+                if type(response_id) is not int or response_id != expected_id or "error" in frame:
                     raise ProbeUnavailable("native RPC rejected or mismatched")
                 if not isinstance(frame.get("result"), dict):
                     raise ProbeUnavailable("native RPC response unavailable")
