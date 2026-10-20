@@ -3,6 +3,10 @@ package main
 import (
 	"embed"
 	"io/fs"
+	"os"
+	"fmt"
+	"errors"
+	"time"
 	"log"
 
 	"github.com/wailsapp/wails/v3/pkg/application"
@@ -11,7 +15,29 @@ import (
 //go:embed ui/*
 var embeddedUI embed.FS
 
+func headless(args []string) (string, error) {
+	if len(args) != 1 {
+		return "", errors.New("supported headless options: --doctor, --versions, --help")
+	}
+	switch args[0] {
+	case "--doctor":
+		return runEmbeddedPython(25*time.Second, "gpupanel-workstation.py", "doctor")
+	case "--versions":
+		return runEmbeddedPython(25*time.Second, "gpupanel-workstation.py", "versions")
+	case "--help":
+		return "GPUPanel Desktop: GUI (no args) | --doctor | --versions\\n", nil
+	default:
+		return "", errors.New("unsupported command; no arbitrary shell or privileged operation is available")
+	}
+}
+
 func main() {
+	if len(os.Args) > 1 {
+		output, err := headless(os.Args[1:])
+		if err != nil { log.Fatal(err) }
+		fmt.Print(output)
+		return
+	}
 	ui, err := fs.Sub(embeddedUI, "ui")
 	if err != nil {
 		log.Fatal(err)
