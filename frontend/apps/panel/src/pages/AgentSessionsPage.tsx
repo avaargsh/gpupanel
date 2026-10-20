@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type ChangeEvent } from 'react';
 import { FileJson2, RefreshCw, ShieldAlert, Terminal } from 'lucide-react';
+import { readLocalWatchTail } from '@/utils/nativeWatchTail';
 import { useAppSelector } from '@/store/hooks';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
@@ -14,6 +15,10 @@ import {
 
 const LIMIT_BYTES = 1024 * 1024;
 const WATCH_LIMIT_BYTES = 4 * 1024 * 1024;
+type LocalWatchHandle = { getFile(): Promise<File> };
+type LocalFilePicker = Window & {
+    showOpenFilePicker?: (options: { multiple: boolean }) => Promise<LocalWatchHandle[]>;
+};
 
 /** An imported local file is an untrusted *snapshot*, not a remote discovery API. */
 export default function AgentSessionsPage() {
@@ -23,23 +28,113 @@ export default function AgentSessionsPage() {
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
     const epoch = useRef(0);
+    const [following, setFollowing] = useState(false);
+    const [followStatus, setFollowStatus] = useState('');
+    const followRef = useRef<LocalWatchHandle | null>(null);
+    const followEpoch = useRef(0);
+    const followBusy = useRef(false);
     const local = node === 'local';
 
     useEffect(() => {
         // Do not retain an import across node scope changes or stale async reads.
         epoch.current += 1;
+        followEpoch.current += 1;
+        followRef.current = null;
+        setFollowing(false);
+        setFollowStatus('');
         setInventory(null);
         setWatchReport(null);
         setError('');
         setLoading(false);
     }, [node]);
 
-    useEffect(() => () => { epoch.current += 1; }, []);
+    useEffect(() => () => { epoch.current += 1; followEpoch.current += 1; }, []);
+
+    // Only a user-selected local file handle is ever read. No background
+    // process, network request, browser storage or Core privilege is involved.
+    useEffect(() => {
+        if (!following || !local || !followRef.current) return;
+        const ticket = followEpoch.current;
+        const handle = followRef.current;
+        let stopped = false;
+        const refresh = async () => {
+            if (stopped || followBusy.current) return;
+            followBusy.current = true;
+            try {
+                const file = await handle.getFile();
+                if (file.size > WATCH_LIMIT_BYTES) throw new Error('本地记录超出 4 MiB 上限');
+                const result = readLocalWatchTail(await file.text());
+                if (stopped || ticket !== followEpoch.current) return;
+                setWatchReport(result.record);
+                setInventory(result.record?.inventory ?? null);
+                setError('');
+                setFollowStatus(result.state === 'pending' ? '等待第一条完整观察记录'
+                    : result.state === 'stale' ? '观察已超过 90 秒没有有效更新，旧状态已清除'
+                    : result.state === 'unavailable' ? '本次原生观察失败，旧会话已清除'
+                    : '正在读取本机文件；仅代表最新一次已完成的观察');
+            } catch {
+                if (!stopped && ticket === followEpoch.current) {
+                    followRef.current = null;
+                    followEpoch.current += 1;
+                    setFollowing(false);
+                    setInventory(null);
+                    setWatchReport(null);
+                    setFollowStatus('本机文件读取失败或权限已失效，跟随已停止');
+                }
+            } finally {
+                followBusy.current = false;
+            }
+        };
+        void refresh();
+        const id = window.setInterval(() => { void refresh(); }, 5000);
+        return () => { stopped = true; window.clearInterval(id); };
+    }, [following, local, node]);
+
+    const stopFollowing = () => {
+        followEpoch.current += 1;
+        followRef.current = null;
+        setFollowing(false);
+        setFollowStatus('');
+    };
+
+    const selectLiveFile = async () => {
+        if (!local || following) return;
+        const picker = (window as LocalFilePicker).showOpenFilePicker;
+        if (!picker) {
+            setError('当前浏览器不支持本机文件持续读取，请使用普通 NDJSON 手动导入。');
+            return;
+        }
+        const request = ++epoch.current;
+        try {
+            // Must happen directly in the click handler for browser user consent.
+            const handles = await picker.call(window, { multiple: false });
+            if (request !== epoch.current || !local || handles.length !== 1) return;
+            const file = await handles[0].getFile();
+            if (request !== epoch.current || !file.name.toLowerCase().endsWith('.ndjson')
+                || file.size > WATCH_LIMIT_BYTES) {
+                if (request === epoch.current) setError('仅可跟随 4 MiB 以内的 .ndjson 本机观察记录');
+                return;
+            }
+            stopFollowing();
+            followRef.current = handles[0];
+            followEpoch.current += 1;
+            setInventory(null);
+            setWatchReport(null);
+            setError('');
+            setFollowStatus('等待本机记录');
+            setFollowing(true);
+        } catch {
+            if (request === epoch.current) {
+                setError('没有获得本机文件访问权限，可继续手动导入。');
+            }
+        }
+    };
 
     const onFile = async (event: ChangeEvent<HTMLInputElement>) => {
         const file = event.currentTarget.files?.[0];
         event.currentTarget.value = '';
         const request = ++epoch.current;
+        stopFollowing();
         setInventory(null);
         setWatchReport(null);
         setError('');
@@ -127,6 +222,27 @@ export default function AgentSessionsPage() {
                     <pre className="log-output" aria-label="有限次数原生观察命令">
                         {'cd core && go run ./cmd/codex-observer --endpoint ws://127.0.0.1:4222 --watch --samples 12 --interval-seconds 5 > ../codex-observations.ndjson'}
                     </pre>
+                    <div className="space-y-2 rounded-lg border border-border p-3">
+                        <p className="text-sm font-medium">浏览器本地跟随观察文件（Chromium 可选）</p>
+                        <p className="text-xs text-muted-foreground">
+                            只在你主动选择文件后，每 5 秒重新读取本机 .ndjson。
+                            从不上传到 Core；文件超过 90 秒无有效观察会清除旧状态。
+                            切换节点、关闭页面或撤销文件权限后自动停止。
+                        </p>
+                        <div className="flex flex-wrap gap-2">
+                            <Button type="button" size="sm" variant="outline"
+                                disabled={following || loading} onClick={() => { void selectLiveFile(); }}>
+                                选择并跟随本机记录
+                            </Button>
+                            {following && <Button type="button" size="sm" variant="outline"
+                                onClick={() => {
+                                    stopFollowing();
+                                    setInventory(null);
+                                    setWatchReport(null);
+                                }}>停止本地跟随</Button>}
+                        </div>
+                        {followStatus && <p role="status" className="text-xs text-muted-foreground">{followStatus}</p>}
+                    </div>
                     <label className="flex flex-col gap-2 text-sm">
                         <span className="font-medium">选择刚导出的 JSON 文件</span>
                         <input type="file" accept=".json,.ndjson,application/json" disabled={loading}
@@ -161,6 +277,7 @@ export default function AgentSessionsPage() {
                     </CardTitle>
                     <Button variant="outline" size="sm" onClick={() => {
                         epoch.current += 1;
+                        stopFollowing();
                         setInventory(null);
                         setWatchReport(null);
                         setError('');
