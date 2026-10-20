@@ -112,5 +112,13 @@ func validateUpgradeArchive(filename, packageName string) error {
 	for name, exists := range required {
 		if !exists { return deny("missing required release entry: " + name) }
 	}
+	// tar.Reader stops at its zero-block end marker. That may precede the
+	// gzip trailer, so Next() == io.EOF alone does NOT prove compressed
+	// integrity. Consume the remaining bounded gzip stream to validate its
+	// CRC32/ISIZE trailer and reject truncated or corrupted members BEFORE
+	// any privileged extraction. This is not a publisher signature.
+	if _, err := io.Copy(io.Discard, zr); err != nil {
+		return deny("invalid gzip trailer or trailing compressed payload")
+	}
 	return nil
 }
