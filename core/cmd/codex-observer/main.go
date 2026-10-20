@@ -152,32 +152,47 @@ func project(result json.RawMessage) (snapshot, error) {
 	return out,nil
 }
 
-func observe(raw string) (snapshot, error) {
+// openObserverSocket performs the same read-only handshake for one-shot or
+// notifications. The caller owns the returned connection and must close it.
+// Every reconnect reruns DB-only thread/list; no cached state is accepted.
+func openObserverSocket(raw string) (*websocket.Conn, snapshot, error) {
 	address, err := endpoint(raw)
-	if err != nil { return snapshot{}, err }
+	if err != nil { return nil, snapshot{}, err }
 	dialer := websocket.Dialer{HandshakeTimeout:4*time.Second, EnableCompression:false}
 	conn, _, err := dialer.Dial(address, nil)
-	if err != nil { return snapshot{}, errors.New("local native app-server unavailable") }
-	defer conn.Close()
+	if err != nil { return nil, snapshot{}, errors.New("local native app-server unavailable") }
 	conn.SetReadLimit(512 * 1024)
 	deadline := time.Now().Add(10*time.Second)
 	send := func(req any) error {
 		if err := conn.SetWriteDeadline(deadline); err != nil { return err }
 		return conn.WriteJSON(req)
 	}
+	fail := func(e error) (*websocket.Conn, snapshot, error) {
+		_ = conn.Close()
+		return nil, snapshot{}, e
+	}
 	if err := send(map[string]any{"id":1,"method":"initialize","params":map[string]any{
 		"clientInfo":map[string]string{"name":"gpupanel_local_observer","title":"GPUPanel Local Observer","version":"0.1.0"},
-	}}); err != nil { return snapshot{}, errors.New("native initialize failed") }
-	if _, err := readReply(conn,1,deadline); err != nil { return snapshot{}, err }
+	}}); err != nil { return fail(errors.New("native initialize failed")) }
+	if _, err := readReply(conn,1,deadline); err != nil { return fail(err) }
 	if err := send(map[string]any{"method":"initialized","params":map[string]any{}}); err != nil {
-		return snapshot{}, errors.New("native initialization failed")
+		return fail(errors.New("native initialization failed"))
 	}
 	if err := send(map[string]any{"id":2,"method":"thread/list","params":map[string]any{
 		"limit":maxRows,"sortKey":"created_at","useStateDbOnly":true,
-	}}); err != nil { return snapshot{}, errors.New("native read failed") }
+	}}); err != nil { return fail(errors.New("native read failed")) }
 	result, err := readReply(conn,2,deadline)
+	if err != nil { return fail(err) }
+	snap, err := project(result)
+	if err != nil { return fail(err) }
+	return conn, snap, nil
+}
+
+func observe(raw string) (snapshot, error) {
+	conn, snap, err := openObserverSocket(raw)
 	if err != nil { return snapshot{}, err }
-	return project(result)
+	defer conn.Close()
+	return snap, nil
 }
 
 func main() {
@@ -185,7 +200,10 @@ func main() {
 		fmt.Fprintln(os.Stderr, "usage: codex-observer --endpoint ws://127.0.0.1:PORT [--watch --samples 12 --interval-seconds 5]")
 	}
 	raw := flag.String("endpoint", "", "existing local Codex app-server websocket")
-	watchMode := flag.Bool("watch", false, "emit bounded read-only NDJSON observations; no persistent server")
+	watchMode := flag.Bool("watch", false, "finite repeated read-only snapshots")
+	eventMode := flag.Bool("events", false, "finite native status notification observation on one WebSocket")
+	duration := flag.Int("duration-seconds", 60, "event observation upper duration, 15-90 seconds")
+	attempts := flag.Int("attempts", 3, "event observation connection attempts, 1-5")
 	samples := flag.Int("samples", 12, "watch-only, finite number of observations (1-120)")
 	interval := flag.Int("interval-seconds", 5, "watch-only, seconds between attempts (3-60)")
 	flag.Parse()
@@ -196,6 +214,20 @@ func main() {
 	if _,err:=endpoint(*raw);err!=nil {
 		flag.Usage()
 		os.Exit(2)
+	}
+	if *watchMode && *eventMode {
+		flag.Usage()
+		os.Exit(2)
+	}
+	if *eventMode {
+		ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+		defer stop()
+		if err := eventStream(ctx, os.Stdout, *raw, *duration, *attempts); err != nil &&
+			!errors.Is(err, context.Canceled) {
+			fmt.Fprintln(os.Stderr, "Native event observation unavailable; no authority inferred")
+			os.Exit(2)
+		}
+		return
 	}
 	if *watchMode {
 		ctx,stop:=signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
