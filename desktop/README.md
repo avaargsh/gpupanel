@@ -37,6 +37,24 @@
 - export：导出 Profile JSON；不包含工作区文件、IDE 插件、SSH 私钥或 Token。
 - devpod-plan：有 DevPod、Docker CLI 和现成 devcontainer.json 时，仅展示基于 openvscode 的浏览器 IDE 启动计划；真实 Provider/容器/端口开放都需要另行人工授权及验收。
 
+## Profile 迁移：从旧电脑到新电脑
+
+旧机 CLI 导出至用户自己维护的备份目录：
+
+    mkdir -p ~/GPUPanel/backups
+    python3 scripts/gpupanel-workstation.py export ~/GPUPanel/backups/workstation-profile.json
+
+将上述 `workstation-profile.json` 手动复制至新机的 `~/GPUPanel/backups/`，在新机仓库根目录下执行：
+
+    python3 scripts/gpupanel-workstation.py --profile ~/GPUPanel/backups/workstation-profile.json doctor
+    python3 scripts/gpupanel-workstation.py --profile ~/GPUPanel/backups/workstation-profile.json restore --approve-digest <doctor 的 profileDigest>
+
+桌面页面也支持同样的固定备份文件名导出、预检和二次确认导入。Profile 仅记录白名单软件清单与非敏感镜像 URL，**不会自动安装软件、应用镜像设置、拉取源码或恢复工作区数据**。配置目标已经存在且内容不同则必须先人工处理冲突，程序不能覆盖。镜像 URL 只是建议，不代表制品已验证。
+
+本次新增 CLI 跨两个隔离用户 Home 的 export→preview→restore→重复导入→冲突拒绝测试：
+
+    python3 -m unittest discover -s scripts/tests -p 'test_gpupanel_profile_transfer.py' -v
+
 ## 新机项目骨架离线迁移（无 Docker）
 
 在旧电脑的普通 Ubuntu 用户目录中，选择已经存在的 `~/GPUPanel/projects/<project>` 项目。快照只包含固定白名单文件：`pyproject.toml`、`uv.lock`、`README.md`、`main.py`、Node/Go 锁文件、Dev Container 定义和 VS Code 扩展清单。不包含完整源码仓库、数据目录、虚拟环境、容器卷或 SSH 凭据。**白名单文件本身仍可能含敏感值，导出前必须由操作者人工检查。**
@@ -77,6 +95,7 @@
 | 国内离线镜像缓存与真实软件安装 | NOT RUN（此前仅有工具和合成制品测试） |
 | DevPod 浏览器 IDE 真实创建/停止/恢复 | NOT RUN |
 | 离线骨架锁文件/配置快照与新目录恢复 | 具备源码与单测，真实跨机 NOT RUN |
+| 跨机器无密钥 Profile 导出/预检/导入 | Ubuntu CLI 合约测试；GUI 真机 NOT RUN |
 | 新机完整源码、数据和个人 IDE 设置/扩展恢复 | NOT IMPLEMENTED |
 | 原有 GPUPanel Host G3–G6 | 仍 M0 NO-GO |
 
