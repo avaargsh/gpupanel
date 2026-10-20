@@ -15,6 +15,9 @@ func TestEmbeddedAssetsMatchAuditedRepositoryFiles(t *testing.T) {
 		"runtime/scripts/gpupanel-workstation.py": "../../scripts/gpupanel-workstation.py",
 		"runtime/scripts/gpupanel-workspace-bundle.py": "../../scripts/gpupanel-workspace-bundle.py",
 		"runtime/profiles/ubuntu24-workstation.v1.json": "../../profiles/ubuntu24-workstation.v1.json",
+		"runtime/scripts/gpupanel-uv-project.py": "../../scripts/gpupanel-uv-project.py",
+		"runtime/scripts/gpupanel-catalog-workspace.py": "../../scripts/gpupanel-catalog-workspace.py",
+		"runtime/scripts/gpupanel-catalog.py": "../../scripts/gpupanel-catalog.py",
 	}
 	for embeddedName, sourcePath := range pairs {
 		got, err := embeddedTools.ReadFile(embeddedName)
@@ -62,5 +65,30 @@ func TestEmbeddedProfileExportWithoutCheckout(t *testing.T) {
 func TestOnlyAllowlistedEmbeddedScripts(t *testing.T) {
 	if _, err := runEmbeddedPython(time.Second, "../../bin/bash"); err == nil {
 		t.Fatal("untrusted script name unexpectedly accepted")
+	}
+}
+
+func TestOfflineUvStarterPreviewWithoutRepositoryOrContainer(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	t.Chdir(home)
+	result, err := (&DesktopService{}).UvProjectPlan()
+	if err != nil { t.Fatalf("local uv preview failed: %v", err) }
+	var report uvProjectReceipt
+	if err := json.Unmarshal([]byte(result), &report); err != nil { t.Fatal(err) }
+	switch report.Status {
+	case "READY_FOR_APPROVAL":
+		if len(report.PlanDigest) != 64 { t.Fatal("missing project plan digest") }
+	case "MISSING_UV":
+		if report.Executed { t.Fatal("missing uv must not perform mutations") }
+	default:
+		t.Fatalf("unexpected uv plan status: %q", report.Status)
+	}
+	project := filepath.Join(home, "GPUPanel", "projects", "uv-python-starter")
+	if _, err := os.Stat(project); !os.IsNotExist(err) {
+		t.Fatal("project plan created files or directories")
+	}
+	if _, err := (&DesktopService{}).UvProjectCreate("wrong"); err == nil {
+		t.Fatal("unapproved uv project creation was accepted")
 	}
 }
