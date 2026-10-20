@@ -157,7 +157,8 @@ with sync_playwright() as play:
         return "unknown"
 
     def request(method: str, endpoint: str, body: dict | None = None,
-                success=True, *, raw_response=False, verify_rejection=True):
+                success=True, *, raw_response=False, verify_rejection=True,
+                stage_hint: str | None = None):
         allowed_post = {
             "/apps/sync/local", "/apps/install", "/apps/installed/op",
             "/logs/tasks/search",
@@ -186,7 +187,17 @@ with sync_playwright() as play:
         }""", {"method": method, "endpoint": endpoint, "body": body})
         accepted = response.get("http") == 200 and response.get("code") == 200
         if success and not accepted:
-            print("G5_APP_API_FAILURE_STAGE=" + api_failure_stage(endpoint) +
+            stage = api_failure_stage(endpoint)
+            # Explicit call-site labels keep diagnostics useful if a route alias
+            # or future endpoint spelling escapes the exact-path classifier.
+            allowed_stages = {
+                "catalog-sync", "task-receipt", "detail-lookup",
+                "install-admission", "invalid-install-probe",
+                "resource-evidence", "uninstall-operation", "installed-info",
+            }
+            if stage == "unknown" and stage_hint in allowed_stages:
+                stage = stage_hint
+            print("G5_APP_API_FAILURE_STAGE=" + stage +
                   " release=NO_GO", flush=True)
             raise RuntimeError("scoped Core App API refused the expected operation")
         if not success and accepted and verify_rejection:
@@ -199,7 +210,7 @@ with sync_playwright() as play:
             data = request("POST", "/logs/tasks/search", {
                 "page": 1, "pageSize": 20, "type": scope,
                 "status": "", "taskID": task_id,
-            })
+            }, stage_hint="task-receipt")
             items = data.get("items") if isinstance(data, dict) else None
             if items is not None and not isinstance(items, list):
                 raise RuntimeError("TaskLog response was malformed")
@@ -218,10 +229,12 @@ with sync_playwright() as play:
         raise RuntimeError("task outcome ambiguous; do NOT retry")
 
     sync_id = str(uuid4())
-    request("POST", "/apps/sync/local", {"taskID": sync_id})
+    request("POST", "/apps/sync/local", {"taskID": sync_id},
+            stage_hint="catalog-sync")
     await_task(sync_id, "AppStore", "TaskSync")
     steps.append("real_local_catalog_sync")
-    detail = request("GET", f"/apps/detail/node/{APP_KEY}/1.0.0")
+    detail = request("GET", f"/apps/detail/node/{APP_KEY}/1.0.0",
+                     stage_hint="detail-lookup")
     detail_id = detail.get("id") if isinstance(detail, dict) else None
     if type(detail_id) is not int or detail_id <= 0:
         raise RuntimeError("local catalog detail was not actually persisted")
@@ -234,7 +247,8 @@ with sync_playwright() as play:
     rejected = request("POST", "/apps/install", {
         "appDetailId": 2147483647, "name": APP_NAME,
         "params": {}, "taskID": "../invalid", "pullImage": False,
-    }, success=False, raw_response=True, verify_rejection=False)
+    }, success=False, raw_response=True, verify_rejection=False,
+       stage_hint="invalid-install-probe")
     inventory_after = guest_inventory()
     if rejected.get("http") == 200 and rejected.get("code") == 200:
         raise RuntimeError("Core accepted a deliberately invalid AppInstall")
@@ -247,14 +261,15 @@ with sync_playwright() as play:
     created = request("POST", "/apps/install", {
         "appDetailId": detail_id, "name": APP_NAME,
         "params": {}, "taskID": install_task, "pullImage": False,
-    })
+    }, stage_hint="install-admission")
     install_id = created.get("id") if isinstance(created, dict) else None
     if type(install_id) is not int or install_id <= 0:
         raise RuntimeError("AppInstall row was not returned")
     await_task(install_task, "App", "TaskInstall")
     steps.append("real_appinstall_taskdb_success")
 
-    evidence = request("GET", f"/apps/installed/evidence/{install_id}")
+    evidence = request("GET", f"/apps/installed/evidence/{install_id}",
+                       stage_hint="resource-evidence")
     evidence_code = app_evidence_codes.classify_app_install_evidence(
         evidence, install_id, install_task
     )
@@ -318,18 +333,20 @@ with sync_playwright() as play:
     request("POST", "/apps/installed/op", {
         "installId": install_id, "operate": "delete", "forceDelete": False,
         "deleteImage": False, "taskID": uninstall_id,
-    })
+    }, stage_hint="uninstall-operation")
     await_task(uninstall_id, "App", "TaskUninstall")
     if guest(["sudo", "docker", "inspect", "--format", "{{.Id}}", name],
              check=False):
         raise RuntimeError("AppInstall container remained after uninstall")
     # This must no longer return a successfully readable AppInstall resource.
-    request("GET", f"/apps/installed/info/{install_id}", success=False)
+    request("GET", f"/apps/installed/info/{install_id}", success=False,
+            stage_hint="installed-info")
     steps.append("real_app_uninstall_and_resource_removal")
 
     fixture("remove")
     cleanup_task = str(uuid4())
-    request("POST", "/apps/sync/local", {"taskID": cleanup_task})
+    request("POST", "/apps/sync/local", {"taskID": cleanup_task},
+            stage_hint="catalog-sync")
     await_task(cleanup_task, "AppStore", "TaskSync")
     steps.append("fixture_catalog_cleanup")
     context.close()
