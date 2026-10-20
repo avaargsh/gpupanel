@@ -4,6 +4,10 @@ on:
     paths:
       - 'agent/server/server.go'
       - 'agent/server/master_socket_test.go'
+      - 'agent/server/unix_peer_identity.go'
+      - 'agent/server/unix_peer_identity_linux.go'
+      - 'agent/server/unix_peer_identity_other.go'
+      - 'agent/server/unix_peer_identity_test.go'
       - '.github/workflows/gpupanel-master-socket.yml'
   workflow_dispatch:
 jobs:
@@ -17,5 +21,6 @@ jobs:
         with:
           go-version-file: agent/go.mod
           cache-dependency-path: agent/go.sum
-      - run: go test ./server -run 'Test(EnsureMasterSocketVacant|PrepareMasterSocketDir)' -count=1 -v
+      - name: Run master socket and peer identity tests
+        run: go test ./server -run 'Test(EnsureMasterSocketVacant|PrepareMasterSocketDir|UnixPeerIdentity)' -count=1 -v
         working-directory: agent
