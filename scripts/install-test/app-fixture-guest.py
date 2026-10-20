@@ -56,6 +56,7 @@ def prepare():
     (version / "docker-compose.yml").write_text(
         "services:\n"
         "  fixture:\n"
+        "    container_name: ${CONTAINER_NAME}\n"
         "    image: gpupanel-m0-fixture:local\n"
         "    pull_policy: never\n"
         "    network_mode: none\n"
