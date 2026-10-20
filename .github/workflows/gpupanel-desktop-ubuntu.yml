@@ -158,6 +158,14 @@ jobs:
         run: |
           set -euo pipefail
           python3 scripts/tests/gpupanel_desktop_launcher_e2e.py "$RUNNER_TEMP/gpupanel-desktop-preview"
+      - name: Verify GNOME Wayland acceptance kit is safe and self-contained
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/tests/test_gpupanel_gnome_acceptance.py -v
+          python3 scripts/gpupanel-gnome-acceptance.py --help
+          python3 -m py_compile scripts/gpupanel-gnome-acceptance.py
+          test -f scripts/GPUPANEL_GNOME_ACCEPTANCE.md
       - name: Prove native binary transfers source between two fresh HOME locations
         shell: bash
         run: |
