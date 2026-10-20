@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { parseNativeInventory } from './nativeSessions.ts';
+import { parseNativeInventory, parseNativeWatch } from './nativeSessions.ts';
 
 const id = '123e4567-e89b-12d3-a456-426614174000';
 function snapshot(overrides = {}) {
@@ -118,4 +118,56 @@ test('untrusted app-server imports cannot claim globally running or remote autho
     ]) {
         assert.throws(() => parseNativeInventory(appserverSnapshot(bad)));
     }
+});
+
+function nativeWatchLine(sequence, connection, snapshot, timestamp = '2026-10-20T10:00:00Z') {
+    return JSON.stringify({
+        schemaVersion: 1,
+        source: 'local-user-codex-watch',
+        sequence,
+        observedAt: timestamp,
+        connection,
+        liveStatusVerified: false,
+        snapshot,
+    });
+}
+
+test('watch import discards earlier sessions when latest record is unavailable', () => {
+    const source = JSON.parse(appserverSnapshot({
+        observerScope: 'attached-loopback-appserver',
+        hasMore: false,
+    }));
+    const observed = nativeWatchLine(1, 'observed', source);
+    const offline = nativeWatchLine(2, 'unavailable', null, '2026-10-20T10:00:05Z');
+    const latest = parseNativeWatch(observed + '\n' + offline + '\n');
+    assert.equal(latest.observation, 'unavailable');
+    assert.equal(latest.inventory, null);
+    assert.equal(latest.sequence, 2);
+
+    const restored = parseNativeWatch(observed + '\n' + offline + '\n' +
+        nativeWatchLine(3, 'observed', source, '2026-10-20T10:00:10Z'));
+    assert.equal(restored.observation, 'observed');
+    assert.equal(restored.inventory.sessions[0].liveness, 'unknown');
+    assert.equal(restored.inventory.observerScope, 'attached-loopback-appserver');
+});
+
+test('watch import rejects stale-data spoofing and malformed sequences', () => {
+    const source = JSON.parse(appserverSnapshot({
+        observerScope: 'attached-loopback-appserver',
+        hasMore: false,
+    }));
+    for (const bad of [
+        nativeWatchLine(1, 'unavailable', source),
+        nativeWatchLine(2, 'observed', source),
+        nativeWatchLine(1, 'observed', source) + '\n' + nativeWatchLine(1, 'observed', source),
+        nativeWatchLine(1, 'observed', source) + '\n' +
+            nativeWatchLine(2, 'observed', source, '2026-10-20T09:59:59Z'),
+        nativeWatchLine(1, 'observed', { ...source, liveStatusVerified: true }),
+        nativeWatchLine(1, 'observed', { ...source, observerScope: 'new-app-server-process' }),
+        '{"schemaVersion":1,"source":"local-user-codex-watch"',
+        '',
+    ]) {
+        assert.throws(() => parseNativeWatch(bad));
+    }
+    assert.throws(() => parseNativeWatch('x'.repeat(4 * 1024 * 1024 + 1)), /上限/);
 });
