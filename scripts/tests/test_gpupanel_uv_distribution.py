@@ -60,6 +60,9 @@ class UvDistributionTests(unittest.TestCase):
         self.assertEqual(dist.plan(self.home, supported=True,
                                    reviewed_sha=checksum)["status"], "ALREADY_PRESENT")
         self.assertEqual(json.loads((dest / "receipt.json").read_text())["archiveSHA256"], checksum)
+        # Synthetic fixtures may prove installer mechanics, but can never
+        # impersonate the pinned official release even with a matching receipt.
+        self.assertEqual(dist.status(self.home)["status"], "MODIFIED")
 
     def test_tampered_digest_does_not_publish(self):
         self.make_archive()
