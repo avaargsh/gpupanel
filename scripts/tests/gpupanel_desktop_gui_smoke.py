@@ -43,7 +43,15 @@ def await_window(app: subprocess.Popen, *, seconds: int = 30) -> str:
         if ids:
             return ids[0]
         time.sleep(0.5)
-    raise SmokeFailure("no visible native window in 30s")
+    # Fail closed, but retain X11 observations to distinguish GTK startup
+    # from a window-manager / title / mapping race on ephemeral CI machines.
+    details = []
+    for options in (["search", "--name", "GPUPanel"],
+                    ["search", "--onlyvisible", "--name", ".*"]):
+        probe = subprocess.run(["xdotool", *options], capture_output=True, text=True,
+                               timeout=3, check=False)
+        details.append(f"{options}: rc={probe.returncode}, ids={probe.stdout.strip()[:400]!r}")
+    raise SmokeFailure("no visible GPUPanel window; X11 inventory: " + " | ".join(details))
 
 
 def main() -> int:
@@ -82,6 +90,11 @@ def main() -> int:
         # Openbox provides window focus semantics; Xvfb itself has no WM.
         wm = subprocess.Popen(["openbox", "--sm-disable"], env=env,
                               stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        # WM startup and EWMH advertisement are asynchronous. Avoid racing
+        # the first GTK window against Openbox on an overloaded GitHub runner.
+        time.sleep(1.5)
+        if wm.poll() is not None:
+            raise SmokeFailure(f"Openbox exited before app launch: {wm.returncode}")
         app_log = args.screenshot.with_suffix(".log")
         if app_log.is_symlink() or app_log.exists():
             raise SmokeFailure("refuse to overwrite GUI diagnostics")
