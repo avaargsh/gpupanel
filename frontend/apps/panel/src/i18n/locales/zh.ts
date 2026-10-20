@@ -129,6 +129,7 @@ const zh = {
     "operations": "管理",
     "title": "工作台",
     "projects": "我的项目",
+    "localIdentity": "本机身份验证",
     "environments": "开发环境",
     "apps": "应用与模型",
     "terminal": "终端",

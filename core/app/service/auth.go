@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/avaargsh/GPUPanel/core/app/auth"
+	"github.com/avaargsh/GPUPanel/core/app/principalproof"
 	"github.com/avaargsh/GPUPanel/core/app/dto"
 	"github.com/avaargsh/GPUPanel/core/app/repo"
 	"github.com/avaargsh/GPUPanel/core/buserr"
@@ -54,6 +55,11 @@ func (u *AuthService) LogOut(c *gin.Context) error {
 	httpsSetting, err := settingRepo.Get(repo.WithByKey("SSL"))
 	if err != nil {
 		return err
+	}
+	if proofRuntime := principalproof.Current(); proofRuntime != nil {
+		if digest, digestErr := global.SESSION.VerifiedSessionDigest(c); digestErr == nil {
+			proofRuntime.Store.Revoke(digest)
+		}
 	}
 	sID, _ := c.Cookie(constant.SessionName)
 	if sID != "" {
