@@ -152,15 +152,8 @@ func project(result json.RawMessage) (snapshot, error) {
 	return out,nil
 }
 
-func observe(raw string) (snapshot, error) {
-	address, err := endpoint(raw)
-	if err != nil { return snapshot{}, err }
-	dialer := websocket.Dialer{HandshakeTimeout:4*time.Second, EnableCompression:false}
-	conn, _, err := dialer.Dial(address, nil)
-	if err != nil { return snapshot{}, errors.New("local native app-server unavailable") }
-	defer conn.Close()
-	conn.SetReadLimit(512 * 1024)
-	deadline := time.Now().Add(10*time.Second)
+func observeConn(conn *websocket.Conn) (snapshot, error) {
+	deadline := time.Now().Add(10 * time.Second)
 	send := func(req any) error {
 		if err := conn.SetWriteDeadline(deadline); err != nil { return err }
 		return conn.WriteJSON(req)
@@ -180,37 +173,50 @@ func observe(raw string) (snapshot, error) {
 	return project(result)
 }
 
+func observe(raw string) (snapshot, error) {
+	address, err := endpoint(raw)
+	if err != nil { return snapshot{}, err }
+	dialer := websocket.Dialer{HandshakeTimeout:4*time.Second, EnableCompression:false}
+	conn, _, err := dialer.Dial(address, nil)
+	if err != nil { return snapshot{}, errors.New("local native app-server unavailable") }
+	defer conn.Close()
+	conn.SetReadLimit(512 * 1024)
+	return observeConn(conn)
+}
+
 func main() {
 	flag.Usage = func() {
-		fmt.Fprintln(os.Stderr, "usage: codex-observer --endpoint ws://127.0.0.1:PORT [--watch --samples 12 --interval-seconds 5]")
+		fmt.Fprintln(os.Stderr, "usage: codex-observer (--native-unix | --endpoint ws://127.0.0.1:PORT) [--watch --samples 12 --interval-seconds 5]")
 	}
-	raw := flag.String("endpoint", "", "existing local Codex app-server websocket")
-	watchMode := flag.Bool("watch", false, "emit bounded read-only NDJSON observations; no persistent server")
-	samples := flag.Int("samples", 12, "watch-only, finite number of observations (1-120)")
-	interval := flag.Int("interval-seconds", 5, "watch-only, seconds between attempts (3-60)")
+	raw := flag.String("endpoint", "", "existing local Codex app-server websocket (legacy, no UID proof)")
+	native := flag.Bool("native-unix", false, "use verified same-UID Codex local control socket")
+	watchMode := flag.Bool("watch", false, "emit bounded read-only NDJSON observations")
+	samples := flag.Int("samples", 12, "watch-only, finite observations (1-120)")
+	interval := flag.Int("interval-seconds", 5, "watch-only, delay (3-60)")
 	flag.Parse()
-	if flag.NArg()!=0 || *raw=="" || userFence()!=nil {
+	if flag.NArg()!=0 || userFence()!=nil || (*native == (*raw!="")) {
 		flag.Usage()
 		os.Exit(2)
 	}
-	if _,err:=endpoint(*raw);err!=nil {
-		flag.Usage()
-		os.Exit(2)
+	var fetch sampleFn
+	if *native {
+		fetch = observeNativeUnix
+	} else {
+		if _,err:=endpoint(*raw);err!=nil { flag.Usage();os.Exit(2) }
+		fetch = func()(snapshot,error){return observe(*raw)}
 	}
 	if *watchMode {
 		ctx,stop:=signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 		defer stop()
-		if err:=watch(ctx,os.Stdout,*samples,time.Duration(*interval)*time.Second,
-			func()(snapshot,error){return observe(*raw)});err!=nil &&
-			!errors.Is(err,context.Canceled) {
-			fmt.Fprintln(os.Stderr,"Bounded native observation stopped without further data")
+		if err:=watch(ctx,os.Stdout,*samples,time.Duration(*interval)*time.Second,fetch);
+			err!=nil && !errors.Is(err,context.Canceled) {
+			fmt.Fprintln(os.Stderr,"Bounded native observation stopped")
 			os.Exit(2)
 		}
 		return
 	}
-	data,err := observe(*raw)
-	if err != nil {
-		// Native errors may contain commands, secrets or filesystem paths.
+	data,err:=fetch()
+	if err!=nil {
 		fmt.Fprintln(os.Stderr,"Codex observation unavailable (no export)")
 		os.Exit(2)
 	}
