@@ -70,6 +70,25 @@ G5_APP_DOCKER_STATE = re.compile(
 )
 
 
+G5_APP_FIXTURE_COUNT = re.compile(
+    r"(?m)^G5_APP_FIXTURE_CONTAINER_COUNT=(zero|one|multiple) release=NO_GO$"
+)
+G5_APP_FIXTURE_STATE = re.compile(
+    r"(?m)^G5_APP_FIXTURE_DOCKER_STATE=(running|created|exited|restarting|"
+    r"paused|removing|dead|unknown) release=NO_GO$"
+)
+
+
+def app_fixture_count(raw: str) -> str:
+    hits = G5_APP_FIXTURE_COUNT.findall(raw)
+    return hits[-1] if hits else "unknown"
+
+
+def app_fixture_state(raw: str) -> str:
+    hits = G5_APP_FIXTURE_STATE.findall(raw)
+    return hits[-1] if hits else "unknown"
+
+
 def app_docker_state(raw: str) -> str:
     hits = G5_APP_DOCKER_STATE.findall(raw)
     return hits[-1] if hits else "unknown"
@@ -112,6 +131,8 @@ def main() -> int:
         print("G5_APP_API_FAILURE_STAGE=" + app_api_stage(raw) + " release=NO_GO")
         print("G5_APP_EVIDENCE_FAILURE_CODE=" + app_evidence_code(raw) + " release=NO_GO")
         print("G5_APP_DOCKER_STATE=" + app_docker_state(raw) + " release=NO_GO")
+        print("G5_APP_FIXTURE_CONTAINER_COUNT=" + app_fixture_count(raw) + " release=NO_GO")
+        print("G5_APP_FIXTURE_DOCKER_STATE=" + app_fixture_state(raw) + " release=NO_GO")
     print(diagnostic(raw, basename))
     return 0
 
