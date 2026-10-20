@@ -19,8 +19,9 @@ spec.loader.exec_module(module)
 
 
 class PeerCredentialTests(unittest.TestCase):
-    def sock(self, pid=4321, uid=1000, gid=1000, raw=None):
+    def sock(self, pid=4321, uid=1000, gid=1000, raw=None, family=socket.AF_UNIX):
         fake = Mock()
+        fake.family = family
         fake.getsockopt.return_value = (
             raw if raw is not None else struct.pack("3i", pid, uid, gid)
         )
@@ -29,6 +30,12 @@ class PeerCredentialTests(unittest.TestCase):
     def test_reads_kernel_credentials(self):
         peer = module.read_peer_credentials(self.sock())
         self.assertEqual((peer.pid, peer.uid, peer.gid), (4321, 1000, 1000))
+
+    def test_rejects_non_unix_socket_before_getsockopt(self):
+        fake = self.sock(family=socket.AF_INET)
+        with self.assertRaises(module.PeerIdentityUnavailable):
+            module.read_peer_credentials(fake)
+        fake.getsockopt.assert_not_called()
 
     def test_requires_explicit_exact_non_root_uid(self):
         self.assertEqual(module.require_peer_uid(self.sock(), 1000).uid, 1000)
