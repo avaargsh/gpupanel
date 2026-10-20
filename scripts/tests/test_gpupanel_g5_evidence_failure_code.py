@@ -67,23 +67,16 @@ class G5EvidenceFailureCodeTests(unittest.TestCase):
 
     def test_vm_ci_uses_strict_allowlist_with_negative_forgery(self):
         self.assertEqual(failure.app_evidence_code(
-            "G5_APP_EVIDENCE_FAILURE_CODE=classification release=NO_GO
-"
-            "password=SECRET_TOKEN
-"), "classification")
+            "G5_APP_EVIDENCE_FAILURE_CODE=classification release=NO_GO\n"
+            "password=SECRET_TOKEN\n"), "classification")
         for malicious in (
-            "G5_APP_EVIDENCE_FAILURE_CODE=/etc/passwd release=NO_GO
-",
-            "G5_APP_EVIDENCE_FAILURE_CODE=classification password=SECRET release=NO_GO
-",
-            "G5_APP_EVIDENCE_FAILURE_CODE=classification release=GO
-",
-            "G5_APP_EVIDENCE_FAILURE_CODE=classification release=NO_GO EXTRA
-",
+            "G5_APP_EVIDENCE_FAILURE_CODE=/etc/passwd release=NO_GO\n",
+            "G5_APP_EVIDENCE_FAILURE_CODE=classification password=SECRET release=NO_GO\n",
+            "G5_APP_EVIDENCE_FAILURE_CODE=classification release=GO\n",
+            "G5_APP_EVIDENCE_FAILURE_CODE=classification release=NO_GO EXTRA\n",
         ):
             self.assertEqual(failure.app_evidence_code(malicious), "unknown")
-        self.assertEqual(failure.app_evidence_code("password=SECRET
-"), "unknown")
+        self.assertEqual(failure.app_evidence_code("password=SECRET\n"), "unknown")
 
     def test_source_keeps_diagnostic_read_only_and_no_mutation_retry(self):
         script = (ROOT / "scripts/install-test/app-install-live.py").read_text()
