@@ -91,6 +91,12 @@ class G5EvidenceFailureCodeTests(unittest.TestCase):
         ):
             self.assertEqual(failure.app_docker_state(invalid), "unknown")
 
+    def test_fixture_compose_uses_install_owned_container_identity(self):
+        source = (ROOT / "scripts/install-test/app-fixture-guest.py").read_text()
+        self.assertIn("container_name: ${CONTAINER_NAME}", source)
+        self.assertIn("network_mode: none", source)
+        self.assertIn("pull_policy: never", source)
+
     def test_source_keeps_diagnostic_read_only_and_no_mutation_retry(self):
         script = (ROOT / "scripts/install-test/app-install-live.py").read_text()
         self.assertIn("classify_app_install_evidence(", script)
