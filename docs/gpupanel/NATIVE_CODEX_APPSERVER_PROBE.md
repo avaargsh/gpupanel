@@ -307,3 +307,64 @@ secret suppression. It is not proof of a real Codex installation's
 WebSocket identity, account, native authorization or availability.
 Actual same-user upstream integration and dual-login acceptance remain
 separate NOT RUN gates. Do not expose this loopback socket over WAN.
+
+## Authenticated local WebSocket admission (optional private bearer file)
+
+Codex app-server supports a native `--ws-auth capability-token` admission
+mode. The same-user Go observer now supports **file-backed** authentication
+for single-list, finite polling, and event modes without transporting a secret
+through argv, a browser, Core APIs, a Relay, or NDJSON output.
+
+For a manually launched existing app-server, the user first creates a private
+token file in their own Ubuntu home directory and configures Codex to require
+that SAME file. For example:
+
+```bash
+umask 077
+mkdir -p "$HOME/.codex"
+chmod 700 "$HOME/.codex"
+openssl rand -hex 32 > "$HOME/.codex/gpupanel-ws-token"
+chmod 600 "$HOME/.codex/gpupanel-ws-token"
+
+codex app-server --listen ws://127.0.0.1:4222 \
+  --ws-auth capability-token --ws-token-file "$HOME/.codex/gpupanel-ws-token"
+```
+
+In another terminal of the SAME non-root Linux user:
+
+```bash
+cd /path/to/gpupanel/core
+go run ./cmd/codex-observer \
+  --endpoint ws://127.0.0.1:4222 \
+  --auth-token-file "$HOME/.codex/gpupanel-ws-token" \
+  --events --duration-seconds 60 --attempts 3 \
+  > ../codex-native-events.ndjson
+```
+
+The observer refuses absent, non-absolute, external-home, symlinked,
+group/other-readable, wrong-owner and malformed bearer files. The file and
+its parent directories must be owned by the login UID and not writable by
+group/others. A token is only sent via `Authorization: Bearer ...` during
+the local WebSocket upgrade; no HTTP proxy, browser Origin or external
+host/path/query is used. Auth rejection does **not** retry without the
+token. The token is never logged or serialized.
+
+**Boundary:** a bearer token tests app-server authorization, not Linux
+kernel ownership of the TCP listener. A malicious process with local
+network access could impersonate a listening server and steal a shared
+token. Do not contact unknown listeners or treat bearer handshake as a
+GPUPanel Web-session-to-native-server ownership attestation. Keep the
+server and CLI within your own trusted local login. Production automated
+Core connection still requires independent same-UID endpoint ownership
+and per-thread authorization.
+
+A separate CI smoke job `GPUPanel Codex authenticated app-server smoke`
+uses the pinned official Codex **0.163.0** package and a disposable
+private token file to exercise real app-server admission and DB-only
+`thread/list`. It must PASS before the "real upstream authenticated
+connectivity" gate can be checked. An initially empty state DB can mean
+the read-only API returns an error; such behavior is a **failed smoke**
+requiring a compatible version/fixture, not evidence of empty sessions.
+CI smoke does not prove interactive Ubuntu browser/desktop/VS Code
+ownership or native event delivery from a real task. Those remain separate
+NOT RUN gates.
