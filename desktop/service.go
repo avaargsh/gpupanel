@@ -69,6 +69,10 @@ func (s *DesktopService) Overview() (string, error) {
 	return runProfile(20*time.Second, "doctor")
 }
 
+func (s *DesktopService) Versions() (string, error) {
+	return runProfile(25*time.Second, "versions")
+}
+
 func (s *DesktopService) InstallPlan() (string, error) {
 	return runProfile(20*time.Second, "install-plan")
 }
