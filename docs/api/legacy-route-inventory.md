@@ -1,25 +1,25 @@
-# Legacy route inventory — initial evidence
+# Selective API cleanup inventory — initial evidence
 
 Status: **PARTIAL / NOT EXHAUSTIVE**. This inventory is grounded in the AppInstall real-VM test source in PR #159; it is **not** a claim that every router or client has been enumerated. Do not remove legacy registration based on this file alone.
 
-| Observed current API | Proposed independent v1 API | Migration gate |
+| Observed current API | Decision | Rationale / gate |
 | --- | --- | --- |
-| `POST /api/v1/apps/sync/local` | `POST /api/gpupanel/v1/app-catalog/sync-jobs` | Define async task identity, authorization and lost-ACK behavior |
-| `POST /api/v1/apps/install` | `POST /api/gpupanel/v1/app-installations` | Define idempotency, conflict and single-submit semantics before exposing |
-| `GET /api/v1/apps/installed/evidence/{id}` | `GET /api/gpupanel/v1/app-installations/{installationId}/evidence` | Preserve strict CONSISTENT predicate, TaskDB and Docker identity proof |
-| `POST /api/v1/apps/installed/op` (`delete`) | `DELETE /api/gpupanel/v1/app-installations/{installationId}` | Define ownership, task ID, no blind retries and post-delete observation |
+| `POST /api/v1/apps/sync/local` | DEFER | Existing path retained; review task semantics separately |
+| `POST /api/v1/apps/install` | **KEEP unchanged** | Clear operation; preserve existing callers and live VM tests |
+| `GET /api/v1/apps/installed/evidence/{id}` | KEEP for now | Read semantics are clear; maintain strict CONSISTENT predicate |
+| `POST /api/v1/apps/installed/op` (`delete`) | **REFACTOR candidate** | Generic operation multiplexing is ambiguous; consider `DELETE /api/v1/apps/installed/{id}` after authorization, idempotency and caller inventory |
 
-Source: `scripts/install-test/app-install-live.py` on PR #159, which currently uses the upstream-shaped `/api/v1` prefix.
+Source: `scripts/install-test/app-install-live.py` on PR #159, which uses the retained GPUPanel `/api/v1` prefix.
 
-The accompanying `docs/api/openapi-v1.draft.yaml` currently defines **only two proposed read endpoints**, both unimplemented. Mutating endpoints above are design targets and intentionally excluded from OpenAPI until the idempotency and authorization contracts are reviewed.
+The accompanying `docs/api/openapi-v1.draft.yaml` is a design-only read contract; it does not assert runtime availability. No mutation route is approved for replacement without review.
 
 ## Next implementation checkpoints
 
 1. Find actual Go router registration and all middleware (including SSE/WS), then inventory complete method/path pairs.
-2. Find Web and Wails URL construction and auth interceptors; add negative contract tests to prevent newly introduced upstream-shaped endpoints.
-3. Implement a separate v1 router and task/evidence read adapters first, retaining existing persistence and authorization.
-4. Migrate clients and real VM tests by slice, keeping the old endpoints only as temporary internal routes.
-5. Remove old routes in a **separate** breaking-change PR after independently verified rollback and no remaining callers.
+2. Find Web and Wails URL construction and auth interceptors; classify actual endpoints KEEP / REFACTOR / DEFER with concrete evidence.
+3. Keep the existing `/api/v1` router and `POST /apps/install` unchanged. Prototype only narrowly scoped replacements for REFACTOR endpoints, preserving persistence and authorization.
+4. Migrate only affected clients and tests; do not touch unrelated routes.
+5. Remove superseded routes in a **separate** breaking-change PR after independently verified rollback and no remaining callers.
 
 ## Safety
 
