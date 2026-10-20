@@ -129,10 +129,11 @@ refused. The tool intentionally has **no automatic port discovery** and
 manual trusted-local-machine PoC, not a multi-user safe attached process
 connector. Treat a listener with unknown ownership as untrusted; never share
 an unprotected loopback app-server beyond the developer's own trusted host.
-Newer Codex versions have optional native WebSocket authentication; this
-first tool does not handle such credentials and fails closed when rejected.
-Use a protected native deployment in later work rather than weakening the
-application's existing auth policy.
+Newer Codex versions have optional native WebSocket authentication.
+The observer supports a private file-backed bearer token via
+`--auth-token-file`; follow the authenticated setup below when the server
+requires it. Missing or incorrect credentials fail closed. Never disable the
+server's authentication policy to make observation work.
 
 The observation is tied to the **specific native server process chosen
 by the user**, not all Codex clients installed on the machine. Status changes
