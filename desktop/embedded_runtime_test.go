@@ -18,6 +18,7 @@ func TestEmbeddedAssetsMatchAuditedRepositoryFiles(t *testing.T) {
 		"runtime/scripts/gpupanel-uv-project.py": "../../scripts/gpupanel-uv-project.py",
 		"runtime/scripts/gpupanel-catalog-workspace.py": "../../scripts/gpupanel-catalog-workspace.py",
 		"runtime/scripts/gpupanel-catalog.py": "../../scripts/gpupanel-catalog.py",
+		"runtime/scripts/gpupanel-uv-distribution.py": "../../scripts/gpupanel-uv-distribution.py",
 	}
 	for embeddedName, sourcePath := range pairs {
 		got, err := embeddedTools.ReadFile(embeddedName)
