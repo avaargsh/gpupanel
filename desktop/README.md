@@ -187,6 +187,19 @@ GPUPanel 仅审核一个固定的上游版本：**uv 0.13.3 / Linux x86_64 GNU**
 
 Desktop 将 Python 执行器及其 Catalog 验证依赖内嵌到桌面二进制，Go/CI 检查其字节与上游源码一致；可从未克隆 GPUPanel 的新电脑启动。CI 可能因未预装 uv 而跳过真实 `uv init/lock/run`，跳过不算真机项目安装通过。
 
+## 项目源码跨机快照（受限，不是完整备份）
+
+桌面页面新增 `09 · SOURCE MIGRATION`，复用同一个受信任的本地工作区目录 `~/GPUPanel/projects/<项目名>`：
+
+- 旧机：选择项目 →“预览所选项目源码清单”→检查纳入文件、排除数量和 `manifestDigest` →人工确认→导出私有权限（0600）的 `~/GPUPanel/backups/<项目名>-source-v1.zip`。
+- 通过 U 盘或其他受信通道把 ZIP 原样复制到新机 `~/GPUPanel/backups/`。新机：“检查来源及内容摘要”→审核文件清单与 ZIP `bundleDigest` →人工确认→原子恢复到**不存在的** `~/GPUPanel/projects/<项目名>`。
+- 仅允许 UTF-8 源码、文本、Markdown、HTML/CSS、常见项目配置和依赖锁文件。上限：256 个文件、每文件 1 MiB、总计 24 MiB。**不会**备份数据集、模型权重、数据库、`.git` 历史、虚拟环境、依赖缓存、密钥、隐藏目录或 IDE 配置。
+- 遇到符号链接、特殊文件、过大的源码或检测到明显的密钥标记会拒绝；但静态过滤**无法保证识别所有秘密**，导出前必须自行检查文件清单和源码内容，不要把私有业务信息上传到公开位置。
+- 检查/导出、检查/恢复分成两次独立审批；ZIP 内部逐文件 SHA-256、路径和体积经严格校验。恢复使用 Linux `renameat2(RENAME_NOREPLACE)` 发布全新目录，不覆盖任何用户已有项目，也不执行恢复后的代码。
+- 可跨两台 Ubuntu 的不同 HOME 路径迁移源码；项目的运行状态、扩展插件、数据或完整环境必须另行备份恢复。恢复后可以通过工作站本地终端或 IDE 打开，但该步骤需要实际用户桌面验收。
+
+源码测试：`python3 -m unittest discover -s scripts/tests -p 'test_gpupanel_source_snapshot.py' -v`；Go 测试同时验证源码树外的内嵌工具与跨 HOME 恢复。当前不宣称“所有项目都能无损迁移”。
+
 ## 新机项目骨架离线迁移（无 Docker）
 
 在旧电脑的普通 Ubuntu 用户目录中，选择已经存在的 `~/GPUPanel/projects/<project>` 项目。快照只包含固定白名单文件：`pyproject.toml`、`uv.lock`、`README.md`、`main.py`、Node/Go 锁文件、Dev Container 定义和 VS Code 扩展清单。不包含完整源码仓库、数据目录、虚拟环境、容器卷或 SSH 凭据。**白名单文件本身仍可能含敏感值，导出前必须由操作者人工检查。**
