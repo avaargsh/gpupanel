@@ -67,7 +67,7 @@ export default function AgentSessionsPage() {
             <ShieldAlert aria-hidden="true" />
             <AlertDescription>
                 此页面不通过 Host 扫描文件、不执行 Codex 命令，也不上传会话历史。
-                即使 app-server 返回 active/idle，也仅代表本次新观察进程的相对状态，<strong>不证明其他 Codex 进程正在运行或停止</strong>；不得据此审批或执行。
+                app-server 的 active/idle 仅代表被连接的那个原生服务实例。<strong>不证明其他 Codex 进程正在运行或停止</strong>，也不授予 Agent 审批或执行权限。
             </AlertDescription>
         </Alert>
 
@@ -96,6 +96,13 @@ export default function AgentSessionsPage() {
                     </p>
                     <pre className="log-output" aria-label="app-server 快照命令">
                         {'python3 scripts/gpupanel-codex-appserver.py list > codex-appserver.json'}
+                    </pre>
+                    <p className="text-sm text-muted-foreground">
+                        如果你自己已启动了带 WebSocket 的 Codex app-server，可以在<strong>同一普通 Ubuntu 用户终端</strong>查询该明确指定的回环端口。
+                        这连接已有服务，而不是启动新的 Codex 进程；只查询一页，依然不会自动持续订阅。
+                    </p>
+                    <pre className="log-output" aria-label="已运行 app-server 只读查询命令">
+                        {'cd core && go run ./cmd/codex-observer --endpoint ws://127.0.0.1:4222 > ../codex-attached.json'}
                     </pre>
                     <label className="flex flex-col gap-2 text-sm">
                         <span className="font-medium">选择刚导出的 JSON 文件</span>
@@ -149,7 +156,7 @@ export default function AgentSessionsPage() {
                         <div className="flex flex-col items-end gap-1">
                             <Badge variant="outline">全局运行状态未知</Badge>
                             {item.observerStatus && <span className="text-xs text-muted-foreground">
-                                本次观察进程：{item.observerStatus}
+                                {inventory.observerScope === 'attached-loopback-appserver' ? '所连 app-server' : '本次新观察进程'}：{item.observerStatus}
                             </span>}
                         </div>
                     </div>)}
