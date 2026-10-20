@@ -106,21 +106,41 @@ def current_preflight() -> dict:
                      runtime_stat=runtime_stat, socket_stat=socket_stat)
 
 
-def reviewed_binary(binary: Path, expected: str) -> dict:
+def open_reviewed_binary(binary: Path, expected: str) -> tuple[int, dict]:
+    """Open once, verify that exact inode, and return its live descriptor.
+
+    Executing /proc/self/fd/<fd> later avoids a path replacement between the
+    SHA-256 check and process launch. Linux is the only supported target here.
+    """
     if not HASH.fullmatch(expected):
         raise ValueError("invalid reviewed executable SHA-256")
-    if binary.is_symlink() or not binary.is_file():
-        raise ValueError("missing/symlinked preview binary")
-    info = binary.stat()
-    if info.st_size < 1 or info.st_size > MAX_BINARY or not (info.st_mode & 0o100):
-        raise ValueError("invalid preview executable size/mode")
-    digest = hashlib.sha256()
-    with binary.open("rb") as handle:
-        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
-            digest.update(chunk)
-    if digest.hexdigest() != expected:
-        raise ValueError("installed binary differs from reviewed artifact")
-    return {"binaryHashMatched": True, "binarySHA256": expected}
+    flags = os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0)
+    try:
+        fd = os.open(binary, flags)
+    except OSError as exc:
+        raise ValueError("missing/symlinked preview binary") from exc
+    try:
+        info = os.fstat(fd)
+        if (not stat.S_ISREG(info.st_mode) or info.st_size < 1
+                or info.st_size > MAX_BINARY or not (info.st_mode & 0o100)):
+            raise ValueError("invalid preview executable size/mode")
+        digest = hashlib.sha256()
+        with os.fdopen(os.dup(fd), "rb") as handle:
+            for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+                digest.update(chunk)
+        if digest.hexdigest() != expected:
+            raise ValueError("installed binary differs from reviewed artifact")
+        return fd, {"binaryHashMatched": True, "binarySHA256": expected}
+    except BaseException:
+        os.close(fd)
+        raise
+
+
+def reviewed_binary(binary: Path, expected: str) -> dict:
+    """Compatibility/test helper; production launch uses the verified FD."""
+    fd, metadata = open_reviewed_binary(binary, expected)
+    os.close(fd)
+    return metadata
 
 
 def yes_no(question: str) -> bool:
@@ -170,7 +190,12 @@ def run_manual(binary: Path, pre: dict, *, expected: str) -> int:
     if pre["status"] != "ELIGIBLE_FOR_MANUAL_CHECK":
         print("REFUSED: preflight BLOCKED; do not run a GUI with sandbox bypass.", file=sys.stderr)
         return 3
-    metadata = reviewed_binary(binary, expected)
+    # Refuse the CI-only bypass before opening or launching any executable.
+    env = dict(os.environ)
+    if any(k in env for k in ("WEBKIT_DISABLE_SANDBOX_THIS_IS_DANGEROUS",
+                             "GPUPANEL_CI_WEBKIT_UNSANDBOXED")):
+        raise ValueError("WebKit sandbox bypass detected")
+    binary_fd, metadata = open_reviewed_binary(binary, expected)
     checks: dict[str, str] = {
         "visibleChineseWebview": "NOT_RUN",
         "menuActivation": "NOT_RUN",
@@ -180,13 +205,10 @@ def run_manual(binary: Path, pre: dict, *, expected: str) -> int:
         "persistenceAfterReboot": "NOT_RUN",
     }
     # Never propagate CI's deliberate bypass into a real user session.
-    env = dict(os.environ)
-    if any(k in env for k in ("WEBKIT_DISABLE_SANDBOX_THIS_IS_DANGEROUS",
-                             "GPUPANEL_CI_WEBKIT_UNSANDBOXED")):
-        raise ValueError("WebKit sandbox bypass detected")
     print("Opening GPUPanel Desktop directly in the current real GNOME/Wayland session.")
     print("WebKit sandbox bypass is NOT enabled. If it fails, record failure, don't bypass.")
-    process = subprocess.Popen([str(binary)], cwd=Path.home(), env=env,
+    process = subprocess.Popen([f"/proc/self/fd/{binary_fd}"], cwd=Path.home(), env=env,
+                               pass_fds=(binary_fd,),
                                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     try:
         time.sleep(5)
@@ -220,6 +242,7 @@ def run_manual(binary: Path, pre: dict, *, expected: str) -> int:
             except subprocess.TimeoutExpired:
                 process.kill()
                 process.wait(timeout=5)
+        os.close(binary_fd)
     report = {
         "schema": "gpupanel.gnome-wayland-manual.v1",
         "preflight": pre,
