@@ -12,6 +12,7 @@ import (
 const trustedUvVersion = "0.13.3"
 const trustedUvAsset = "uv-x86_64-unknown-linux-gnu.tar.gz"
 const trustedUvArchiveSHA = "e4f169ec380f1793b898a6f1fcbacd22db25cf7ca0349a6e96ffb85b69998d04"
+const trustedUvBinarySHA = "90c2ff84aa2a76a1ae70454ede3c6a9a4a40c786ccbf777148341a05cb583018"
 
 type managedUvReceipt struct {
 	Version string `json:"version"`
@@ -23,7 +24,13 @@ type managedUvReceipt struct {
 // Only a verified GPUPanel-managed user-local uv may be injected into the
 // embedded worker's PATH. The global shell configuration is never modified.
 func verifiedManagedUvBin(home string) (string, bool) {
-	if home == "" || !filepath.IsAbs(home) { return "", false }
+	return verifiedManagedUvBinWithExpectedDigest(home, trustedUvBinarySHA)
+}
+
+// The digest override exists only for hermetic unit tests. All runtime calls
+// use the immutable ELF hash derived from the verified upstream tarball.
+func verifiedManagedUvBinWithExpectedDigest(home, expectedDigest string) (string, bool) {
+	if home == "" || !filepath.IsAbs(home) || !digestPattern.MatchString(expectedDigest) { return "", false }
 	root := filepath.Join(home, "GPUPanel", "tools", "uv", trustedUvVersion)
 	binDir := filepath.Join(root, "bin")
 	for _, dir := range []string{home, filepath.Join(home, "GPUPanel"),
@@ -53,7 +60,7 @@ func verifiedManagedUvBin(home string) (string, bool) {
 	var r managedUvReceipt
 	if json.Unmarshal(data, &r) != nil || r.Version != trustedUvVersion ||
 		r.Asset != trustedUvAsset || r.ArchiveSHA256 != trustedUvArchiveSHA ||
-		!digestPattern.MatchString(r.BinarySHA256) {
+		r.BinarySHA256 != expectedDigest {
 		return "", false
 	}
 	f, err := os.Open(binary)
@@ -63,6 +70,6 @@ func verifiedManagedUvBin(home string) (string, bool) {
 	if _, err = io.Copy(sum, io.LimitReader(f, 90*1024*1024+1)); err != nil {
 		return "", false
 	}
-	if hex.EncodeToString(sum.Sum(nil)) != r.BinarySHA256 { return "", false }
+	if hex.EncodeToString(sum.Sum(nil)) != expectedDigest { return "", false }
 	return binDir, true
 }
