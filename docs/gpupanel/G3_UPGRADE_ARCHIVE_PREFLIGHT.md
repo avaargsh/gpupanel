@@ -23,7 +23,7 @@ inventory and runtime-ownership guards run.
   (512 MiB) and expanded regular payload (2 GiB)
 - nonempty, executable `gpupanel-core`, `gpupanel-agent` and `pctl`,
   and the two expected `initscript/*.service` regular files
-- complete gzip/TAR streaming (truncation fails), and `O_NOFOLLOW` when
+- complete bounded gzip/TAR streaming with CRC32/ISIZE verification even after TAR's zero-block EOF, and refusal of concatenated hidden payload/nonzero trailing bytes or padding over 1 MiB; truncation fails, with `O_NOFOLLOW` when
   opening the archive
 
 Normal release builds place assets below
