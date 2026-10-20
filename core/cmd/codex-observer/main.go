@@ -13,6 +13,9 @@ import (
 	"os/user"
 	"path"
 	"regexp"
+	"runtime"
+	"unicode"
+	"unicode/utf8"
 	"strconv"
 	"strings"
 	"time"
@@ -71,7 +74,7 @@ func endpoint(raw string) (string, error) {
 }
 
 func userFence() error {
-	if os.Getuid() == 0 || os.Getuid() != os.Geteuid() {
+	if runtime.GOOS != "linux" || os.Getuid() == 0 || os.Getuid() != os.Geteuid() {
 		return errors.New("must run as non-root Linux user")
 	}
 	account, err := user.Current()
@@ -97,6 +100,13 @@ func readReply(conn *websocket.Conn, id int, deadline time.Time) (json.RawMessag
 		return frame.Result, nil
 	}
 	return nil, errors.New("native event stream over budget")
+}
+
+func printableLabel(label string) bool {
+	for _, c := range label {
+		if !unicode.IsPrint(c) || c == '/' || c == '\\' { return false }
+	}
+	return true
 }
 
 func project(result json.RawMessage) (snapshot, error) {
@@ -126,7 +136,7 @@ func project(result json.RawMessage) (snapshot, error) {
 		if strings.HasPrefix(row.CWD, "/") && len(row.CWD) <= 4096 {
 			name := path.Base(row.CWD)
 			if len(name) > 0 && len(name) <= 80 && name != "." && name != "/" &&
-				!strings.ContainsAny(name, "\r\n\t") {
+				utf8.ValidString(name) && printableLabel(name) {
 				label = name
 			}
 		}
