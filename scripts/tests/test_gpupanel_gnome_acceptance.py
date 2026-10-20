@@ -114,6 +114,23 @@ class AcceptanceTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "mode 0700"):
                 gnome.private_report({"status": "test"}, home)
 
+    def test_cli_preserves_symlink_for_binary_rejection(self):
+        with tempfile.TemporaryDirectory() as directory:
+            link = Path(directory) / "preview"
+            link.symlink_to("/bin/true")
+            argv = ["gpupanel-gnome-acceptance.py", "--run", "--binary",
+                    str(link), "--expected-sha256", "0" * 64]
+            seen = []
+            with mock.patch("sys.argv", argv), \
+                 mock.patch.object(gnome, "current_preflight", return_value={
+                     "status": "ELIGIBLE_FOR_MANUAL_CHECK"}), \
+                 mock.patch.object(gnome, "run_manual",
+                                   side_effect=lambda binary, pre, *, expected:
+                                   seen.append(binary) or 0):
+                self.assertEqual(gnome.main(), 0)
+            self.assertEqual(len(seen), 1)
+            self.assertTrue(seen[0].is_symlink())
+
     def test_manual_session_never_runs_on_runner_sandbox_bypass(self):
         with mock.patch.object(gnome, "reviewed_binary") as verifier, \
              mock.patch.object(gnome.subprocess, "Popen") as start:
