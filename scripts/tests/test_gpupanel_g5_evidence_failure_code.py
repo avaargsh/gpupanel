@@ -78,6 +78,19 @@ class G5EvidenceFailureCodeTests(unittest.TestCase):
             self.assertEqual(failure.app_evidence_code(malicious), "unknown")
         self.assertEqual(failure.app_evidence_code("password=SECRET\n"), "unknown")
 
+    def test_docker_state_summary_allowlist_and_forgery_rejection(self):
+        for state in ("running", "created", "exited", "restarting", "paused",
+                      "removing", "dead", "missing", "other", "unavailable"):
+            self.assertEqual(failure.app_docker_state(
+                "G5_APP_DOCKER_STATE=" + state + " release=NO_GO\\n"
+            ), state)
+        for invalid in (
+            "G5_APP_DOCKER_STATE=SECRET release=NO_GO\\n",
+            "G5_APP_DOCKER_STATE=running token=SECRET release=NO_GO\\n",
+            "G5_APP_DOCKER_STATE=running release=GO\\n",
+        ):
+            self.assertEqual(failure.app_docker_state(invalid), "unknown")
+
     def test_source_keeps_diagnostic_read_only_and_no_mutation_retry(self):
         script = (ROOT / "scripts/install-test/app-install-live.py").read_text()
         self.assertIn("classify_app_install_evidence(", script)
