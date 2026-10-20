@@ -21,6 +21,7 @@ on:
       - "scripts/gpupanel-catalog.py"
       - "scripts/tests/test_gpupanel_uv_project.py"
       - "scripts/tests/gpupanel_desktop_gui_smoke.py"
+      - "scripts/tests/gpupanel_desktop_wayland_smoke.py"
       - "scripts/tests/gpupanel_desktop_fresh_home_e2e.py"
       - "scripts/tests/gpupanel_desktop_native_app_e2e.py"
       - ".github/workflows/gpupanel-desktop-ubuntu.yml"
@@ -94,7 +95,7 @@ jobs:
       - name: Install native Linux build dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y --no-install-recommends build-essential pkg-config libgtk-4-dev libwebkitgtk-6.0-dev xvfb xdotool openbox scrot dbus-x11 fonts-noto-cjk fontconfig
+          sudo apt-get install -y --no-install-recommends build-essential pkg-config libgtk-4-dev libwebkitgtk-6.0-dev xvfb xdotool openbox scrot dbus-x11 fonts-noto-cjk fontconfig weston
       - uses: actions/setup-go@v5
         with:
           go-version: '1.26'
@@ -156,6 +157,16 @@ jobs:
             python3 scripts/tests/gpupanel_desktop_gui_smoke.py \
             "$RUNNER_TEMP/gpupanel-desktop-preview" \
             "$RUNNER_TEMP/gpupanel-desktop-xvfb.png"
+      - name: Exercise GTK native Wayland protocol with nested Weston
+        shell: bash
+        env:
+          GPUPANEL_CI_WEBKIT_UNSANDBOXED: "1"
+        run: |
+          set -euo pipefail
+          xvfb-run -a -s "-screen 0 1366x900x24" dbus-run-session -- \
+            python3 scripts/tests/gpupanel_desktop_wayland_smoke.py \
+            "$RUNNER_TEMP/gpupanel-desktop-preview" \
+            "$RUNNER_TEMP/gpupanel-desktop-wayland.png"
       - name: Preserve non-sensitive GUI smoke screenshot
         if: always()
         uses: actions/upload-artifact@v4
@@ -164,6 +175,9 @@ jobs:
           path: |
             ${{ runner.temp }}/gpupanel-desktop-xvfb.png
             ${{ runner.temp }}/gpupanel-desktop-xvfb.log
+            ${{ runner.temp }}/gpupanel-desktop-wayland.png
+            ${{ runner.temp }}/gpupanel-desktop-wayland.weston.log
+            ${{ runner.temp }}/gpupanel-desktop-wayland.wayland.log
           if-no-files-found: ignore
           retention-days: 7
       - name: Prepare unsigned relocatable Ubuntu preview archive
