@@ -6,6 +6,7 @@ let installDigest = '';
 let bundleDigest = '';
 let profileImportDigest = '';
 let launcherDigest = '';
+let uvDigest = '';
 let busy = false;
 
 function show(id, value) {
@@ -13,8 +14,8 @@ function show(id, value) {
 }
 function setBusy(value, label) {
   busy = value;
-  ['refresh', 'terminal', 'editor', 'restore', 'install', 'devpod', 'bundle-export', 'bundle-inspect', 'bundle-restore', 'profile-backup', 'profile-inspect', 'profile-import', 'versions', 'launcher-plan', 'launcher-install'].forEach((name) => {
-    $(name).disabled = value || (name === 'install' && !installDigest) || (name === 'restore' && !profileDigest) || (name === 'bundle-restore' && !bundleDigest) || (name === 'profile-import' && !profileImportDigest) || (name === 'launcher-install' && !launcherDigest);
+  ['refresh', 'terminal', 'editor', 'restore', 'install', 'devpod', 'bundle-export', 'bundle-inspect', 'bundle-restore', 'profile-backup', 'profile-inspect', 'profile-import', 'versions', 'launcher-plan', 'launcher-install', 'uv-plan', 'uv-create', 'uv-status'].forEach((name) => {
+    $(name).disabled = value || (name === 'install' && !installDigest) || (name === 'restore' && !profileDigest) || (name === 'bundle-restore' && !bundleDigest) || (name === 'profile-import' && !profileImportDigest) || (name === 'launcher-install' && !launcherDigest) || (name === 'uv-create' && !uvDigest);
   });
   $('operation-state').textContent = label;
 }
@@ -157,4 +158,31 @@ $('launcher-install').addEventListener('click', () => {
     $('launcher-install').disabled = true;
     action('LauncherInstall', [approved]);
   }
+});
+
+$('uv-plan').addEventListener('click', () => {
+  uvDigest = '';
+  $('uv-create').disabled = true;
+  action('UvProjectPlan', [], (p) => {
+    uvDigest = p.status === 'READY_FOR_APPROVAL' ? p.planDigest : '';
+    show('uv-report', {
+      status: p.status,
+      directory: p.target,
+      planDigest: p.planDigest ?? '',
+      files: p.changes ?? [],
+      note: p.note ?? 'uv CLI 作为本机可选工具，不自动安装或下载依赖',
+    });
+  });
+});
+$('uv-create').addEventListener('click', () => {
+  if (!uvDigest) return;
+  const approved = uvDigest;
+  if (window.confirm('离线创建 ~/GPUPanel/projects/uv-python-starter？\n计划 SHA-256: ' + approved + '\n仅当目标不存在且 uv 就绪时执行，不下载第三方包或覆盖已有代码。')) {
+    uvDigest = '';
+    $('uv-create').disabled = true;
+    action('UvProjectCreate', [approved], (p) => show('uv-report', p));
+  }
+});
+$('uv-status').addEventListener('click', () => {
+  action('UvProjectStatus', [], (p) => show('uv-report', p));
 });
