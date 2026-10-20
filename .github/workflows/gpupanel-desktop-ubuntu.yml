@@ -7,6 +7,8 @@ on:
       - "profiles/ubuntu24-workstation.v1.json"
       - "scripts/gpupanel-workstation.py"
       - "scripts/gpupanel-workspace-bundle.py"
+      - "scripts/gpupanel-source-snapshot.py"
+      - "scripts/tests/test_gpupanel_source_snapshot.py"
       - "scripts/tests/test_gpupanel_workstation.py"
       - "scripts/tests/test_gpupanel_workspace_bundle.py"
       - "scripts/tests/test_gpupanel_profile_transfer.py"
@@ -37,6 +39,7 @@ jobs:
         run: |
           python3 -m unittest discover -s scripts/tests -p 'test_gpupanel_workstation.py' -v
           python3 -m unittest discover -s scripts/tests -p 'test_gpupanel_workspace_bundle.py' -v
+          python3 -m unittest discover -s scripts/tests -p 'test_gpupanel_source_snapshot.py' -v
           python3 -m unittest discover -s scripts/tests -p 'test_gpupanel_profile_transfer.py' -v
           python3 -m unittest discover -s scripts/tests -p 'test_gpupanel_desktop_ui_contract.py' -v
           python3 -m unittest discover -s scripts/tests -p 'test_gpupanel_uv_project.py' -v
