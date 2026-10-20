@@ -38,7 +38,7 @@ func runEmbeddedPython(timeout time.Duration, script string, args ...string) (st
 		return "", errors.New("桌面预览当前仅支持 Ubuntu Linux")
 	}
 	switch script {
-	case "gpupanel-workstation.py", "gpupanel-workspace-bundle.py":
+	case "gpupanel-workstation.py", "gpupanel-workspace-bundle.py", "gpupanel-uv-project.py":
 	default:
 		return "", errors.New("执行器不在允许列表")
 	}
@@ -52,15 +52,18 @@ func runEmbeddedPython(timeout time.Duration, script string, args ...string) (st
 	}
 	defer os.RemoveAll(stage)
 
-	for _, item := range []struct{ path string }{
-		{"runtime/scripts/" + script},
-		{"runtime/profiles/ubuntu24-workstation.v1.json"},
-	} {
-		data, err := embeddedTools.ReadFile(item.path)
+	embeddedPaths := []string{"runtime/scripts/" + script, "runtime/profiles/ubuntu24-workstation.v1.json"}
+	if script == "gpupanel-uv-project.py" {
+		// Reuse the reviewed catalog workspace path guard and its validator.
+		// These files are code, not downloaded manifests or executable recipes.
+		embeddedPaths = append(embeddedPaths, "runtime/scripts/gpupanel-catalog-workspace.py", "runtime/scripts/gpupanel-catalog.py")
+	}
+	for _, item := range embeddedPaths {
+		data, err := embeddedTools.ReadFile(item)
 		if err != nil {
 			return "", fmt.Errorf("内嵌资源不存在：%w", err)
 		}
-		target := filepath.Join(stage, item.path[len("runtime/"):])
+		target := filepath.Join(stage, item[len("runtime/"):])
 		if err := os.MkdirAll(filepath.Dir(target), 0700); err != nil {
 			return "", err
 		}
