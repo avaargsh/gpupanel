@@ -256,8 +256,14 @@ def main(argv=None):
             target = args.destination
             if target.exists() or target.is_symlink() or target.parent.is_symlink():
                 raise WorkstationError("export destination exists or is linked")
-            with target.open("xb") as file:
+            # Private, race-free export: ordinary Path.open("xb") follows umask
+            # and might otherwise create a world-readable 0644 file.
+            flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_NOFOLLOW", 0)
+            fd = os.open(target, flags, 0o600)
+            with os.fdopen(fd, "wb") as file:
                 file.write(canonical(p))
+                file.flush()
+                os.fsync(file.fileno())
             result = {"status": "EXPORTED", "path": str(target), "profileDigest": digest(p)}
         print(json.dumps(result, indent=2, ensure_ascii=False))
         success = {"READY", "READY_FOR_APPROVAL", "VERIFIED", "VERIFIED_EXISTING",
