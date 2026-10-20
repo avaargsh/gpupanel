@@ -9,6 +9,7 @@ import (
 	"flag"
 	"fmt"
 	"net"
+	"net/http"
 	"net/url"
 	"os"
 	"os/user"
@@ -156,10 +157,21 @@ func project(result json.RawMessage) (snapshot, error) {
 // notifications. The caller owns the returned connection and must close it.
 // Every reconnect reruns DB-only thread/list; no cached state is accepted.
 func openObserverSocket(raw string) (*websocket.Conn, snapshot, error) {
+	return openAuthenticatedObserverSocket(raw, "")
+}
+
+func openAuthenticatedObserverSocket(raw, bearer string) (*websocket.Conn, snapshot, error) {
 	address, err := endpoint(raw)
 	if err != nil { return nil, snapshot{}, err }
 	dialer := websocket.Dialer{HandshakeTimeout:4*time.Second, EnableCompression:false}
-	conn, _, err := dialer.Dial(address, nil)
+	// No environment HTTP proxy or Origin header; even authenticated connections
+	// must remain on the exact local loopback transport.
+	var headers http.Header
+	if bearer != "" {
+		headers = http.Header{"Authorization": {"Bearer " + bearer}}
+	}
+	conn, response, err := dialer.Dial(address, headers)
+	if response != nil && response.Body != nil { _ = response.Body.Close() }
 	if err != nil { return nil, snapshot{}, errors.New("local native app-server unavailable") }
 	conn.SetReadLimit(512 * 1024)
 	deadline := time.Now().Add(10*time.Second)
@@ -189,7 +201,11 @@ func openObserverSocket(raw string) (*websocket.Conn, snapshot, error) {
 }
 
 func observe(raw string) (snapshot, error) {
-	conn, snap, err := openObserverSocket(raw)
+	return observeAuthenticated(raw, "")
+}
+
+func observeAuthenticated(raw, bearer string) (snapshot, error) {
+	conn, snap, err := openAuthenticatedObserverSocket(raw, bearer)
 	if err != nil { return snapshot{}, err }
 	defer conn.Close()
 	return snap, nil
@@ -200,6 +216,7 @@ func main() {
 		fmt.Fprintln(os.Stderr, "usage: codex-observer --endpoint ws://127.0.0.1:PORT [--watch --samples 12 --interval-seconds 5]")
 	}
 	raw := flag.String("endpoint", "", "existing local Codex app-server websocket")
+	authPath := flag.String("auth-token-file", "", "optional private owned bearer token file for authenticated app-server")
 	watchMode := flag.Bool("watch", false, "finite repeated read-only snapshots")
 	eventMode := flag.Bool("events", false, "finite native status notification observation on one WebSocket")
 	duration := flag.Int("duration-seconds", 60, "event observation upper duration, 15-90 seconds")
@@ -215,6 +232,15 @@ func main() {
 		flag.Usage()
 		os.Exit(2)
 	}
+	var bearer string
+	if *authPath != "" {
+		var err error
+		bearer, err = readOwnedTokenFile(*authPath)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "Native authentication file refused")
+			os.Exit(2)
+		}
+	}
 	if *watchMode && *eventMode {
 		flag.Usage()
 		os.Exit(2)
@@ -222,7 +248,7 @@ func main() {
 	if *eventMode {
 		ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 		defer stop()
-		if err := eventStream(ctx, os.Stdout, *raw, *duration, *attempts); err != nil &&
+		if err := eventStreamAuthenticated(ctx, os.Stdout, *raw, *duration, *attempts, bearer); err != nil &&
 			!errors.Is(err, context.Canceled) {
 			fmt.Fprintln(os.Stderr, "Native event observation unavailable; no authority inferred")
 			os.Exit(2)
@@ -233,14 +259,14 @@ func main() {
 		ctx,stop:=signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 		defer stop()
 		if err:=watch(ctx,os.Stdout,*samples,time.Duration(*interval)*time.Second,
-			func()(snapshot,error){return observe(*raw)});err!=nil &&
+			func()(snapshot,error){return observeAuthenticated(*raw, bearer)});err!=nil &&
 			!errors.Is(err,context.Canceled) {
 			fmt.Fprintln(os.Stderr,"Bounded native observation stopped without further data")
 			os.Exit(2)
 		}
 		return
 	}
-	data,err := observe(*raw)
+	data,err := observeAuthenticated(*raw, bearer)
 	if err != nil {
 		// Native errors may contain commands, secrets or filesystem paths.
 		fmt.Fprintln(os.Stderr,"Codex observation unavailable (no export)")
