@@ -3,10 +3,11 @@ info:
   title: GPUPanel API
   version: 1.0.0-draft
   description: >-
-    Independent GPUPanel contract. This is a design-first draft, not an assertion
-    that the endpoints are implemented. Upstream 1Panel compatibility is not promised.
+    GPUPanel-owned contract under the retained /api/v1 prefix. This design-first
+    draft does not assert implementation or require wholesale upstream route renames.
+    Existing clear endpoints remain intact; only identified problematic APIs are refactored.
 servers:
-  - url: /api/gpupanel/v1
+  - url: /api/v1
 security:
   - bearerAuth: []
 paths:
@@ -34,7 +35,7 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
-  /app-installations/{installationId}/evidence:
+  /apps/installed/evidence/{installationId}:
     get:
       operationId: getAppInstallationEvidence
       summary: Observe installation consistency independently of task status
