@@ -187,10 +187,18 @@ The CLI exits after the configured number of samples or Ctrl+C.
 No scheduler/systemd service, automatic retry daemon, mobile Relay or
 background monitoring is installed.
 
-**NDJSON is for local operator diagnostics only**, not the existing browser
-JSON file chooser. The current Agent Sessions UI still accepts one sanitized
-snapshot at a time. Native WebSocket peer ownership/authentication and
-real Codex event subscriptions remain distinct unfinished gates.
+**NDJSON is an operator-controlled saved recording, not a live browser
+subscription.** The GPUPanel Agent Sessions page can manually import a
+completed `.ndjson` file (4 MiB and 120-row upper bounds). It validates all
+records but only shows the **last** observation with its original timestamp;
+a last `unavailable` record removes prior sessions from the display.
+No automatic polling/browser file access/remote upload exists.
+The redirected file may reveal project basenames and native thread IDs:
+use `umask 077` before running the command, do not place it in a shared
+directory, and delete it when no longer required.
+
+Native WebSocket peer ownership/authentication, original-session authority
+and real Codex event subscriptions remain distinct unfinished gates.
 
 Verification: `cd core && go test ./cmd/codex-observer -count=1` checks
 the sequence `observed → unavailable → observed` and asserts missing stale
