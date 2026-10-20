@@ -24,6 +24,8 @@ import tempfile
 VERSION = "0.13.3"
 ASSET = "uv-x86_64-unknown-linux-gnu.tar.gz"
 EXPECTED_SHA256 = "e4f169ec380f1793b898a6f1fcbacd22db25cf7ca0349a6e96ffb85b69998d04"
+# Independently derived from the immutable official archive in Ubuntu CI.
+EXPECTED_BINARY_SHA256 = "90c2ff84aa2a76a1ae70454ede3c6a9a4a40c786ccbf777148341a05cb583018"
 OFFICIAL_URL = f"https://releases.astral.sh/github/uv/releases/download/{VERSION}/{ASSET}"
 MAX_ARCHIVE = 40 * 1024 * 1024
 MAX_BINARY = 90 * 1024 * 1024
@@ -84,8 +86,8 @@ def status(home: Path) -> dict:
         if (set(record) != {"version", "asset", "archiveSHA256", "binarySHA256"} or
                 record["version"] != VERSION or record["asset"] != ASSET or
                 record["archiveSHA256"] != EXPECTED_SHA256 or
-                not SHA.fullmatch(record["binarySHA256"]) or
-                digest_file(binary) != record["binarySHA256"]):
+                record["binarySHA256"] != EXPECTED_BINARY_SHA256 or
+                digest_file(binary) != EXPECTED_BINARY_SHA256):
             return {"status": "MODIFIED", "target": str(dest), "executed": False}
     except (ValueError, TypeError, OSError):
         return {"status": "MODIFIED", "target": str(dest), "executed": False}
@@ -123,6 +125,8 @@ def load_binary(archive: Path, expected_sha: str) -> bytes:
         content = stream.read(MAX_BINARY + 1)
         if len(content) != member.size or len(content) > MAX_BINARY or not content.startswith(b"\x7fELF"):
             raise ToolError("uv executable invalid or oversized")
+        if expected_sha == EXPECTED_SHA256 and hashlib.sha256(content).hexdigest() != EXPECTED_BINARY_SHA256:
+            raise ToolError("official uv executable digest does not match reviewed binary")
         return content
 
 
