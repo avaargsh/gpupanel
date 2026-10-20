@@ -39,7 +39,10 @@ class G5EvidenceFailureCodeTests(unittest.TestCase):
             ({"taskId": "PRIVATE_TASK"}, "task-id"),
             ({"taskStatus": "Executing"}, "task-status"),
             ({"appStatus": "Pending"}, "app-status"),
-            ({"classification": "PARTIAL"}, "classification-other"),\n            ({"classification": "PARTIAL", "containers": []}, "classification-container-empty"),\n            ({"classification": "PARTIAL", "containers": "PRIVATE"}, "classification-container-malformed"),\n            ({"classification": "PARTIAL", "containers": [{"state": "exited"}]}, "classification-container-state"),
+            ({"classification": "PARTIAL"}, "classification-other"),
+            ({"classification": "PARTIAL", "containers": []}, "classification-container-empty"),
+            ({"classification": "PARTIAL", "containers": "PRIVATE"}, "classification-container-malformed"),
+            ({"classification": "PARTIAL", "containers": [{"state": "exited"}]}, "classification-container-state"),
             ({"verified": True}, "verification-flag"),
             ({"containers": []}, "container-count"),
             ({"containers": [{"state": "exited", "name": "PRIVATE"}]}, "container-state"),
@@ -64,16 +67,23 @@ class G5EvidenceFailureCodeTests(unittest.TestCase):
 
     def test_vm_ci_uses_strict_allowlist_with_negative_forgery(self):
         self.assertEqual(failure.app_evidence_code(
-            "G5_APP_EVIDENCE_FAILURE_CODE=classification release=NO_GO\n"
-            "password=SECRET_TOKEN\n"), "classification")
+            "G5_APP_EVIDENCE_FAILURE_CODE=classification release=NO_GO
+"
+            "password=SECRET_TOKEN
+"), "classification")
         for malicious in (
-            "G5_APP_EVIDENCE_FAILURE_CODE=/etc/passwd release=NO_GO\n",
-            "G5_APP_EVIDENCE_FAILURE_CODE=classification password=SECRET release=NO_GO\n",
-            "G5_APP_EVIDENCE_FAILURE_CODE=classification release=GO\n",
-            "G5_APP_EVIDENCE_FAILURE_CODE=classification release=NO_GO EXTRA\n",
+            "G5_APP_EVIDENCE_FAILURE_CODE=/etc/passwd release=NO_GO
+",
+            "G5_APP_EVIDENCE_FAILURE_CODE=classification password=SECRET release=NO_GO
+",
+            "G5_APP_EVIDENCE_FAILURE_CODE=classification release=GO
+",
+            "G5_APP_EVIDENCE_FAILURE_CODE=classification release=NO_GO EXTRA
+",
         ):
             self.assertEqual(failure.app_evidence_code(malicious), "unknown")
-        self.assertEqual(failure.app_evidence_code("password=SECRET\n"), "unknown")
+        self.assertEqual(failure.app_evidence_code("password=SECRET
+"), "unknown")
 
     def test_source_keeps_diagnostic_read_only_and_no_mutation_retry(self):
         script = (ROOT / "scripts/install-test/app-install-live.py").read_text()
