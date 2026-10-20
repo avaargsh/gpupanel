@@ -19,8 +19,7 @@ SCRIPTS = {
     "app-rejection": ("app-rejection.raw.log", "app-rejection-live.py"),
     "app-install": ("app-install.raw.log", "app-install-live.py"),
 }
-LINE = re.compile(r'File "[^"
-]*/([^/"]+\.py)", line ([1-9][0-9]{0,5})')
+LINE = re.compile(r'File "[^"\n]*/([^/"]+\.py)", line ([1-9][0-9]{0,5})')
 CLASS = re.compile(r"^(AssertionError|AttributeError|FileNotFoundError|"
                    r"RuntimeError|ValueError|TimeoutError|KeyError|"
                    r"ConnectionError|PermissionError|OSError|SystemExit|"
