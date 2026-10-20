@@ -178,7 +178,7 @@ def devpod_plan(project, *, which=shutil.which, home=None):
             not project.is_relative_to(root) or
             any(p.is_symlink() for p in project.parents if p != home)):
         return {"status": "INVALID_PROJECT", "command": []}
-    missing = [name for name in ("devpod", "docker") if not which(name)]
+    missing = [name for name in ("devpod",) if not which(name)]
     if missing:
         return {"status": "OPTIONAL_PROVIDER_MISSING", "missing": missing, "command": []}
     manifest = project / ".devcontainer/devcontainer.json"
@@ -186,7 +186,7 @@ def devpod_plan(project, *, which=shutil.which, home=None):
         return {"status": "NO_DEVCONTAINER", "command": []}
     return {"status": "READY_FOR_PROVIDER_CHECK",
             "command": ["devpod", "up", str(project), "--ide", "openvscode"],
-            "note": "Does not execute; provider and runtime require independent verification"}
+            "note": "Docker is NOT required for SSH/cloud providers; an explicitly configured DevPod provider and reachable runtime are required. Planning does not execute."}
 
 
 def main(argv=None):
