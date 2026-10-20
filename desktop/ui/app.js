@@ -181,6 +181,7 @@ $('launcher-plan').addEventListener('click', () => {
       status: p.status,
       binary: p.binary,
       target: p.target,
+      executableSHA256: p.binarySHA256 ?? '',
       digest: p.planDigest ?? '',
       note: '仅用户本地应用菜单；不覆盖已有文件，不安装系统服务',
     });
