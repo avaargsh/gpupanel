@@ -95,6 +95,19 @@ for line in sys.stdin:
         with self.assertRaises(module.ProbeUnavailable):
             module.probe([sys.executable, "-u", "-c", mock])
 
+    def test_rejects_boolean_json_rpc_id(self):
+        # Python considers True == 1; JSON-RPC IDs must be actual integers here.
+        mock = r"""
+import json, sys
+for line in sys.stdin:
+    request = json.loads(line)
+    if request["method"] == "initialize":
+        print(json.dumps({"id": True, "result": {}}), flush=True)
+        break
+"""
+        with self.assertRaises(module.ProbeUnavailable):
+            module.probe([sys.executable, "-u", "-c", mock])
+
     def test_protocol_timeout_and_cleanup(self):
         mock = "import time; time.sleep(5)"
         with patch.object(module, "TIMEOUT_SECONDS", 0.1):
