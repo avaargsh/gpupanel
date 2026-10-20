@@ -64,6 +64,10 @@ PR 的 GitHub Actions `GPUPanel Desktop Ubuntu Preview` 会在 Ubuntu 24.04 amd6
 
 GitHub Actions 在 Xvfb + Openbox 下实际启动 GTK4/WebKitGTK，并检查窗口标题、尺寸、键盘 Tab 事件和截图。Ubuntu Runner 对非特权用户命名空间有限制，会使 WebKitGTK Bubblewrap 沙箱启动失败。**只有单次 GitHub Actions 烟测进程**在检查到 `GITHUB_ACTIONS=true` 后才使用 WebKit 官方危险调试开关；应用源码、安装包、用户桌面启动均不设置该变量。此测试只证明合成 X11 图形环境可呈现窗口，**不证明正常沙箱下的 GNOME/Wayland 真机可用性**。
 
+除了上述 X11 图形测试，GitHub Actions 在同一个 Ubuntu 24.04 Runner 中还会启动 **嵌套 Weston Wayland compositor**（Weston X11 backend 仅用于输出显示），强制 GPUPanel Wails 进程使用 `GDK_BACKEND=wayland` 和仅供 CI 使用的私有 `WAYLAND_DISPLAY` socket。测试确认 Wayland 原生 surface 协议、Wails/GTK 的 WebView 资源加载、进程稳定存活并保留 Weston 画面证据。测试入口：`scripts/tests/gpupanel_desktop_wayland_smoke.py`；该验收步骤在 X11 烟测通过后独立执行，不以“GTK 编译成功”替代窗口证据。
+
+**这也不等于真实 Ubuntu GNOME Shell / Wayland 安全验收。** 由于 GitHub Runner 的用户命名空间限制，嵌套 Weston 测试进程同样明确使用仅 CI 的 WebKit 沙箱调试开关；分发产物及用户正常启动不设置此标志。下一门槛必须由实际 GNOME 登录会话执行，保留正常 WebKit sandbox、Polkit agent、终端/IDE、重启持久性的独立观测证据。**不在真实机器上禁用 WebKit sandbox 来通过测试。**
+
 首次 Xvfb 截图发现最小 Ubuntu Runner 中文缺字，需安装 `fonts-noto-cjk`；预览运行说明明确要求该依赖。字体只是界面显示依赖，不涉及 GPU、Docker 或远程 Core。
 
 ## 无源码目录的真实新机 Python 工作流
@@ -238,6 +242,7 @@ Desktop 将 Python 执行器及其 Catalog 验证依赖内嵌到桌面二进制�
 | Ubuntu 非 root + Polkit 系统安装及恢复 | NOT RUN |
 | 源码目录外的内嵌工具 Doctor/Profile 操作 | Go 契约测试；真实新机 GUI NOT RUN |
 | Xvfb 单次不启沙箱图形窗口/键盘/截图 | GitHub Ubuntu CI；不等于正常沙箱 GUI |
+| 嵌套 Weston Wayland 原生窗口/协议/WebView/截图 | GitHub Ubuntu CI PASS；不等于 GNOME/正常沙箱 GUI |
 | Wails 桌面实机 GTK/WebKit/终端/IDE 启动 | NOT RUN |
 | 国内离线镜像缓存与真实软件安装 | NOT RUN（此前仅有工具和合成制品测试） |
 | DevPod 浏览器 IDE 真实创建/停止/恢复 | NOT RUN |
