@@ -66,8 +66,8 @@ type page struct {
 func endpoint(raw string) (string, error) {
 	u, err := url.Parse(raw)
 	if err != nil || u == nil || u.Scheme != "ws" || u.Hostname() != "127.0.0.1" ||
-		u.User != nil || u.RawQuery != "" || u.Fragment != "" ||
-		(u.Path != "" && u.Path != "/") || u.RawPath != "" {
+		u.User != nil || u.RawQuery != "" || u.ForceQuery || u.Fragment != "" ||
+		strings.Contains(raw, "#") || u.Path != "" || u.RawPath != "" {
 		return "", errors.New("only an explicit 127.0.0.1 WebSocket endpoint is allowed")
 	}
 	port, err := strconv.Atoi(u.Port())
