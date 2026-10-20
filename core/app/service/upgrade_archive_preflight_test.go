@@ -149,6 +149,29 @@ func TestG3ReleaseArchiveRejectsCorruptedOrTruncatedGzipTrailer(t *testing.T) {
 	}
 }
 
+func TestG3ReleaseArchiveRejectsExtraGzipMembersAfterTarEOF(t *testing.T) {
+	for _, tc := range []struct {
+		name string
+		body []byte
+	}{
+		{"nonzero-hidden-payload", []byte("hidden second gzip payload")},
+		{"compressed-padding-bomb", make([]byte, 1<<20+1)},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			file := writeG3Archive(t, g3ValidArchive())
+			out, err := os.OpenFile(file, os.O_WRONLY|os.O_APPEND, 0600)
+			if err != nil { t.Fatal(err) }
+			zw := gzip.NewWriter(out)
+			if _, err := zw.Write(tc.body); err != nil { t.Fatal(err) }
+			if err := zw.Close(); err != nil { t.Fatal(err) }
+			if err := out.Close(); err != nil { t.Fatal(err) }
+			if err := validateUpgradeArchive(file, g3Package); !errors.Is(err, errUpgradeArchiveRejected) {
+				t.Fatalf("extra gzip member after TAR EOF was admitted: %v", err)
+			}
+		})
+	}
+}
+
 func TestG3UpgradePreflightsArchiveBeforePrivilegedUntarAndBackup(t *testing.T) {
 	src,err:=os.ReadFile("upgrade.go")
 	if err!=nil{t.Fatal(err)}
