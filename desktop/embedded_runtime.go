@@ -27,6 +27,11 @@ func embeddedPythonEnv() []string {
 	env := make([]string, 0, len(keys)+2)
 	for _, key := range keys {
 		if v, ok := os.LookupEnv(key); ok {
+			if key == "PATH" {
+				if dir, trusted := verifiedManagedUvBin(os.Getenv("HOME")); trusted {
+					v = dir + string(os.PathListSeparator) + v
+				}
+			}
 			env = append(env, key+"="+v)
 		}
 	}
