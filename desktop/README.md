@@ -88,6 +88,17 @@ GitHub Actions `Prove source-free desktop binary creates and runs a project with
 - export：导出 Profile JSON；不包含工作区文件、IDE 插件、SSH 私钥或 Token。
 - devpod-plan：只需 DevPod CLI 和现成的 devcontainer.json 才能展示 openvscode 浏览器 IDE 的预检计划。本地 Docker 并非 SSH/云 Provider 的先决条件；真实 Provider/容器/端口开放都需要另行人工授权及验收。
 
+## 原生终端 / IDE 派发验收
+
+桌面顶栏按所选项目调用与下列受限 CLI 相同的 Go 原生服务：
+
+    gpupanel-desktop --open-project-terminal=uv-python-starter
+    gpupanel-desktop --open-project-editor=uv-python-starter
+
+仅允许本地 `~/GPUPanel/projects/<项目名>` 内已经存在的普通目录，拒绝无效名称、缺失项目和路径中的软链接。终端/IDE 命令使用固定的程序选择和 argv，不执行任意 Shell 字符串。进程启动后释放句柄，不让长期运行的桌面应用积累未回收子进程；返回 `LAUNCH_REQUESTED` 仅表示 OS 接受启动请求，不表示图形窗口已可用。
+
+`scripts/tests/gpupanel_desktop_native_app_e2e.py` 在干净 HOME 中启动真实编译的 Desktop 二进制，通过只用于测试的假 GNOME Terminal/VS Code 可执行文件，捕获并验证工作目录参数、拒绝无效路径且没有额外进程派发。此自动测试 **不是** 对真正 VS Code 或 GNOME Terminal GUI 的验收；用户桌面的最终验证需要在安全的 GNOME/Wayland 正常会话里完成。
+
 ## 本地项目 → 终端与 IDE（无容器）
 
 在桌面 `04 · OPTIONAL` 的“项目目录名”输入框填入已经存在的 `~/GPUPanel/projects/<项目名>`，例如 `uv-python-starter`。顶部的“在所选项目打开终端”和“在所选项目打开 IDE”分别选择已安装的 GNOME Terminal/Ptyxis 与 VS Code/VSCodium。
