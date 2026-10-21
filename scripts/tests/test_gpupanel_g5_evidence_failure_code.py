@@ -300,6 +300,62 @@ class G5AppInstallRemovalObservationTests(unittest.TestCase):
         self.assertEqual(failure.app_uninstall_removal_code("password=SECRET\n"),
                          "unknown")
 
+    def test_duplicate_fence_requires_refusal_and_unchanged_inventory(self):
+        inventory = {
+            "apps": 1, "tasks": 5, "containers": ["container"],
+            "networks": [], "volumes": [],
+        }
+        for response, code in (
+            ({"http": 200, "code": 400, "data": None}, "denied"),
+            ({"http": 400, "code": 400, "data": None}, "denied"),
+            ({"http": 200, "code": 200, "data": None}, "accepted"),
+            ({"http": 500, "code": 500, "data": None}, "unavailable"),
+            ({"http": 200, "code": 500, "data": None}, "unavailable"),
+            ({"http": "200", "code": 400, "data": None}, "malformed"),
+            (None, "malformed"),
+        ):
+            with self.subTest(code=code):
+                self.assertEqual(
+                    evidence.classify_duplicate_fence(
+                        response, inventory, inventory),
+                    code)
+        changed = dict(inventory, containers=["container", "second"])
+        self.assertEqual(
+            evidence.classify_duplicate_fence(
+                {"http": 200, "code": 400, "data": None}, inventory, changed),
+            "inventory-changed")
+
+    def test_vm_ci_duplicate_fence_token_allowlist_and_forgery_rejection(self):
+        for label in ("replay", "same-name"):
+            for category in ("accepted", "inventory-changed", "unavailable",
+                             "malformed"):
+                token = label + "-" + category
+                self.assertEqual(
+                    failure.app_duplicate_fence_code(
+                        "G5_APP_DUPLICATE_FENCE_CODE=" + token +
+                        " release=NO_GO\n"),
+                    token)
+        for malicious in (
+            "G5_APP_DUPLICATE_FENCE_CODE=replay-denied release=NO_GO\n",
+            "G5_APP_DUPLICATE_FENCE_CODE=replay-accepted password=SECRET "
+            "release=NO_GO\n",
+            "G5_APP_DUPLICATE_FENCE_CODE=replay-accepted release=GO\n",
+            "G5_APP_DUPLICATE_FENCE_CODE=replay-accepted release=NO_GO EXTRA\n",
+            "G5_APP_DUPLICATE_FENCE_CODE=/etc/passwd release=NO_GO\n",
+        ):
+            self.assertEqual(failure.app_duplicate_fence_code(malicious),
+                             "unknown")
+
+    def test_live_script_probes_duplicate_admission_without_retry(self):
+        script = (ROOT / "scripts/install-test/app-install-live.py").read_text()
+        self.assertIn('expect_duplicate_denied("replay"', script)
+        self.assertIn('expect_duplicate_denied("same-name"', script)
+        self.assertIn('"  " + APP_NAME.upper() + "  "', script)
+        self.assertIn('"duplicate_fences_observed": True', script)
+        self.assertIn(
+            'raise RuntimeError("duplicate AppInstall fence did not hold")',
+            script)
+
     def test_live_script_observes_removal_by_payload_not_http_refusal(self):
         script = (ROOT / "scripts/install-test/app-install-live.py").read_text()
         self.assertIn(
@@ -339,6 +395,8 @@ class G5AppInstallRemovalObservationTests(unittest.TestCase):
              "invalid_install_uuid_rejected_without_side_effects",
              "real_appinstall_taskdb_success",
              "independent_running_image_and_network_evidence",
+             "replay_install_taskid_denied_without_side_effects",
+             "same_name_install_denied_without_side_effects",
              "real_app_uninstall_and_resource_removal",
              "fixture_catalog_cleanup"])
 

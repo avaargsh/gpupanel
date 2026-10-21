@@ -513,3 +513,39 @@ AppInstall 按契约返回 HTTP 200 + `status="Deleted"`；卸载本身成功
 新增任何 mutation 重试。移除触发条件：若 Agent 将来把“记录不存在”
 改为 404 响应，必须先取得显式外部契约证据再重写判据（当前实现对
 404 fail closed）；其余判据保持。
+
+## 2026-10-21 — G5 真实重复安装 fence 观测（同一 VM）
+
+在成功安装、TaskDB `TaskInstall` Success、只读资源证据一致且独立 Docker
+核对镜像/网络/端口之后、卸载之前，增加**两个刻意构造的重复 admission
+探针**。它们不是对已接受安装的重试，也不会再次进入 Docker：
+
+1. **同 TaskID 重放**：使用完全相同的已成功 `taskID` 再发一次
+   `POST /apps/install`。必须被 TaskDB 持久重放 fence 拒绝。
+2. **同规范化名称、不同 TaskID**：使用新的规范 UUID，并把原名称改为
+   大小写和首尾空白变体（例如 `"  M0CIAPP...  "`）。该请求在进入安装
+   服务之前必须被持久名称 admission 拒绝，而不是创建第二个
+   AppInstall/容器。真实 VM 的观察点是业务拒绝与 inventory 不变；具体
+   `app_install_name_claims` 语义由现有 Go 单元测试覆盖，服务器错误消息
+   不进入 CI。
+
+两个探针都要求业务拒绝（HTTP 200 + 非 200 code，或其他明确非 2xx 业务
+拒绝），并在前后读取 guest 的只读 inventory：`app_installs` 行数、
+TaskDB `tasks` 行数、Docker 容器/网络/卷 ID 列表必须完全相同。5xx 不是
+fence 证明，归为 `unavailable` 并失败；畸形响应、被接受、inventory 变化
+同样 fail closed。失败只输出固定类别
+`G5_APP_DUPLICATE_FENCE_CODE=<replay|same-name>-<accepted|inventory-changed|unavailable|malformed>`
+（白名单），不输出 Task UUID、应用名、容器 ID、响应体或凭证。
+
+证据步骤增加
+`replay_install_taskid_denied_without_side_effects` 与
+`same_name_install_denied_without_side_effects`，`app-install-live.json`
+必须显式携带 `duplicate_fences_observed=true`，否则
+`ci-evidence.py` 仍为 `BLOCKED_OR_FAILED`。
+
+边界：这证明**当前已安装状态下**的同 TaskID 重放与同名称并发入口在真实
+Core→Agent→TaskDB/Docker 上被拒绝且无持久副作用；**未**覆盖 Agent
+SIGKILL/重启中的安装、UNKNOWN 证据审查、丢失 ACK 后的恢复、`agent.db`
+重开、名称释放审批或卸载后重装。`full_app_compose_install_lifecycle`、
+`upgrade_and_rollback`、`full_data_restore` 继续为 `NOT_RUN`，
+`m0_release_decision=NO_GO`。

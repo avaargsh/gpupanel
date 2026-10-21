@@ -92,6 +92,20 @@ def app_uninstall_removal_code(raw: str) -> str:
     return hits[-1] if hits else "unknown"
 
 
+# Duplicate admission probes must be refused without durable side effects.
+# Only fixed categories may leave the private guest log; a forged or dynamic
+# value stays "unknown".
+G5_APP_DUPLICATE_FENCE = re.compile(
+    r"(?m)^G5_APP_DUPLICATE_FENCE_CODE=(replay|same-name)-(accepted|"
+    r"inventory-changed|unavailable|malformed) release=NO_GO$"
+)
+
+
+def app_duplicate_fence_code(raw: str) -> str:
+    hits = G5_APP_DUPLICATE_FENCE.findall(raw)
+    return "-".join(hits[-1]) if hits else "unknown"
+
+
 def app_fixture_count(raw: str) -> str:
     hits = G5_APP_FIXTURE_COUNT.findall(raw)
     return hits[-1] if hits else "unknown"
@@ -147,6 +161,7 @@ def main() -> int:
         print("G5_APP_FIXTURE_CONTAINER_COUNT=" + app_fixture_count(raw) + " release=NO_GO")
         print("G5_APP_FIXTURE_DOCKER_STATE=" + app_fixture_state(raw) + " release=NO_GO")
         print("G5_APP_UNINSTALL_REMOVAL_CODE=" + app_uninstall_removal_code(raw) + " release=NO_GO")
+        print("G5_APP_DUPLICATE_FENCE_CODE=" + app_duplicate_fence_code(raw) + " release=NO_GO")
     print(diagnostic(raw, basename))
     return 0
 

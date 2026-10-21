@@ -107,3 +107,29 @@ def classify_app_install_evidence(value: object, install_id: int, task_id: str) 
     if containers[0].get("state") != "running":
         return "container-state"
     return "ok"
+
+
+def classify_duplicate_fence(
+    response: object, inventory_before: object, inventory_after: object
+) -> str:
+    """Return 'denied' only for a clean refusal with unchanged inventory.
+
+    Both duplicate probes are deliberate, not retries of the accepted install.
+    A 5xx answer is 'unavailable' rather than proof that the fence denied the
+    request; a malformed answer is 'malformed'; an accepted response is
+    'accepted'; any durable TaskDB/AppInstall/Docker inventory change is
+    'inventory-changed'. Never format response values or inventory identities.
+    """
+    if not isinstance(response, dict):
+        return "malformed"
+    http = response.get("http")
+    code = response.get("code")
+    if type(http) is not int or type(code) is not int:
+        return "malformed"
+    if http >= 500 or code >= 500:
+        return "unavailable"
+    if http == 200 and code == 200:
+        return "accepted"
+    if inventory_before != inventory_after:
+        return "inventory-changed"
+    return "denied"

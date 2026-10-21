@@ -232,6 +232,21 @@ with sync_playwright() as play:
             time.sleep(.7)
         raise RuntimeError("task outcome ambiguous; do NOT retry")
 
+    def expect_duplicate_denied(label: str, body: dict) -> None:
+        """Probe a duplicate admission deliberately; never retry the accepted install."""
+        if label not in ("replay", "same-name"):
+            raise RuntimeError("invalid duplicate fence label")
+        before = guest_inventory()
+        response = request("POST", "/apps/install", body, success=False,
+                           raw_response=True, verify_rejection=False)
+        code = app_evidence_codes.classify_duplicate_fence(
+            response, before, guest_inventory()
+        )
+        if code != "denied":
+            print("G5_APP_DUPLICATE_FENCE_CODE=" + label + "-" + code +
+                  " release=NO_GO", flush=True)
+            raise RuntimeError("duplicate AppInstall fence did not hold")
+
     sync_id = str(uuid4())
     request("POST", "/apps/sync/local", {"taskID": sync_id},
             stage_hint="catalog-sync")
@@ -331,6 +346,22 @@ with sync_playwright() as play:
         raise RuntimeError("offline Docker resource or network isolation invalid")
     steps.append("independent_running_image_and_network_evidence")
 
+    # Two deliberate duplicate probes, not retries of the accepted install.
+    # The first must hit the durable TaskDB replay fence; the second uses a
+    # different canonical UUID and a case/whitespace variant of the same
+    # normalized name, so it must hit the durable name fence. Both must leave
+    # TaskDB, AppInstall rows and Docker inventory byte-for-byte unchanged.
+    expect_duplicate_denied("replay", {
+        "appDetailId": detail_id, "name": APP_NAME,
+        "params": {}, "taskID": install_task, "pullImage": False,
+    })
+    steps.append("replay_install_taskid_denied_without_side_effects")
+    expect_duplicate_denied("same-name", {
+        "appDetailId": detail_id, "name": "  " + APP_NAME.upper() + "  ",
+        "params": {}, "taskID": str(uuid4()), "pullImage": False,
+    })
+    steps.append("same_name_install_denied_without_side_effects")
+
     # Deletion is a new deliberate operation with its own UUID, never a retry.
     uninstall_id = str(uuid4())
     observed_ids.append(uninstall_id)
@@ -369,6 +400,7 @@ result = {
     "kind": "REAL OWNED UBUNTU GPUPANEL APPINSTALL API; NO MOCKS",
     "candidate": local, "guest_machine_id_sha256": guest_sha,
     "steps": steps,
+    "duplicate_fences_observed": True,
     "distinct_install_uninstall_task_ids": len(observed_ids) == 2
         and len(set(observed_ids)) == 2,
     "app_evidence_observational_only": True,
