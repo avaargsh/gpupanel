@@ -48,7 +48,7 @@ func TestGrantVerifierAcceptsExactFreshReadOnlySessionGrantOnce(t *testing.T) {
 	owners := testSessionResolver{"runtime-session-abc": {UID: 1001, Live: true, Known: true}}
 	v, _, key := newVerifier(now, owners)
 	g := signed(t, validGrant(now), key)
-	if err := v.Verify(g, 1001); err != nil {
+	if err := v.Verify(g, 1001, "user-42"); err != nil {
 		t.Fatalf("valid grant rejected: %v", err)
 	}
 	if err := v.Verify(g, 1001); !errors.Is(err, ErrReplay) {
@@ -78,6 +78,7 @@ func TestGrantVerifierRejectsNegativeSecurityCases(t *testing.T) {
 		{"wrong-audience", func(g *SessionGrant) { g.Audience = "other-agent" }, 1001},
 		{"wrong-scope", func(g *SessionGrant) { g.Scope = "session:read session:write" }, 1001},
 		{"empty-principal", func(g *SessionGrant) { g.Principal = "" }, 1001},
+		{"different-authenticated-principal", func(g *SessionGrant) { g.Principal = "user-evil" }, 1001},
 		{"empty-session", func(g *SessionGrant) { g.SessionID = "" }, 1001},
 		{"empty-jti", func(g *SessionGrant) { g.JTI = "" }, 1001},
 		{"session-owned-by-other-uid", func(g *SessionGrant) { g.SessionID = "other-user-session" }, 1001},
@@ -91,7 +92,7 @@ func TestGrantVerifierRejectsNegativeSecurityCases(t *testing.T) {
 			g := validGrant(now)
 			tc.mutate(&g)
 			g = signed(t, g, key)
-			if err := v.Verify(g, tc.peerUID); err == nil {
+			if err := v.Verify(g, tc.peerUID, "user-42"); err == nil {
 				t.Fatal("negative case unexpectedly accepted")
 			}
 		})
