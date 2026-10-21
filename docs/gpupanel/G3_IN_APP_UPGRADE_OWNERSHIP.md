@@ -93,11 +93,14 @@ competing request is rejected instead of launching a second mutating worker.
 
 Before the first runtime executable change, failed downloads, unpacking,
 backups or schema validation may CAS the status back to Free; their private
-staging directories remain intact for review. If a binary replacement begins,
-an incomplete rollback retains `Upgrading`; no automatic release follows a
-restart whose actual Core/Agent health has not been independently verified.
-Thus a second upgrade cannot treat staged-files/HTTP success as a completed
-operation. It requires operator reconciliation, not a retry timer.
+staging directories remain intact for review. **After any executable write,
+even a file-level rollback that returns no error keeps `Upgrading`**: no
+independent Core/Agent restart, live database consistency, or original
+business state has been verified. The post-staging path also **retains all
+existing rollback copies** instead of pruning them before a successful,
+independently witnessed reconciliation. Thus a second upgrade cannot treat
+file-copy success, staged-files/HTTP success, or a restart request as a
+completed operation. It requires operator reconciliation, not a retry timer.
 
 This guard reuses a **value-only** setting CAS, **not** a unique lease or
 operation-owner ID. It is intentionally not a completed multi-process
