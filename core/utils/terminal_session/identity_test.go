@@ -5,6 +5,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/avaargsh/GPUPanel/core/constant"
+	"github.com/avaargsh/GPUPanel/core/init/session/psession"
 	"github.com/gin-gonic/gin"
 )
 
@@ -77,6 +79,45 @@ func TestFromContextDoesNotTrustForwardedHeadersAlone(t *testing.T) {
 	}
 	if identity, ok := FromContext(nil); ok {
 		t.Fatalf("nil context must not create identity: %+v", identity)
+	}
+}
+
+func TestFromContextUsesServerSessionContextNotForwardedIdentity(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	const rawSessionID = "trusted-session-cookie"
+	req := httptest.NewRequest("GET", "/api/v1/hosts/terminal/local", nil)
+	req.AddCookie(&http.Cookie{Name: constant.SessionName, Value: rawSessionID})
+	req.Header.Set(HeaderUserID, "forged-user")
+	req.Header.Set(HeaderAuthSessionID, "forged-session")
+
+	ctx, _ := gin.CreateTestContext(httptest.NewRecorder())
+	ctx.Request = req
+	ctx.Set(psession.GinContextSessionUserKey, psession.SessionUser{ID: "server-context-user"})
+
+	identity, ok := FromContext(ctx)
+	if !ok {
+		t.Fatal("expected identity from server-side session context and session cookie")
+	}
+	if identity.UserID != "server-context-user" {
+		t.Fatalf("user ID=%q, want server-context-user", identity.UserID)
+	}
+	if identity.AuthSessionID != HashAuthSessionID(rawSessionID) {
+		t.Fatal("auth session ID must be derived from the session cookie, not forwarded headers")
+	}
+}
+
+func TestFromContextRequiresSessionCookieEvenWhenServerUserExists(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	req := httptest.NewRequest("GET", "/api/v1/hosts/terminal/local", nil)
+	req.Header.Set(HeaderUserID, "forged-user")
+	req.Header.Set(HeaderAuthSessionID, "forged-session")
+
+	ctx, _ := gin.CreateTestContext(httptest.NewRecorder())
+	ctx.Request = req
+	ctx.Set(psession.GinContextSessionUserKey, psession.SessionUser{ID: "server-context-user"})
+
+	if identity, ok := FromContext(ctx); ok {
+		t.Fatalf("missing session cookie must fail closed, got identity: %+v", identity)
 	}
 }
 
