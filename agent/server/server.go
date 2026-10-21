@@ -159,6 +159,11 @@ func Start() {
 
 	server := &http.Server{
 		Handler: rootRouter,
+		// Capture kernel Unix-socket peer credentials as transport evidence.
+		// This is deliberately not end-user authentication or session ownership.
+		ConnContext: func(ctx context.Context, conn net.Conn) context.Context {
+			return withUnixPeerIdentity(ctx, conn)
+		},
 	}
 
 	if global.CONF.Base.Mode != "stable" {
