@@ -2,6 +2,7 @@ package security
 
 import (
 	"errors"
+	"sync"
 	"testing"
 	"time"
 )
@@ -161,4 +162,76 @@ type failingReplayStore struct{}
 
 func (failingReplayStore) Consume(string, time.Time, time.Time) (bool, error) {
 	return false, errors.New("store unavailable")
+}
+
+
+// TestGrantVerifierConcurrentReplayOnlyAllowsOneUse proves that concurrent
+// attempts to consume the same signed grant cannot both pass the replay gate.
+// This exercises the in-memory test store contract, not a production backend.
+func TestGrantVerifierConcurrentReplayOnlyAllowsOneUse(t *testing.T) {
+	now := time.Unix(1_800_000_000, 0)
+	owners := testSessionResolver{"runtime-session-abc": {UID: 1001, Live: true, Known: true}}
+	v, _, key := newVerifier(now, owners)
+	g := signed(t, validGrant(now), key)
+
+	const workers = 32
+	results := make(chan error, workers)
+	var wg sync.WaitGroup
+	wg.Add(workers)
+	for i := 0; i < workers; i++ {
+		go func() {
+			defer wg.Done()
+			results <- v.Verify(g, 900, "user-42")
+		}()
+	}
+	wg.Wait()
+	close(results)
+
+	accepted, replayed := 0, 0
+	for err := range results {
+		switch {
+		case err == nil:
+			accepted++
+		case errors.Is(err, ErrReplay):
+			replayed++
+		default:
+			t.Errorf("unexpected verifier error: %v", err)
+		}
+	}
+	if accepted != 1 || replayed != workers-1 {
+		t.Fatalf("expected exactly one accepted use and %d replay denials; accepted=%d replayed=%d", workers-1, accepted, replayed)
+	}
+}
+
+// TestGrantVerifierRejectsMalformedSignatureIssuerAndVersion complements the
+// claim-mismatch matrix with malformed signature encoding and issuer/version
+// mismatches. Mutated claims are re-signed here so each claim check is isolated.
+func TestGrantVerifierRejectsMalformedSignatureIssuerAndVersion(t *testing.T) {
+	now := time.Unix(1_800_000_000, 0)
+	owners := testSessionResolver{"runtime-session-abc": {UID: 1001, Live: true, Known: true}}
+	v, _, key := newVerifier(now, owners)
+
+	t.Run("malformed-signature", func(t *testing.T) {
+		g := signed(t, validGrant(now), key)
+		g.Signature = "not*base64!"
+		if err := v.Verify(g, 900, "user-42"); err == nil {
+			t.Fatal("malformed signature unexpectedly accepted")
+		}
+	})
+	t.Run("wrong-issuer", func(t *testing.T) {
+		g := validGrant(now)
+		g.Issuer = "untrusted-issuer"
+		g = signed(t, g, key)
+		if err := v.Verify(g, 900, "user-42"); err == nil {
+			t.Fatal("wrong issuer unexpectedly accepted")
+		}
+	})
+	t.Run("unsupported-version", func(t *testing.T) {
+		g := validGrant(now)
+		g.Version = 2
+		g = signed(t, g, key)
+		if err := v.Verify(g, 900, "user-42"); err == nil {
+			t.Fatal("unsupported grant version unexpectedly accepted")
+		}
+	})
 }
