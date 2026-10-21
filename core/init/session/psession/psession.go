@@ -69,6 +69,25 @@ func (p *PSession) Get(c *gin.Context) (SessionUser, error) {
 	return item.User, nil
 }
 
+
+// VerifiedSessionDigest returns a digest of THIS live browser session instance.
+// It never returns a client-declared identity or the shared administrator ID.
+func (p *PSession) VerifiedSessionDigest(c *gin.Context) (string, error) {
+	sessionID, err := c.Cookie(constant.SessionName)
+	if err != nil || sessionID == "" {
+		return "", errors.New("ErrSessionDataNotFound")
+	}
+	p.mu.RLock()
+	item, ok := p.sessions[sessionID]
+	p.mu.RUnlock()
+	if !ok || (!item.ExpiredAt.IsZero() && !time.Now().Before(item.ExpiredAt)) ||
+		item.User.ID == "" || item.User.Name == "" {
+		return "", errors.New("ErrSessionDataNotFound")
+	}
+	hash := sha256.Sum256([]byte(sessionID))
+	return hex.EncodeToString(hash[:]), nil
+}
+
 func (p *PSession) Set(c *gin.Context, user SessionUser, secure bool, ttlSeconds int) error {
 	return p.set(c, user, secure, ttlSeconds, false)
 }

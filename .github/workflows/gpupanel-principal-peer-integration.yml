@@ -1,0 +1,48 @@
+name: GPUPanel local Linux UID proof integration
+
+# No PR secrets; privileged checks only for same-repository PR branches.
+# This is a disposable CI simulation of two kernel UIDs, not browser/Host
+# acceptance and never a gate promoting a production release.
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'core/app/principalproof/**'
+      - 'core/app/api/v1/native_principal*'
+      - 'core/init/session/psession/**'
+      - '.github/workflows/gpupanel-principal-peer-integration.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  kernel-peer-negative:
+    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: core/go.mod
+          cache-dependency-path: core/go.sum
+      - name: Compile unprivileged package tests
+        working-directory: core
+        run: |
+          set -eu
+          tmpdir="$(mktemp -d /tmp/gpupanel-peer-e2e.XXXXXXXX)"
+          chmod 755 "$tmpdir"
+          echo "GPUPANEL_TEST_BINARY=$tmpdir/peer.test" >> "$GITHUB_ENV"
+          echo "GPUPANEL_TEST_TMPDIR=$tmpdir" >> "$GITHUB_ENV"
+          go test -c -o "$tmpdir/peer.test" ./app/principalproof
+          chmod 755 "$tmpdir/peer.test"
+      - name: Verify kernel-proven two-UID rejection and replay
+        run: |
+          set -eu
+          sudo -n "$GPUPANEL_TEST_BINARY" -test.run='^TestOptInPeerRuntimeRejectsDifferentActualUID$' -test.v -test.count=1
+      - name: Remove disposable test binary
+        if: always()
+        run: |
+          if [ -n "${GPUPANEL_TEST_TMPDIR:-}" ]; then
+            rm -f "$GPUPANEL_TEST_TMPDIR/peer.test"
+            rmdir "$GPUPANEL_TEST_TMPDIR" || true
+          fi

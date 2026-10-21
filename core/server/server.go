@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/avaargsh/GPUPanel/core/app/service"
+	"github.com/avaargsh/GPUPanel/core/app/principalproof"
 	"github.com/avaargsh/GPUPanel/core/init/auth"
 	"github.com/avaargsh/GPUPanel/core/init/db"
 	"github.com/avaargsh/GPUPanel/core/init/geo"
@@ -47,6 +48,11 @@ func Start() {
 	gob.Register(psession.SessionUser{})
 	cron.Init()
 	session.Init()
+	if os.Getenv("GPUPANEL_ENABLE_NATIVE_PEER_PROOF") == "1" {
+		peerRuntime, err := principalproof.StartOptIn()
+		if err != nil { panic(fmt.Errorf("native peer proof opt-in failed closed: %w", err)) }
+		defer peerRuntime.Close()
+	}
 	InitOthersBeforeHook()
 	hook.Init()
 	InitOthersAfterHook()

@@ -17,6 +17,15 @@ Decision date: 2026-10-15. Delivery decision: **fork-first direct reuse of inher
 
 The 2026-10-16 UI/product baseline is [vNext Workbench](VNEXT_WORKBENCH.md). Deliver a unified React shell and truthful capability states first, then the persistent Project → Workspace → Session developer loop. Existing Linux management remains reachable; GPU/AI/enterprise claims require their own live gates. See [domain language](../../GLOSSARY.md).
 
+## Optional mobile Agent companion (design only)
+
+The proposed [ADR-0002](ADR-0002-NATIVE-AGENT-MOBILE-WORKBENCH.md)
+records the local-first Native Agent Sessions + optional external Relay
+boundary for [Issue #164](https://github.com/avaargsh/gpupanel/issues/164).
+This is not a new P0 release gate or a delivered Session feature. Native OS
+ownership, read-only discovery and real phone acceptance must precede remote
+writes; existing Host/Terminal/Project remain independent of mobile or Relay.
+
 ## P0 — 以单一最新状态页作为裁决
 
 唯一当前状态： [docs/STATUS.md](../STATUS.md)。既有 Ubuntu 24.04 VM、Ubuntu 26.04 实验宿主及 CI 证据绑定不同版本，不得累加。
