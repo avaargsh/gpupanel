@@ -34,6 +34,9 @@ jobs:
       - name: Run session-grant security tests
         run: go test ./security -count=1 -v
         working-directory: agent
+      - name: Run static analysis for session-grant package
+        run: go vet ./security
+        working-directory: agent
       - name: Run race-enabled session-grant security tests
         run: go test -race ./security -count=1
         working-directory: agent
