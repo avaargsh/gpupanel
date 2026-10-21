@@ -106,6 +106,19 @@ def app_duplicate_fence_code(raw: str) -> str:
     return "-".join(hits[-1]) if hits else "unknown"
 
 
+# A restarted Agent must still return consistent AppInstall evidence. Only
+# fixed categories may leave the private guest log.
+G5_APP_RESTART_FENCE = re.compile(
+    r"(?m)^G5_APP_RESTART_FENCE_CODE=(unavailable|malformed|evidence-changed) "
+    r"release=NO_GO$"
+)
+
+
+def app_restart_fence_code(raw: str) -> str:
+    hits = G5_APP_RESTART_FENCE.findall(raw)
+    return hits[-1] if hits else "unknown"
+
+
 def app_fixture_count(raw: str) -> str:
     hits = G5_APP_FIXTURE_COUNT.findall(raw)
     return hits[-1] if hits else "unknown"
@@ -162,6 +175,7 @@ def main() -> int:
         print("G5_APP_FIXTURE_DOCKER_STATE=" + app_fixture_state(raw) + " release=NO_GO")
         print("G5_APP_UNINSTALL_REMOVAL_CODE=" + app_uninstall_removal_code(raw) + " release=NO_GO")
         print("G5_APP_DUPLICATE_FENCE_CODE=" + app_duplicate_fence_code(raw) + " release=NO_GO")
+        print("G5_APP_RESTART_FENCE_CODE=" + app_restart_fence_code(raw) + " release=NO_GO")
     print(diagnostic(raw, basename))
     return 0
 
