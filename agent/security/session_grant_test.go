@@ -51,7 +51,7 @@ func TestGrantVerifierAcceptsExactFreshReadOnlySessionGrantOnce(t *testing.T) {
 	if err := v.Verify(g, 1001, "user-42"); err != nil {
 		t.Fatalf("valid grant rejected: %v", err)
 	}
-	if err := v.Verify(g, 1001); !errors.Is(err, ErrReplay) {
+	if err := v.Verify(g, 1001, "user-42"); !errors.Is(err, ErrReplay) {
 		t.Fatalf("second use must be rejected as replay, got %v", err)
 	}
 }
@@ -105,13 +105,13 @@ func TestGrantVerifierRejectsTamperingAndInvalidConfiguration(t *testing.T) {
 	v, _, key := newVerifier(now, owners)
 	g := signed(t, validGrant(now), key)
 	g.Scope = "session:write"
-	if err := v.Verify(g, 1001); err == nil {
+	if err := v.Verify(g, 1001, "user-42"); err == nil {
 		t.Fatal("tampered claims unexpectedly accepted")
 	}
 
 	v.Key = []byte("too-short")
 	g = signed(t, validGrant(now), key)
-	if err := v.Verify(g, 1001); err == nil {
+	if err := v.Verify(g, 1001, "user-42"); err == nil {
 		t.Fatal("short verification key unexpectedly accepted")
 	}
 }
@@ -122,12 +122,12 @@ func TestGrantVerifierFailsClosedWhenReplayStoreOrSessionResolverFails(t *testin
 	v, _, key := newVerifier(now, owners)
 	g := signed(t, validGrant(now), key)
 	v.Replay = failingReplayStore{}
-	if err := v.Verify(g, 1001); err == nil {
+	if err := v.Verify(g, 1001, "user-42"); err == nil {
 		t.Fatal("replay-store failure must deny")
 	}
 	v, _, key = newVerifier(now, testSessionResolver{})
 	g = signed(t, validGrant(now), key)
-	if err := v.Verify(g, 1001); err == nil {
+	if err := v.Verify(g, 1001, "user-42"); err == nil {
 		t.Fatal("unknown session must deny")
 	}
 }
