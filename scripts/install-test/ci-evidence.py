@@ -23,6 +23,7 @@ STAGES = (
     "guest_release_archive_verified",
     "guest_read_only_preflight_accepted",
     "guest_fresh_install",
+    "installed_backend_binary_identity_matched",
     "real_installed_browser",
     "guest_agent_recovery",
     "guest_app_install_denied_without_side_effects",
