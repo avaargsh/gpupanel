@@ -160,6 +160,7 @@ def summarize(state: Path, *, run_completed: bool, source_sha: str) -> dict:
         "invalid_install_uuid_rejected_without_side_effects",
         "real_appinstall_taskdb_success",
         "independent_running_image_and_network_evidence",
+        "durable_admission_survives_agent_restart",
         "replay_install_taskid_denied_without_side_effects",
         "same_name_install_denied_without_side_effects",
         "real_app_uninstall_and_resource_removal",
@@ -169,7 +170,8 @@ def summarize(state: Path, *, run_completed: bool, source_sha: str) -> dict:
         isinstance(app_install, dict) and container_ok
         and set(app_install) == {
             "kind", "candidate", "guest_machine_id_sha256",
-            "steps", "duplicate_fences_observed",
+            "steps", "durable_admission_survived_agent_restart",
+            "duplicate_fences_observed",
             "distinct_install_uninstall_task_ids",
             "app_evidence_observational_only", "no_public_image_pull",
             "docker_no_network_or_host_ports", "fixture_source_cleaned",
@@ -181,6 +183,7 @@ def summarize(state: Path, *, run_completed: bool, source_sha: str) -> dict:
         and app_install.get("guest_machine_id_sha256") ==
             browser.get("guest_machine_id_sha256")
         and app_install.get("steps") == expected_app_steps
+        and app_install.get("durable_admission_survived_agent_restart") is True
         and app_install.get("duplicate_fences_observed") is True
         and app_install.get("distinct_install_uninstall_task_ids") is True
         and app_install.get("app_evidence_observational_only") is True

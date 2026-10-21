@@ -232,6 +232,63 @@ with sync_playwright() as play:
             time.sleep(.7)
         raise RuntimeError("task outcome ambiguous; do NOT retry")
 
+    def wait_agent_raw_ready(install_id: int, task_id: str, timeout=75) -> None:
+        """Bounded read-only wait after an Agent restart, then require evidence.
+
+        While the Agent is down the Core proxy can answer with a non-JSON or
+        error page; that is a transient readiness state, not permission to
+        retry a mutation. Only this bounded wait tolerates such answers. On
+        timeout the last fixed classification is emitted instead of a raw
+        response, identity or error body.
+        """
+        deadline = time.monotonic() + timeout
+        last = "unavailable"
+        while time.monotonic() < deadline:
+            try:
+                probe = page.evaluate("""async ({endpoint}) => {
+                    const item = document.cookie.split('; ').find(
+                        v => v.startsWith('pcsrftoken=')
+                    );
+                    const csrf = item ? decodeURIComponent(
+                        item.slice('pcsrftoken='.length)) : '';
+                    let r;
+                    try {
+                        r = await fetch('/api/v1' + endpoint, {
+                            method: 'GET', credentials: 'include',
+                            headers: {'Content-Type': 'application/json',
+                                      'CurrentNode': 'local',
+                                      'X-CSRF-Token': csrf}
+                        });
+                    } catch (e) {
+                        return {http: 0, json: false, code: null, data: null};
+                    }
+                    const text = await r.text();
+                    let parsed = null;
+                    try { parsed = JSON.parse(text); } catch (e) { parsed = null; }
+                    return {
+                        http: r.status,
+                        json: parsed !== null,
+                        code: parsed ? parsed.code : null,
+                        data: parsed ? parsed.data : null
+                    };
+                }""", {"endpoint":
+                       f"/apps/installed/evidence/{install_id}"})
+            except Exception:
+                # A closed page or interrupted navigation is still just a
+                # readiness failure inside this bounded loop; keep the last
+                # real classification instead of inventing "malformed".
+                probe = None
+            if isinstance(probe, dict):
+                last = app_evidence_codes.classify_restart_fence(
+                    probe, install_id, task_id
+                )
+                if last == "ok":
+                    return
+            time.sleep(1)
+        print("G5_APP_RESTART_FENCE_CODE=" + last + " release=NO_GO",
+              flush=True)
+        raise RuntimeError("Agent restart lost AppInstall admission evidence")
+
     def expect_duplicate_denied(label: str, body: dict) -> None:
         """Probe a duplicate admission deliberately; never retry the accepted install."""
         if label not in ("replay", "same-name"):
@@ -346,6 +403,13 @@ with sync_playwright() as play:
         raise RuntimeError("offline Docker resource or network isolation invalid")
     steps.append("independent_running_image_and_network_evidence")
 
+    # A clean Agent stop/start must not lose the completed TaskDB receipt,
+    # the durable name claim or the read-only app evidence. The duplicate
+    # probes below then run against the restarted process on reopened DBs.
+    guest(["sudo", "systemctl", "restart", "gpupanel-agent"])
+    wait_agent_raw_ready(install_id, install_task)
+    steps.append("durable_admission_survives_agent_restart")
+
     # Two deliberate duplicate probes, not retries of the accepted install.
     # The first must hit the durable TaskDB replay fence; the second uses a
     # different canonical UUID and a case/whitespace variant of the same
@@ -400,6 +464,7 @@ result = {
     "kind": "REAL OWNED UBUNTU GPUPANEL APPINSTALL API; NO MOCKS",
     "candidate": local, "guest_machine_id_sha256": guest_sha,
     "steps": steps,
+    "durable_admission_survived_agent_restart": True,
     "duplicate_fences_observed": True,
     "distinct_install_uninstall_task_ids": len(observed_ids) == 2
         and len(set(observed_ids)) == 2,

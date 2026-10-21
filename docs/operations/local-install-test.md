@@ -544,8 +544,33 @@ fence 证明，归为 `unavailable` 并失败；畸形响应、被接受、inven
 `ci-evidence.py` 仍为 `BLOCKED_OR_FAILED`。
 
 边界：这证明**当前已安装状态下**的同 TaskID 重放与同名称并发入口在真实
-Core→Agent→TaskDB/Docker 上被拒绝且无持久副作用；**未**覆盖 Agent
-SIGKILL/重启中的安装、UNKNOWN 证据审查、丢失 ACK 后的恢复、`agent.db`
-重开、名称释放审批或卸载后重装。`full_app_compose_install_lifecycle`、
+Core→Agent→TaskDB/Docker 上被拒绝且无持久副作用；**未**覆盖安装中途
+Agent SIGKILL、UNKNOWN 证据审查、丢失 ACK 后的恢复、名称释放审批或
+卸载后重装。`full_app_compose_install_lifecycle`、`upgrade_and_rollback`、
+`full_data_restore` 继续为 `NOT_RUN`，`m0_release_decision=NO_GO`。
+
+## 2026-10-21 — G5 Agent 干净重启后的持久 admission（同一 VM）
+
+在成功安装、独立 Docker 证据通过之后、两个重复探针之前，对 guest 执行
+`systemctl restart gpupanel-agent`，然后只在**有界只读轮询**中等待
+Core→Agent 恢复：轮询 `GET /apps/installed/evidence/{id}`，直到 HTTP 200
++ business code 200 且 evidence 分类为 `ok`（install/task identity、
+TaskDB Success、app Running、CONSISTENT、容器 running）。等待期间的非
+JSON 或错误页只是瞬态；它们不是 mutation 重试许可，也不会被解释为成功。
+超时或分类失败只输出固定类别
+`G5_APP_RESTART_FENCE_CODE=<unavailable|malformed|evidence-changed>
+release=NO_GO`，不输出响应体、Task/App/容器 ID、应用名或错误文本。
+
+重启后继续验证：完成的 TaskDB receipt、durable
+`app_install_name_claims` 与 AppInstall/Docker 观测在真正 stop/start 与
+SQLite 重开后仍一致；随后的同 TaskID 重放与同规范化名称新 ID 探针仍然
+被拒绝且 inventory 不变。证据步骤增加
+`durable_admission_survives_agent_restart`，`app-install-live.json` 必须
+携带 `durable_admission_survived_agent_restart=true`，否则
+`ci-evidence.py` 仍为 `BLOCKED_OR_FAILED`。
+
+边界：这是**干净重启**（`systemctl restart`），不是安装中途 SIGKILL；
+也不覆盖 UNKNOWN 证据审查、丢失 ACK 恢复、安装中 Docker 停摆、名称释放
+审批或卸载后重装。`full_app_compose_install_lifecycle`、
 `upgrade_and_rollback`、`full_data_restore` 继续为 `NOT_RUN`，
 `m0_release_decision=NO_GO`。

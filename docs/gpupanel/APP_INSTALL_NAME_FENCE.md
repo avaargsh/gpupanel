@@ -107,6 +107,14 @@ Before G5 acceptance, additionally require:
 4. Run the authenticated Core -> Agent -> Docker/AppInstall workflow on a
    disposable Ubuntu VM, including Agent SIGKILL, restart, duplicate POST,
    UNKNOWN evidence inspection, DB reopen, and safe cleanup.
+   Live coverage 2026-10-21: duplicate POST (same TaskID replay and a
+   case/whitespace variant of the same normalized name with a new ID, both
+   refused with unchanged TaskDB/AppInstall/Docker inventory) and a clean
+   Agent `systemctl restart` followed by reopened-DB evidence and the same
+   duplicate refusals are exercised by `scripts/install-test/app-install-live.py`
+   on the real Ubuntu VM. Installation-time SIGKILL, UNKNOWN evidence
+   inspection, lost-ACK recovery and name release remain NOT RUN; this is not
+   G5 GO.
 5. Maintain a NO-GO until #69-#72 complete; tests and migration are not a
    release signature or an execution proof.
 

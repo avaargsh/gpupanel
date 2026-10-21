@@ -356,6 +356,74 @@ class G5AppInstallRemovalObservationTests(unittest.TestCase):
             'raise RuntimeError("duplicate AppInstall fence did not hold")',
             script)
 
+    def test_restart_fence_requires_consistent_evidence_or_fixed_category(self):
+        ok = {"http": 200, "code": 200, "data": valid()}
+        self.assertEqual(
+            evidence.classify_restart_fence(ok, INSTALL_ID, TASK_ID), "ok")
+        for payload, code in (
+            ({**valid(), "installId": 43}, "evidence-changed"),
+            ({**valid(), "taskId": "PRIVATE_TASK"}, "evidence-changed"),
+            ({**valid(), "taskStatus": "Executing"}, "evidence-changed"),
+            ({**valid(), "appStatus": "Pending"}, "evidence-changed"),
+            ({**valid(), "classification": "PARTIAL"}, "evidence-changed"),
+            ({**valid(), "containers": [{"state": "exited"}]},
+             "evidence-changed"),
+            ({**valid(), "containers": []}, "evidence-changed"),
+        ):
+            with self.subTest(code=code):
+                response = {"http": 200, "code": 200, "data": payload}
+                self.assertEqual(
+                    evidence.classify_restart_fence(
+                        response, INSTALL_ID, TASK_ID),
+                    code)
+        for response, code in (
+            ({"http": 500, "code": 500, "data": None}, "unavailable"),
+            ({"http": 502, "code": None, "data": None}, "unavailable"),
+            ({"http": 503, "code": "unavailable", "data": None}, "unavailable"),
+            ({"http": 200, "code": 400, "data": None}, "unavailable"),
+            ({"http": "200", "code": 200, "data": valid()}, "malformed"),
+            (None, "malformed"),
+        ):
+            with self.subTest(code=code):
+                self.assertEqual(
+                    evidence.classify_restart_fence(
+                        response, INSTALL_ID, TASK_ID),
+                    code)
+        self.assertEqual(
+            evidence.classify_restart_fence(
+                {"http": 200, "code": 200, "data": "PRIVATE"},
+                INSTALL_ID, TASK_ID),
+            "malformed")
+
+    def test_vm_ci_restart_fence_token_allowlist_and_forgery_rejection(self):
+        for category in ("unavailable", "malformed", "evidence-changed"):
+            self.assertEqual(
+                failure.app_restart_fence_code(
+                    "G5_APP_RESTART_FENCE_CODE=" + category +
+                    " release=NO_GO\n"),
+                category)
+        for malicious in (
+            "G5_APP_RESTART_FENCE_CODE=ok release=NO_GO\n",
+            "G5_APP_RESTART_FENCE_CODE=evidence-changed password=SECRET "
+            "release=NO_GO\n",
+            "G5_APP_RESTART_FENCE_CODE=evidence-changed release=GO\n",
+            "G5_APP_RESTART_FENCE_CODE=evidence-changed release=NO_GO EXTRA\n",
+            "G5_APP_RESTART_FENCE_CODE=/etc/passwd release=NO_GO\n",
+        ):
+            self.assertEqual(failure.app_restart_fence_code(malicious),
+                             "unknown")
+
+    def test_live_script_restarts_agent_before_duplicate_admission(self):
+        script = (ROOT / "scripts/install-test/app-install-live.py").read_text()
+        self.assertIn('"systemctl", "restart", "gpupanel-agent"', script)
+        self.assertIn("wait_agent_raw_ready(install_id, install_task)", script)
+        self.assertIn('"durable_admission_survives_agent_restart"', script)
+        self.assertIn('"durable_admission_survived_agent_restart": True',
+                      script)
+        self.assertIn(
+            'print("G5_APP_RESTART_FENCE_CODE=" + last + " release=NO_GO"',
+            script)
+
     def test_live_script_observes_removal_by_payload_not_http_refusal(self):
         script = (ROOT / "scripts/install-test/app-install-live.py").read_text()
         self.assertIn(
@@ -395,6 +463,7 @@ class G5AppInstallRemovalObservationTests(unittest.TestCase):
              "invalid_install_uuid_rejected_without_side_effects",
              "real_appinstall_taskdb_success",
              "independent_running_image_and_network_evidence",
+             "durable_admission_survives_agent_restart",
              "replay_install_taskid_denied_without_side_effects",
              "same_name_install_denied_without_side_effects",
              "real_app_uninstall_and_resource_removal",

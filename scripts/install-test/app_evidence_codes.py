@@ -133,3 +133,36 @@ def classify_duplicate_fence(
     if inventory_before != inventory_after:
         return "inventory-changed"
     return "denied"
+
+
+def classify_restart_fence(response: object, install_id: int, task_id: str) -> str:
+    """Return 'ok' only when restarted Agent evidence is still consistent.
+
+    The caller has already verified the same evidence before the restart.
+    A 5xx or non-200 business answer is 'unavailable' (the Agent may still be
+    starting); a malformed answer is 'malformed'; any accepted answer whose
+    install identity, task status, app status, classification or container
+    state differs from the pre-restart consistent state is 'evidence-changed'.
+    """
+    if not isinstance(response, dict):
+        return "malformed"
+    http = response.get("http")
+    if type(http) is not int:
+        return "malformed"
+    code = response.get("code")
+    if type(code) is not int:
+        # A gateway/startup error page carries no business code; it is a
+        # transient unavailability, not malformed app evidence.
+        return "unavailable" if http >= 500 else "malformed"
+    if http >= 500 or code >= 500:
+        return "unavailable"
+    if http != 200 or code != 200:
+        return "unavailable"
+    result = classify_app_install_evidence(
+        response.get("data"), install_id, task_id
+    )
+    if result == "ok":
+        return "ok"
+    if result == "malformed":
+        return "malformed"
+    return "evidence-changed"
