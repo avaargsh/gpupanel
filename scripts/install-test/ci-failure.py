@@ -78,6 +78,19 @@ G5_APP_FIXTURE_STATE = re.compile(
     r"paused|removing|dead|unknown) release=NO_GO$"
 )
 
+# The uninstalled AppInstall resource must be observably gone. Only fixed
+# failure categories may leave the private guest log; "removed" is never
+# emitted by the live script, so a forged "removed" token stays "unknown".
+G5_APP_UNINSTALL_REMOVAL = re.compile(
+    r"(?m)^G5_APP_UNINSTALL_REMOVAL_CODE=(still-installed|identity-present|"
+    r"resource-present|refused|unavailable|malformed) release=NO_GO$"
+)
+
+
+def app_uninstall_removal_code(raw: str) -> str:
+    hits = G5_APP_UNINSTALL_REMOVAL.findall(raw)
+    return hits[-1] if hits else "unknown"
+
 
 def app_fixture_count(raw: str) -> str:
     hits = G5_APP_FIXTURE_COUNT.findall(raw)
@@ -133,6 +146,7 @@ def main() -> int:
         print("G5_APP_DOCKER_STATE=" + app_docker_state(raw) + " release=NO_GO")
         print("G5_APP_FIXTURE_CONTAINER_COUNT=" + app_fixture_count(raw) + " release=NO_GO")
         print("G5_APP_FIXTURE_DOCKER_STATE=" + app_fixture_state(raw) + " release=NO_GO")
+        print("G5_APP_UNINSTALL_REMOVAL_CODE=" + app_uninstall_removal_code(raw) + " release=NO_GO")
     print(diagnostic(raw, basename))
     return 0
 

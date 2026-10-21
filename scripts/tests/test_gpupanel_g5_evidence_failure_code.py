@@ -1,6 +1,7 @@
 """Fail-closed G5 diagnostic controls: bounded labels, never private values."""
 import importlib.util
 from pathlib import Path
+import re
 import unittest
 
 
@@ -103,6 +104,139 @@ class G5EvidenceFailureCodeTests(unittest.TestCase):
         self.assertIn('G5_APP_EVIDENCE_FAILURE_CODE=', script)
         self.assertIn('raise RuntimeError("task outcome ambiguous; do NOT retry")', script)
         self.assertIn('evidence_code != "ok"', script)
+
+
+class G5AppInstallRemovalObservationTests(unittest.TestCase):
+    """The uninstalled AppInstall must be observed gone by payload contract.
+
+    The Agent answers an absent AppInstall with HTTP 200 and status
+    "Deleted" (agent/app/service/app_install.go). Requiring an HTTP refusal
+    is unsatisfiable and cannot observe removal at all.
+    """
+
+    def removed_response(self):
+        # Exact shape of response.AppInstallInfo{Status: StatusDeleted}.
+        return {"http": 200, "code": 200, "data": {
+            "id": 0, "name": "", "version": "", "status": "Deleted",
+            "message": "", "HttpPort": 0, "container": "",
+            "composePath": "", "appKey": "", "appPorts": None, "env": None,
+        }}
+
+    def test_removed_app_install_is_observed_as_removed(self):
+        self.assertEqual(
+            evidence.classify_app_install_removal(self.removed_response()),
+            "removed")
+
+    def test_not_found_read_is_observed_as_removed(self):
+        self.assertEqual(
+            evidence.classify_app_install_removal(
+                {"http": 404, "code": 404, "data": None}),
+            "removed")
+
+    def test_live_app_install_is_never_observed_as_removed(self):
+        live = {"http": 200, "code": 200, "data": {
+            "id": INSTALL_ID, "name": "PRIVATE_NAME", "status": "Running",
+            "container": "GPUPanel-PRIVATE_CONTAINER",
+            "composePath": "/opt/gpupanel/PRIVATE_PATH",
+        }}
+        self.assertEqual(
+            evidence.classify_app_install_removal(live), "still-installed")
+        pending = dict(live)
+        pending["data"] = dict(live["data"], status="Uninstalling")
+        self.assertEqual(
+            evidence.classify_app_install_removal(pending), "still-installed")
+
+    def test_deleted_status_with_identity_or_resource_is_not_removed(self):
+        with_identity = {"http": 200, "code": 200, "data": {
+            "id": INSTALL_ID, "status": "Deleted", "container": "",
+            "composePath": "",
+        }}
+        self.assertEqual(
+            evidence.classify_app_install_removal(with_identity),
+            "identity-present")
+        with_resource = {"http": 200, "code": 200, "data": {
+            "id": 0, "status": "Deleted",
+            "container": "GPUPanel-PRIVATE_CONTAINER", "composePath": "",
+        }}
+        self.assertEqual(
+            evidence.classify_app_install_removal(with_resource),
+            "resource-present")
+
+    def test_ambiguous_or_unhealthy_answers_fail_closed(self):
+        cases = (
+            ({"http": 500, "code": 500, "data": None}, "unavailable"),
+            ({"http": 403, "code": 403, "data": None}, "refused"),
+            ({"http": 200, "code": 200, "data": "PRIVATE_BODY"}, "malformed"),
+            ({"http": "200", "code": 200, "data": {}}, "malformed"),
+            ({"http": 200, "code": 200}, "malformed"),
+            (None, "malformed"),
+            ([], "malformed"),
+            ("PRIVATE_BODY", "malformed"),
+        )
+        for response, code in cases:
+            with self.subTest(code=code):
+                label = evidence.classify_app_install_removal(response)
+                self.assertEqual(label, code)
+                self.assertNotIn("PRIVATE", label)
+
+    def test_vm_ci_removal_code_allowlist_and_forgery_rejection(self):
+        self.assertEqual(failure.app_uninstall_removal_code(
+            "G5_APP_UNINSTALL_REMOVAL_CODE=still-installed release=NO_GO\n"),
+            "still-installed")
+        for malicious in (
+            "G5_APP_UNINSTALL_REMOVAL_CODE=removed release=NO_GO\n",
+            "G5_APP_UNINSTALL_REMOVAL_CODE=still-installed password=SECRET release=NO_GO\n",
+            "G5_APP_UNINSTALL_REMOVAL_CODE=still-installed release=GO\n",
+            "G5_APP_UNINSTALL_REMOVAL_CODE=still-installed release=NO_GO EXTRA\n",
+            "G5_APP_UNINSTALL_REMOVAL_CODE=/etc/passwd release=NO_GO\n",
+        ):
+            self.assertEqual(failure.app_uninstall_removal_code(malicious),
+                             "unknown")
+        self.assertEqual(failure.app_uninstall_removal_code("password=SECRET\n"),
+                         "unknown")
+
+    def test_live_script_observes_removal_by_payload_not_http_refusal(self):
+        script = (ROOT / "scripts/install-test/app-install-live.py").read_text()
+        self.assertIn(
+            "removal_code = app_evidence_codes.classify_app_install_removal(removal)",
+            script)
+        self.assertIn('if removal_code != "removed":', script)
+        self.assertIn("G5_APP_UNINSTALL_REMOVAL_CODE=", script)
+        # The removal read must not demand an HTTP refusal any more.
+        self.assertRegex(
+            script,
+            r'(?s)request\("GET", f"/apps/installed/info/\{install_id\}".*?'
+            r"verify_rejection=False")
+        self.assertNotRegex(
+            script,
+            r'(?s)request\("GET", f"/apps/installed/info/\{install_id\}", '
+            r'success=False,\s*\n\s*stage_hint')
+        # Independent Docker observation of the removed container is retained.
+        self.assertIn("AppInstall container remained after uninstall", script)
+
+    def test_live_script_step_labels_match_ci_evidence_contract(self):
+        script = (ROOT / "scripts/install-test/app-install-live.py").read_text()
+        ci_evidence = (ROOT / "scripts/install-test/ci-evidence.py").read_text()
+        script_steps = re.findall(r'steps\.append\("([a-z0-9_]+)"\)', script)
+        block = re.search(
+            r'"real_local_catalog_sync",(.*?)"fixture_catalog_cleanup",',
+            ci_evidence, re.S)
+        self.assertIsNotNone(block)
+        expected = (
+            ["real_local_catalog_sync"]
+            + re.findall(r'"([a-z0-9_]+)"', block.group(1))
+            + ["fixture_catalog_cleanup"]
+        )
+        self.assertEqual(script_steps, expected)
+        self.assertEqual(
+            script_steps,
+            ["real_local_catalog_sync",
+             "invalid_install_uuid_rejected_without_side_effects",
+             "real_appinstall_taskdb_success",
+             "independent_running_image_and_network_evidence",
+             "real_app_uninstall_and_resource_removal",
+             "fixture_catalog_cleanup"])
+
 
 
 if __name__ == "__main__":

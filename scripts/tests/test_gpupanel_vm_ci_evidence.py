@@ -85,7 +85,7 @@ class LiveVmEvidence(unittest.TestCase):
             "guest_machine_id_sha256": "d" * 64,
             "steps": [
                 "real_local_catalog_sync",
-                "invalid_install_uuid_rejected",
+                "invalid_install_uuid_rejected_without_side_effects",
                 "real_appinstall_taskdb_success",
                 "independent_running_image_and_network_evidence",
                 "real_app_uninstall_and_resource_removal",

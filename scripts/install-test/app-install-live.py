@@ -201,7 +201,11 @@ with sync_playwright() as play:
                   " release=NO_GO", flush=True)
             raise RuntimeError("scoped Core App API refused the expected operation")
         if not success and accepted and verify_rejection:
-            raise RuntimeError("Core accepted a deliberately invalid AppInstall")
+            # Generic fail-closed guard for any read or mutation that was
+            # expected to be refused. The uninstall removal observation is
+            # deliberately excluded: the Agent answers an absent AppInstall
+            # with HTTP 200 and status "Deleted" (see app_evidence_codes).
+            raise RuntimeError("Core accepted a request that was expected to be refused")
         return response if raw_response else response.get("data")
 
     def await_task(task_id: str, scope: str, operation: str, timeout=85):
@@ -338,9 +342,18 @@ with sync_playwright() as play:
     if guest(["sudo", "docker", "inspect", "--format", "{{.Id}}", name],
              check=False):
         raise RuntimeError("AppInstall container remained after uninstall")
-    # This must no longer return a successfully readable AppInstall resource.
-    request("GET", f"/apps/installed/info/{install_id}", success=False,
-            stage_hint="installed-info")
+    # This must no longer report a live AppInstall resource. The Agent
+    # answers an absent install with HTTP 200 and status "Deleted", so the
+    # removal signal is the payload contract (deleted status, no identity,
+    # no Docker/compose resource) and never an HTTP refusal assumption.
+    removal = request("GET", f"/apps/installed/info/{install_id}", success=False,
+                      raw_response=True, verify_rejection=False,
+                      stage_hint="installed-info")
+    removal_code = app_evidence_codes.classify_app_install_removal(removal)
+    if removal_code != "removed":
+        print("G5_APP_UNINSTALL_REMOVAL_CODE=" + removal_code +
+              " release=NO_GO", flush=True)
+        raise RuntimeError("AppInstall resource still observable after uninstall")
     steps.append("real_app_uninstall_and_resource_removal")
 
     fixture("remove")

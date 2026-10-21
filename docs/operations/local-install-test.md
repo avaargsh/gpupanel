@@ -463,8 +463,18 @@ GPUPanel 自身的认证 Core API 和 Agent 的 AppInstall 逻辑：
 5. 使用另一个唯一 UUID 调用现有
    `POST /apps/installed/op` 的 `delete`，核对
    `App / TaskUninstall` TaskDB Success、Docker 实体消失、
-   AppInstall 记录不可再读；删除**精确已知**本地 fixture 文件，
+   AppInstall 记录被观察到已删除；删除**精确已知**本地 fixture 文件，
    再同步本地 Catalog 并验证 TaskSync 成功。
+
+   卸载后的判据是**载荷契约**而不是 HTTP 拒绝：Agent 对已不存在的
+   AppInstall 记录按 `GetAppInstallInfo` 契约返回 HTTP 200 +
+   `status="Deleted"`（`id=0`、无 `container`、无 `composePath`）。
+   因此 `scripts/install-test/app_evidence_codes.py` 用固定词汇
+   `classify_app_install_removal` 判定：只有 404 或
+   “`Deleted` + 无身份 + 无 Docker/compose 资源”才算已删除；
+   5xx、403、畸形载荷一律 fail closed（`unavailable`/`refused`/
+   `malformed`）。若改为要求 HTTP 拒绝，卸载成功后仍会必然失败，
+   且无法观察资源是否真的消失。
 
 任何异常、UNKNOWN、关联错配、网络/端口意外暴露或未清理干净，
 都阻断 CI，失败详情仅以来源行号和异常类型公开。
@@ -479,3 +489,27 @@ GPUPanel 自身的认证 Core API 和 Agent 的 AppInstall 逻辑：
 复杂多容器依赖、跨进程并发竞态、安装中 ACK 丢失后恢复或独立
 审核。总体 `full_app_compose_install_lifecycle=NOT_RUN`、
 `m0_release_decision=NO_GO` 仍固定。
+
+## 2026-10-21 — G5 AppInstall 验收脚本的卸载判据修正
+
+一次性的 Ubuntu Actions 作业（job `118655037614`）在 G5 AppInstall
+阶段失败，公开失败面只有固定令牌与
+`PRIVATE_VM_FAILURE source=app-install-live.py:204`。定位结果：脚本把
+“卸载后资源不可读”写成**必须 HTTP 拒绝**，而 Agent 对已删除的
+AppInstall 按契约返回 HTTP 200 + `status="Deleted"`；卸载本身成功
+（Docker 容器已独立观察为消失）。因此该判据永远无法满足，且不能
+观察资源是否真的删除。
+
+改动范围：`scripts/install-test/app_evidence_codes.py` 新增固定词汇
+`classify_app_install_removal`；`app-install-live.py` 改用载荷判据并
+在失败时只输出 `G5_APP_UNINSTALL_REMOVAL_CODE=<固定类别>`；
+`ci-failure.py` 增加该令牌的严格白名单；`ci-evidence.py` 的步骤标签
+与脚本对齐（脚本自 `4ed60aaf915e` 起输出
+`invalid_install_uuid_rejected_without_side_effects`，证据校验器仍期望旧
+标签，会恒定 `BLOCKED_OR_FAILED`）。
+
+风险与边界：判据只**变严**——5xx/403/畸形载荷 fail closed，容器
+消失、TaskDB Success、独立 Docker 观察与 NO_GO 断言均未削弱，也未
+新增任何 mutation 重试。移除触发条件：若 Agent 将来把“记录不存在”
+改为 404 响应，删除 `classify_app_install_removal` 的 404 分支即可，
+其余判据保持。
