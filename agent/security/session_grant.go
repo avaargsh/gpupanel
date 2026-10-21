@@ -49,6 +49,13 @@ type SessionOwnerResolver interface {
 	ResolveSessionOwner(sessionID string) (SessionOwner, error)
 }
 
+// PrincipalUIDResolver must map an independently authenticated application
+// principal to the OS UID that principal is authorized to observe. It must not
+// derive the mapping from grant claims or client-supplied identity fields.
+type PrincipalUIDResolver interface {
+	ResolveOSUID(principal string) (uint32, error)
+}
+
 // ReplayStore must atomically claim a JTI until expiry. Implementations must
 // be shared by all verifier instances serving the same authority domain.
 type ReplayStore interface {
@@ -56,20 +63,27 @@ type ReplayStore interface {
 }
 
 type GrantVerifier struct {
-	Key       []byte
-	Issuer    string
-	Audience  string
-	Now       func() time.Time
-	Replay    ReplayStore
-	Sessions  SessionOwnerResolver
+	Key             []byte
+	Issuer          string
+	Audience        string
+	ExpectedPeerUID uint32 // UID of the Core service connecting to the Agent socket.
+	Now             func() time.Time
+	Replay          ReplayStore
+	Sessions        SessionOwnerResolver
+	Principals      PrincipalUIDResolver
 }
 
-// Verify checks the cryptographic assertion against the independently authenticated
-// application principal, kernel peer UID, freshness, one-time use, and runtime
-// session ownership. expectedPrincipal must come from server-side auth context.
+// Verify checks the signed grant against the independently authenticated app
+// principal, the expected Core transport UID, principal-to-OS-UID authorization,
+// freshness, one-time use, and runtime session ownership.
+//
+// peerUID is SO_PEERCRED for the process connecting to Agent (typically Core);
+// it is not the target native-session owner's UID. expectedPrincipal must come
+// from the authenticated server-side request context.
 func (v GrantVerifier) Verify(g SessionGrant, peerUID uint32, expectedPrincipal string) error {
-	if len(v.Key) < 32 || v.Issuer == "" || v.Audience == "" || expectedPrincipal == "" ||
-		v.Replay == nil || v.Sessions == nil || v.Now == nil {
+	if len(v.Key) < 32 || v.Issuer == "" || v.Audience == "" ||
+		v.ExpectedPeerUID == 0 || expectedPrincipal == "" ||
+		v.Replay == nil || v.Sessions == nil || v.Principals == nil || v.Now == nil {
 		return fmt.Errorf("%w: verifier configuration incomplete", ErrInvalidGrant)
 	}
 	if g.Version != 1 || g.Issuer != v.Issuer || g.Audience != v.Audience ||
@@ -97,7 +111,15 @@ func (v GrantVerifier) Verify(g SessionGrant, peerUID uint32, expectedPrincipal 
 	if g.IssuedAt > nowUnix || g.ExpiresAt <= nowUnix || g.ExpiresAt-g.IssuedAt > 60 {
 		return ErrInvalidGrant
 	}
-	if peerUID == 0 || peerUID != g.UID {
+
+	// SO_PEERCRED authenticates the connecting service process, not the browser
+	// user or target session owner. Check it against explicit service identity;
+	// independently resolve the app principal to the authorized target UID.
+	if peerUID == 0 || peerUID != v.ExpectedPeerUID {
+		return ErrInvalidGrant
+	}
+	authorizedUID, err := v.Principals.ResolveOSUID(expectedPrincipal)
+	if err != nil || authorizedUID == 0 || authorizedUID != g.UID {
 		return ErrInvalidGrant
 	}
 
@@ -134,7 +156,7 @@ func claimsJSON(g SessionGrant) ([]byte, error) {
 	return json.Marshal(claims)
 }
 
-// SignForTest is intentionally unexported to production callers. Production
+// signForTest is intentionally unexported to production callers. Production
 // issuance/key custody is a separate design and must not be inferred from this
 // verifier-only slice.
 func signForTest(g SessionGrant, key []byte) (SessionGrant, error) {
