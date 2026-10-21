@@ -42,7 +42,7 @@ func TestAppInstallTaskAdmissionCanonicalID(t *testing.T) {
 		t.Fatalf("legacy empty identifier cannot generate UUID: %s, %v", id, err)
 	}
 	for _, bad := range []string{
-		"../../other.log", "/tmp/receipt", "not-a-uuid",
+		"../invalid", "../../other.log", "/tmp/receipt", "not-a-uuid",
 		"99999999999999999999999999999999",
 		"AAAAAAAA-AAAA-4AAA-AAAA-AAAAAAAAAAAA",
 	} {

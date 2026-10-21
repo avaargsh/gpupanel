@@ -134,6 +134,21 @@ if ! python3 scripts/install-test/vm.py ssh -- sudo sh -euc '
 fi
 echo 'G3 real guest opt-only runtime identity checked (read-only); upgrade/rollback NOT_RUN'
 
+# Bind the live API acceptance to the exact backend bytes built from this
+# checkout. A source-level UUID guard is not proof that the installed Agent
+# actually contains it. This check is read-only and runs before any AppInstall
+# mutation; never retry a request to diagnose a binary mismatch.
+for role in core agent; do
+  local_sha="$(sha256sum "$ROOT/build/gpupanel-$role" | awk '{print $1}')"
+  guest_sha_bin="$(python3 scripts/install-test/vm.py ssh -- sudo sha256sum "/opt/gpupanel/gpupanel-$role" | awk '{print $1}')"
+  if [[ ! "$local_sha" =~ ^[0-9a-f]{64}$ || "$guest_sha_bin" != "$local_sha" ]]; then
+    echo "BLOCKED: installed $role binary does not match exact candidate build; AppInstall mutation NOT_RUN" >&2
+    exit 3
+  fi
+  echo "G3 installed $role binary SHA-256 matches exact candidate build: $local_sha"
+done
+stage 'installed_backend_binary_identity_matched'
+
 # A real browser against installed Core+Agent with no route mocks, then
 # guest-only controlled restart/SIGKILL/recovery.
 if ! python3 scripts/install-test/browser.py > "$STATE/browser.raw.log" 2>&1; then
@@ -178,6 +193,15 @@ if ! python3 scripts/install-test/container.py > "$STATE/container.raw.log" 2>&1
     exit 1
 fi
 stage 'real_core_agent_container_lifecycle'
+
+# Run the real GPUPanel AppInstall admission+uninstall through Core/Agent
+# on this same VM. Use local catalog and offline network-isolated image.
+python3 scripts/install-test/vm.py copy scripts/install-test/app-fixture-guest.py
+if ! python3 scripts/install-test/app-install-live.py > "$STATE/app-install.raw.log" 2>&1; then
+    python3 scripts/install-test/ci-failure.py app-install
+    exit 1
+fi
+stage 'real_offline_appinstall_core_taskdb_docker'
 
 # Only the disposable guest disk is fault-injected and cold-restored.
 # A sealed post-install checkpoint is independently validated before

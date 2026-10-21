@@ -435,3 +435,81 @@ Task UUID、lost ACK、真实应用升级/停止/卸载或已存在安装之间
 观察到数据库/Docker 资源副作用。真实 G5 GO 必须后续在
 隔离 VM 里跑通一次有来源、有镜像摘要的本地 AppInstall
 完整正向生命周期。
+
+## 2026-10-20 — G5 真实离线 AppInstall API（候选验证）
+
+新增 `scripts/install-test/app-fixture-guest.py` 与
+`scripts/install-test/app-install-live.py`，且已接入现有
+`ci-live-vm.sh` 的 **同一台任务独占 Ubuntu/QEMU guest**。
+与纯 Docker Compose 或容器管理相比，这一切片真正调用
+GPUPanel 自身的认证 Core API 和 Agent 的 AppInstall 逻辑：
+
+1. 在已验证的同一 candidate、guest、Chromium 登录和受控 Agent
+   恢复后，向 guest 的**本地应用目录**写入唯一受控的
+   `m0ciapp/1.0.0`，只使用本轮先前从发行版 BusyBox 导入的
+   `gpupanel-m0-fixture:local`；`pull_policy: never`、
+   `network_mode: none`、只读根文件系统、无主机端口；
+2. 通过 `POST /apps/sync/local` 同步本地目录，并在持久 TaskDB
+   验证该次 `AppStore / TaskSync` 的唯一 UUID 与成功状态；
+3. 经 Core 获取实际持久化的 AppDetail ID。请求一个无效
+   TaskID，核对其在安装前拒绝；随后使用**全新的一次性 UUID**
+   仅发起一次 `POST /apps/install`，不对结果不明的提交做重试；
+4. 等待真实 `App / TaskInstall` TaskDB 的确定 Success，
+   读取 `GET /apps/installed/evidence/{id}` 并要求同一
+   taskId、installId、Task Success、AppInstall Running、
+   `CONSISTENT` 与 `verified=false`。再用 guest Docker
+   Inspect 独立核对镜像 digest、`network_mode=none`、
+   无主机端口、容器运行；
+5. 使用另一个唯一 UUID 调用现有
+   `POST /apps/installed/op` 的 `delete`，核对
+   `App / TaskUninstall` TaskDB Success、Docker 实体消失、
+   AppInstall 记录被观察到已删除；删除**精确已知**本地 fixture 文件，
+   再同步本地 Catalog 并验证 TaskSync 成功。
+
+   卸载后的判据是**载荷契约**而不是 HTTP 拒绝：Agent 对已不存在的
+   AppInstall 记录按 `GetAppInstallInfo` 契约返回 HTTP 200 +
+   `status="Deleted"`（`id=0`、无 `container`、无 `composePath`）。
+   因此 `scripts/install-test/app_evidence_codes.py` 用固定词汇
+   `classify_app_install_removal` 判定：只有 **HTTP 200 + code 200 +
+   完整 `Deleted` 载荷**（`id` 为精确整数 0，`container`/`composePath`
+   为精确空字符串）才算已删除；缺失字段、`None`、bool、浮点或其他类型
+   一律 fail closed 为 `malformed`；404 等非 200 响应只说明该读请求被
+   业务拒绝（`refused`），**不构成删除观测**；5xx 为 `unavailable`。
+
+任何异常、UNKNOWN、关联错配、网络/端口意外暴露或未清理干净，
+都阻断 CI，失败详情仅以来源行号和异常类型公开。
+总证据新增 `real_offline_appinstall_core_taskdb_docker` 阶段及
+`gpupanel_offline_appinstall_lifecycle=PARTIAL_PASS`，要求
+**全部六项步骤、同一 candidate/guest 身份和原有离线恢复门禁**
+同时完成。缺失、伪造、乱序或跨客体的 JSON 均为
+`BLOCKED_OR_FAILED`。
+
+这项只证明隔离 Ubuntu VM 上的一条**离线应用安装—观察—卸载**
+路径，不验证公网应用商店、升级/回滚、真实业务健康、
+复杂多容器依赖、跨进程并发竞态、安装中 ACK 丢失后恢复或独立
+审核。总体 `full_app_compose_install_lifecycle=NOT_RUN`、
+`m0_release_decision=NO_GO` 仍固定。
+
+## 2026-10-21 — G5 AppInstall 验收脚本的卸载判据修正
+
+一次性的 Ubuntu Actions 作业（job `118655037614`）在 G5 AppInstall
+阶段失败，公开失败面只有固定令牌与
+`PRIVATE_VM_FAILURE source=app-install-live.py:204`。定位结果：脚本把
+“卸载后资源不可读”写成**必须 HTTP 拒绝**，而 Agent 对已删除的
+AppInstall 按契约返回 HTTP 200 + `status="Deleted"`；卸载本身成功
+（Docker 容器已独立观察为消失）。因此该判据永远无法满足，且不能
+观察资源是否真的删除。
+
+改动范围：`scripts/install-test/app_evidence_codes.py` 新增固定词汇
+`classify_app_install_removal`；`app-install-live.py` 改用载荷判据并
+在失败时只输出 `G5_APP_UNINSTALL_REMOVAL_CODE=<固定类别>`；
+`ci-failure.py` 增加该令牌的严格白名单；`ci-evidence.py` 的步骤标签
+与脚本对齐（脚本自 `4ed60aaf915e` 起输出
+`invalid_install_uuid_rejected_without_side_effects`，证据校验器仍期望旧
+标签，会恒定 `BLOCKED_OR_FAILED`）。
+
+风险与边界：判据只**变严**——5xx/403/404/畸形载荷 fail closed，容器
+消失、TaskDB Success、独立 Docker 观察与 NO_GO 断言均未削弱，也未
+新增任何 mutation 重试。移除触发条件：若 Agent 将来把“记录不存在”
+改为 404 响应，必须先取得显式外部契约证据再重写判据（当前实现对
+404 fail closed）；其余判据保持。

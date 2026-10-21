@@ -17,6 +17,7 @@ SCRIPTS = {
     "restore": ("restore.raw.log", "restore-live.py"),
     "container": ("container.raw.log", "container.py"),
     "app-rejection": ("app-rejection.raw.log", "app-rejection-live.py"),
+    "app-install": ("app-install.raw.log", "app-install-live.py"),
 }
 LINE = re.compile(r'File "[^"\n]*/([^/"]+\.py)", line ([1-9][0-9]{0,5})')
 CLASS = re.compile(r"^(AssertionError|AttributeError|FileNotFoundError|"
@@ -34,6 +35,80 @@ COMPOSE_STAGE = re.compile(
 
 def compose_stage(raw: str) -> str:
     hits = COMPOSE_STAGE.findall(raw)
+    return hits[-1] if hits else "unknown"
+
+
+
+# Fixed, non-sensitive phases only. Paths, IDs, server messages and user
+# content in the private VM log are never permitted into CI summaries.
+G5_APP_API_STAGE = re.compile(
+    r"(?m)^G5_APP_API_FAILURE_STAGE=(catalog-sync|task-receipt|"
+    r"detail-lookup|install-admission|resource-evidence|installed-info|"
+    r"uninstall-operation|unknown) release=NO_GO$"
+)
+
+
+def app_api_stage(raw: str) -> str:
+    hits = G5_APP_API_STAGE.findall(raw)
+    return hits[-1] if hits else "unknown"
+
+
+# Only fixed categories may leave the private guest log. This is evidence
+# debugging, not a permission to retry any possibly executed installation.
+G5_APP_EVIDENCE_CODE = re.compile(
+    r"(?m)^G5_APP_EVIDENCE_FAILURE_CODE=(malformed|install-id|task-id|"
+    r"task-status|app-status|classification|classification-container-malformed|"
+    r"classification-container-empty|classification-container-count|"
+    r"classification-container-state|classification-other|verification-flag|"
+    r"container-count|container-state) release=NO_GO$"
+)
+
+
+G5_APP_DOCKER_STATE = re.compile(
+    r"(?m)^G5_APP_DOCKER_STATE=(running|created|exited|restarting|paused|"
+    r"removing|dead|missing|other|unavailable) release=NO_GO$"
+)
+
+
+G5_APP_FIXTURE_COUNT = re.compile(
+    r"(?m)^G5_APP_FIXTURE_CONTAINER_COUNT=(zero|one|multiple) release=NO_GO$"
+)
+G5_APP_FIXTURE_STATE = re.compile(
+    r"(?m)^G5_APP_FIXTURE_DOCKER_STATE=(running|created|exited|restarting|"
+    r"paused|removing|dead|unknown) release=NO_GO$"
+)
+
+# The uninstalled AppInstall resource must be observably gone. Only fixed
+# failure categories may leave the private guest log; "removed" is never
+# emitted by the live script, so a forged "removed" token stays "unknown".
+G5_APP_UNINSTALL_REMOVAL = re.compile(
+    r"(?m)^G5_APP_UNINSTALL_REMOVAL_CODE=(still-installed|identity-present|"
+    r"resource-present|refused|unavailable|malformed) release=NO_GO$"
+)
+
+
+def app_uninstall_removal_code(raw: str) -> str:
+    hits = G5_APP_UNINSTALL_REMOVAL.findall(raw)
+    return hits[-1] if hits else "unknown"
+
+
+def app_fixture_count(raw: str) -> str:
+    hits = G5_APP_FIXTURE_COUNT.findall(raw)
+    return hits[-1] if hits else "unknown"
+
+
+def app_fixture_state(raw: str) -> str:
+    hits = G5_APP_FIXTURE_STATE.findall(raw)
+    return hits[-1] if hits else "unknown"
+
+
+def app_docker_state(raw: str) -> str:
+    hits = G5_APP_DOCKER_STATE.findall(raw)
+    return hits[-1] if hits else "unknown"
+
+
+def app_evidence_code(raw: str) -> str:
+    hits = G5_APP_EVIDENCE_CODE.findall(raw)
     return hits[-1] if hits else "unknown"
 
 
@@ -65,6 +140,13 @@ def main() -> int:
     raw = path.read_text(encoding="utf-8", errors="replace")[-200_000:]
     if sys.argv[1] == "compose":
         print("GUEST_COMPOSE_FAILURE_STAGE=" + compose_stage(raw) + " release=NO_GO")
+    if sys.argv[1] == "app-install":
+        print("G5_APP_API_FAILURE_STAGE=" + app_api_stage(raw) + " release=NO_GO")
+        print("G5_APP_EVIDENCE_FAILURE_CODE=" + app_evidence_code(raw) + " release=NO_GO")
+        print("G5_APP_DOCKER_STATE=" + app_docker_state(raw) + " release=NO_GO")
+        print("G5_APP_FIXTURE_CONTAINER_COUNT=" + app_fixture_count(raw) + " release=NO_GO")
+        print("G5_APP_FIXTURE_DOCKER_STATE=" + app_fixture_state(raw) + " release=NO_GO")
+        print("G5_APP_UNINSTALL_REMOVAL_CODE=" + app_uninstall_removal_code(raw) + " release=NO_GO")
     print(diagnostic(raw, basename))
     return 0
 
