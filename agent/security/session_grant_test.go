@@ -16,12 +16,24 @@ func (r testSessionResolver) ResolveSessionOwner(id string) (SessionOwner, error
 	return owner, nil
 }
 
+type testPrincipalUIDResolver map[string]uint32
+
+func (r testPrincipalUIDResolver) ResolveOSUID(principal string) (uint32, error) {
+	uid, ok := r[principal]
+	if !ok {
+		return 0, errors.New("principal has no authorized OS UID")
+	}
+	return uid, nil
+}
+
 func newVerifier(now time.Time, owners testSessionResolver) (GrantVerifier, *memoryReplayStore, []byte) {
 	key := []byte("0123456789abcdef0123456789abcdef")
 	replay := newMemoryReplayStore()
 	return GrantVerifier{
 		Key: key, Issuer: "gpupanel-core", Audience: "gpupanel-agent-session-read",
+		ExpectedPeerUID: 900, // Core service UID; deliberately differs from native session UID.
 		Now: func() time.Time { return now }, Replay: replay, Sessions: owners,
+		Principals: testPrincipalUIDResolver{"user-42": 1001, "user-2002": 2002},
 	}, replay, key
 }
 
@@ -48,10 +60,10 @@ func TestGrantVerifierAcceptsExactFreshReadOnlySessionGrantOnce(t *testing.T) {
 	owners := testSessionResolver{"runtime-session-abc": {UID: 1001, Live: true, Known: true}}
 	v, _, key := newVerifier(now, owners)
 	g := signed(t, validGrant(now), key)
-	if err := v.Verify(g, 1001, "user-42"); err != nil {
+	if err := v.Verify(g, 900, "user-42"); err != nil {
 		t.Fatalf("valid grant rejected: %v", err)
 	}
-	if err := v.Verify(g, 1001, "user-42"); !errors.Is(err, ErrReplay) {
+	if err := v.Verify(g, 900, "user-42"); !errors.Is(err, ErrReplay) {
 		t.Fatalf("second use must be rejected as replay, got %v", err)
 	}
 }
@@ -68,23 +80,25 @@ func TestGrantVerifierRejectsNegativeSecurityCases(t *testing.T) {
 		name string
 		mutate func(*SessionGrant)
 		peerUID uint32
+		authPrincipal string
 	}{
-		{"expired", func(g *SessionGrant) { g.ExpiresAt = now.Unix() }, 1001},
-		{"future-issued", func(g *SessionGrant) { g.IssuedAt = now.Unix() + 1 }, 1001},
-		{"lifetime-over-60-seconds", func(g *SessionGrant) { g.IssuedAt = now.Unix() - 61; g.ExpiresAt = now.Unix() + 1 }, 1001},
-		{"wrong-uid-claim", func(g *SessionGrant) { g.UID = 2002 }, 1001},
-		{"wrong-peer-uid", func(*SessionGrant) {}, 2002},
-		{"root-peer", func(*SessionGrant) {}, 0},
-		{"wrong-audience", func(g *SessionGrant) { g.Audience = "other-agent" }, 1001},
-		{"wrong-scope", func(g *SessionGrant) { g.Scope = "session:read session:write" }, 1001},
-		{"empty-principal", func(g *SessionGrant) { g.Principal = "" }, 1001},
-		{"different-authenticated-principal", func(g *SessionGrant) { g.Principal = "user-evil" }, 1001},
-		{"empty-session", func(g *SessionGrant) { g.SessionID = "" }, 1001},
-		{"empty-jti", func(g *SessionGrant) { g.JTI = "" }, 1001},
-		{"session-owned-by-other-uid", func(g *SessionGrant) { g.SessionID = "other-user-session" }, 1001},
-		{"unknown-session", func(g *SessionGrant) { g.SessionID = "missing-session" }, 1001},
-		{"unknown-session-owner", func(g *SessionGrant) { g.SessionID = "unknown-owner" }, 1001},
-		{"non-live-session", func(g *SessionGrant) { g.SessionID = "dead-session" }, 1001},
+		{"expired", func(g *SessionGrant) { g.ExpiresAt = now.Unix() }, 900, "user-42"},
+		{"future-issued", func(g *SessionGrant) { g.IssuedAt = now.Unix() + 1 }, 900, "user-42"},
+		{"lifetime-over-60-seconds", func(g *SessionGrant) { g.IssuedAt = now.Unix() - 61; g.ExpiresAt = now.Unix() + 1 }, 900, "user-42"},
+		{"wrong-uid-claim", func(g *SessionGrant) { g.UID = 2002 }, 900, "user-42"},
+		{"wrong-peer-uid", func(*SessionGrant) {}, 2002, "user-42"},
+		{"root-peer", func(*SessionGrant) {}, 0, "user-42"},
+		{"wrong-audience", func(g *SessionGrant) { g.Audience = "other-agent" }, 900, "user-42"},
+		{"wrong-scope", func(g *SessionGrant) { g.Scope = "session:read session:write" }, 900, "user-42"},
+		{"empty-principal", func(g *SessionGrant) { g.Principal = "" }, 900, "user-42"},
+		{"different-authenticated-principal", func(g *SessionGrant) { g.Principal = "user-evil" }, 900, "user-42"},
+		{"unmapped-principal", func(g *SessionGrant) { g.Principal = "user-unmapped" }, 900, "user-unmapped"},
+		{"empty-session", func(g *SessionGrant) { g.SessionID = "" }, 900, "user-42"},
+		{"empty-jti", func(g *SessionGrant) { g.JTI = "" }, 900, "user-42"},
+		{"session-owned-by-other-uid", func(g *SessionGrant) { g.SessionID = "other-user-session" }, 900, "user-42"},
+		{"unknown-session", func(g *SessionGrant) { g.SessionID = "missing-session" }, 900, "user-42"},
+		{"unknown-session-owner", func(g *SessionGrant) { g.SessionID = "unknown-owner" }, 900, "user-42"},
+		{"non-live-session", func(g *SessionGrant) { g.SessionID = "dead-session" }, 900, "user-42"},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -92,7 +106,7 @@ func TestGrantVerifierRejectsNegativeSecurityCases(t *testing.T) {
 			g := validGrant(now)
 			tc.mutate(&g)
 			g = signed(t, g, key)
-			if err := v.Verify(g, tc.peerUID, "user-42"); err == nil {
+			if err := v.Verify(g, tc.peerUID, tc.authPrincipal); err == nil {
 				t.Fatal("negative case unexpectedly accepted")
 			}
 		})
@@ -105,13 +119,13 @@ func TestGrantVerifierRejectsTamperingAndInvalidConfiguration(t *testing.T) {
 	v, _, key := newVerifier(now, owners)
 	g := signed(t, validGrant(now), key)
 	g.Scope = "session:write"
-	if err := v.Verify(g, 1001, "user-42"); err == nil {
+	if err := v.Verify(g, 900, "user-42"); err == nil {
 		t.Fatal("tampered claims unexpectedly accepted")
 	}
 
 	v.Key = []byte("too-short")
 	g = signed(t, validGrant(now), key)
-	if err := v.Verify(g, 1001, "user-42"); err == nil {
+	if err := v.Verify(g, 900, "user-42"); err == nil {
 		t.Fatal("short verification key unexpectedly accepted")
 	}
 }
@@ -122,17 +136,29 @@ func TestGrantVerifierFailsClosedWhenReplayStoreOrSessionResolverFails(t *testin
 	v, _, key := newVerifier(now, owners)
 	g := signed(t, validGrant(now), key)
 	v.Replay = failingReplayStore{}
-	if err := v.Verify(g, 1001, "user-42"); err == nil {
+	if err := v.Verify(g, 900, "user-42"); err == nil {
 		t.Fatal("replay-store failure must deny")
 	}
 	v, _, key = newVerifier(now, testSessionResolver{})
 	g = signed(t, validGrant(now), key)
-	if err := v.Verify(g, 1001, "user-42"); err == nil {
+	if err := v.Verify(g, 900, "user-42"); err == nil {
 		t.Fatal("unknown session must deny")
 	}
 }
 
+func TestGrantVerifierFailsClosedWithoutPrincipalUIDResolver(t *testing.T) {
+	now := time.Unix(1_800_000_000, 0)
+	owners := testSessionResolver{"runtime-session-abc": {UID: 1001, Live: true, Known: true}}
+	v, _, key := newVerifier(now, owners)
+	g := signed(t, validGrant(now), key)
+	v.Principals = nil
+	if err := v.Verify(g, 900, "user-42"); err == nil {
+		t.Fatal("missing principal-to-UID resolver must deny")
+	}
+}
+
 type failingReplayStore struct{}
+
 func (failingReplayStore) Consume(string, time.Time, time.Time) (bool, error) {
 	return false, errors.New("store unavailable")
 }
