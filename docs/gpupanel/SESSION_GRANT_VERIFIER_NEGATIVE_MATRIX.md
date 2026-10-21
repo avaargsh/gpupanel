@@ -21,6 +21,8 @@ This slice verifies a versioned HMAC-SHA256 assertion against an injected key, e
 - Unknown session, unknown owner, non-live session, and session owned by a different UID.
 - Tampered claims/signature and undersized verification key.
 - Replay-store failure, missing principal-to-UID resolver, and second use of a valid grant.
+- Concurrent replay race: 32 simultaneous verification attempts against the same grant must yield exactly one acceptance and 31 replay denials.
+- Malformed signature encoding, wrong issuer, and unsupported grant version.
 
 ## Deliberate limitations
 
