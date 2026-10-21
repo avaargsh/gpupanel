@@ -1,6 +1,7 @@
 package terminal_session
 
 import (
+	"net/http"
 	"net/http/httptest"
 	"testing"
 	"time"
