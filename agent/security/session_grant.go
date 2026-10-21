@@ -64,16 +64,16 @@ type GrantVerifier struct {
 	Sessions  SessionOwnerResolver
 }
 
-// Verify checks the cryptographic assertion, context binding, freshness,
-// one-time use, and runtime session ownership. It grants no permission beyond
-// a single read-only projection of the exact named session.
-func (v GrantVerifier) Verify(g SessionGrant, peerUID uint32) error {
-	if len(v.Key) < 32 || v.Issuer == "" || v.Audience == "" ||
+// Verify checks the cryptographic assertion against the independently authenticated
+// application principal, kernel peer UID, freshness, one-time use, and runtime
+// session ownership. expectedPrincipal must come from server-side auth context.
+func (v GrantVerifier) Verify(g SessionGrant, peerUID uint32, expectedPrincipal string) error {
+	if len(v.Key) < 32 || v.Issuer == "" || v.Audience == "" || expectedPrincipal == "" ||
 		v.Replay == nil || v.Sessions == nil || v.Now == nil {
 		return fmt.Errorf("%w: verifier configuration incomplete", ErrInvalidGrant)
 	}
 	if g.Version != 1 || g.Issuer != v.Issuer || g.Audience != v.Audience ||
-		g.Principal == "" || g.UID == 0 || g.Scope != ReadSessionScope ||
+		g.Principal == "" || g.Principal != expectedPrincipal || g.UID == 0 || g.Scope != ReadSessionScope ||
 		g.SessionID == "" || g.JTI == "" || strings.TrimSpace(g.JTI) != g.JTI ||
 		g.IssuedAt <= 0 || g.ExpiresAt <= g.IssuedAt {
 		return ErrInvalidGrant
