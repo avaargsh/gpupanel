@@ -1,0 +1,42 @@
+name: GPUPanel session grant negative security tests
+on:
+  pull_request:
+    paths:
+      - 'agent/security/session_grant.go'
+      - 'agent/security/session_grant_test.go'
+      - '.github/workflows/gpupanel-session-grant-tests.yml'
+  push:
+    branches:
+      - 'feat/**'
+    paths:
+      - 'agent/security/session_grant.go'
+      - 'agent/security/session_grant_test.go'
+      - '.github/workflows/gpupanel-session-grant-tests.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: session-grant-tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  session-grant-negative-tests:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: agent/go.mod
+          cache-dependency-path: agent/go.sum
+      - name: Run session-grant security tests
+        run: go test ./security -count=1 -v
+        working-directory: agent
+      - name: Run static analysis for session-grant package
+        run: go vet ./security
+        working-directory: agent
+      - name: Run race-enabled session-grant security tests
+        run: go test -race ./security -count=1
+        working-directory: agent
