@@ -13,14 +13,23 @@ from __future__ import annotations
 # refusal and never a request URL, response body or user content.
 APP_INSTALL_REMOVED_STATUS = "Deleted"
 
+# The deleted payload identity and resource fields. response.AppInstallInfo
+# (agent/app/dto/response/app.go) carries no omitempty, so a real answer
+# always contains every field: a missing field is a malformed answer, never
+# a proof of removal.
+APP_INSTALL_REMOVED_ID = 0
+APP_INSTALL_REMOVED_RESOURCE_FIELDS = ("container", "composePath")
+
 
 def classify_app_install_removal(response: object) -> str:
     """Return 'removed' or a constant failure category, never private values.
 
     'response' is the fixed shape {'http': int, 'code': int, 'data': dict}
-    returned by the live script's request helper. Every ambiguous or
-    unhealthy answer fails closed: only an explicit "not found" or the
-    Agent's documented deleted-resource payload proves removal.
+    returned by the live script's request helper. Removal is observed only
+    on the Agent's complete deleted payload: HTTP 200, business code 200,
+    status "Deleted", an exact integer id 0 and exact empty container and
+    composePath strings. Every ambiguous, unhealthy, incomplete or wrongly
+    typed answer fails closed; an HTTP status alone never proves removal.
     """
     if not isinstance(response, dict):
         return "malformed"
@@ -30,19 +39,36 @@ def classify_app_install_removal(response: object) -> str:
         return "malformed"
     if http >= 500:
         return "unavailable"
-    if http == 404:
-        return "removed"
+    # Any other non-200 answer (404 included) is a refusal, not an
+    # observation of removal: the Agent answers an absent AppInstall with
+    # HTTP 200 and the deleted payload, so a non-200 answer carries a
+    # business error that must not be read as a deleted resource.
     if http != 200 or code != 200:
         return "refused"
     data = response.get("data")
     if not isinstance(data, dict):
         return "malformed"
-    if data.get("status") != APP_INSTALL_REMOVED_STATUS:
+    status = data.get("status")
+    if not isinstance(status, str):
+        return "malformed"
+    if status != APP_INSTALL_REMOVED_STATUS:
         return "still-installed"
-    if data.get("id") not in (0, None):
+    if "id" not in data:
+        return "malformed"
+    install_id = data["id"]
+    # Exact int: a bool or float identity is not an absent identity.
+    if type(install_id) is not int:
+        return "malformed"
+    if install_id != APP_INSTALL_REMOVED_ID:
         return "identity-present"
-    if data.get("container") or data.get("composePath"):
-        return "resource-present"
+    for field in APP_INSTALL_REMOVED_RESOURCE_FIELDS:
+        if field not in data:
+            return "malformed"
+        resource = data[field]
+        if not isinstance(resource, str):
+            return "malformed"
+        if resource:
+            return "resource-present"
     return "removed"
 
 

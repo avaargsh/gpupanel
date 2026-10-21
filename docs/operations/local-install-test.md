@@ -470,11 +470,11 @@ GPUPanel 自身的认证 Core API 和 Agent 的 AppInstall 逻辑：
    AppInstall 记录按 `GetAppInstallInfo` 契约返回 HTTP 200 +
    `status="Deleted"`（`id=0`、无 `container`、无 `composePath`）。
    因此 `scripts/install-test/app_evidence_codes.py` 用固定词汇
-   `classify_app_install_removal` 判定：只有 404 或
-   “`Deleted` + 无身份 + 无 Docker/compose 资源”才算已删除；
-   5xx、403、畸形载荷一律 fail closed（`unavailable`/`refused`/
-   `malformed`）。若改为要求 HTTP 拒绝，卸载成功后仍会必然失败，
-   且无法观察资源是否真的消失。
+   `classify_app_install_removal` 判定：只有 **HTTP 200 + code 200 +
+   完整 `Deleted` 载荷**（`id` 为精确整数 0，`container`/`composePath`
+   为精确空字符串）才算已删除；缺失字段、`None`、bool、浮点或其他类型
+   一律 fail closed 为 `malformed`；404 等非 200 响应只说明该读请求被
+   业务拒绝（`refused`），**不构成删除观测**；5xx 为 `unavailable`。
 
 任何异常、UNKNOWN、关联错配、网络/端口意外暴露或未清理干净，
 都阻断 CI，失败详情仅以来源行号和异常类型公开。
@@ -508,8 +508,8 @@ AppInstall 按契约返回 HTTP 200 + `status="Deleted"`；卸载本身成功
 `invalid_install_uuid_rejected_without_side_effects`，证据校验器仍期望旧
 标签，会恒定 `BLOCKED_OR_FAILED`）。
 
-风险与边界：判据只**变严**——5xx/403/畸形载荷 fail closed，容器
+风险与边界：判据只**变严**——5xx/403/404/畸形载荷 fail closed，容器
 消失、TaskDB Success、独立 Docker 观察与 NO_GO 断言均未削弱，也未
 新增任何 mutation 重试。移除触发条件：若 Agent 将来把“记录不存在”
-改为 404 响应，删除 `classify_app_install_removal` 的 404 分支即可，
-其余判据保持。
+改为 404 响应，必须先取得显式外部契约证据再重写判据（当前实现对
+404 fail closed）；其余判据保持。

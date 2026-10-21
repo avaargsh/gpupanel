@@ -127,11 +127,18 @@ class G5AppInstallRemovalObservationTests(unittest.TestCase):
             evidence.classify_app_install_removal(self.removed_response()),
             "removed")
 
-    def test_not_found_read_is_observed_as_removed(self):
-        self.assertEqual(
-            evidence.classify_app_install_removal(
-                {"http": 404, "code": 404, "data": None}),
-            "removed")
+    def test_not_found_read_is_never_observed_as_removed(self):
+        # HTTP 404 is not an observation of removal: the Agent answers an
+        # absent AppInstall with HTTP 200 and the deleted payload, so a 404
+        # hides a business error and must fail closed.
+        for response, code in (
+            ({"http": 404, "code": 404, "data": None}, "refused"),
+            ({"http": 404, "code": 500, "data": None}, "refused"),
+            ({"http": 404, "code": 200, "data": None}, "refused"),
+        ):
+            with self.subTest(code=code):
+                self.assertEqual(
+                    evidence.classify_app_install_removal(response), code)
 
     def test_live_app_install_is_never_observed_as_removed(self):
         live = {"http": 200, "code": 200, "data": {
@@ -161,6 +168,104 @@ class G5AppInstallRemovalObservationTests(unittest.TestCase):
         self.assertEqual(
             evidence.classify_app_install_removal(with_resource),
             "resource-present")
+
+    def test_incomplete_or_wrongly_typed_deleted_payload_fails_closed(self):
+        # Reproduced false "removed" answers. Only a complete deleted
+        # payload with an exact integer id 0 and exact empty container and
+        # composePath strings proves removal; missing, None, bool, float or
+        # wrongly typed fields fail closed.
+        deleted = {"http": 200, "code": 200, "data": {
+            "id": 0, "status": "Deleted", "container": "", "composePath": "",
+        }}
+        cases = (
+            ({"http": 200, "code": 200, "data": {"status": "Deleted"}}, "malformed"),
+            ({"http": 200, "code": 200, "data": {
+                "status": "Deleted", "id": False, "container": "",
+                "composePath": ""}}, "malformed"),
+            ({"http": 200, "code": 200, "data": {
+                "status": "Deleted", "id": 0.0, "container": "",
+                "composePath": ""}}, "malformed"),
+            ({"http": 200, "code": 200, "data": {
+                "status": "Deleted", "id": "0", "container": "",
+                "composePath": ""}}, "malformed"),
+            ({"http": 200, "code": 200, "data": {
+                "status": "Deleted", "id": None, "container": "",
+                "composePath": ""}}, "malformed"),
+            ({"http": 200, "code": 200, "data": {
+                "status": "Deleted", "id": 0, "composePath": ""}}, "malformed"),
+            ({"http": 200, "code": 200, "data": {
+                "status": "Deleted", "id": 0, "container": "",
+                "composePath": None}}, "malformed"),
+            ({"http": 200, "code": 200, "data": {
+                "status": "Deleted", "id": 0, "composePath": ""}}, "malformed"),
+            ({"http": 200, "code": 200, "data": {
+                "status": "Deleted", "id": 0, "container": ""}}, "malformed"),
+            ({"http": 200, "code": 200, "data": {
+                "status": "Deleted", "id": 0, "container": 0,
+                "composePath": ""}}, "malformed"),
+            ({"http": 200, "code": 200, "data": {
+                "status": None, "id": 0, "container": "",
+                "composePath": ""}}, "malformed"),
+            ({"http": 200, "code": 200, "data": {
+                "id": 0, "container": "", "composePath": ""}}, "malformed"),
+        )
+        for response, code in cases:
+            with self.subTest(code=code):
+                label = evidence.classify_app_install_removal(response)
+                self.assertEqual(label, code)
+                self.assertNotEqual(label, "removed")
+        # The complete contract payload is still observed as removed.
+        self.assertEqual(
+            evidence.classify_app_install_removal(deleted), "removed")
+        # A bool or float HTTP status is not an accepted answer either.
+        for response in ({"http": True, "code": 200, "data": {}},
+                         {"http": 200.0, "code": 200, "data": {}},
+                         {"http": 200, "code": True, "data": {}}):
+            with self.subTest(http=repr(response["http"])):
+                self.assertEqual(
+                    evidence.classify_app_install_removal(response), "malformed")
+
+    def test_every_removal_label_stays_inside_the_ci_allowlist(self):
+        responses = (
+            {"http": 200, "code": 200, "data": {"status": "Deleted"}},
+            {"http": 200, "code": 200, "data": {
+                "status": "Deleted", "id": False, "container": "",
+                "composePath": ""}},
+            {"http": 404, "code": 500, "data": None},
+            {"http": 500, "code": 500, "data": None},
+            {"http": 403, "code": 403, "data": None},
+            {"http": 200, "code": 200, "data": {
+                "id": INSTALL_ID, "status": "Deleted", "container": "",
+                "composePath": ""}},
+            {"http": 200, "code": 200, "data": {
+                "id": 0, "status": "Deleted", "container": "PRIVATE_CONTAINER",
+                "composePath": ""}},
+        )
+        for response in responses:
+            with self.subTest(response=sorted(response)):
+                label = evidence.classify_app_install_removal(response)
+                self.assertNotEqual(label, "removed")
+                self.assertEqual(
+                    failure.app_uninstall_removal_code(
+                        "G5_APP_UNINSTALL_REMOVAL_CODE=" + label +
+                        " release=NO_GO\n"),
+                    label)
+                self.assertNotIn("PRIVATE", label)
+
+    def test_agent_dto_keeps_the_removed_payload_fields_explicit(self):
+        dto = (ROOT / "agent/app/dto/response/app.go").read_text()
+        block = re.search(r"type AppInstallInfo struct \{(.*?)\n\}", dto, re.S)
+        self.assertIsNotNone(block)
+        fields = block.group(1)
+        for field in ("id", "status", "container", "composePath"):
+            self.assertIn('json:"%s"' % field, fields)
+        # Without omitempty the deleted payload always carries every field,
+        # so a missing field can only be a malformed answer, never removal.
+        self.assertNotIn("omitempty", fields)
+        service = (ROOT / "agent/app/service/app_install.go").read_text()
+        self.assertIn("Status: constant.StatusDeleted", service)
+        api = (ROOT / "agent/app/api/v1/app_install.go").read_text()
+        self.assertIn("helper.SuccessWithData(c, info)", api)
 
     def test_ambiguous_or_unhealthy_answers_fail_closed(self):
         cases = (
