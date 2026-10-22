@@ -1,6 +1,9 @@
 name: Dependency security audit
 
 on:
+  push:
+    branches:
+      - security/go-x509-cve-2026-111943
   pull_request:
     paths:
       - "agent/go.mod"
