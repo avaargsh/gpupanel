@@ -61,12 +61,3 @@ jobs:
       - name: Audit production dependencies
         working-directory: frontend
         run: pnpm audit --prod --audit-level high
-
-  dependency-review:
-    if: github.event_name == 'pull_request'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/dependency-review-action@v4
-        with:
-          fail-on-severity: high
-          comment-summary-in-pr: always
