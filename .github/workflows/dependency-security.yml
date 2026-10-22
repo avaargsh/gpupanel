@@ -63,7 +63,4 @@ jobs:
         run: pnpm install --frozen-lockfile
       - name: Audit production dependencies
         working-directory: frontend
-        run: |
-          # The project uses npmmirror for installs, but that mirror does not expose npm's audit endpoint.
-          pnpm config set registry https://registry.npmjs.org/
-          pnpm audit --prod --audit-level high
+        run: pnpm --registry=https://registry.npmjs.org/ audit --prod --audit-level high
