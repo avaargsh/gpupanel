@@ -1,0 +1,20 @@
+{
+  "formatVersion": 1,
+  "id": "ubuntu24-local-dev",
+  "os": "ubuntu-24.04",
+  "aptPackages": ["git", "curl", "build-essential"],
+  "tools": [
+    {"name": "Git", "command": "git", "required": true},
+    {"name": "Python", "command": "python3", "required": true},
+    {"name": "uv", "command": "uv", "required": false},
+    {"name": "VS Code", "command": "code", "required": false},
+    {"name": "DevPod", "command": "devpod", "required": false},
+    {"name": "Docker", "command": "docker", "required": false},
+    {"name": "Go", "command": "go", "required": false}
+  ],
+  "mirrors": {
+    "UV_DEFAULT_INDEX": "https://mirrors.aliyun.com/pypi/simple/",
+    "npm_config_registry": "https://registry.npmmirror.com/",
+    "GOPROXY": "https://goproxy.cn"
+  }
+}

@@ -1,0 +1,242 @@
+name: GPUPanel Desktop Ubuntu Preview
+
+on:
+  pull_request:
+    paths:
+      - "desktop/**"
+      - "profiles/ubuntu24-workstation.v1.json"
+      - "scripts/gpupanel-workstation.py"
+      - "scripts/gpupanel-workspace-bundle.py"
+      - "scripts/gpupanel-source-snapshot.py"
+      - "scripts/tests/test_gpupanel_source_snapshot.py"
+      - "scripts/tests/gpupanel_desktop_source_fresh_home_e2e.py"
+      - "scripts/tests/test_gpupanel_workstation.py"
+      - "scripts/tests/test_gpupanel_workspace_bundle.py"
+      - "scripts/tests/test_gpupanel_profile_transfer.py"
+      - "scripts/tests/test_gpupanel_desktop_ui_contract.py"
+      - "scripts/gpupanel-uv-project.py"
+      - "scripts/gpupanel-uv-distribution.py"
+      - "scripts/tests/test_gpupanel_uv_distribution.py"
+      - "scripts/gpupanel-catalog-workspace.py"
+      - "scripts/gpupanel-catalog.py"
+      - "scripts/tests/test_gpupanel_uv_project.py"
+      - "scripts/tests/gpupanel_desktop_gui_smoke.py"
+      - "scripts/tests/gpupanel_desktop_wayland_smoke.py"
+      - "scripts/tests/gpupanel_desktop_fresh_home_e2e.py"
+      - "scripts/tests/gpupanel_desktop_native_app_e2e.py"
+      - "scripts/tests/gpupanel_desktop_launcher_e2e.py"
+      - "scripts/gpupanel-gnome-acceptance.py"
+      - "scripts/tests/test_gpupanel_gnome_acceptance.py"
+      - ".github/workflows/gpupanel-desktop-ubuntu.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  profile-contract:
+    name: User-local profile and no-container contracts
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Python profile checks (no system changes)
+        run: |
+          python3 -m unittest discover -s scripts/tests -p 'test_gpupanel_workstation.py' -v
+          python3 -m unittest discover -s scripts/tests -p 'test_gpupanel_workspace_bundle.py' -v
+          python3 -m unittest discover -s scripts/tests -p 'test_gpupanel_source_snapshot.py' -v
+          python3 -m unittest discover -s scripts/tests -p 'test_gpupanel_profile_transfer.py' -v
+          python3 -m unittest discover -s scripts/tests -p 'test_gpupanel_desktop_ui_contract.py' -v
+          python3 -m unittest discover -s scripts/tests -p 'test_gpupanel_uv_project.py' -v
+          python3 -m unittest discover -s scripts/tests -p 'test_gpupanel_uv_distribution.py' -v
+          python3 -m unittest discover -s scripts/tests -p 'test_gpupanel_gnome_acceptance.py' -v
+      - name: CI may not pose as real GNOME/Wayland acceptance
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/gpupanel-gnome-acceptance.py --preflight > "$RUNNER_TEMP/gnome-preflight.json" && {
+            echo "ERROR: hosted CI unexpectedly passed real GNOME preflight"; exit 1;
+          } || code=$?
+          test "${code:-0}" -eq 3
+          python3 -c 'import json,sys; v=json.load(open(sys.argv[1])); assert v["status"]=="BLOCKED" and not v["realGuiVerified"] and not v["polkitVerified"],v; print("Hosted CI correctly remains NOT_ACCEPTED")' "$RUNNER_TEMP/gnome-preflight.json"
+      - name: Validate embedded frontend source
+        run: node --check desktop/ui/app.js
+      - name: Read-only Ubuntu doctor
+        run: python3 scripts/gpupanel-workstation.py doctor > /tmp/workstation-doctor.json
+
+  uv-real-archive:
+    name: Official pinned uv -> offline user install -> real project
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download pinned official archive (never execute a remote script)
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$HOME/.cache/gpupanel/uv"
+          curl -fL --retry 2 --retry-delay 2 --connect-timeout 10 --max-time 120 \
+            'https://releases.astral.sh/github/uv/releases/download/0.13.3/uv-x86_64-unknown-linux-gnu.tar.gz' \
+            -o "$HOME/.cache/gpupanel/uv/uv-x86_64-unknown-linux-gnu.tar.gz"
+          echo 'e4f169ec380f1793b898a6f1fcbacd22db25cf7ca0349a6e96ffb85b69998d04  '"$HOME/.cache/gpupanel/uv/uv-x86_64-unknown-linux-gnu.tar.gz" | sha256sum --check --status
+      - name: Verify archive and install as normal user with plan approval
+        shell: bash
+        run: |
+          set -euo pipefail
+          trap 'echo "Pinned archive test diagnostic:"; test ! -f "$RUNNER_TEMP/uv-plan.json" || cat "$RUNNER_TEMP/uv-plan.json"; test ! -f "$RUNNER_TEMP/uv-install.json" || cat "$RUNNER_TEMP/uv-install.json"' ERR
+          echo "First upstream member names (read-only):"
+          tar -tzf "$HOME/.cache/gpupanel/uv/uv-x86_64-unknown-linux-gnu.tar.gz" | head -n 14
+          python3 scripts/gpupanel-uv-distribution.py plan > "$RUNNER_TEMP/uv-plan.json"
+          digest="$(python3 -c 'import json,sys; d=json.load(open(sys.argv[1])); assert d["status"]=="READY_FOR_APPROVAL",d; print(d["planDigest"])' "$RUNNER_TEMP/uv-plan.json")"
+          python3 scripts/gpupanel-uv-distribution.py install --approve-digest "$digest" > "$RUNNER_TEMP/uv-install.json"
+          python3 -c 'import json,sys; d=json.load(open(sys.argv[1])); assert d["status"]=="VERIFIED",d' "$RUNNER_TEMP/uv-install.json"
+          python3 scripts/gpupanel-uv-distribution.py status > "$RUNNER_TEMP/uv-status.json"
+          python3 -c 'import json,sys; d=json.load(open(sys.argv[1])); assert d["status"]=="VERIFIED",d' "$RUNNER_TEMP/uv-status.json"
+          "$HOME/GPUPanel/tools/uv/0.13.3/bin/uv" --version | grep -E '^uv 0[.]13[.]3($|[[:space:]])'
+          echo "Reviewed official uv executable ELF SHA-256:"
+          sha256sum "$HOME/GPUPanel/tools/uv/0.13.3/bin/uv"
+          echo "$HOME/GPUPanel/tools/uv/0.13.3/bin" >> "$GITHUB_PATH"
+      - name: Exercise real offline uv init, lock and run
+        run: python3 -m unittest discover -s scripts/tests -p 'test_gpupanel_uv_project.py' -v
+
+  desktop-build:
+    name: Wails v3 self-contained preview build (not GUI acceptance)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install native Linux build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends build-essential pkg-config libgtk-4-dev libwebkitgtk-6.0-dev xvfb xdotool openbox scrot dbus-x11 fonts-noto-cjk fontconfig weston desktop-file-utils
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.26'
+          check-latest: false
+          cache: true
+          cache-dependency-path: desktop/go.sum
+      - name: Resolve Go dependencies and compile
+        working-directory: desktop
+        run: |
+          go mod verify
+          go test -mod=readonly ./...
+          go build -mod=readonly -trimpath -o "$RUNNER_TEMP/gpupanel-desktop-preview" .
+      - name: Prove binary read-only doctor without source, display or Docker
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/clean-home"
+          cd "$RUNNER_TEMP"
+          HOME="$RUNNER_TEMP/clean-home" "$RUNNER_TEMP/gpupanel-desktop-preview" --doctor > doctor.json
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          report = json.loads(Path("doctor.json").read_text())
+          assert report["status"] == "READY", report
+          assert len(report["profileDigest"]) == 64
+          assert report["requires"] == {"core": False, "docker": False, "kubernetes": False}
+          print("Standalone binary doctor PASS: no source checkout, display, Docker, Core or K8s")
+          PY
+      - name: Prove source-free desktop binary creates and runs a project with official uv
+        shell: bash
+        run: |
+          set -euo pipefail
+          cache="$RUNNER_TEMP/official-uv.tar.gz"
+          curl --proto '=https' --tlsv1.2 -fL --retry 2 --connect-timeout 10 --max-time 120 \
+            'https://releases.astral.sh/github/uv/releases/download/0.13.3/uv-x86_64-unknown-linux-gnu.tar.gz' \
+            -o "$cache"
+          echo "e4f169ec380f1793b898a6f1fcbacd22db25cf7ca0349a6e96ffb85b69998d04  $cache" | sha256sum --check --status
+          python3 scripts/tests/gpupanel_desktop_fresh_home_e2e.py \
+            "$RUNNER_TEMP/gpupanel-desktop-preview" "$cache"
+      - name: Prove compiled binary invokes correct native project apps without GUI
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/tests/gpupanel_desktop_native_app_e2e.py "$RUNNER_TEMP/gpupanel-desktop-preview"
+      - name: Prove compiled binary installs an approved GNOME desktop menu entry
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/tests/gpupanel_desktop_launcher_e2e.py "$RUNNER_TEMP/gpupanel-desktop-preview"
+      - name: Verify GNOME Wayland acceptance kit is safe and self-contained
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/tests/test_gpupanel_gnome_acceptance.py -v
+          python3 scripts/gpupanel-gnome-acceptance.py --help
+          python3 -m py_compile scripts/gpupanel-gnome-acceptance.py
+          test -f scripts/GPUPANEL_GNOME_ACCEPTANCE.md
+      - name: Prove native binary transfers source between two fresh HOME locations
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/tests/gpupanel_desktop_source_fresh_home_e2e.py "$RUNNER_TEMP/gpupanel-desktop-preview"
+      - name: Exercise native GTK4/WebKit window under isolated Xvfb session
+        shell: bash
+        # GitHub runners restrict bwrap user namespaces; WebKit's debug bypass
+        # is scoped to this CI process, NEVER the distributed desktop binary.
+        env:
+          GPUPANEL_CI_WEBKIT_UNSANDBOXED: "1"
+        run: |
+          set -euo pipefail
+          xvfb-run -a -s "-screen 0 1366x900x24" dbus-run-session -- \
+            python3 scripts/tests/gpupanel_desktop_gui_smoke.py \
+            "$RUNNER_TEMP/gpupanel-desktop-preview" \
+            "$RUNNER_TEMP/gpupanel-desktop-xvfb.png"
+      - name: Exercise GTK native Wayland protocol with nested Weston
+        shell: bash
+        env:
+          GPUPANEL_CI_WEBKIT_UNSANDBOXED: "1"
+        run: |
+          set -euo pipefail
+          xvfb-run -a -s "-screen 0 1366x900x24" dbus-run-session -- \
+            python3 scripts/tests/gpupanel_desktop_wayland_smoke.py \
+            "$RUNNER_TEMP/gpupanel-desktop-preview" \
+            "$RUNNER_TEMP/gpupanel-desktop-wayland.png"
+      - name: Preserve non-sensitive GUI smoke screenshot
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gpupanel-desktop-xvfb-ubuntu24
+          path: |
+            ${{ runner.temp }}/gpupanel-desktop-xvfb.png
+            ${{ runner.temp }}/gpupanel-desktop-xvfb.log
+            ${{ runner.temp }}/gpupanel-desktop-wayland.png
+            ${{ runner.temp }}/gpupanel-desktop-wayland.weston.log
+            ${{ runner.temp }}/gpupanel-desktop-wayland.wayland.log
+          if-no-files-found: ignore
+          retention-days: 7
+      - name: Prepare unsigned relocatable Ubuntu preview archive
+        shell: bash
+        run: |
+          set -euo pipefail
+          stage="$RUNNER_TEMP/gpupanel-desktop-preview-root"
+          mkdir -p "$stage/bin" "$stage/licenses" "$stage/build" "$stage/acceptance"
+          install -m 0755 "$RUNNER_TEMP/gpupanel-desktop-preview" "$stage/bin/gpupanel-desktop"
+          install -m 0644 desktop/README.md "$stage/README.md"
+          install -m 0755 scripts/gpupanel-gnome-acceptance.py "$stage/acceptance/gnome-wayland.py"
+          install -m 0644 desktop/go.mod desktop/go.sum "$stage/build/"
+          install -m 0644 LICENSE NOTICE.md "$stage/licenses/"
+          (cd "$stage" && sha256sum bin/gpupanel-desktop > build/binary.sha256)
+          printf "source_head=%s\ncheckout_sha=%s\nplatform=ubuntu-24.04-amd64\nstatus=UNSIGNED_PREVIEW_NOT_RELEASED\n" \
+            "${{ github.event.pull_request.head.sha || github.sha }}" "$(git rev-parse HEAD)" \
+            > "$stage/build/provenance.txt"
+          archive="$RUNNER_TEMP/gpupanel-desktop-preview-ubuntu24-amd64.tar.gz"
+          tar -czf "$archive" -C "$stage" .
+          (cd "$RUNNER_TEMP" && sha256sum gpupanel-desktop-preview-ubuntu24-amd64.tar.gz > gpupanel-desktop-preview-ubuntu24-amd64.tar.gz.sha256)
+          tar -tzf "$archive" >/dev/null
+      - name: Upload checksumed source-preview binary (no release)
+        uses: actions/upload-artifact@v4
+        with:
+          name: gpupanel-desktop-ubuntu24-amd64-preview
+          path: |
+            ${{ runner.temp }}/gpupanel-desktop-preview-ubuntu24-amd64.tar.gz
+            ${{ runner.temp }}/gpupanel-desktop-preview-ubuntu24-amd64.tar.gz.sha256
+          if-no-files-found: error
+          retention-days: 7
+      - name: Clarify acceptance status
+        run: |
+          echo "Unsigned preview archive uploaded with SHA-256; contents are not a published package."
+          echo "CLI-only embedded Python check and real pinned uv fresh-HOME project restore both executed without a source checkout."
+          echo "CI-only unsandboxed Xvfb/Weston ran; the real-GNOME acceptance kit is embedded, but not run on a user-owned GNOME session."
+          echo "No production-sandbox GNOME GUI, Polkit allow/deny, IDE lifecycle or full restore acceptance was asserted."

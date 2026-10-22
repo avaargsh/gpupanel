@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>GPUPanel · 本地工作站</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <div class="layout">
+    <aside>
+      <div class="brand"><span class="mark">G</span><strong>GPUPanel</strong></div>
+      <div class="context">LOCAL · Ubuntu Desktop</div>
+      <div class="nav active">工作站</div>
+      <div class="nav muted">服务器管理 <small>后续可选连接</small></div>
+      <div class="nav muted">GPU / Kubernetes <small>未连接</small></div>
+      <div class="aside-foot">桌面操作不经过 Core、Agent 或 Docker</div>
+    </aside>
+    <main>
+      <header><div><p class="eyebrow">PERSONAL WORKSTATION</p><h1>新电脑，从这里开始</h1><p class="subtitle">查看环境 → 审核变更 → 授权安装 → 保存 Profile。容器和远程算力按需启用。</p></div><span class="status" id="health">尚未检查</span></header>
+      <section class="actions">
+        <button id="refresh">检查本机环境</button>
+        <button id="terminal" class="secondary">在所选项目打开终端</button>
+        <button id="editor" class="secondary">在所选项目打开 IDE</button>
+      </section>
+      <div class="cards">
+        <section class="card"><div class="step">01 · SOFTWARE</div><h2>开发工具</h2><p>原生 apt 管理 Git、curl 和编译工具。Docker 不是基础安装依赖。</p><div id="tools" class="data">点击“检查本机环境”</div><button id="versions" class="secondary">查看本地工具版本</button><pre id="version-report">版本尚未检查；存在命令不代表运行正常</pre></section>
+        <section class="card"><div class="step">02 · PROFILE</div><h2>国内镜像与恢复</h2><p>仅保存无密钥的 HTTPS 端点；不改写全局配置或下载未校验制品。</p><pre id="mirrors">尚未读取</pre><button id="restore" class="secondary" disabled>初始化本机默认 Profile</button><button id="profile-backup" class="secondary">导出 Profile 备份</button><button id="profile-inspect" class="secondary">检查旧电脑 Profile</button><pre id="profile-import-plan">把 workstation-profile.json 复制到 ~/GPUPanel/backups/ 后检查</pre><button id="profile-import" class="secondary" disabled>确认导入备份 Profile</button></section>
+        <section class="card"><div class="step">03 · INSTALL</div><h2>授权安装缺失工具</h2><p>查看计划摘要，再经 Polkit 确认系统包安装。结果不明时停止自动重试。</p><pre id="install-plan">尚未读取</pre><button id="install" disabled>审核并授权安装</button></section>
+        <section class="card"><div class="step">04 · OPTIONAL</div><h2>Dev Containers / DevPod</h2><p>使用已有 DevPod + Provider；无 Docker 时不影响本地开发。</p><label for="project">已存在的项目目录名（~/GPUPanel/projects/ 下）</label><input id="project" placeholder="uv-python-starter" value="uv-python-starter"><button id="devpod" class="secondary">检查浏览器 IDE 可用性</button><div id="devpod-result" class="data">不会自动启动容器</div></section>
+        <section class="card"><div class="step">05 · OFFLINE RECOVERY</div><h2>工作区离线快照</h2><p>仅导出白名单中的项目锁文件、配置与小型入口文件；不会备份完整源码、数据、密钥或容器。</p><button id="bundle-export" class="secondary">备份上面的项目</button><label for="bundle-file">从旧电脑复制到 ~/GPUPanel/backups/ 的 Bundle 文件名</label><input id="bundle-file" value="uv-python-starter-scaffold.zip" autocomplete="off" spellcheck="false"><button id="bundle-inspect" class="secondary">检查 Bundle 文件</button><pre id="bundle-plan">先检查摘要与文件清单，再恢复到新建项目目录</pre><button id="bundle-restore" disabled>确认恢复项目文件</button></section>
+        <section class="card"><div class="step">06 · DESKTOP MENU</div><h2>Ubuntu 桌面快捷入口</h2><p>仅在 ~/GPUPanel/desktop-preview/bin/ 下运行的预览二进制可安装；只写用户应用菜单，不需要 root 或额外服务。</p><button id="launcher-plan" class="secondary">检查桌面入口计划</button><pre id="launcher-report">尚未预检；不会覆盖已有快捷方式</pre><button id="launcher-install" disabled>确认创建桌面快捷方式</button></section>
+        <section class="card"><div class="step">07 · PYTHON WORKSPACE</div><h2>离线创建 uv 开发项目</h2><p>复用已审核的 uv 项目生成器；仅在本机创建 ~/GPUPanel/projects/uv-python-starter，固定无第三方依赖，不下载 Python 或容器镜像。</p><button id="uv-plan" class="secondary">检查 uv 项目创建计划</button><pre id="uv-report">需要本机安装 uv + Python 3；已有项目不覆盖</pre><button id="uv-create" disabled>确认创建本地 Python 项目</button><button id="uv-status" class="secondary">复核项目文件</button><p>先创建或导入项目，再通过页面顶部的“在所选项目打开终端 / IDE”进入。项目名称使用上方输入框，未安装的应用只返回提示，不自动下载。</p></section>
+        <section class="card"><div class="step">08 · VERIFIED TOOLS</div><h2>离线安装 uv（固定版本）</h2><p>Ubuntu 24.04 x64：先从 uv 官方 Release 或可信镜像取得原始 tar.gz，放入用户缓存。安装前比对审核过的 SHA-256；不运行远程安装脚本、不改全局 PATH。</p><button id="uvtool-plan" class="secondary">检查 uv 安装包</button><pre id="uvtool-report">uv 0.13.3 · Linux x64\n未检查本地缓存</pre><button id="uvtool-install" disabled>审核并安装到用户目录</button><button id="uvtool-status" class="secondary">验证已安装 uv</button></section>
+        <section class="card"><div class="step">09 · SOURCE MIGRATION</div><h2>项目源码离线迁移</h2><p>仅备份已审核的 UTF-8 源码与锁文件（每文件 ≤1 MiB，最多 256 个文件）；排除数据、密钥、.git、依赖及 IDE 配置。不是完整备份；如有疑似凭据或软链接将拒绝导出。</p><button id="source-plan" class="secondary">预览所选项目源码清单</button><pre id="source-report">先检查文件清单及排除数量，再授权导出</pre><button id="source-export" disabled>确认导出源码快照</button><label for="source-file">从旧电脑复制到 ~/GPUPanel/backups/ 的源码快照文件名</label><input id="source-file" value="uv-python-starter-source-v1.zip" autocomplete="off" spellcheck="false"><button id="source-inspect" class="secondary">检查来源及内容摘要</button><pre id="source-restore-report">需在新电脑审核整个 ZIP 的 SHA-256；只恢复到不存在的目录</pre><button id="source-restore" disabled>确认原子恢复源码</button></section>
+      </div>
+      <section class="console" aria-live="polite"><div class="console-head">操作反馈 <span id="operation-state">待命</span></div><pre id="output">无操作。安装前请确认目标主机及 apt 源。</pre></section>
+      <footer>桌面预览：可脱离源码目录运行；本地能力不依赖 Docker、Core 或 Kubernetes。图形操作及新机完整恢复仍需真实验收。</footer>
+    </main>
+  </div>
+  <script type="module" src="/app.js"></script>
+</body>
+</html>

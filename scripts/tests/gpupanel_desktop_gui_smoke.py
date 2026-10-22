@@ -1,0 +1,157 @@
+#!/usr/bin/env python3
+"""Bounded Xvfb smoke for the *actual* Wails desktop executable.
+
+This is an automated X11/WebKitGTK window-and-keyboard smoke, not a human
+Wayland/GNOME acceptance or proof that every WebView action is functional.
+Runs from a new HOME, without invoking Docker, Kubernetes, or Core.
+"""
+from __future__ import annotations
+
+import argparse
+import os
+from pathlib import Path
+import re
+import subprocess
+import tempfile
+import time
+
+WINDOW_RE = r"GPUPanel.*Local Workstation"
+
+
+class SmokeFailure(Exception):
+    pass
+
+
+def checked(argv: list[str], *, timeout: int = 5) -> str:
+    proc = subprocess.run(argv, capture_output=True, text=True,
+                          check=False, timeout=timeout)
+    if proc.returncode:
+        raise SmokeFailure(f"command {argv[0]} failed (code={proc.returncode}): {proc.stderr[-500:]}")
+    return proc.stdout.strip()
+
+
+def await_window(app: subprocess.Popen, *, seconds: int = 30) -> str:
+    deadline = time.monotonic() + seconds
+    while time.monotonic() < deadline:
+        if app.poll() is not None:
+            raise SmokeFailure(f"app exited before window appeared: code={app.returncode}")
+        probe = subprocess.run(
+            ["xdotool", "search", "--onlyvisible", "--name", WINDOW_RE],
+            capture_output=True, text=True, timeout=3, check=False,
+        )
+        ids = [s for s in probe.stdout.splitlines() if re.fullmatch(r"[0-9]+", s)]
+        if ids:
+            return ids[0]
+        time.sleep(0.5)
+    # Fail closed, but retain X11 observations to distinguish GTK startup
+    # from a window-manager / title / mapping race on ephemeral CI machines.
+    details = []
+    for options in (["search", "--name", "GPUPanel"],
+                    ["search", "--onlyvisible", "--name", ".*"]):
+        probe = subprocess.run(["xdotool", *options], capture_output=True, text=True,
+                               timeout=3, check=False)
+        details.append(f"{options}: rc={probe.returncode}, ids={probe.stdout.strip()[:400]!r}")
+    raise SmokeFailure("no visible GPUPanel window; X11 inventory: " + " | ".join(details))
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("binary", type=Path)
+    parser.add_argument("screenshot", type=Path)
+    args = parser.parse_args()
+    binary = args.binary.resolve()
+    if not binary.is_file() or not os.access(binary, os.X_OK):
+        raise SmokeFailure("desktop binary unavailable")
+    if not os.getenv("DISPLAY"):
+        raise SmokeFailure("DISPLAY must be provided by xvfb-run")
+    if args.screenshot.is_symlink() or args.screenshot.exists():
+        raise SmokeFailure("refuse to overwrite screenshot")
+
+    with tempfile.TemporaryDirectory(prefix="gpupanel-gui-test-") as td:
+        root = Path(td)
+        home = root / "fresh-home"
+        home.mkdir(mode=0o700)
+        env = dict(os.environ)
+        env.update({
+            "HOME": str(home),
+            "GDK_BACKEND": "x11",
+            "GSK_RENDERER": "cairo",
+            "WEBKIT_DISABLE_DMABUF_RENDERER": "1",
+            "PYTHONNOUSERSITE": "1",
+        })
+        # GitHub-hosted runners may deny unprivileged user namespaces.
+        # This WebKit debug bypass is strictly scoped to this disposable CI
+        # Xvfb process and MUST NEVER appear in the normal desktop binary.
+        if os.getenv("GPUPANEL_CI_WEBKIT_UNSANDBOXED") == "1":
+            if os.getenv("GITHUB_ACTIONS") != "true":
+                raise SmokeFailure("WebKit sandbox bypass is permitted only in GitHub Actions smoke")
+            env["WEBKIT_DISABLE_SANDBOX_THIS_IS_DANGEROUS"] = "1"
+            print("CI_ONLY_WEBKIT_UNSANDBOXED: native window test, NOT production sandbox acceptance")
+        # Openbox provides window focus semantics; Xvfb itself has no WM.
+        wm = subprocess.Popen(["openbox", "--sm-disable"], env=env,
+                              stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        # WM startup and EWMH advertisement are asynchronous. Avoid racing
+        # the first GTK window against Openbox on an overloaded GitHub runner.
+        time.sleep(1.5)
+        if wm.poll() is not None:
+            raise SmokeFailure(f"Openbox exited before app launch: {wm.returncode}")
+        app_log = args.screenshot.with_suffix(".log")
+        if app_log.is_symlink() or app_log.exists():
+            raise SmokeFailure("refuse to overwrite GUI diagnostics")
+        try:
+            with app_log.open("wb") as output:
+                app = subprocess.Popen([str(binary)], cwd=root, env=env,
+                                       stdout=output, stderr=subprocess.STDOUT,
+                                       start_new_session=True)
+                try:
+                    wid = await_window(app)
+                    title = checked(["xdotool", "getwindowname", wid])
+                    if "GPUPanel" not in title or "Local Workstation" not in title:
+                        raise SmokeFailure(f"unexpected window title: {title!r}")
+                    geometry = checked(["xdotool", "getwindowgeometry", "--shell", wid])
+                    values = dict(line.split("=", 1) for line in geometry.splitlines() if "=" in line)
+                    if int(values.get("WIDTH", "0")) < 800 or int(values.get("HEIGHT", "0")) < 560:
+                        raise SmokeFailure("window rendered at unexpected size")
+                    # The input path is exercised; no privileged or install button is activated.
+                    checked(["xdotool", "windowactivate", "--sync", wid])
+                    checked(["xdotool", "key", "--clearmodifiers", "Tab"])
+                    # The first focusable element is the read-only environment
+                    # check. Dispatch Enter so the screenshot can be reviewed
+                    # for real Wails bridge results, not merely static HTML.
+                    checked(["xdotool", "key", "--clearmodifiers", "Return"])
+                    time.sleep(4)
+                    checked(["scrot", "-z", str(args.screenshot.resolve())])
+                    if args.screenshot.stat().st_size < 1024 or args.screenshot.open("rb").read(8) != b"\x89PNG\r\n\x1a\n":
+                        raise SmokeFailure("missing/invalid GUI screenshot")
+                    if app.poll() is not None:
+                        raise SmokeFailure(f"window process exited: {app.returncode}")
+                    print("GUI_XVFB_WINDOW_PASS: title, geometry, keyboard activation attempted, screenshot for bridge review")
+                    return 0
+                finally:
+                    app.terminate()
+                    try:
+                        app.wait(timeout=5)
+                    except subprocess.TimeoutExpired:
+                        app.kill()
+                        app.wait(timeout=3)
+        except Exception:
+            if app_log.exists():
+                diagnostic = app_log.read_text(errors="replace")
+                print("App diagnostic header:\\n" + diagnostic[:4500])
+                print("App diagnostic tail:\\n" + diagnostic[-4500:])
+            raise
+        finally:
+            wm.terminate()
+            try:
+                wm.wait(timeout=3)
+            except subprocess.TimeoutExpired:
+                wm.kill()
+                wm.wait(timeout=3)
+
+
+if __name__ == "__main__":
+    try:
+        raise SystemExit(main())
+    except (SmokeFailure, OSError, ValueError, subprocess.TimeoutExpired) as err:
+        print(f"GUI_XVFB_WINDOW_FAIL: {err}", flush=True)
+        raise SystemExit(1)

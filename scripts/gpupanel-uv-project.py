@@ -130,10 +130,13 @@ def status(target: Path, home: Path) -> dict:
 
 
 def create(target: Path, home: Path, approved: bool, *, uv_path: str | None = None,
-           runner=subprocess.run) -> dict:
+           approved_digest: str | None = None, runner=subprocess.run) -> dict:
     preview = options(target, home, uv_path=uv_path)
     if preview["status"] != "READY_FOR_APPROVAL":
         return preview
+    if approved_digest is not None and approved_digest != preview["planDigest"]:
+        return {"status": "REFUSED_PLAN_MISMATCH", "executed": False,
+                "target": preview["target"]}
     if not approved:
         return {"status": "APPROVAL_REQUIRED", "target": preview["target"],
                 "planDigest": preview["planDigest"], "executed": False}
@@ -216,12 +219,14 @@ def main(argv: list[str] | None = None) -> int:
         item.add_argument("--json", action="store_true")
         if name == "create":
             item.add_argument("--approve", action="store_true")
+            item.add_argument("--approve-digest", default="")
     args = parser.parse_args(argv)
     try:
         if args.command == "status":
             value = status(args.target, Path.home())
         elif args.command == "create":
-            value = create(args.target, Path.home(), args.approve)
+            value = create(args.target, Path.home(), args.approve,
+                           approved_digest=args.approve_digest or None)
         else:
             value = options(args.target, Path.home())
         return display(value, json_output=getattr(args, "json", False))
