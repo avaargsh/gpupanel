@@ -65,6 +65,16 @@ def prepare():
         "    security_opt: [no-new-privileges:true]\n"
         "    command: [/bin/busybox, sleep, '600']\n"
     )
+    scripts = version / "scripts"
+    scripts.mkdir(mode=0o755)
+    (scripts / "init.sh").write_text(
+        "#!/bin/sh\n"
+        "case \"${PWD##*/}\" in\n"
+        "  *-fault)\n"
+        "    while [ ! -e /run/gpupanel-g5-init-release ]; do sleep 0.1; done\n"
+        "    ;;\n"
+        "esac\n"
+    )
 
 
 def remove():
@@ -73,6 +83,7 @@ def remove():
     known = {
         APP / "data.yml", APP / "logo.png", APP / "README.md",
         APP / VERSION / "data.yml", APP / VERSION / "docker-compose.yml",
+        APP / VERSION / "scripts" / "init.sh",
     }
     if not APP.is_dir() or APP.is_symlink():
         raise RuntimeError("fixture definition not owned")
@@ -81,6 +92,7 @@ def remove():
         raise RuntimeError("unexpected local application files; refuse cleanup")
     for item in known:
         item.unlink()
+    (APP / VERSION / "scripts").rmdir()
     (APP / VERSION).rmdir()
     APP.rmdir()
 

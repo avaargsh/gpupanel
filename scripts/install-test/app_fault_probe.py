@@ -176,21 +176,37 @@ def _resume_docker(guest) -> None:
     guest(["sudo", "systemctl", "kill", "--signal=SIGCONT", "docker"])
 
 
+def _kill_agent(guest_rc) -> None:
+    for args in (
+        ["sudo", "systemctl", "kill", "--kill-whom=main",
+         "--signal=SIGKILL", "gpupanel-agent"],
+        ["sudo", "systemctl", "kill", "--kill-whom=all",
+         "--signal=SIGKILL", "gpupanel-agent"],
+        ["sudo", "systemctl", "stop", "gpupanel-agent"],
+    ):
+        if guest_rc(args) != 0:
+            raise RuntimeError("could not terminate the in-flight Agent task")
+
+
 def inject(*, page, guest, guest_rc, guest_inventory, request, next_id,
            detail_id: int, name: str) -> dict:
     """Admit one install, kill the Agent mid-install, require durable UNKNOWN.
 
-    Docker is stopped before the request, so the new task is admitted and
-    observed Executing while its first Docker call blocks. The Agent and the
-    whole unit cgroup are then SIGKILLed before the daemon resumes, so no
-    further request can be sent. Returns {'installId': int, 'taskId': str}
-    only after the UNKNOWN evidence, the no-retry recheck and the unchanged
-    Docker inventory all held.
+    The fixed fixture init script holds the fault-suffixed app after its
+    AppInstall row and TaskDB receipt exist. The probe observes their exact
+    identity, stops Docker, then SIGKILLs the Agent and unit cgroup before
+    releasing the script. Returns {'installId': int, 'taskId': str} only
+    after UNKNOWN evidence, no-retry recheck and unchanged Docker inventory.
     """
     task_id = next_id()
     docker_before = guest_inventory()
     frozen = False
+    install_started = False
+    agent_killed = False
     try:
+        start_install_without_waiting(page, detail_id, name, task_id)
+        install_started = True
+        install_id = wait_task_executing(request, task_id)
         frozen = guest_rc([
             "sudo", "systemctl", "kill", "--kill-whom=main",
             "--signal=SIGSTOP", "docker"]) == 0
@@ -199,22 +215,17 @@ def inject(*, page, guest, guest_rc, guest_inventory, request, next_id,
                 "--format", "{{.Server.Version}}"]) == 0:
             _token("G5_APP_UNKNOWN_FENCE_CODE", "freeze-unavailable")
             raise RuntimeError("Docker daemon was not stopped and verified")
-        start_install_without_waiting(page, detail_id, name, task_id)
-        install_id = wait_task_executing(request, task_id)
-    except Exception:
-        if frozen:
-            _resume_docker(guest)
-        raise
-    try:
-        # Still frozen: kill the process and the whole unit cgroup; never a
-        # graceful stop that a blocked child could extend.
-        guest(["sudo", "systemctl", "kill", "--kill-whom=main",
-               "--signal=SIGKILL", "gpupanel-agent"])
-        guest(["sudo", "systemctl", "kill", "--kill-whom=all",
-               "--signal=SIGKILL", "gpupanel-agent"])
-        guest(["sudo", "systemctl", "stop", "gpupanel-agent"])
+        _kill_agent(guest_rc)
+        agent_killed = True
     finally:
-        _resume_docker(guest)
+        if install_started and not agent_killed:
+            try:
+                _kill_agent(guest_rc)
+            finally:
+                if frozen:
+                    _resume_docker(guest)
+        elif frozen:
+            _resume_docker(guest)
     time.sleep(3)
     guest(["sudo", "python3", "-c", STALE_SOCKET_CLEANUP])
     if guest_rc(["timeout", "10", "docker", "version", "--format",

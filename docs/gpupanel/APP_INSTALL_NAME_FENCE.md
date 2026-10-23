@@ -112,8 +112,10 @@ Before G5 acceptance, additionally require:
    refused with unchanged TaskDB/AppInstall/Docker inventory), a clean
    Agent `systemctl restart` followed by reopened-DB evidence and the same
    duplicate refusals, and an installation-time Agent/cgroup SIGKILL while
-   Docker is stopped. In the interrupted-install probe the AppInstall and
-   TaskDB receipt stay `Unknown` (never FAILED/Success, never auto-retried),
+   Docker is stopped. A fixed, fault-name-only init barrier holds after the
+   AppInstall row and TaskDB resource identity are durable, before Compose
+   writes begin. In the interrupted-install probe the AppInstall and TaskDB
+   receipt stay `Unknown` (never FAILED/Success, never auto-retried),
    evidence reports `UNKNOWN` with `INSTALL_OUTCOME_NOT_RECONCILED`, Docker
    inventory is unchanged, `operate=sync` is accepted and a forced delete is
    refused. All are exercised by

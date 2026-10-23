@@ -578,17 +578,19 @@ SQLite 重开后仍一致；随后的同 TaskID 重放与同规范化名称新 I
 ## 2026-10-21 — G5 安装中途 SIGKILL 后的 UNKNOWN 围栏（同一 VM）
 
 在真实卸载与资源移除之后、fixture 目录清理之前，同一 guest 再执行一次
-**受控的安装中途崩溃注入**：
+**受控的安装中途崩溃注入**。仅 fault 后缀的本地 fixture 安装会运行固定
+`scripts/init.sh` barrier；它在 AppInstall 行和 `TaskInstall` 回执创建后等待，
+并在 `upApp` 前阻塞，以便探针读取到真实 `resourceID`：
 
-1. 对 `docker.service` 主进程发送 `SIGSTOP`，并用有界
-   `timeout 3 docker version` 确认 daemon 已停止应答；
-2. 通过认证 Core API 提交第二个固定名称的离线 fixture 安装（与已卸载
-   安装不同的 durable 名称，独立 Task UUID）；
-3. 只在有界只读轮询 TaskDB receipt 中等待该任务进入 `Executing`——此时
-   它的第一个 Docker 请求被冻结的 daemon 阻塞，尚未提交任何写操作；
+1. 通过认证 Core API 后台提交第二个固定名称的离线 fixture 安装（与已卸载
+   安装不同的 durable 名称，独立 Task UUID）；API 响应不被等待或重试；
+2. 只读轮询 TaskDB，直到同一 task 为 `Executing` 且携带正整数
+   `resourceID`；barrier 保证对应 AppInstall 行已写入且安装脚本仍在等待；
+3. 对 `docker.service` 主进程发送 `SIGSTOP`，并用有界
+   `timeout 3 docker version` 确认 daemon 已停止应答；fixture 尚未进入
+   `upApp`，因此没有提交容器/网络/卷写操作；
 4. 在 daemon 仍停止时，对 `gpupanel-agent` 主进程及整个 unit cgroup
-   发送 `SIGKILL`（避免优雅 stop 让被阻塞的子进程继续），再 `SIGCONT`
-   daemon；
+   发送 `SIGKILL`（终止等待中的 init 脚本），再 `SIGCONT` daemon；
 5. 产品对异常 socket 的 fail-closed 行为保持不变；fixture 操作员显式
    删除 stale `/etc/gpupanel/agent.sock` 后
    `systemctl start gpupanel-agent`；
@@ -596,7 +598,7 @@ SQLite 重开后仍一致；随后的同 TaskID 重放与同规范化名称新 I
    TaskDB 均为 `Unknown`、classification 为 `UNKNOWN` 且 reasons 含
    `INSTALL_OUTCOME_NOT_RECONCILED`（`verified=false`）；
 7. 再等待 3 秒复核仍未重试/未重同步，并比较注入前后 Docker
-   containers/networks/volumes 完全一致（被阻塞的首个请求是只读调用）；
+   containers/networks/volumes 完全一致（尚未开始任何 Compose 写操作）；
 8. `operate=sync` 只读检查仍被接受；`operate=delete forceDelete=true`
    必须被 reconciliation gate 以业务错误拒绝，且 inventory 不变、
    install 仍为 UNKNOWN。
@@ -613,8 +615,8 @@ SQLite 重开后仍一致；随后的同 TaskID 重放与同规范化名称新 I
 `distinct_operation_task_ids=true`（安装、卸载、被中断安装 3 个不同
 Task UUID），否则 `ci-evidence.py` 仍为 `BLOCKED_OR_FAILED`。
 
-边界：注入点是“首个 Docker 调用被阻塞时崩溃”，**不是** Docker 写请求
-已提交后的崩溃；不证明已提交写操作后的 UNKNOWN 资源重建、丢失 ACK 后
+边界：注入点是“AppInstall 与 TaskDB 已持久化、init barrier 等待时崩溃”，
+**不是** Docker 写请求已提交后的崩溃；不证明已提交写操作后的 UNKNOWN 资源重建、丢失 ACK 后
 的恢复、自动对账/清理、名称释放审批或卸载后重装。UNKNOWN 行按设计保留
 供操作员审查，由随后 sealed post-install checkpoint 的磁盘恢复丢弃。
 `full_app_compose_install_lifecycle`、`upgrade_and_rollback`、

@@ -87,9 +87,17 @@ class InterruptedInstallEvidenceTests(unittest.TestCase):
         probe = (ROOT / "scripts/install-test/app_fault_probe.py").read_text()
         self.assertIn("void fetch('/api/v1/apps/install'", probe)
         self.assertIn("install_id = wait_task_executing(request, task_id)", probe)
+        self.assertLess(probe.index("install_id = wait_task_executing"),
+                        probe.index('"--signal=SIGSTOP", "docker"'))
         self.assertIn('"resourceID"',
                       (ROOT / "scripts/install-test/app_evidence_codes.py").read_text())
         self.assertNotIn('created = request("POST", "/apps/install"', probe)
+
+    def test_fixture_barrier_is_fault_name_scoped_and_cleaned(self):
+        fixture = (ROOT / "scripts/install-test/app-fixture-guest.py").read_text()
+        self.assertIn('*-fault)', fixture)
+        self.assertIn("/run/gpupanel-g5-init-release", fixture)
+        self.assertIn('version / "scripts"', fixture)
 
 
 if __name__ == "__main__":
