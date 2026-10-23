@@ -88,7 +88,7 @@ class InterruptedInstallEvidenceTests(unittest.TestCase):
         self.assertIn("void fetch('/api/v1/apps/install'", probe)
         self.assertIn("install_id = wait_task_executing(request, task_id)", probe)
         self.assertLess(probe.index("install_id = wait_task_executing"),
-                        probe.index('"--signal=SIGSTOP", "docker"'))
+                        probe.index('"stop", "docker.service"'))
         self.assertIn('"resourceID"',
                       (ROOT / "scripts/install-test/app_evidence_codes.py").read_text())
         self.assertNotIn('created = request("POST", "/apps/install"', probe)

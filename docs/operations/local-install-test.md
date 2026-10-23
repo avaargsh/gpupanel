@@ -586,11 +586,11 @@ SQLite 重开后仍一致；随后的同 TaskID 重放与同规范化名称新 I
    安装不同的 durable 名称，独立 Task UUID）；API 响应不被等待或重试；
 2. 只读轮询 TaskDB，直到同一 task 为 `Executing` 且携带正整数
    `resourceID`；barrier 保证对应 AppInstall 行已写入且安装脚本仍在等待；
-3. 对 `docker.service` 主进程发送 `SIGSTOP`，并用有界
+3. 停止 `docker.service` 与 `docker.socket`，并用有界
    `timeout 3 docker version` 确认 daemon 已停止应答；fixture 尚未进入
    `upApp`，因此没有提交容器/网络/卷写操作；
 4. 在 daemon 仍停止时，对 `gpupanel-agent` 主进程及整个 unit cgroup
-   发送 `SIGKILL`（终止等待中的 init 脚本），再 `SIGCONT` daemon；
+   发送 `SIGKILL`（终止等待中的 init 脚本），再显式启动 Docker socket/service；
 5. 产品对异常 socket 的 fail-closed 行为保持不变；fixture 操作员显式
    删除 stale `/etc/gpupanel/agent.sock` 后
    `systemctl start gpupanel-agent`；

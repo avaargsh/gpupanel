@@ -170,10 +170,8 @@ def start_install_without_waiting(page, detail_id: int, name: str,
     }""", {"detailId": detail_id, "name": name, "taskId": task_id})
 
 
-def _resume_docker(guest) -> None:
-    # SIGCONT on a running daemon is a no-op, so a failed injection can never
-    # leave the guest Docker daemon stopped.
-    guest(["sudo", "systemctl", "kill", "--signal=SIGCONT", "docker"])
+def _start_docker(guest) -> None:
+    guest(["sudo", "systemctl", "start", "docker.socket", "docker.service"])
 
 
 def _kill_agent(guest_rc) -> None:
@@ -200,17 +198,17 @@ def inject(*, page, guest, guest_rc, guest_inventory, request, next_id,
     """
     task_id = next_id()
     docker_before = guest_inventory()
-    frozen = False
+    docker_stopped = False
     install_started = False
     agent_killed = False
     try:
         start_install_without_waiting(page, detail_id, name, task_id)
         install_started = True
         install_id = wait_task_executing(request, task_id)
-        frozen = guest_rc([
-            "sudo", "systemctl", "kill", "--kill-whom=main",
-            "--signal=SIGSTOP", "docker"]) == 0
-        if not frozen or guest_rc([
+        docker_stopped = guest_rc([
+            "sudo", "systemctl", "stop", "docker.service",
+            "docker.socket"]) == 0
+        if not docker_stopped or guest_rc([
                 "timeout", "3", "docker", "version",
                 "--format", "{{.Server.Version}}"]) == 0:
             _token("G5_APP_UNKNOWN_FENCE_CODE", "freeze-unavailable")
@@ -222,10 +220,10 @@ def inject(*, page, guest, guest_rc, guest_inventory, request, next_id,
             try:
                 _kill_agent(guest_rc)
             finally:
-                if frozen:
-                    _resume_docker(guest)
-        elif frozen:
-            _resume_docker(guest)
+                if docker_stopped:
+                    _start_docker(guest)
+        elif docker_stopped:
+            _start_docker(guest)
     time.sleep(3)
     guest(["sudo", "python3", "-c", STALE_SOCKET_CLEANUP])
     if guest_rc(["timeout", "10", "docker", "version", "--format",
@@ -236,8 +234,8 @@ def inject(*, page, guest, guest_rc, guest_inventory, request, next_id,
     wait_fault_unknown(page, install_id, task_id)
 
     # No automatic retry and no Docker side effects: after a bounded settle
-    # the receipt must still be UNKNOWN, and the blocked first request (a read
-    # sent to a stopped daemon) must not have changed Docker inventory.
+    # the receipt must still be UNKNOWN; the init barrier prevented Compose
+    # from issuing Docker operations before the daemon stopped.
     time.sleep(3)
     try:
         recheck = raw_evidence(page, f"/apps/installed/evidence/{install_id}")
