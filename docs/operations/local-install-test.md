@@ -605,7 +605,7 @@ SQLite 重开后仍一致；随后的同 TaskID 重放与同规范化名称新 I
 
 失败时只输出固定类别：
 `G5_APP_INFLIGHT_CODE=<absent|terminal|malformed>`、
-`G5_APP_UNKNOWN_FENCE_CODE=<unavailable|malformed|not-unknown|evidence-changed|side-effects|freeze-unavailable>`、
+`G5_APP_UNKNOWN_FENCE_CODE=<unavailable|agent-evidence-unavailable|agent-socket-cleanup-unavailable|agent-start-unavailable|docker-start-unavailable|malformed|not-unknown|evidence-changed|side-effects|freeze-unavailable>`、
 `G5_APP_UNKNOWN_OP_FENCE_CODE=<control-unavailable|delete-accepted|delete-unavailable|delete-malformed|delete-inventory-changed|delete-evidence-changed>`，
 不输出响应体、ID、名称或错误文本。证据步骤增加
 `interrupted_install_marked_unknown_without_retry` 与

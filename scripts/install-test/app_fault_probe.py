@@ -119,7 +119,8 @@ def wait_fault_unknown(page, install_id: int, task_id: str,
             probe, install_id, task_id),
         "unknown", timeout)
     if last != "unknown":
-        _token("G5_APP_UNKNOWN_FENCE_CODE", last)
+        category = "agent-evidence-unavailable" if last == "unavailable" else last
+        _token("G5_APP_UNKNOWN_FENCE_CODE", category)
         raise RuntimeError("interrupted install was not durably marked UNKNOWN")
 
 
@@ -225,12 +226,16 @@ def inject(*, page, guest, guest_rc, guest_inventory, request, next_id,
         elif docker_stopped:
             _start_docker(guest)
     time.sleep(3)
-    guest(["sudo", "python3", "-c", STALE_SOCKET_CLEANUP])
+    if guest_rc(["sudo", "python3", "-c", STALE_SOCKET_CLEANUP]) != 0:
+        _token("G5_APP_UNKNOWN_FENCE_CODE", "agent-socket-cleanup-unavailable")
+        raise RuntimeError("stale Agent socket could not be safely cleared")
     if guest_rc(["timeout", "10", "docker", "version", "--format",
                  "{{.Server.Version}}"]) != 0:
-        _token("G5_APP_UNKNOWN_FENCE_CODE", "unavailable")
+        _token("G5_APP_UNKNOWN_FENCE_CODE", "docker-start-unavailable")
         raise RuntimeError("Docker daemon did not resume after the injection")
-    guest(["sudo", "systemctl", "start", "gpupanel-agent"])
+    if guest_rc(["sudo", "systemctl", "start", "gpupanel-agent"]) != 0:
+        _token("G5_APP_UNKNOWN_FENCE_CODE", "agent-start-unavailable")
+        raise RuntimeError("Agent service did not restart after the injection")
     wait_fault_unknown(page, install_id, task_id)
 
     # No automatic retry and no Docker side effects: after a bounded settle

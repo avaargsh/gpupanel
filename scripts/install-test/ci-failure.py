@@ -135,7 +135,9 @@ def app_inflight_code(raw: str) -> str:
 # Success/Failed, never auto-retried, no Docker side effects, and mutations
 # refused. Only fixed categories may leave the private guest log.
 G5_APP_UNKNOWN_FENCE = re.compile(
-    r"(?m)^G5_APP_UNKNOWN_FENCE_CODE=(unavailable|malformed|not-unknown|"
+    r"(?m)^G5_APP_UNKNOWN_FENCE_CODE=(unavailable|"
+    r"agent-(?:evidence|socket-cleanup|start)-unavailable|"
+    r"docker-start-unavailable|malformed|not-unknown|"
     r"evidence-changed|side-effects|freeze-unavailable) release=NO_GO$"
 )
 
