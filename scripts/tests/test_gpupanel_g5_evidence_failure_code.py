@@ -105,6 +105,73 @@ class G5EvidenceFailureCodeTests(unittest.TestCase):
         self.assertIn('raise RuntimeError("task outcome ambiguous; do NOT retry")', script)
         self.assertIn('evidence_code != "ok"', script)
 
+    def test_interrupted_install_requires_exact_unknown_receipt(self):
+        payload = {
+            "http": 200, "code": 200,
+            "data": {
+                "installId": INSTALL_ID, "taskId": TASK_ID,
+                "taskStatus": "Unknown", "appStatus": "Unknown",
+                "classification": "UNKNOWN",
+                "reasons": ["INSTALL_OUTCOME_NOT_RECONCILED"],
+                "verified": False,
+            },
+        }
+        self.assertEqual(
+            evidence.classify_unknown_fence(payload, INSTALL_ID, TASK_ID),
+            "unknown")
+        cases = (
+            (None, "malformed"),
+            ({"http": 503, "code": None}, "unavailable"),
+            ({**payload, "http": 404}, "unavailable"),
+            ({"http": 200, "code": 200, "data": {
+                **payload["data"], "taskStatus": "Executing"}}, "not-unknown"),
+            ({"http": 200, "code": 200, "data": {
+                **payload["data"], "verified": True}}, "evidence-changed"),
+            ({"http": 200, "code": 200, "data": {
+                **payload["data"], "taskId": "PRIVATE_TASK"}}, "evidence-changed"),
+        )
+        for response, expected in cases:
+            with self.subTest(expected=expected):
+                result = evidence.classify_unknown_fence(
+                    response, INSTALL_ID, TASK_ID)
+                self.assertEqual(result, expected)
+                self.assertNotIn("PRIVATE", result)
+
+    def test_interrupted_install_requires_matching_inflight_task(self):
+        receipt = {"items": [{
+            "id": TASK_ID, "type": "App", "operate": "TaskInstall",
+            "status": "Executing",
+        }]}
+        self.assertEqual(
+            evidence.classify_inflight_receipt(receipt, TASK_ID), "executing")
+        self.assertEqual(
+            evidence.classify_inflight_receipt({"items": []}, TASK_ID),
+            "absent")
+        terminal = {"items": [{**receipt["items"][0], "status": "Success"}]}
+        self.assertEqual(
+            evidence.classify_inflight_receipt(terminal, TASK_ID), "terminal")
+        wrong_type = {"items": [{**receipt["items"][0], "type": "PRIVATE"}]}
+        self.assertEqual(
+            evidence.classify_inflight_receipt(wrong_type, TASK_ID),
+            "malformed")
+
+    def test_unknown_mutation_refusal_requires_unchanged_state(self):
+        denied = {"http": 200, "code": 409}
+        inventory = {"containers": [], "networks": [], "volumes": []}
+        self.assertEqual(evidence.classify_gate_refusal(
+            denied, inventory, inventory, True), "refused")
+        self.assertEqual(evidence.classify_gate_refusal(
+            {"http": 200, "code": 200}, inventory, inventory, True),
+            "accepted")
+        self.assertEqual(evidence.classify_gate_refusal(
+            {"http": 503, "code": 0}, inventory, inventory, True),
+            "unavailable")
+        changed = {**inventory, "containers": ["changed"]}
+        self.assertEqual(evidence.classify_gate_refusal(
+            denied, inventory, changed, True), "inventory-changed")
+        self.assertEqual(evidence.classify_gate_refusal(
+            denied, inventory, inventory, False), "evidence-changed")
+
 
 class G5AppInstallRemovalObservationTests(unittest.TestCase):
     """The uninstalled AppInstall must be observed gone by payload contract.
@@ -416,13 +483,26 @@ class G5AppInstallRemovalObservationTests(unittest.TestCase):
     def test_live_script_restarts_agent_before_duplicate_admission(self):
         script = (ROOT / "scripts/install-test/app-install-live.py").read_text()
         self.assertIn('"systemctl", "restart", "gpupanel-agent"', script)
-        self.assertIn("wait_agent_raw_ready(install_id, install_task)", script)
+        self.assertIn("app_fault_probe.wait_restart_ready(page, install_id, install_task)", script)
         self.assertIn('"durable_admission_survives_agent_restart"', script)
         self.assertIn('"durable_admission_survived_agent_restart": True',
                       script)
+        probe = (ROOT / "scripts/install-test/app_fault_probe.py").read_text()
         self.assertIn(
-            'print("G5_APP_RESTART_FENCE_CODE=" + last + " release=NO_GO"',
-            script)
+            '_token("G5_APP_RESTART_FENCE_CODE", last)', probe)
+
+    def test_live_script_marks_interrupted_install_unknown_before_cleanup(self):
+        script = (ROOT / "scripts/install-test/app-install-live.py").read_text()
+        inject = script.index("fault = app_fault_probe.inject(")
+        unknown_step = script.index(
+            'steps.append("interrupted_install_marked_unknown_without_retry")')
+        cleanup = script.index('fixture("remove")', unknown_step)
+        self.assertLess(inject, unknown_step)
+        self.assertLess(unknown_step, cleanup)
+        self.assertIn('"interrupted_install_unknown_fences_observed": True',
+                      script)
+        self.assertIn('"distinct_operation_task_ids": len(observed_ids) == 3',
+                      script)
 
     def test_live_script_observes_removal_by_payload_not_http_refusal(self):
         script = (ROOT / "scripts/install-test/app-install-live.py").read_text()
@@ -467,6 +547,8 @@ class G5AppInstallRemovalObservationTests(unittest.TestCase):
              "replay_install_taskid_denied_without_side_effects",
              "same_name_install_denied_without_side_effects",
              "real_app_uninstall_and_resource_removal",
+             "interrupted_install_marked_unknown_without_retry",
+             "unknown_install_operations_blocked_without_side_effects",
              "fixture_catalog_cleanup"])
 
 

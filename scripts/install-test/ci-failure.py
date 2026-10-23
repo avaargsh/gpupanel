@@ -119,6 +119,46 @@ def app_restart_fence_code(raw: str) -> str:
     return hits[-1] if hits else "unknown"
 
 
+# The injected install must be observed Executing before the deliberate crash.
+# Only fixed categories may leave the private guest log.
+G5_APP_INFLIGHT = re.compile(
+    r"(?m)^G5_APP_INFLIGHT_CODE=(absent|terminal|malformed) release=NO_GO$"
+)
+
+
+def app_inflight_code(raw: str) -> str:
+    hits = G5_APP_INFLIGHT.findall(raw)
+    return hits[-1] if hits else "unknown"
+
+
+# An installation-time crash must leave a durable UNKNOWN outcome: never
+# Success/Failed, never auto-retried, no Docker side effects, and mutations
+# refused. Only fixed categories may leave the private guest log.
+G5_APP_UNKNOWN_FENCE = re.compile(
+    r"(?m)^G5_APP_UNKNOWN_FENCE_CODE=(unavailable|malformed|not-unknown|"
+    r"evidence-changed|side-effects|freeze-unavailable) release=NO_GO$"
+)
+
+
+def app_unknown_fence_code(raw: str) -> str:
+    hits = G5_APP_UNKNOWN_FENCE.findall(raw)
+    return hits[-1] if hits else "unknown"
+
+
+# The UNKNOWN mutation fence: the read-only sync control must stay available
+# while a forced delete is refused with unchanged inventory.
+G5_APP_UNKNOWN_OP_FENCE = re.compile(
+    r"(?m)^G5_APP_UNKNOWN_OP_FENCE_CODE=(control-unavailable|"
+    r"delete-(?:accepted|unavailable|malformed|inventory-changed|"
+    r"evidence-changed)) release=NO_GO$"
+)
+
+
+def app_unknown_op_fence_code(raw: str) -> str:
+    hits = G5_APP_UNKNOWN_OP_FENCE.findall(raw)
+    return hits[-1] if hits else "unknown"
+
+
 def app_fixture_count(raw: str) -> str:
     hits = G5_APP_FIXTURE_COUNT.findall(raw)
     return hits[-1] if hits else "unknown"
@@ -176,6 +216,9 @@ def main() -> int:
         print("G5_APP_UNINSTALL_REMOVAL_CODE=" + app_uninstall_removal_code(raw) + " release=NO_GO")
         print("G5_APP_DUPLICATE_FENCE_CODE=" + app_duplicate_fence_code(raw) + " release=NO_GO")
         print("G5_APP_RESTART_FENCE_CODE=" + app_restart_fence_code(raw) + " release=NO_GO")
+        print("G5_APP_INFLIGHT_CODE=" + app_inflight_code(raw) + " release=NO_GO")
+        print("G5_APP_UNKNOWN_FENCE_CODE=" + app_unknown_fence_code(raw) + " release=NO_GO")
+        print("G5_APP_UNKNOWN_OP_FENCE_CODE=" + app_unknown_op_fence_code(raw) + " release=NO_GO")
     print(diagnostic(raw, basename))
     return 0
 

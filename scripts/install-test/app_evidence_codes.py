@@ -166,3 +166,130 @@ def classify_restart_fence(response: object, install_id: int, task_id: str) -> s
     if result == "malformed":
         return "malformed"
     return "evidence-changed"
+
+
+# Pending AppInstall states that mean reconciliation has not happened yet
+# (agent/app/service/app_operation_status.go).
+APP_INSTALL_PENDING_STATUSES = (
+    "Installing", "Rebuilding", "Upgrading", "Uninstalling", "Starting",
+    "Restarting", "Waiting",
+)
+
+
+def classify_unknown_fence(
+    response: object, install_id: int, task_id: str
+) -> str:
+    """Return 'unknown' only for a durable UNKNOWN interrupted-install record.
+
+    The caller observed the same install Executing before the injection, so
+    'unknown' requires the restarted Agent to keep the same AppInstall and
+    TaskDB identity while both records are Unknown, the evidence
+    classification is UNKNOWN with INSTALL_OUTCOME_NOT_RECONCILED and the
+    snapshot is not verified. A still-pending record is 'not-unknown'; any
+    other accepted mismatch (including a Success/Failed task) is
+    'evidence-changed'. A 5xx, non-200 or business-error answer is
+    'unavailable' because the Agent may still be starting; wrongly typed
+    answers are 'malformed'. Never formats payload values.
+    """
+    if not isinstance(response, dict):
+        return "malformed"
+    http = response.get("http")
+    if type(http) is not int:
+        return "malformed"
+    code = response.get("code")
+    if type(code) is not int:
+        # A gateway/startup error page carries no business code; it is a
+        # transient unavailability, not malformed app evidence.
+        return "unavailable" if http >= 500 else "malformed"
+    if http >= 500 or code >= 500:
+        return "unavailable"
+    if http != 200 or code != 200:
+        return "unavailable"
+    data = response.get("data")
+    if not isinstance(data, dict):
+        return "malformed"
+    if type(data.get("installId")) is not int:
+        return "evidence-changed"
+    if data["installId"] != install_id:
+        return "evidence-changed"
+    if data.get("taskId") != task_id:
+        return "evidence-changed"
+    task_status = data.get("taskStatus")
+    app_status = data.get("appStatus")
+    if task_status != "Unknown" or app_status != "Unknown":
+        if task_status == "Executing" or app_status in APP_INSTALL_PENDING_STATUSES:
+            return "not-unknown"
+        return "evidence-changed"
+    if data.get("classification") != "UNKNOWN":
+        return "evidence-changed"
+    reasons = data.get("reasons")
+    if (not isinstance(reasons, list)
+            or "INSTALL_OUTCOME_NOT_RECONCILED" not in reasons):
+        return "evidence-changed"
+    if data.get("verified") is not False:
+        return "evidence-changed"
+    return "unknown"
+
+
+def classify_inflight_receipt(value: object, task_id: str) -> str:
+    """Return 'executing' only for one exactly matching running install task.
+
+    'value' is the TaskDB search payload. A missing receipt is 'absent'; a
+    receipt with another operation or empty status is 'malformed'; any
+    terminal status is 'terminal'. This only observes a supposedly running
+    task before a deliberate crash; it never authorizes a retry.
+    """
+    if not isinstance(value, dict):
+        return "malformed"
+    items = value.get("items")
+    if not isinstance(items, list):
+        return "malformed"
+    matches = [
+        item for item in items
+        if isinstance(item, dict) and item.get("id") == task_id
+    ]
+    if len(matches) > 1:
+        return "malformed"
+    if not matches:
+        return "absent"
+    item = matches[0]
+    if item.get("type") != "App" or item.get("operate") != "TaskInstall":
+        return "malformed"
+    status = item.get("status")
+    if status == "Executing":
+        return "executing"
+    if isinstance(status, str) and status:
+        return "terminal"
+    return "malformed"
+
+
+def classify_gate_refusal(
+    response: object,
+    inventory_before: object,
+    inventory_after: object,
+    still_unknown: object,
+) -> str:
+    """Return 'refused' only for a business refusal with unchanged state.
+
+    Agent answers are always HTTP 200 with the business code in the body, so
+    an UNKNOWN reconciliation refusal is a non-200 code on an HTTP 200 answer.
+    A 5xx HTTP gateway answer is 'unavailable', never proof of refusal; an
+    accepted answer is 'accepted'; changed Docker/TaskDB/AppInstall inventory
+    is 'inventory-changed'; an install that no longer classifies as UNKNOWN is
+    'evidence-changed'. Never formats response values or identities.
+    """
+    if not isinstance(response, dict):
+        return "malformed"
+    http = response.get("http")
+    code = response.get("code")
+    if type(http) is not int or type(code) is not int:
+        return "malformed"
+    if http >= 500:
+        return "unavailable"
+    if http == 200 and code == 200:
+        return "accepted"
+    if inventory_before != inventory_after:
+        return "inventory-changed"
+    if still_unknown is not True:
+        return "evidence-changed"
+    return "refused"

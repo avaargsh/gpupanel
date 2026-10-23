@@ -164,6 +164,8 @@ def summarize(state: Path, *, run_completed: bool, source_sha: str) -> dict:
         "replay_install_taskid_denied_without_side_effects",
         "same_name_install_denied_without_side_effects",
         "real_app_uninstall_and_resource_removal",
+        "interrupted_install_marked_unknown_without_retry",
+        "unknown_install_operations_blocked_without_side_effects",
         "fixture_catalog_cleanup",
     ]
     app_install_ok = (
@@ -172,7 +174,8 @@ def summarize(state: Path, *, run_completed: bool, source_sha: str) -> dict:
             "kind", "candidate", "guest_machine_id_sha256",
             "steps", "durable_admission_survived_agent_restart",
             "duplicate_fences_observed",
-            "distinct_install_uninstall_task_ids",
+            "interrupted_install_unknown_fences_observed",
+            "distinct_operation_task_ids",
             "app_evidence_observational_only", "no_public_image_pull",
             "docker_no_network_or_host_ports", "fixture_source_cleaned",
             "g5_full_appstore_business_acceptance", "m0_release_decision",
@@ -185,7 +188,8 @@ def summarize(state: Path, *, run_completed: bool, source_sha: str) -> dict:
         and app_install.get("steps") == expected_app_steps
         and app_install.get("durable_admission_survived_agent_restart") is True
         and app_install.get("duplicate_fences_observed") is True
-        and app_install.get("distinct_install_uninstall_task_ids") is True
+        and app_install.get("interrupted_install_unknown_fences_observed") is True
+        and app_install.get("distinct_operation_task_ids") is True
         and app_install.get("app_evidence_observational_only") is True
         and app_install.get("no_public_image_pull") is True
         and app_install.get("docker_no_network_or_host_ports") is True

@@ -570,7 +570,52 @@ SQLite 重开后仍一致；随后的同 TaskID 重放与同规范化名称新 I
 `ci-evidence.py` 仍为 `BLOCKED_OR_FAILED`。
 
 边界：这是**干净重启**（`systemctl restart`），不是安装中途 SIGKILL；
-也不覆盖 UNKNOWN 证据审查、丢失 ACK 恢复、安装中 Docker 停摆、名称释放
-审批或卸载后重装。`full_app_compose_install_lifecycle`、
-`upgrade_and_rollback`、`full_data_restore` 继续为 `NOT_RUN`，
-`m0_release_decision=NO_GO`。
+安装中途崩溃由下一节的独立注入覆盖。本节不覆盖丢失 ACK 恢复、名称释放
+审批、已提交 Docker 写操作后的 UNKNOWN 对账/清理或卸载后重装。
+`full_app_compose_install_lifecycle`、`upgrade_and_rollback`、
+`full_data_restore` 继续为 `NOT_RUN`，`m0_release_decision=NO_GO`。
+
+## 2026-10-21 — G5 安装中途 SIGKILL 后的 UNKNOWN 围栏（同一 VM）
+
+在真实卸载与资源移除之后、fixture 目录清理之前，同一 guest 再执行一次
+**受控的安装中途崩溃注入**：
+
+1. 对 `docker.service` 主进程发送 `SIGSTOP`，并用有界
+   `timeout 3 docker version` 确认 daemon 已停止应答；
+2. 通过认证 Core API 提交第二个固定名称的离线 fixture 安装（与已卸载
+   安装不同的 durable 名称，独立 Task UUID）；
+3. 只在有界只读轮询 TaskDB receipt 中等待该任务进入 `Executing`——此时
+   它的第一个 Docker 请求被冻结的 daemon 阻塞，尚未提交任何写操作；
+4. 在 daemon 仍停止时，对 `gpupanel-agent` 主进程及整个 unit cgroup
+   发送 `SIGKILL`（避免优雅 stop 让被阻塞的子进程继续），再 `SIGCONT`
+   daemon；
+5. 产品对异常 socket 的 fail-closed 行为保持不变；fixture 操作员显式
+   删除 stale `/etc/gpupanel/agent.sock` 后
+   `systemctl start gpupanel-agent`；
+6. 有界只读轮询 `GET /apps/installed/evidence/{id}`，直到 AppInstall 与
+   TaskDB 均为 `Unknown`、classification 为 `UNKNOWN` 且 reasons 含
+   `INSTALL_OUTCOME_NOT_RECONCILED`（`verified=false`）；
+7. 再等待 3 秒复核仍未重试/未重同步，并比较注入前后 Docker
+   containers/networks/volumes 完全一致（被阻塞的首个请求是只读调用）；
+8. `operate=sync` 只读检查仍被接受；`operate=delete forceDelete=true`
+   必须被 reconciliation gate 以业务错误拒绝，且 inventory 不变、
+   install 仍为 UNKNOWN。
+
+失败时只输出固定类别：
+`G5_APP_INFLIGHT_CODE=<absent|terminal|malformed>`、
+`G5_APP_UNKNOWN_FENCE_CODE=<unavailable|malformed|not-unknown|evidence-changed|side-effects|freeze-unavailable>`、
+`G5_APP_UNKNOWN_OP_FENCE_CODE=<control-unavailable|delete-accepted|delete-unavailable|delete-malformed|delete-inventory-changed|delete-evidence-changed>`，
+不输出响应体、ID、名称或错误文本。证据步骤增加
+`interrupted_install_marked_unknown_without_retry` 与
+`unknown_install_operations_blocked_without_side_effects`；
+`app-install-live.json` 必须携带
+`interrupted_install_unknown_fences_observed=true`、
+`distinct_operation_task_ids=true`（安装、卸载、被中断安装 3 个不同
+Task UUID），否则 `ci-evidence.py` 仍为 `BLOCKED_OR_FAILED`。
+
+边界：注入点是“首个 Docker 调用被阻塞时崩溃”，**不是** Docker 写请求
+已提交后的崩溃；不证明已提交写操作后的 UNKNOWN 资源重建、丢失 ACK 后
+的恢复、自动对账/清理、名称释放审批或卸载后重装。UNKNOWN 行按设计保留
+供操作员审查，由随后 sealed post-install checkpoint 的磁盘恢复丢弃。
+`full_app_compose_install_lifecycle`、`upgrade_and_rollback`、
+`full_data_restore` 继续为 `NOT_RUN`，`m0_release_decision=NO_GO`。

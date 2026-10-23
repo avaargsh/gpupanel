@@ -18,6 +18,7 @@ from uuid import uuid4
 from playwright.sync_api import expect, sync_playwright
 import candidate
 import app_evidence_codes
+import app_fault_probe
 import vm
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -49,6 +50,9 @@ if credentials.get("url") != f"http://127.0.0.1:{vm.PANEL_PORT}":
 
 APP_KEY = "localm0ciapp"
 APP_NAME = "m0ciapp" + local["source_sha"][:10]
+# Distinct durable name: the uninstalled fixture AppInstall keeps its TaskDB
+# name claim, so the interrupted install must be a second, real admission.
+FAULT_NAME = APP_NAME + "-fault"
 FIXTURE_IMAGE = "gpupanel-m0-fixture:local"
 
 
@@ -60,6 +64,14 @@ def guest(args: list[str], *, check=True) -> str:
     if result.returncode and check:
         raise RuntimeError("guest fixture operation/observation failed")
     return result.stdout.strip() if result.returncode == 0 else ""
+
+
+def guest_rc(args: list[str]) -> int:
+    """Guest command return code for deliberate timeout/signal checks."""
+    return subprocess.run(
+        vm.ssh_args() + [shlex.join(args)], capture_output=True,
+        text=True, timeout=35,
+    ).returncode
 
 
 def fixture(action: str):
@@ -232,63 +244,6 @@ with sync_playwright() as play:
             time.sleep(.7)
         raise RuntimeError("task outcome ambiguous; do NOT retry")
 
-    def wait_agent_raw_ready(install_id: int, task_id: str, timeout=75) -> None:
-        """Bounded read-only wait after an Agent restart, then require evidence.
-
-        While the Agent is down the Core proxy can answer with a non-JSON or
-        error page; that is a transient readiness state, not permission to
-        retry a mutation. Only this bounded wait tolerates such answers. On
-        timeout the last fixed classification is emitted instead of a raw
-        response, identity or error body.
-        """
-        deadline = time.monotonic() + timeout
-        last = "unavailable"
-        while time.monotonic() < deadline:
-            try:
-                probe = page.evaluate("""async ({endpoint}) => {
-                    const item = document.cookie.split('; ').find(
-                        v => v.startsWith('pcsrftoken=')
-                    );
-                    const csrf = item ? decodeURIComponent(
-                        item.slice('pcsrftoken='.length)) : '';
-                    let r;
-                    try {
-                        r = await fetch('/api/v1' + endpoint, {
-                            method: 'GET', credentials: 'include',
-                            headers: {'Content-Type': 'application/json',
-                                      'CurrentNode': 'local',
-                                      'X-CSRF-Token': csrf}
-                        });
-                    } catch (e) {
-                        return {http: 0, json: false, code: null, data: null};
-                    }
-                    const text = await r.text();
-                    let parsed = null;
-                    try { parsed = JSON.parse(text); } catch (e) { parsed = null; }
-                    return {
-                        http: r.status,
-                        json: parsed !== null,
-                        code: parsed ? parsed.code : null,
-                        data: parsed ? parsed.data : null
-                    };
-                }""", {"endpoint":
-                       f"/apps/installed/evidence/{install_id}"})
-            except Exception:
-                # A closed page or interrupted navigation is still just a
-                # readiness failure inside this bounded loop; keep the last
-                # real classification instead of inventing "malformed".
-                probe = None
-            if isinstance(probe, dict):
-                last = app_evidence_codes.classify_restart_fence(
-                    probe, install_id, task_id
-                )
-                if last == "ok":
-                    return
-            time.sleep(1)
-        print("G5_APP_RESTART_FENCE_CODE=" + last + " release=NO_GO",
-              flush=True)
-        raise RuntimeError("Agent restart lost AppInstall admission evidence")
-
     def expect_duplicate_denied(label: str, body: dict) -> None:
         """Probe a duplicate admission deliberately; never retry the accepted install."""
         if label not in ("replay", "same-name"):
@@ -407,7 +362,7 @@ with sync_playwright() as play:
     # the durable name claim or the read-only app evidence. The duplicate
     # probes below then run against the restarted process on reopened DBs.
     guest(["sudo", "systemctl", "restart", "gpupanel-agent"])
-    wait_agent_raw_ready(install_id, install_task)
+    app_fault_probe.wait_restart_ready(page, install_id, install_task)
     steps.append("durable_admission_survives_agent_restart")
 
     # Two deliberate duplicate probes, not retries of the accepted install.
@@ -451,6 +406,29 @@ with sync_playwright() as play:
         raise RuntimeError("AppInstall resource still observable after uninstall")
     steps.append("real_app_uninstall_and_resource_removal")
 
+    # Installation-time crash: freeze only the Docker daemon, admit a second
+    # fixture install, require its receipt Executing, then SIGKILL the Agent
+    # and its whole task cgroup while the daemon is still stopped. The
+    # product must keep a durable UNKNOWN outcome (never FAILED/Success,
+    # never auto-retried) with unchanged Docker inventory, and must refuse a
+    # forced delete while still accepting a read-only sync. The UNKNOWN row
+    # is left for explicit operator review; the sealed post-install
+    # checkpoint restore that follows this stage discards it.
+    fault = app_fault_probe.inject(
+        page=page, guest=guest, guest_rc=guest_rc,
+        guest_inventory=guest_inventory, request=request,
+        next_id=lambda: str(uuid4()),
+        detail_id=detail_id, name=FAULT_NAME,
+    )
+    observed_ids.append(fault["taskId"])
+    steps.append("interrupted_install_marked_unknown_without_retry")
+    app_fault_probe.verify_mutation_gate(
+        page=page, guest_inventory=guest_inventory, request=request,
+        next_id=lambda: str(uuid4()),
+        install_id=fault["installId"], task_id=fault["taskId"],
+    )
+    steps.append("unknown_install_operations_blocked_without_side_effects")
+
     fixture("remove")
     cleanup_task = str(uuid4())
     request("POST", "/apps/sync/local", {"taskID": cleanup_task},
@@ -466,8 +444,9 @@ result = {
     "steps": steps,
     "durable_admission_survived_agent_restart": True,
     "duplicate_fences_observed": True,
-    "distinct_install_uninstall_task_ids": len(observed_ids) == 2
-        and len(set(observed_ids)) == 2,
+    "interrupted_install_unknown_fences_observed": True,
+    "distinct_operation_task_ids": len(observed_ids) == 3
+        and len(set(observed_ids)) == 3,
     "app_evidence_observational_only": True,
     "no_public_image_pull": True,
     "docker_no_network_or_host_ports": True,
