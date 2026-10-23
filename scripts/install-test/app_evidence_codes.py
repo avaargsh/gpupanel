@@ -257,6 +257,8 @@ def classify_inflight_receipt(value: object, task_id: str) -> str:
         return "malformed"
     status = item.get("status")
     if status == "Executing":
+        if type(item.get("resourceID")) is not int or item["resourceID"] <= 0:
+            return "malformed"
         return "executing"
     if isinstance(status, str) and status:
         return "terminal"

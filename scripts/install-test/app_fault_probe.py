@@ -123,7 +123,7 @@ def wait_fault_unknown(page, install_id: int, task_id: str,
         raise RuntimeError("interrupted install was not durably marked UNKNOWN")
 
 
-def wait_task_executing(request, task_id: str, timeout: int = 30) -> None:
+def wait_task_executing(request, task_id: str, timeout: int = 30) -> int:
     """The injected install must be observed Executing before the crash."""
     deadline = time.monotonic() + timeout
     last = "absent"
@@ -134,10 +134,40 @@ def wait_task_executing(request, task_id: str, timeout: int = 30) -> None:
         }, stage_hint="task-receipt")
         last = app_evidence_codes.classify_inflight_receipt(data, task_id)
         if last == "executing":
-            return
+            for item in data["items"]:
+                if isinstance(item, dict) and item.get("id") == task_id:
+                    return item["resourceID"]
         time.sleep(.7)
     _token("G5_APP_INFLIGHT_CODE", last)
     raise RuntimeError("injected install was never observed in flight")
+
+
+def start_install_without_waiting(page, detail_id: int, name: str,
+                                 task_id: str) -> None:
+    """Start the synchronous admission request while Docker is frozen.
+
+    AppInstall calls Docker before returning its HTTP response. Keep that
+    request in the browser event loop while the caller observes TaskDB via a
+    separate read-only request, then kill the Agent before resuming Docker.
+    The response is deliberately ignored and the mutation is never retried.
+    """
+    page.evaluate("""({detailId, name, taskId}) => {
+        const item = document.cookie.split('; ').find(
+            value => value.startsWith('pcsrftoken=')
+        );
+        const csrf = item ? decodeURIComponent(
+            item.slice('pcsrftoken='.length)) : '';
+        void fetch('/api/v1/apps/install', {
+            method: 'POST', credentials: 'include',
+            headers: {'Content-Type': 'application/json',
+                      'CurrentNode': 'local', 'X-CSRF-Token': csrf},
+            body: JSON.stringify({
+                appDetailId: detailId, name, params: {}, taskID: taskId,
+                pullImage: false
+            })
+        }).catch(() => {});
+        return true;
+    }""", {"detailId": detail_id, "name": name, "taskId": task_id})
 
 
 def _resume_docker(guest) -> None:
@@ -169,15 +199,8 @@ def inject(*, page, guest, guest_rc, guest_inventory, request, next_id,
                 "--format", "{{.Server.Version}}"]) == 0:
             _token("G5_APP_UNKNOWN_FENCE_CODE", "freeze-unavailable")
             raise RuntimeError("Docker daemon was not stopped and verified")
-        created = request("POST", "/apps/install", {
-            "appDetailId": detail_id, "name": name, "params": {},
-            "taskID": task_id, "pullImage": False,
-        }, stage_hint="install-admission")
-        install_id = created.get("id") if isinstance(created, dict) else None
-        if type(install_id) is not int or install_id <= 0:
-            _token("G5_APP_UNKNOWN_FENCE_CODE", "malformed")
-            raise RuntimeError("interrupted AppInstall row was not returned")
-        wait_task_executing(request, task_id)
+        start_install_without_waiting(page, detail_id, name, task_id)
+        install_id = wait_task_executing(request, task_id)
     except Exception:
         if frozen:
             _resume_docker(guest)
