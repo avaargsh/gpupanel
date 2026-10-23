@@ -175,6 +175,15 @@ def _start_docker(guest) -> None:
     guest(["sudo", "systemctl", "start", "docker.socket", "docker.service"])
 
 
+def _wait_docker_ready(guest_rc, attempts: int = 20) -> bool:
+    for _ in range(attempts):
+        if guest_rc(["timeout", "3", "docker", "version", "--format",
+                     "{{.Server.Version}}"]) == 0:
+            return True
+        time.sleep(1)
+    return False
+
+
 def _kill_agent(guest_rc) -> None:
     for args in (
         ["sudo", "systemctl", "kill", "--kill-whom=main",
@@ -229,10 +238,13 @@ def inject(*, page, guest, guest_rc, guest_inventory, request, next_id,
     if guest_rc(["sudo", "python3", "-c", STALE_SOCKET_CLEANUP]) != 0:
         _token("G5_APP_UNKNOWN_FENCE_CODE", "agent-socket-cleanup-unavailable")
         raise RuntimeError("stale Agent socket could not be safely cleared")
-    if guest_rc(["timeout", "10", "docker", "version", "--format",
-                 "{{.Server.Version}}"]) != 0:
-        _token("G5_APP_UNKNOWN_FENCE_CODE", "docker-start-unavailable")
-        raise RuntimeError("Docker daemon did not resume after the injection")
+    if guest_rc(["sudo", "systemctl", "start", "docker.socket",
+                 "docker.service"]) != 0:
+        _token("G5_APP_UNKNOWN_FENCE_CODE", "docker-unit-start-unavailable")
+        raise RuntimeError("Docker units did not start after the injection")
+    if not _wait_docker_ready(guest_rc):
+        _token("G5_APP_UNKNOWN_FENCE_CODE", "docker-api-unavailable")
+        raise RuntimeError("Docker API did not become ready after the injection")
     if guest_rc(["sudo", "systemctl", "start", "gpupanel-agent"]) != 0:
         _token("G5_APP_UNKNOWN_FENCE_CODE", "agent-start-unavailable")
         raise RuntimeError("Agent service did not restart after the injection")

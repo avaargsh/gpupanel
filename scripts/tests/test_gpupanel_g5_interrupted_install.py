@@ -1,5 +1,6 @@
 import importlib.util
 from pathlib import Path
+import sys
 import unittest
 
 
@@ -15,7 +16,9 @@ def load_module(name, filename):
 
 
 evidence = load_module("g5_interrupted_evidence", "app_evidence_codes.py")
+sys.modules["app_evidence_codes"] = evidence
 failure = load_module("g5_interrupted_failure", "ci-failure.py")
+probe = load_module("g5_fault_probe", "app_fault_probe.py")
 INSTALL_ID = 42
 TASK_ID = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"
 
@@ -103,7 +106,8 @@ class InterruptedInstallEvidenceTests(unittest.TestCase):
     def test_failure_output_uses_only_fixed_recovery_categories(self):
         categories = (
             "agent-evidence-unavailable", "agent-socket-cleanup-unavailable",
-            "agent-start-unavailable", "docker-start-unavailable",
+            "agent-start-unavailable", "docker-unit-start-unavailable",
+            "docker-api-unavailable",
         )
         for category in categories:
             with self.subTest(category=category):
@@ -112,6 +116,14 @@ class InterruptedInstallEvidenceTests(unittest.TestCase):
                     " release=NO_GO\n"), category)
         self.assertEqual(failure.app_unknown_fence_code(
             "G5_APP_UNKNOWN_FENCE_CODE=secret release=NO_GO\n"), "unknown")
+
+    def test_docker_readiness_probe_is_bounded(self):
+        calls = []
+        self.assertTrue(probe._wait_docker_ready(
+            lambda args: calls.append(args) or 0))
+        self.assertEqual(len(calls), 1)
+        self.assertFalse(probe._wait_docker_ready(
+            lambda command: 1, attempts=0))
 
 
 if __name__ == "__main__":
