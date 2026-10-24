@@ -207,7 +207,7 @@ if ! python3 scripts/install-test/app-install-live.py > "$STATE/app-install.raw.
 fi
 stage 'real_offline_appinstall_core_taskdb_docker'
 
-# Only the disposable guest disk is fault-injected and cold-restored.
+# Only the disposable guest disk is restored after synthetic debris is injected.
 # A sealed post-install checkpoint is independently validated before
 # replacing the task-owned disk; the prior disk is retained for review.
 if ! python3 scripts/install-test/restore-live.py > "$STATE/restore.raw.log" 2>&1; then
@@ -216,7 +216,7 @@ if ! python3 scripts/install-test/restore-live.py > "$STATE/restore.raw.log" 2>&
 fi
 stage 'guest_post_install_offline_restore'
 
-# Restore the pre-install disk after a controlled partial-write fault.
+# Restore the pre-install disk after a fully written synthetic-debris fixture.
 # This proves manual fresh-install rollback only; A->B->A upgrade stays NOT_RUN.
 if ! python3 scripts/install-test/preinstall-rollback-live.py restore > "$STATE/preinstall-rollback.raw.log" 2>&1; then
     echo 'G3_PREINSTALL_ROLLBACK_CODE=restore-failed release=NO_GO' >&2
