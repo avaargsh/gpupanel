@@ -152,6 +152,7 @@ type TransitionRequest struct {
 	Stage            string
 	ErrorCode        string
 	EvidenceSHA256   string
+	ArtifactSHA256   string
 }
 
 // ReconcileRequest is the only path out of unknown/recovery_required. It
