@@ -88,6 +88,15 @@ def verify_unit(path: Path, binary: Path, panel_dir: Path, name: str) -> bool:
         fail(f"{name} unit does not uniquely execute the selected installation")
     if lines.count(f"WorkingDirectory={panel_dir}") != 1:
         fail(f"{name} unit working directory does not match selected installation")
+    # A unit that adds another Exec* hook can run arbitrary code during stop
+    # or start. Only the reviewed ExecStart command is permitted in the file.
+    for line in lines:
+        stripped = line.strip()
+        if not stripped or stripped.startswith(("#", ";")) or "=" not in stripped:
+            continue
+        directive = stripped.split("=", 1)[0].strip()
+        if directive.startswith("Exec") and directive != "ExecStart":
+            fail(f"{name} unit contains an unreviewed execution hook: {directive}")
     return True
 
 
@@ -97,13 +106,20 @@ def process_paths(panel_dir: Path) -> list[str]:
     proc = Path("/proc")
     if not proc.is_dir():
         fail("cannot independently inspect running process identities")
-    for entry in proc.iterdir():
+    try:
+        entries = list(proc.iterdir())
+    except OSError as exc:
+        fail(f"cannot enumerate process identities: {type(exc).__name__}")
+    for entry in entries:
         if not entry.name.isdecimal():
             continue
         try:
             executable = os.readlink(entry / "exe")
-        except (FileNotFoundError, PermissionError, ProcessLookupError, OSError):
+        except (FileNotFoundError, ProcessLookupError):
+            # A process can exit between enumeration and readlink.
             continue
+        except OSError as exc:
+            fail(f"cannot inspect process identity {entry.name}: {type(exc).__name__}")
         normalized = executable.removesuffix(" (deleted)")
         if normalized in expected:
             running.append(entry.name)
@@ -120,30 +136,42 @@ def mounted_at(path: Path) -> bool:
     return any(len(parts := line.split()) > 4 and parts[4] == decoded for line in lines)
 
 
-def verify_systemd_fragment(unit_dir: Path, name: str) -> None:
-    expected = str(unit_dir / f"{name}.service")
+def systemd_show(name: str, property_name: str) -> str:
     result = subprocess.run(
-        ["systemctl", "show", "--property=FragmentPath", "--value", f"{name}.service"],
+        ["systemctl", "show", f"--property={property_name}", "--value", f"{name}.service"],
         capture_output=True, text=True, timeout=8, check=False,
     )
-    if result.returncode != 0 or result.stdout.strip() != expected:
+    if result.returncode != 0:
+        fail(f"systemd query failed for {name} {property_name} (exit {result.returncode})")
+    return result.stdout.strip()
+
+
+def verify_systemd_fragment(unit_dir: Path, name: str) -> None:
+    expected = str(unit_dir / f"{name}.service")
+    if systemd_show(name, "FragmentPath") != expected:
         fail(f"systemd {name} fragment does not resolve to the verified unit file")
+    # Drop-ins are evaluated after the main unit and can override ExecStart or
+    # introduce ExecStop/ExecStopPost hooks. Never mutate through such a unit.
+    if systemd_show(name, "DropInPaths"):
+        fail(f"systemd {name} has unreviewed drop-ins")
 
 
 def verify_systemd_unit_absent(name: str) -> None:
-    for action in ("is-active", "is-enabled"):
-        result = subprocess.run(
-            ["systemctl", action, "--quiet", f"{name}.service"],
-            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=8, check=False,
-        )
-        if result.returncode == 0:
-            fail(f"systemd {name} is still {action.removeprefix('is-')}")
+    # Query failures are not evidence of absence. Require explicit manager state.
+    if systemd_show(name, "LoadState") != "not-found":
+        fail(f"systemd {name} is still loaded or has an unknown load state")
+    if systemd_show(name, "ActiveState") != "inactive":
+        fail(f"systemd {name} is not explicitly inactive")
+    if systemd_show(name, "FragmentPath"):
+        fail(f"systemd {name} still resolves to a unit fragment")
+    if systemd_show(name, "DropInPaths"):
+        fail(f"systemd {name} still has drop-ins")
     result = subprocess.run(
-        ["systemctl", "show", "--property=FragmentPath", "--value", f"{name}.service"],
+        ["systemctl", "is-enabled", f"{name}.service"],
         capture_output=True, text=True, timeout=8, check=False,
     )
-    if result.returncode == 0 and result.stdout.strip():
-        fail(f"systemd {name} still resolves to another unit fragment")
+    if result.returncode != 4 or result.stdout.strip() != "not-found":
+        fail(f"systemd {name} enabled state is not the expected not-found result")
 
 
 def build_plan(args: argparse.Namespace) -> dict:
