@@ -19,7 +19,7 @@ import (
 
 func Open(dbPath string) (*Store, error) {
 	abs, err := filepath.Abs(dbPath)
-	if err != nil || dbPath == "" || strings.ContainsRune(abs, 0) {
+	if err != nil || dbPath == "" || !filepath.IsAbs(dbPath) || strings.ContainsRune(abs, 0) {
 		return nil, fmt.Errorf("%w: database path must be absolute", ErrInvalidRequest)
 	}
 	if filepath.Clean(abs) != abs || strings.Contains(abs, "?") {
