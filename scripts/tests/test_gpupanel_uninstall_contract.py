@@ -166,6 +166,13 @@ class UninstallPreflightTests(unittest.TestCase):
                 with self.assertRaisesRegex(helper.Refusal, "mount point"):
                     helper.build_plan(self.args(purge=True, confirm_purge=str(self.panel)))
 
+    def test_nested_mountpoint_blocks_purge_of_parent_installation(self):
+        nested = str(self.panel / "persistent-volume")
+        with mock.patch.object(helper, "mountpoint_paths", return_value=[nested]):
+            self.assertTrue(helper.mounted_at(self.panel))
+        with mock.patch.object(helper, "mountpoint_paths", return_value=[str(self.root / "other")]):
+            self.assertFalse(helper.mounted_at(self.panel))
+
     def test_repeated_confirmed_purge_is_allowed_only_after_owned_units_are_absent(self):
         (self.unit_dir / "gpupanel-core.service").unlink()
         (self.unit_dir / "gpupanel-agent.service").unlink()
@@ -202,6 +209,8 @@ class UninstallPreflightTests(unittest.TestCase):
         helper_source = HELPER_PATH.read_text(encoding="utf-8")
         self.assertIn("DropInPaths", helper_source)
         self.assertIn('LoadState") != "not-found"', helper_source)
+        self.assertIn("mountpoint_paths", helper_source)
+        self.assertIn("descendant is a mount point", helper_source)
         live_source = (ROOT / "scripts/install-test/uninstall-live.py").read_text(encoding="utf-8")
         self.assertIn("retained_tree_digest", live_source)
         self.assertIn("retention_sentinel_sha256", live_source)
