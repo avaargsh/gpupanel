@@ -152,6 +152,12 @@ if [ -f "$UNIT_DIR/gpupanel-core.service" ] || [ -f "$UNIT_DIR/gpupanel-agent.se
         || die "cannot stage owned units for reversible removal"
     chmod 0700 "$UNIT_BACKUP"
     trap restore_units_on_failure EXIT
+    # Convert ordinary interruption signals to an exit so the EXIT recovery
+    # trap restores the original unit files. SIGKILL/power loss still require
+    # operator recovery from the retained private staging directory.
+    trap 'exit 129' HUP
+    trap 'exit 130' INT
+    trap 'exit 143' TERM
     for unit in gpupanel-core.service gpupanel-agent.service; do
         if [ -f "$UNIT_DIR/$unit" ]; then
             cp -p -- "$UNIT_DIR/$unit" "$UNIT_BACKUP/$unit" \
@@ -170,7 +176,7 @@ UNIT_REMOVAL_COMMITTED=1
 if [ -n "$UNIT_BACKUP" ]; then
     rm -rf -- "$UNIT_BACKUP" || die "unit removal committed but private staging directory remains"
 fi
-trap - EXIT
+trap - EXIT HUP INT TERM
 
 if [ "$PURGE" = "1" ]; then
     # Re-check ownership and mount-point state after stopping services and
