@@ -104,11 +104,32 @@ class UninstallPreflightTests(unittest.TestCase):
                 with self.assertRaisesRegex(helper.Refusal, "mount point"):
                     helper.build_plan(self.args(purge=True, confirm_purge=str(self.panel)))
 
+    def test_repeated_confirmed_purge_is_allowed_only_after_owned_units_are_absent(self):
+        (self.unit_dir / "gpupanel-core.service").unlink()
+        (self.unit_dir / "gpupanel-agent.service").unlink()
+        with mock.patch.object(helper, "process_paths", return_value=[]), \
+             mock.patch.object(helper, "mounted_at", return_value=False):
+            plan = helper.build_plan(self.args(
+                units_removed=True, purge=True, confirm_purge=str(self.panel)
+            ))
+        self.assertEqual(plan["data_policy"], "DELETE_EXACT_CONFIRMED_PANEL_DIR")
+
     def test_post_removal_verifier_requires_owned_units_to_be_absent(self):
         (self.unit_dir / "gpupanel-core.service").unlink()
         with mock.patch.object(helper, "process_paths", return_value=[]):
             with self.assertRaisesRegex(helper.Refusal, "unit files still exist"):
                 helper.build_plan(self.args(units_removed=True))
+
+    def test_live_uninstall_runs_after_restore_and_must_be_attested(self):
+        runner = (ROOT / "scripts/install-test/ci-live-vm.sh").read_text(encoding="utf-8")
+        evidence = (ROOT / "scripts/install-test/ci-evidence.py").read_text(encoding="utf-8")
+        live = (ROOT / "scripts/install-test/uninstall-live.py").read_text(encoding="utf-8")
+        self.assertLess(runner.index("scripts/install-test/restore-live.py"),
+                        runner.index("scripts/install-test/uninstall-live.py"))
+        self.assertIn("stage 'guest_system_uninstall_preserved_data'", runner)
+        self.assertIn('"system_uninstall": "PASS" if success else "NOT_ATTESTED"', evidence)
+        self.assertIn('"purge": "NOT_RUN"', live)
+        self.assertLessEqual(len(live.splitlines()), 500)
 
     def test_uninstaller_stops_only_verified_units_and_never_kills_by_name(self):
         source = UNINSTALLER_PATH.read_text(encoding="utf-8")
