@@ -35,6 +35,7 @@ class UninstallPreflightTests(unittest.TestCase):
             binary.chmod(0o755)
             (self.unit_dir / (name + ".service")).write_text(
                 "[Service]\n"
+                "Type=simple\n"
                 "WorkingDirectory=" + str(self.panel) + "\n"
                 "ExecStart=" + str(binary) + "\n",
                 encoding="utf-8",
@@ -101,6 +102,7 @@ class UninstallPreflightTests(unittest.TestCase):
         unit = self.unit_dir / "gpupanel-core.service"
         unit.write_text(
             "[Service]\n"
+            "Type=simple\n"
             "WorkingDirectory=" + str(self.panel) + "\n"
             "ExecStart=" + str(self.panel / "gpupanel-core") + "\n"
             "ExecStop=/bin/sh -c 'echo unexpected'\n",
