@@ -19,6 +19,8 @@ import candidate
 import vm
 
 ROOT = Path(__file__).resolve().parents[2]
+
+FAILURE_STAGE = "startup"
 STATE = ROOT / ".local/install-test"
 PROOF = STATE / "uninstall-live.json"
 RAW_LOG = STATE / "uninstall.raw.log"
@@ -330,8 +332,11 @@ def _run_uninstaller(local: dict, log_name: str) -> None:
 
 
 def main() -> int:
+    global FAILURE_STAGE
+    FAILURE_STAGE = "candidate-validation"
     if os.environ.get("CI") != "true" or os.environ.get("GITHUB_ACTIONS") != "true":
         raise RuntimeError("canonical CI runner required")
+    FAILURE_STAGE = "preflight-evidence"
     local = candidate.local_candidate(ROOT)
     browser = _read_record("browser-live.json")
     candidate.verify_browser_chain(browser, local)
@@ -348,9 +353,13 @@ def main() -> int:
         raise RuntimeError("post-install restore proof does not bind this candidate")
     if PROOF.exists() or PROOF.is_symlink():
         raise RuntimeError("system uninstall proof already exists; do not replay")
+    FAILURE_STAGE = "before-observation"
     before = _guest_probe("capture", local, machine)
+    FAILURE_STAGE = "first-uninstaller"
     _run_uninstaller(local, "uninstall.raw.log")
+    FAILURE_STAGE = "after-observation"
     after = _guest_probe("verify", local, machine)
+    FAILURE_STAGE = "postcondition-comparison"
     if (
         before.get("schema") != "gpupanel.vm.system-uninstall-probe.v1"
         or after.get("schema") != "gpupanel.vm.system-uninstall-probe.v1"
@@ -372,8 +381,11 @@ def main() -> int:
 
     # Only replay after the first command returned success and its post-state
     # independently matched. The second call must converge without side effects.
+    FAILURE_STAGE = "repeat-uninstaller"
     _run_uninstaller(local, "uninstall-repeat.raw.log")
+    FAILURE_STAGE = "repeat-observation"
     after_repeat = _guest_probe("verify", local, machine)
+    FAILURE_STAGE = "repeat-comparison"
     if after_repeat != after:
         raise RuntimeError("repeated default uninstall changed the verified post-state")
     proof = {
@@ -404,6 +416,7 @@ def main() -> int:
         "upgrade_and_rollback": "NOT_RUN",
         "m0_release_decision": "NO_GO",
     }
+    FAILURE_STAGE = "persist-evidence"
     fd = os.open(PROOF, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW, 0o600)
     with os.fdopen(fd, "w", encoding="utf-8") as stream:
         json.dump(proof, stream, sort_keys=True, indent=2)
@@ -418,6 +431,8 @@ if __name__ == "__main__":
     try:
         raise SystemExit(main())
     except Exception as exc:
-        print("GPUPANEL_SYSTEM_UNINSTALL_CODE=blocked_or_failed; M0=NO_GO; detail="
-              + type(exc).__name__ + ":" + str(exc)[:200], file=sys.stderr)
+        print(f"GPUPANEL_SYSTEM_UNINSTALL_STAGE={FAILURE_STAGE} release=NO_GO", file=sys.stderr)
+        # Keep error text in the private log only; CI exports only allowlisted fields.
+        print("GPUPANEL_SYSTEM_UNINSTALL_CODE=blocked_or_failed; M0=NO_GO; exception_class="
+              + type(exc).__name__, file=sys.stderr)
         raise SystemExit(1)
