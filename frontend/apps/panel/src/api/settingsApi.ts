@@ -106,6 +106,20 @@ export interface UpgradeInfo {
     releaseNote: string;
 }
 
+export interface LifecycleOperationInfo {
+    operationId: string;
+    kind: string;
+    state: string;
+    revision: number;
+    stage: string;
+    errorCode?: string;
+    artifactSha256?: string;
+    evidenceSha256?: string;
+    createdAt: string;
+    updatedAt: string;
+    replayed: boolean;
+}
+
 export type APIKeyStatus = 'Enable' | 'Disable' | 'Revoked' | 'Expired';
 export type APIKeyKind = 'legacy' | 'apiKey';
 
@@ -368,8 +382,19 @@ export const settingsApi = baseApi.injectEndpoints({
         getUpgradeInfo: build.query<UpgradeInfo, void>({
             query: () => ({ url: '/core/settings/upgrade', method: 'GET' }),
         }),
-        updateUpgrade: build.mutation<unknown, { version: string }>({
-            query: (body) => ({ url: '/core/settings/upgrade', method: 'POST', body }),
+        updateUpgrade: build.mutation<LifecycleOperationInfo, { version: string; idempotencyKey: string }>({
+            query: ({ version, idempotencyKey }) => ({
+                url: '/core/settings/upgrade',
+                method: 'POST',
+                body: { version },
+                headers: { 'Idempotency-Key': idempotencyKey },
+            }),
+        }),
+        getUpgradeOperation: build.query<LifecycleOperationInfo, string>({
+            query: (id) => ({
+                url: '/core/settings/upgrade/operations/' + encodeURIComponent(id),
+                method: 'GET',
+            }),
         }),
 
         // ---- 主机设置（agent） ----
