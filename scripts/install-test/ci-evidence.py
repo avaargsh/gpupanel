@@ -261,7 +261,8 @@ def summarize(state: Path, *, run_completed: bool, source_sha: str) -> dict:
         if isinstance(preinstall_baseline, dict) else None
     )
     baseline_ok = (
-        isinstance(preinstall_baseline, dict)
+        isinstance(browser, dict)
+        and isinstance(preinstall_baseline, dict)
         and set(preinstall_baseline) == baseline_keys
         and preinstall_baseline.get("schema") == "gpupanel.vm.preinstall-baseline.v1"
         and preinstall_baseline.get("source_sha") == source_sha
