@@ -84,12 +84,12 @@ class G5EvidenceFailureCodeTests(unittest.TestCase):
                          "volume-side-effects"):
             self.assertEqual(failure.app_unknown_fence_code(
                 "G5_APP_UNKNOWN_FENCE_CODE=" + category +
-                " release=NO_GO\\n"), category)
+                " release=NO_GO\n"), category)
         for invalid in ("PRIVATE_CONTAINER", "container:/var/lib/docker",
                         "network-side-effects name=SECRET"):
             self.assertEqual(failure.app_unknown_fence_code(
                 "G5_APP_UNKNOWN_FENCE_CODE=" + invalid +
-                " release=NO_GO\\n"), "unknown")
+                " release=NO_GO\n"), "unknown")
 
     def test_docker_state_summary_allowlist_and_forgery_rejection(self):
         for state in ("running", "created", "exited", "restarting", "paused",
