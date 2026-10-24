@@ -313,6 +313,7 @@ class LiveVmEvidence(unittest.TestCase):
             'python3 scripts/install-test/vm.py ssh -- python3 "/tmp/$package/gpupanel-install-preflight.py" --json',
             script,
         )
+        self.assertIn("python3 scripts/install-test/ci-failure.py system-uninstall", script)
 
     def test_private_browser_failure_is_redacted_to_line_and_class(self):
         failure_source = ROOT / "scripts/install-test/ci-failure.py"
@@ -338,14 +339,14 @@ class LiveVmEvidence(unittest.TestCase):
         # never the dynamic error string, filesystem path, or guest content.
         self.assertEqual(
             failure.system_uninstall_stage(
-                "GPUPANEL_SYSTEM_UNINSTALL_STAGE=first-uninstaller release=NO_GO\\n"
+                "GPUPANEL_SYSTEM_UNINSTALL_STAGE=first-uninstaller release=NO_GO\n"
                 "password=SECRET_SHOULD_NOT_LEAK\\n"
             ),
             "first-uninstaller",
         )
         self.assertEqual(
             failure.system_uninstall_stage(
-                "GPUPANEL_SYSTEM_UNINSTALL_STAGE=first-uninstaller password=LEAK release=NO_GO\\n"
+                "GPUPANEL_SYSTEM_UNINSTALL_STAGE=first-uninstaller password=LEAK release=NO_GO\n"
             ),
             "unknown",
         )
