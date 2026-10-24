@@ -259,8 +259,8 @@ def transition_allowed(source: str, target: str, *, reconcile: bool = False) -> 
     ordinary = {
         "planned": {"preflight", "failed_no_mutation"},
         "preflight": {"plan_reviewed", "failed_no_mutation"},
-        "plan_reviewed": {"backup_sealed", "applying", "failed_no_mutation"},
-        "backup_sealed": {"applying", "failed_no_mutation"},
+        "plan_reviewed": {"backup_sealed", "applying", "failed_no_mutation", "recovery_required"},
+        "backup_sealed": {"applying", "failed_no_mutation", "recovery_required"},
         "applying": {"verifying", "rolled_back", "unknown", "recovery_required"},
         "verifying": {"completed", "rolled_back", "unknown", "recovery_required"},
     }
