@@ -163,6 +163,33 @@ func TestRevisionCASTransitionReplayAndTerminalEvidence(t *testing.T) {
 	}
 }
 
+func TestArtifactDigestCanBeBoundOnceAndCannotDrift(t *testing.T) {
+	store, _ := openTestStore(t)
+	req := validClaim("late-artifact-binding")
+	req.ArtifactSHA256 = ""
+	op, created, err := store.Claim(context.Background(), req)
+	if err != nil || !created { t.Fatalf("claim: created=%v err=%v", created, err) }
+	op = advance(t, store, op, StatePreflight, "preflight", "", "")
+	op = advance(t, store, op, StatePlanReviewed, "reviewed", "", "")
+	op, replayed, err := store.Advance(context.Background(), TransitionRequest{
+		Owner: op.Owner, OperationID: op.ID, ExpectedState: op.State,
+		ExpectedRevision: op.Revision, NextState: StateBackupSealed,
+		Actor: op.Owner, Stage: "backup-sealed", EvidenceSHA256: testEvidence,
+		ArtifactSHA256: testArtifact,
+	})
+	if err != nil || replayed { t.Fatalf("bind artifact: replayed=%v err=%v", replayed, err) }
+	if op.ArtifactSHA256 != testArtifact { t.Fatalf("artifact digest not stored: %#v", op) }
+	retry, created, err := store.Claim(context.Background(), req)
+	if err != nil || created || retry.ID != op.ID || retry.ArtifactSHA256 != testArtifact {
+		t.Fatalf("blank-artifact retry did not observe same bound operation: %#v created=%v err=%v", retry, created, err)
+	}
+	_, _, err = store.Advance(context.Background(), TransitionRequest{
+		Owner: op.Owner, OperationID: op.ID, ExpectedState: op.State,
+		ExpectedRevision: op.Revision, NextState: StateApplying,
+		Actor: op.Owner, Stage: "applying", ArtifactSHA256: "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+	})
+	if !errors.Is(err, ErrBindingMismatch) { t.Fatalf("artifact drift accepted: %v", err) }
+}
 func TestUnknownCannotTransitionExceptEvidenceBackedReconciliation(t *testing.T) {
 	store, _ := openTestStore(t)
 	op, _, err := store.Claim(context.Background(), validClaim("interrupted-upgrade"))
