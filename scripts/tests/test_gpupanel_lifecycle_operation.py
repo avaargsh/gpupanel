@@ -146,6 +146,15 @@ class LifecycleJournalContract(unittest.TestCase):
         with self.assertRaisesRegex(journal.JournalError, "not visible"):
             journal.history(self.db, "foreign-session", op["id"])
 
+    def test_symlinked_ancestor_is_rejected_even_when_leaf_directory_is_real(self):
+        real = Path(self.temp.name) / "real"
+        leaf = real / "private"
+        leaf.mkdir(parents=True)
+        alias = Path(self.temp.name) / "alias"
+        alias.symlink_to(real, target_is_directory=True)
+        with self.assertRaisesRegex(journal.JournalError, "symlink"):
+            journal.open_journal(str(alias / "private" / "operations.db"))
+
     def test_invalid_paths_symlinks_and_permissive_journal_are_rejected(self):
         with self.assertRaisesRegex(journal.JournalError, "normalized absolute"):
             journal.open_journal("relative/operations.db")
