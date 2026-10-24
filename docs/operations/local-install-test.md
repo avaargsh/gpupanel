@@ -652,10 +652,10 @@ Docker 守护进程生命周期行为，不是对 App/Agent 网络副作用的�
 
 主线真实 Ubuntu VM 流程在安装 Docker 之后、解包 GPUPanel 之前记录安装前基线与
 独立 QCOW2 检查点。完成当前安装、浏览器、服务恢复和 AppInstall 部分验收后，测试会在
-任务自有 guest 内注入固定的部分写入标记和未启用的 systemd 单元，停止 Core/Agent，
+任务自有 guest 内注入固定的合成残留标记和未启用的测试 systemd 单元，停止 Core/Agent，
 再冷恢复到该安装前检查点。恢复后重新启动 Ubuntu，并独立核对 machine-id 摘要、
 Docker 版本与容器/网络/卷/镜像清单摘要、Docker active/enabled、GPUPanel 路径和
-systemd 单元不存在、测试监听端口关闭，以及注入的部分写入状态已清除。
+systemd 单元不存在、测试监听端口关闭，以及注入的合成残留状态已清除。
 
 此步骤只证明一次性 Ubuntu guest 的手工安装前快照回滚路径；不证明安装器会自行回滚，
 不覆盖 A→B→A 升级、磁盘满/错误归档/服务启动失败等安装中故障，也不等于完整数据恢复
