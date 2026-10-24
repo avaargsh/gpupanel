@@ -86,7 +86,17 @@ class G5EvidenceFailureCodeTests(unittest.TestCase):
                          "pre-agent-network-count-drift",
                          "pre-agent-network-identity-drift",
                          "post-agent-network-count-drift",
-                         "post-agent-network-identity-drift"):
+                         "post-agent-network-identity-drift",
+                         "pre-agent-network-membership-drift",
+                         "post-agent-network-membership-drift",
+                         "pre-agent-builtin-network-identity-drift",
+                         "post-agent-builtin-network-identity-drift",
+                         "pre-agent-shared-network-identity-drift",
+                         "post-agent-shared-network-identity-drift",
+                         "pre-agent-custom-network-identity-drift",
+                         "post-agent-custom-network-identity-drift",
+                         "pre-agent-mixed-network-identity-drift",
+                         "post-agent-mixed-network-identity-drift"):
             self.assertEqual(failure.app_unknown_fence_code(
                 "G5_APP_UNKNOWN_FENCE_CODE=" + category +
                 " release=NO_GO\n"), category)

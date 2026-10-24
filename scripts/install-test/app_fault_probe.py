@@ -338,13 +338,28 @@ def inject(*, page, guest, guest_rc, guest_inventory, request, next_id,
     return {"installId": install_id, "taskId": task_id}
 
 
-def classify_network_drift(before: dict, before_agent: dict, final: dict) -> str:
-    """Locate the first observed network-ID divergence without leaking IDs.
+def _network_name_map(snapshot: dict) -> dict[str, str] | None:
+    """Parse private ID|name inventory without returning either value to CI."""
+    records = snapshot.get("networks")
+    if not isinstance(records, list):
+        return None
+    parsed = {}
+    for record in records:
+        if not isinstance(record, str) or record.count("|") != 1:
+            return None
+        network_id, name = record.split("|", 1)
+        if not network_id or not name or name in parsed:
+            return None
+        parsed[name] = network_id
+    return parsed
 
-    This classifies observations, not the root cause. A Docker daemon restart
-    may rebuild a built-in network, while a later Agent action might create
-    an application network. Neither explanation may silently waive the
-    strict inventory comparison.
+
+def classify_network_drift(before: dict, before_agent: dict, final: dict) -> str:
+    """Locate the first persistent network divergence using fixed safe labels.
+
+    Network IDs and names remain private to the probe. This classification
+    narrows the phase and family of drift; it never waives strict equality.
+    Older synthetic callers without ID|name records retain generic labels.
     """
     baseline = before["networks"]
     intermediate = before_agent["networks"]
@@ -352,11 +367,46 @@ def classify_network_drift(before: dict, before_agent: dict, final: dict) -> str
     if observed == baseline:
         return "ok"
     if intermediate != baseline:
-        phase, changed = "pre-agent", intermediate
+        phase, changed_snapshot = "pre-agent", before_agent
+        changed = intermediate
     else:
-        phase, changed = "post-agent", observed
-    kind = "count" if len(changed) != len(baseline) else "identity"
-    return f"{phase}-network-{kind}-drift"
+        phase, changed_snapshot = "post-agent", final
+        changed = observed
+    if len(changed) != len(baseline):
+        return f"{phase}-network-count-drift"
+
+    before_map = _network_name_map(before)
+    changed_map = _network_name_map(changed_snapshot)
+    if before_map is None or changed_map is None:
+        return f"{phase}-network-identity-drift"
+    baseline_names = set(before_map)
+    changed_names = set(changed_map)
+    if baseline_names != changed_names:
+        return f"{phase}-network-membership-drift"
+
+    differing = {
+        name for name in baseline_names
+        if before_map[name] != changed_map[name]
+    }
+    if not differing:
+        return f"{phase}-network-identity-drift"
+    builtin_names = {"bridge", "host", "none"}
+    families = set()
+    if differing & builtin_names:
+        families.add("builtin")
+    if "gpupanel-network" in differing:
+        families.add("shared")
+    if differing - builtin_names - {"gpupanel-network"}:
+        families.add("custom")
+    if len(families) > 1:
+        return f"{phase}-mixed-network-identity-drift"
+    if families == {"builtin"}:
+        return f"{phase}-builtin-network-identity-drift"
+    if families == {"shared"}:
+        return f"{phase}-shared-network-identity-drift"
+    if families == {"custom"}:
+        return f"{phase}-custom-network-identity-drift"
+    return f"{phase}-network-identity-drift"
 
 
 def verify_mutation_gate(*, page, guest_inventory, request, next_id,

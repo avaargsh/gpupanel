@@ -635,3 +635,10 @@ init barrier 正在等待时崩溃”，**不是** Docker 写请求已提交后�
 供操作员审查，由随后 sealed post-install checkpoint 的磁盘恢复丢弃。
 `full_app_compose_install_lifecycle`、`upgrade_and_rollback`、
 `full_data_restore` 继续为 `NOT_RUN`，`m0_release_decision=NO_GO`。
+
+### G5 中断安装网络漂移定位
+
+故障注入在原始安装前基线、Docker 恢复但 Agent 尚未启动时、以及 Agent 恢复后比较网络清单。
+网络 ID 和名称只保留在私有探针内；CI 仅输出固定阶段和类别标签，用于区分内置网络、共享网络、
+其他自定义网络或成员集合变化。最终容器、网络和卷仍必须与原始基线严格相等；诊断标签不豁免
+任何漂移，也不会把失败变成 GO。

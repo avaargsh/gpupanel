@@ -140,7 +140,8 @@ G5_APP_UNKNOWN_FENCE = re.compile(
     r"docker-(?:unit-start|api)-unavailable|malformed|not-unknown|"
     r"evidence-changed|side-effects|(?:container|network|volume)-side-effects|"
     r"fixture-network-unavailable|init-barrier-not-reached|"
-    r"(?:pre-agent|post-agent)-network-(?:count|identity)-drift|"
+    r"(?:pre-agent|post-agent)-network-(?:count|identity|membership)-drift|"
+    r"(?:pre-agent|post-agent)-(?:builtin|shared|custom|mixed)-network-identity-drift|"
     r"freeze-unavailable) release=NO_GO$"
 )
 

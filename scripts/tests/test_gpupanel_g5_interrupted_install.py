@@ -182,6 +182,37 @@ class InterruptedInstallEvidenceTests(unittest.TestCase):
                 for network_id in ("network-id-a", "network-id-b", "network-id-c"):
                     self.assertNotIn(network_id, actual)
 
+    def test_network_drift_family_labels_are_fixed_and_redacted(self):
+        baseline = {"networks": [
+            "id-a|bridge", "id-b|gpupanel-network", "id-c|project_default"]}
+        built_in = {"networks": [
+            "id-x|bridge", "id-b|gpupanel-network", "id-c|project_default"]}
+        shared = {"networks": [
+            "id-a|bridge", "id-y|gpupanel-network", "id-c|project_default"]}
+        custom = {"networks": [
+            "id-a|bridge", "id-b|gpupanel-network", "id-z|project_default"]}
+        membership = {"networks": [
+            "id-a|bridge", "id-b|gpupanel-network", "id-c|other_default"]}
+        mixed = {"networks": [
+            "id-x|bridge", "id-b|gpupanel-network", "id-z|project_default"]}
+        cases = (
+            (built_in, built_in, "pre-agent-builtin-network-identity-drift"),
+            (baseline, shared, "post-agent-shared-network-identity-drift"),
+            (baseline, custom, "post-agent-custom-network-identity-drift"),
+            (membership, membership, "pre-agent-network-membership-drift"),
+            (mixed, mixed, "pre-agent-mixed-network-identity-drift"),
+        )
+        for before_agent, final, expected in cases:
+            with self.subTest(expected=expected):
+                actual = probe.classify_network_drift(
+                    baseline, before_agent, final)
+                self.assertEqual(actual, expected)
+                for private_value in (
+                    "id-a", "id-b", "id-c", "id-x", "id-y", "id-z",
+                    "gpupanel-network", "project_default", "other_default",
+                ):
+                    self.assertNotIn(private_value, actual)
+
     def test_network_snapshot_precedes_agent_restart(self):
         source = (ROOT / "scripts/install-test/app_fault_probe.py").read_text()
         self.assertLess(
