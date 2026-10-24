@@ -97,6 +97,49 @@ class UninstallPreflightTests(unittest.TestCase):
         with self.assertRaisesRegex(helper.Refusal, "does not uniquely execute"):
             helper.build_plan(self.args())
 
+    def test_unreviewed_execstop_hook_is_rejected_before_mutation(self):
+        unit = self.unit_dir / "gpupanel-core.service"
+        unit.write_text(
+            "[Service]\n"
+            "WorkingDirectory=" + str(self.panel) + "\n"
+            "ExecStart=" + str(self.panel / "gpupanel-core") + "\n"
+            "ExecStop=/bin/sh -c 'echo unexpected'\n",
+            encoding="utf-8",
+        )
+        with self.assertRaisesRegex(helper.Refusal, "unreviewed execution hook"):
+            helper.build_plan(self.args())
+
+    def test_systemd_dropins_are_rejected_before_stop(self):
+        def show(name, prop):
+            if prop == "FragmentPath":
+                return str(self.unit_dir / (name + ".service"))
+            if prop == "DropInPaths" and name == "gpupanel-core":
+                return "/etc/systemd/system/gpupanel-core.service.d/override.conf"
+            return ""
+        with mock.patch.object(helper, "systemd_show", side_effect=show):
+            with self.assertRaisesRegex(helper.Refusal, "unreviewed drop-ins"):
+                helper.build_plan(self.args(systemd=True))
+
+    def test_post_removal_query_failure_is_not_treated_as_absence(self):
+        values = iter(("not-found", "inactive", "", ""))
+        with mock.patch.object(helper, "systemd_show", side_effect=lambda *_: next(values)), \
+             mock.patch.object(helper.subprocess, "run", return_value=subprocess.CompletedProcess(
+                 ["systemctl", "is-enabled"], 1, stdout="bad\n", stderr="query failure\n"
+             )):
+            with self.assertRaisesRegex(helper.Refusal, "enabled state is not"):
+                helper.verify_systemd_unit_absent("gpupanel-core")
+
+    def test_process_identity_permission_failure_is_not_treated_as_absence(self):
+        original_iterdir = Path.iterdir
+        def fake_iterdir(path):
+            if path == Path("/proc"):
+                return iter((Path("/proc/123"),))
+            return original_iterdir(path)
+        with mock.patch.object(Path, "iterdir", fake_iterdir), \
+             mock.patch.object(helper.os, "readlink", side_effect=PermissionError("denied")):
+            with self.assertRaisesRegex(helper.Refusal, "cannot inspect process identity"):
+                helper.process_paths(self.panel)
+
     def test_systemd_mode_requires_both_owned_units(self):
         (self.unit_dir / "gpupanel-agent.service").unlink()
         with mock.patch.object(helper, "verify_systemd_fragment"):
@@ -149,6 +192,11 @@ class UninstallPreflightTests(unittest.TestCase):
                                 capture_output=True, text=True, check=False)
         self.assertEqual(syntax.returncode, 0, syntax.stderr)
         self.assertIn("gpupanel-uninstall-preflight.py", source)
+        helper_source = HELPER_PATH.read_text(encoding="utf-8")
+        self.assertIn("DropInPaths", helper_source)
+        self.assertIn('LoadState") != "not-found"', helper_source)
+        self.assertIn("retained_tree_digest", (ROOT / "scripts/install-test/uninstall-live.py").read_text(encoding="utf-8"))
+        self.assertIn("retention_sentinel_sha256", (ROOT / "scripts/install-test/uninstall-live.py").read_text(encoding="utf-8"))
         self.assertIn("systemctl disable --now gpupanel-agent.service gpupanel-core.service", source)
         self.assertNotIn("pkill", source)
         self.assertNotIn("|| true", source)
