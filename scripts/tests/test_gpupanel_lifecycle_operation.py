@@ -90,6 +90,21 @@ class LifecycleJournalContract(unittest.TestCase):
                 actor=op["owner"], error_code="stale-call",
             )
 
+    def test_artifact_digest_is_bound_once_and_cannot_drift(self):
+        op = self.claim(artifact="")
+        op = self.advance(op, "planned", "preflight")
+        op = self.advance(op, "preflight", "plan_reviewed")
+        op = self.advance(op, "plan_reviewed", "backup_sealed",
+                          evidence_sha256=EVIDENCE, artifact_sha256=ARTIFACT)
+        self.assertEqual(op["artifact_sha256"], ARTIFACT)
+        replay = self.claim(artifact="")
+        self.assertEqual(replay["id"], op["id"])
+        self.assertEqual(replay["artifact_sha256"], ARTIFACT)
+        self.assertFalse(replay["created"])
+        with self.assertRaisesRegex(journal.JournalError, "different artifact"):
+            self.advance(op, "backup_sealed", "applying",
+                         artifact_sha256="c" * 64)
+
     def test_unknown_outcome_cannot_be_reopened_without_evidence_reconciliation(self):
         op = self.claim()
         op = self.advance(op, "planned", "preflight")
