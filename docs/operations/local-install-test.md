@@ -657,8 +657,9 @@ Docker 守护进程生命周期行为，不是对 App/Agent 网络副作用的�
 Docker 版本与容器/网络/卷/镜像清单摘要、Docker active/enabled、GPUPanel 路径和
 systemd 单元不存在、测试监听端口关闭，以及注入的合成残留状态已清除。
 
-此步骤只证明一次性 Ubuntu guest 的手工安装前快照回滚路径；不证明安装器会自行回滚，
-不覆盖 A→B→A 升级、磁盘满/错误归档/服务启动失败等安装中故障，也不等于完整数据恢复
-或独立人工签字。脱敏报告单独记录 pre-install snapshot rollback；upgrade_and_rollback
-和 full_data_restore 仍为 NOT_RUN，M0 仍为 NO-GO。原始 guest 库存、SSH 私钥、磁盘和
+标记和测试单元在恢复前会完整写入并 fsync；本轮没有中断安装器写入，也没有制造真正的半写入状态。
+此步骤只证明测试合成残留可被安装前快照清除，以及一次性 Ubuntu guest 的手工磁盘恢复路径；
+不证明安装器会自行回滚，不覆盖 A→B→A 升级、磁盘满/错误归档/服务启动失败等安装中故障，
+也不等于完整数据恢复或独立人工签字。脱敏报告单独记录 pre-install snapshot rollback；
+upgrade_and_rollback 和 full_data_restore 仍为 NOT_RUN，M0 仍为 NO-GO。原始 guest 库存、SSH 私钥、磁盘和
 日志不上传；只上传经 schema 和摘要验证的 ci-evidence.json。
