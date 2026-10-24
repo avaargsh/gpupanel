@@ -2,8 +2,13 @@ package lifecycle
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
 	"errors"
+	"os/exec"
 	"path/filepath"
+	"runtime"
 	"sync"
 	"testing"
 )
@@ -207,6 +212,84 @@ func TestOwnerAndTargetValidationFailClosed(t *testing.T) {
 	if err != nil { t.Fatal(err) }
 	if _, err := store.Get(context.Background(), "other-principal", op.ID); !errors.Is(err, ErrNotFound) {
 		t.Fatalf("foreign principal learned or mutated another operation: %v", err)
+	}
+}
+
+func TestPythonAndGoUseTheSameDurableJournalSchema(t *testing.T) {
+	store, path := openTestStore(t)
+	ctx := context.Background()
+
+	goCreated, created, err := store.Claim(ctx, validClaim("go-created"))
+	if err != nil || !created {
+		t.Fatalf("Go claim: created=%v err=%v", created, err)
+	}
+
+	_, source, _, ok := runtime.Caller(0)
+	if !ok {
+		t.Fatal("cannot resolve test source path for shared CLI")
+	}
+	repoRoot := filepath.Clean(filepath.Join(filepath.Dir(source), "..", "..", ".."))
+	pythonJournal := filepath.Join(repoRoot, "scripts", "gpupanel-lifecycle-operation.py")
+	if _, err := exec.LookPath("python3"); err != nil {
+		t.Fatalf("Python 3 is required for cross-language schema contract: %v", err)
+	}
+
+	cmd := exec.Command("python3", pythonJournal, "--db-path", path,
+		"get", "--owner", goCreated.Owner, "--id", goCreated.ID)
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Fatalf("Python could not read Go-created operation: %v; output=%s", err, output)
+	}
+	var pythonRead struct {
+		ID           string `json:"id"`
+		State        State  `json:"state"`
+		Revision     uint64 `json:"revision"`
+		BindingSHA256 string `json:"binding_sha256"`
+		ArtifactSHA256 string `json:"artifact_sha256"`
+	}
+	if err := json.Unmarshal(output, &pythonRead); err != nil {
+		t.Fatalf("decode Python journal receipt: %v; output=%s", err, output)
+	}
+	if pythonRead.ID != goCreated.ID || pythonRead.State != StatePlanned ||
+		pythonRead.Revision != 1 || pythonRead.ArtifactSHA256 != testArtifact {
+		t.Fatalf("Python read a different record: %#v", pythonRead)
+	}
+
+	pythonBinding := []byte(`{"targetVersion":"v2.4.1","channel":"stable"}`)
+	bindingSum := sha256.Sum256(pythonBinding)
+	bindingDigest := hex.EncodeToString(bindingSum[:])
+	cmd = exec.Command("python3", pythonJournal, "--db-path", path,
+		"claim", "--owner", "python-host-supervisor", "--target", "/opt/gpupanel",
+		"--kind", "upgrade", "--key", "python-created",
+		"--binding-sha256", bindingDigest, "--artifact-sha256", testArtifact)
+	output, err = cmd.CombinedOutput()
+	if err != nil {
+		t.Fatalf("Python could not claim operation: %v; output=%s", err, output)
+	}
+	var pythonCreated struct {
+		ID      string `json:"id"`
+		Created bool   `json:"created"`
+		State   State  `json:"state"`
+	}
+	if err := json.Unmarshal(output, &pythonCreated); err != nil {
+		t.Fatalf("decode Python claim receipt: %v; output=%s", err, output)
+	}
+	if !pythonCreated.Created || pythonCreated.ID == "" || pythonCreated.State != StatePlanned {
+		t.Fatalf("unexpected Python claim: %#v", pythonCreated)
+	}
+	goRead, err := store.Get(ctx, "python-host-supervisor", pythonCreated.ID)
+	if err != nil {
+		t.Fatalf("Go could not read Python-created operation: %v", err)
+	}
+	if goRead.State != StatePlanned || goRead.BindingSHA256 != bindingDigest ||
+		goRead.ArtifactSHA256 != testArtifact {
+		t.Fatalf("Go read a different Python record: %#v", goRead)
+	}
+}
+
+func TestOpenRejectsRelativeDatabasePath(t *testing.T) {
+	if _, err := Open(filepath.Join(".", "relative-journal.db")); !errors.Is(err, ErrInvalidRequest) {
+		t.Fatalf("relative database path accepted: %v", err)
 	}
 }
 
