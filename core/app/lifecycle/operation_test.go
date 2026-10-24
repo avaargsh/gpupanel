@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"os"
 	"errors"
 	"os"
 	"os/exec"
@@ -20,6 +21,7 @@ const testEvidence = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
 func openTestStore(t *testing.T) (*Store, string) {
 	t.Helper()
 	path := filepath.Join(t.TempDir(), "journal.db")
+	if err := os.Chmod(filepath.Dir(path), 0700); err != nil { t.Fatalf("secure test journal directory: %v", err) }
 	store, err := Open(path)
 	if err != nil { t.Fatalf("open store: %v", err) }
 	t.Cleanup(func(){ _ = store.Close() })
