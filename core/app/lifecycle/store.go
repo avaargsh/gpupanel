@@ -18,16 +18,23 @@ import (
 )
 
 func Open(dbPath string) (*Store, error) {
-	abs, err := filepath.Abs(dbPath)
-	if err != nil || dbPath == "" || !filepath.IsAbs(dbPath) || strings.ContainsRune(abs, 0) {
-		return nil, fmt.Errorf("%w: database path must be absolute", ErrInvalidRequest)
+	if dbPath == "" || !filepath.IsAbs(dbPath) || filepath.Clean(dbPath) != dbPath || strings.ContainsRune(dbPath, 0) {
+		return nil, fmt.Errorf("%w: database path must be normalized and absolute", ErrInvalidRequest)
 	}
-	if filepath.Clean(abs) != abs || strings.Contains(abs, "?") {
-		return nil, fmt.Errorf("%w: database path must be normalized and contain no query marker", ErrInvalidRequest)
+	if strings.Contains(dbPath, "?") {
+		return nil, fmt.Errorf("%w: database path must not contain a SQLite query marker", ErrInvalidRequest)
 	}
+	abs := dbPath
 	dir := filepath.Dir(abs)
-	if err := os.MkdirAll(dir, 0700); err != nil {
-		return nil, fmt.Errorf("lifecycle: create journal directory: %w", err)
+	if err := checkDirectoryAncestors(dir, os.Geteuid()); err != nil {
+		return nil, err
+	}
+	if _, err := os.Lstat(dir); errors.Is(err, os.ErrNotExist) {
+		// Create only the leaf directory after its parent chain has been checked;
+		// never let MkdirAll silently walk through an untrusted symlink ancestor.
+		if err := os.Mkdir(dir, 0700); err != nil && !errors.Is(err, os.ErrExist) {
+			return nil, fmt.Errorf("lifecycle: create journal directory: %w", err)
+		}
 	}
 	dirInfo, err := os.Lstat(dir)
 	if err != nil || !dirInfo.IsDir() || dirInfo.Mode()&os.ModeSymlink != 0 {
