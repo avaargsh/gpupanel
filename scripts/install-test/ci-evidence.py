@@ -52,6 +52,12 @@ def _digest(path: Path):
         return hashlib.file_digest(source, "sha256").hexdigest()
 
 
+def valid_digest(value: object) -> bool:
+    return isinstance(value, str) and len(value) == 64 and all(
+        char in "0123456789abcdef" for char in value
+    )
+
+
 def summarize(state: Path, *, run_completed: bool, source_sha: str) -> dict:
     observed = (state / "ci-stages.txt")
     marks = [] if observed.is_symlink() or not observed.is_file() else (
