@@ -265,20 +265,24 @@ def classify_inflight_receipt(value: object, task_id: str) -> str:
     return "malformed"
 
 
+# Keep this detail aligned with requireReconciledAppInstallation in Go. The
+# API wraps errors in a localized message, but preserves this exact detail as
+# the suffix; generic 5xx business errors must never count as gate refusals.
+UNKNOWN_MUTATION_REFUSAL_DETAIL = "application installation outcome is unknown; inspect task, app record and Docker resources before modifying it"
+
+
 def classify_gate_refusal(
     response: object,
     inventory_before: object,
     inventory_after: object,
     still_unknown: object,
 ) -> str:
-    """Return 'refused' only for a business refusal with unchanged state.
+    """Accept only the known UNKNOWN mutation-gate rejection, never any error.
 
-    Agent answers are always HTTP 200 with the business code in the body, so
-    an UNKNOWN reconciliation refusal is a non-200 code on an HTTP 200 answer.
-    A 5xx HTTP gateway answer is 'unavailable', never proof of refusal; an
-    accepted answer is 'accepted'; changed Docker/TaskDB/AppInstall inventory
-    is 'inventory-changed'; an install that no longer classifies as UNKNOWN is
-    'evidence-changed'. Never formats response values or identities.
+    The API envelope uses HTTP 200 for application errors and places its
+    business status in 'code'. A stable suffix from the current Go gate error
+    distinguishes the intended rejection from unrelated Agent failures.
+    Raw messages are inspected in memory only and never enter CI diagnostics.
     """
     if not isinstance(response, dict):
         return "malformed"
@@ -288,8 +292,17 @@ def classify_gate_refusal(
         return "malformed"
     if http >= 500:
         return "unavailable"
-    if http == 200 and code == 200:
+    if http != 200:
+        return "unexpected-error"
+    if code == 200:
         return "accepted"
+    if code < 400:
+        return "unexpected-error"
+    message = response.get("message")
+    if not isinstance(message, str) or not message or len(message) > 1024:
+        return "malformed"
+    if not message.endswith(UNKNOWN_MUTATION_REFUSAL_DETAIL):
+        return "unavailable" if code >= 500 else "unexpected-error"
     if inventory_before != inventory_after:
         return "inventory-changed"
     if still_unknown is not True:

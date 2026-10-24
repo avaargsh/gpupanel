@@ -156,7 +156,7 @@ def app_unknown_fence_code(raw: str) -> str:
 G5_APP_UNKNOWN_OP_FENCE = re.compile(
     r"(?m)^G5_APP_UNKNOWN_OP_FENCE_CODE=(control-unavailable|"
     r"delete-(?:accepted|unavailable|malformed|inventory-changed|"
-    r"evidence-changed)) release=NO_GO$"
+    r"evidence-changed|unexpected-error)) release=NO_GO$"
 )
 
 

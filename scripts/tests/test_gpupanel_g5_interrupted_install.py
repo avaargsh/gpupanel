@@ -72,8 +72,12 @@ class InterruptedInstallEvidenceTests(unittest.TestCase):
             {"items": [{**task, "type": "PRIVATE"}]}, TASK_ID),
             "malformed")
 
-    def test_mutation_refusal_requires_unchanged_observation(self):
-        denied = {"http": 200, "code": 409}
+    def test_mutation_refusal_requires_exact_gate_detail_and_unchanged_observation(self):
+        detail = evidence.UNKNOWN_MUTATION_REFUSAL_DETAIL
+        denied = {
+            "http": 200, "code": 500,
+            "message": "Internal server error: " + detail,
+        }
         inventory = {"containers": [], "networks": [], "volumes": []}
         classify = evidence.classify_gate_refusal
         self.assertEqual(classify(denied, inventory, inventory, True), "refused")
@@ -81,11 +85,47 @@ class InterruptedInstallEvidenceTests(unittest.TestCase):
                                   inventory, True), "accepted")
         self.assertEqual(classify({"http": 503, "code": 0}, inventory,
                                   inventory, True), "unavailable")
+        # A generic Agent error uses the same HTTP-200/business-500 envelope.
+        # It must not pass the gate assertion just because state stayed unchanged.
+        generic_500 = {
+            "http": 200, "code": 500,
+            "message": "Internal server error: database is temporarily unavailable",
+        }
+        self.assertEqual(classify(generic_500, inventory, inventory, True),
+                         "unavailable")
+        generic_conflict = {
+            "http": 200, "code": 409,
+            "message": "another operation was rejected",
+        }
+        self.assertEqual(classify(generic_conflict, inventory, inventory, True),
+                         "unexpected-error")
+        self.assertEqual(classify({"http": 200, "code": 409}, inventory,
+                                  inventory, True), "malformed")
         changed = {**inventory, "containers": ["changed"]}
         self.assertEqual(classify(denied, inventory, changed, True),
                          "inventory-changed")
         self.assertEqual(classify(denied, inventory, inventory, False),
                          "evidence-changed")
+        source = (ROOT / "agent/app/service/app_operation_status.go").read_text()
+        self.assertIn(detail, source)
+
+    def test_unknown_operation_failure_code_allowlist_is_fixed(self):
+        for category in (
+            "control-unavailable", "delete-accepted", "delete-unavailable",
+            "delete-malformed", "delete-inventory-changed",
+            "delete-evidence-changed", "delete-unexpected-error",
+        ):
+            self.assertEqual(failure.app_unknown_op_fence_code(
+                "G5_APP_UNKNOWN_OP_FENCE_CODE=" + category +
+                " release=NO_GO\\n"), category)
+        for invalid in (
+            "delete-generic-error-detail=SECRET",
+            "delete-unexpected-error message=PRIVATE",
+            "delete-unexpected-error release=GO",
+        ):
+            self.assertEqual(failure.app_unknown_op_fence_code(
+                "G5_APP_UNKNOWN_OP_FENCE_CODE=" + invalid +
+                " release=NO_GO\\n"), "unknown")
 
     def test_live_probe_starts_install_in_background_then_observes_taskdb(self):
         probe = (ROOT / "scripts/install-test/app_fault_probe.py").read_text()

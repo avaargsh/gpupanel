@@ -131,6 +131,7 @@ class G5EvidenceFailureCodeTests(unittest.TestCase):
         self.assertIn('G5_APP_EVIDENCE_FAILURE_CODE=', script)
         self.assertIn('raise RuntimeError("task outcome ambiguous; do NOT retry")', script)
         self.assertIn('evidence_code != "ok"', script)
+        self.assertIn("message:parsed.message", script)
 
 class G5AppInstallRemovalObservationTests(unittest.TestCase):
     """The uninstalled AppInstall must be observed gone by payload contract.

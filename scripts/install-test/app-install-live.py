@@ -195,7 +195,7 @@ with sync_playwright() as play:
                 body:method==='POST' ? JSON.stringify(body) : undefined
             });
             const parsed = await r.json();
-            return {http:r.status, code:parsed.code, data:parsed.data};
+            return {http:r.status, code:parsed.code, message:parsed.message, data:parsed.data};
         }""", {"method": method, "endpoint": endpoint, "body": body})
         accepted = response.get("http") == 200 and response.get("code") == 200
         if success and not accepted:
