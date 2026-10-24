@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Real pre-install snapshot rollback on the task-owned Ubuntu VM.
 
-Proves a manual restore after a bounded partial-write fixture only. It does
+Proves a manual restore after a bounded synthetic-debris fixture only. It does
 not prove installer-internal rollback, A->B->A upgrade rollback, or M0 GO.
 """
 from __future__ import annotations
@@ -22,6 +22,7 @@ from pathlib import Path
 
 import candidate
 import checkpoint
+import disk_handoff
 import vm
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -30,6 +31,8 @@ VM = vm.STATE
 BASELINE = STATE / "preinstall-baseline.json"
 BOUND = STATE / "preinstall-checkpoint.json"
 PROOF = STATE / "preinstall-rollback-live.json"
+DEBRIS_RECEIPT = STATE / "preinstall-synthetic-debris.json"
+RESTORE_INTENT = STATE / "preinstall-rollback-intent.json"
 NAME_RE = re.compile(r"^checkpoint-[0-9]{8}T[0-9]{6}Z-[0-9a-f]{8}$")
 INVENTORY_KEYS = ("containers", "networks", "volumes", "images")
 GUEST_SOURCE = r'''
@@ -39,8 +42,8 @@ ACTION = __ACTION__
 SOURCE_SHA = __SOURCE_SHA__
 EXPECTED_BINARY = json.loads(__BINARY_JSON__)
 EXPECTED_BASELINE = json.loads(__BASELINE_JSON__)
-MARKER = Path("/opt/gpupanel/conf/.gpupanel-ci-partial-install-write")
-FIXTURE_UNIT = Path("/etc/systemd/system/gpupanel-ci-partial-install.service")
+MARKER = Path("/opt/gpupanel/conf/.gpupanel-ci-synthetic-install-debris")
+FIXTURE_UNIT = Path("/etc/systemd/system/gpupanel-ci-synthetic-install-debris.service")
 
 def run(args, timeout=20):
     result = subprocess.run(args, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
@@ -116,38 +119,43 @@ if ACTION == "capture":
       "docker_active":True, "docker_enabled":True,
       "panel_runtime_absent":True, "panel_port_closed":True}, sort_keys=True))
 elif ACTION == "inject":
-    if EXPECTED_BINARY != installed_hashes() or not active("gpupanel-core") or not active("gpupanel-agent"):
-        raise RuntimeError("installed candidate is not healthy")
+    if EXPECTED_BINARY != installed_hashes():
+        raise RuntimeError("installed candidate binaries do not match")
     if machine_sha != EXPECTED_BASELINE.get("guest_machine_id_sha256"):
         raise RuntimeError("guest identity changed")
-    if (not MARKER.parent.is_dir() or MARKER.parent.is_symlink()
-        or present(MARKER) or present(FIXTURE_UNIT)):
-        raise RuntimeError("partial-write fixture path unsafe")
-    fd = os.open(MARKER, os.O_WRONLY|os.O_CREAT|os.O_EXCL|os.O_NOFOLLOW, 0o600)
-    with os.fdopen(fd, "wb") as out:
-        out.write(("GPUPANEL-CI-PARTIAL-WRITE:" + SOURCE_SHA).encode("ascii"))
-        out.flush(); os.fsync(out.fileno())
-    fd = os.open(FIXTURE_UNIT, os.O_WRONLY|os.O_CREAT|os.O_EXCL|os.O_NOFOLLOW, 0o644)
-    with os.fdopen(fd, "w", encoding="utf-8") as out:
-        out.write("[Unit]\nDescription=GPUPanel CI partial-write rollback fixture\n"
-                  "[Service]\nType=oneshot\nExecStart=/usr/bin/true\n")
-        out.flush(); os.fsync(out.fileno())
+    if not MARKER.parent.is_dir() or MARKER.parent.is_symlink():
+        raise RuntimeError("synthetic-debris fixture parent unsafe")
+    if not (active("gpupanel-core") and active("gpupanel-agent")) and not (
+        present(MARKER) and present(FIXTURE_UNIT)
+    ):
+        raise RuntimeError("cannot resume synthetic-debris fixture with services stopped")
+    marker_bytes = ("GPUPANEL-CI-SYNTHETIC-DEBRIS:" + SOURCE_SHA).encode("ascii")
+    unit_bytes = ("[Unit]\nDescription=GPUPanel CI synthetic debris rollback fixture\n"
+                  "[Service]\nType=oneshot\nExecStart=/usr/bin/true\n").encode("utf-8")
+    for path, contents, mode in ((MARKER, marker_bytes, 0o600), (FIXTURE_UNIT, unit_bytes, 0o644)):
+        if present(path):
+            if path.is_symlink() or not path.is_file() or path.read_bytes() != contents:
+                raise RuntimeError("synthetic-debris fixture conflicts with existing state")
+            continue
+        fd = os.open(path, os.O_WRONLY|os.O_CREAT|os.O_EXCL|os.O_NOFOLLOW, mode)
+        with os.fdopen(fd, "wb") as out:
+            out.write(contents); out.flush(); os.fsync(out.fileno())
     run(["systemctl", "daemon-reload"])
     run(["systemctl", "stop", "gpupanel-agent", "gpupanel-core"], timeout=45)
     if active("gpupanel-core") or active("gpupanel-agent"):
         raise RuntimeError("panel services remained active")
     version, rows = inventory()
-    print(json.dumps({"schema":"gpupanel.vm.preinstall-fault.v1",
+    print(json.dumps({"schema":"gpupanel.vm.preinstall-synthetic-debris.v1",
       "source_sha":SOURCE_SHA, "guest_machine_id_sha256":machine_sha,
       "installed_binary_sha256":installed_hashes(),
-      "installed_candidate_matched":True, "partial_marker_present":present(MARKER),
-      "partial_unit_present":present(FIXTURE_UNIT), "panel_services_stopped":True,
+      "installed_candidate_matched":True, "synthetic_marker_present":present(MARKER),
+      "synthetic_unit_present":present(FIXTURE_UNIT), "panel_services_stopped":True,
       "docker_server_version":version, "docker_inventory":rows}, sort_keys=True))
 elif ACTION == "verify":
     if not panel_absent() or not port_closed(9999):
         raise RuntimeError("panel runtime or listener survived rollback")
     if present(MARKER) or present(FIXTURE_UNIT):
-        raise RuntimeError("partial-write state survived rollback")
+        raise RuntimeError("synthetic debris state survived rollback")
     if not active("docker") or not enabled("docker"):
         raise RuntimeError("Docker service state did not recover")
     version, rows = inventory()
@@ -155,8 +163,8 @@ elif ACTION == "verify":
       "source_sha":SOURCE_SHA, "guest_machine_id_sha256":machine_sha,
       "docker_server_version":version, "docker_inventory":rows,
       "docker_active":True, "docker_enabled":True, "panel_runtime_absent":True,
-      "panel_port_closed":True, "partial_marker_absent":True,
-      "partial_unit_absent":True}, sort_keys=True))
+      "panel_port_closed":True, "synthetic_marker_absent":True,
+      "synthetic_unit_absent":True}, sort_keys=True))
 else:
     raise RuntimeError("unsupported guest action")
 '''
@@ -330,34 +338,68 @@ def _restore_disk(folder: Path, expected_sha: str) -> str:
         partial = VM / ".restored-ci-preinstall-disk.partial"
         if vm.owned_pid("qemu.pid", str(disk)):
             raise RuntimeError("refuse restore while guest running")
-        if disk.is_symlink() or not disk.is_file() or not stat.S_ISREG(disk.lstat().st_mode):
-            raise RuntimeError("active disk invalid")
-        if previous.exists() or previous.is_symlink() or partial.exists() or partial.is_symlink():
-            raise RuntimeError("rollback destination already exists")
         if checkpoint.verify_checkpoint(folder).get("disk_sha256") != expected_sha:
             raise RuntimeError("sealed checkpoint changed")
         source = folder / "disk.qcow2"
-        if source.is_symlink() or not source.is_file():
+        if source.is_symlink() or not disk_handoff.is_regular_file(source):
             raise RuntimeError("checkpoint disk invalid")
-        fd = os.open(partial, os.O_WRONLY|os.O_CREAT|os.O_EXCL|os.O_NOFOLLOW, 0o600)
-        with source.open("rb") as src, os.fdopen(fd, "wb") as dst:
-            shutil.copyfileobj(src, dst, 4 * 1024 * 1024); dst.flush(); os.fsync(dst.fileno())
-        with partial.open("rb") as stream:
-            actual = hashlib.file_digest(stream, "sha256").hexdigest()
-        if actual != expected_sha or vm.owned_pid("qemu.pid", str(disk)):
-            partial.unlink(missing_ok=True)
-            raise RuntimeError("restored disk checksum mismatch")
-        disk.rename(previous)
-        try:
-            partial.rename(disk)
-        except Exception:
-            previous.rename(disk)
-            raise
-        dfd = os.open(VM, os.O_RDONLY|getattr(os, "O_DIRECTORY", 0))
-        try: os.fsync(dfd)
-        finally: os.close(dfd)
-        return actual
+        if disk_handoff.file_sha256(source) != expected_sha:
+            raise RuntimeError("checkpoint disk digest mismatch")
+        if previous.exists() and disk.exists() and not previous.is_symlink() and not disk.is_symlink():
+            if disk_handoff.file_sha256(disk) == expected_sha and not os.path.samefile(disk, previous):
+                disk_handoff.fsync_directory(VM)
+                return expected_sha
+        if partial.is_symlink():
+            raise RuntimeError("restore staging path is a symlink")
+        if partial.exists():
+            if not disk_handoff.is_regular_file(partial):
+                raise RuntimeError("restore staging path is not a regular file")
+            if disk_handoff.file_sha256(partial) != expected_sha:
+                partial.unlink()
+        if not partial.exists():
+            fd = os.open(partial, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW, 0o600)
+            with source.open("rb") as src, os.fdopen(fd, "wb") as dst:
+                shutil.copyfileobj(src, dst, 4 * 1024 * 1024)
+                dst.flush()
+                os.fsync(dst.fileno())
+            if disk_handoff.file_sha256(partial) != expected_sha:
+                partial.unlink(missing_ok=True)
+                raise RuntimeError("restored disk checksum mismatch")
+        return disk_handoff.atomic_disk_handoff(disk, previous, partial, expected_sha)
     return vm.guarded_vm_change(exchange)
+
+def _debris_receipt(local: dict, baseline: dict) -> dict:
+    return {
+        "schema": "gpupanel.vm.synthetic-debris-receipt.v1",
+        "source_sha": local["source_sha"],
+        "guest_machine_id_sha256": baseline["guest_machine_id_sha256"],
+        "binary_sha256": local["binary_sha256"],
+        "synthetic_marker_present": True,
+        "synthetic_unit_present": True,
+        "panel_services_stopped": True,
+    }
+
+
+def _ensure_record(path: Path, expected: dict) -> dict:
+    if path.exists() or path.is_symlink():
+        if _read(path) != expected:
+            raise RuntimeError("existing recovery intent/evidence does not match this candidate")
+    else:
+        _write_new(path, expected)
+    return expected
+
+
+def _restore_intent(local: dict, baseline: dict, bound: dict, receipt: dict) -> dict:
+    encoded = json.dumps(receipt, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    expected = {
+        "schema": "gpupanel.vm.preinstall-rollback-intent.v1",
+        "source_sha": local["source_sha"],
+        "guest_machine_id_sha256": baseline["guest_machine_id_sha256"],
+        "binary_sha256": local["binary_sha256"],
+        "checkpoint_sha256": bound["checkpoint_sha256"],
+        "synthetic_debris_receipt_sha256": _sha(encoded),
+    }
+    return _ensure_record(RESTORE_INTENT, expected)
 
 
 def restore() -> None:
@@ -366,19 +408,33 @@ def restore() -> None:
     bound = _read(BOUND); folder = _validate_checkpoint(bound, baseline, local)
     if PROOF.exists() or PROOF.is_symlink():
         raise RuntimeError("rollback proof already exists")
-    fault = _guest("inject", local, baseline)
-    if (fault.get("schema") != "gpupanel.vm.preinstall-fault.v1"
-        or fault.get("guest_machine_id_sha256") != baseline["guest_machine_id_sha256"]
-        or fault.get("installed_candidate_matched") is not True
-        or fault.get("installed_binary_sha256") != local["binary_sha256"]
-        or fault.get("partial_marker_present") is not True
-        or fault.get("partial_unit_present") is not True
-        or fault.get("panel_services_stopped") is not True):
-        raise RuntimeError("partial-write fault was not proven")
-    subprocess.run(["python3","scripts/install-test/vm.py","stop"], cwd=ROOT, check=True,
+    disk = VM / "disk.qcow2"
+    previous = VM / "disk.before-ci-install-rollback.qcow2"
+    resume_handoff = previous.exists() or previous.is_symlink() or not disk.exists()
+    if resume_handoff:
+        receipt = _read(DEBRIS_RECEIPT)
+        if receipt != _debris_receipt(local, baseline):
+            raise RuntimeError("cannot resume without matching synthetic-debris evidence")
+    else:
+        # An interrupted stop before disk handoff leaves the original disk present.
+        if not vm.owned_pid("qemu.pid", str(disk)):
+            subprocess.run(["python3", "scripts/install-test/vm.py", "start"], cwd=ROOT,
+                           check=True, timeout=180, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        observed = _guest("inject", local, baseline)
+        if (observed.get("schema") != "gpupanel.vm.preinstall-synthetic-debris.v1"
+            or observed.get("guest_machine_id_sha256") != baseline["guest_machine_id_sha256"]
+            or observed.get("installed_candidate_matched") is not True
+            or observed.get("installed_binary_sha256") != local["binary_sha256"]
+            or observed.get("synthetic_marker_present") is not True
+            or observed.get("synthetic_unit_present") is not True
+            or observed.get("panel_services_stopped") is not True):
+            raise RuntimeError("synthetic debris state was not proven")
+        receipt = _ensure_record(DEBRIS_RECEIPT, _debris_receipt(local, baseline))
+    _restore_intent(local, baseline, bound, receipt)
+    subprocess.run(["python3", "scripts/install-test/vm.py", "stop"], cwd=ROOT, check=True,
                    timeout=60, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     restored_sha = _restore_disk(folder, bound["checkpoint_sha256"])
-    subprocess.run(["python3","scripts/install-test/vm.py","start"], cwd=ROOT, check=True,
+    subprocess.run(["python3", "scripts/install-test/vm.py", "start"], cwd=ROOT, check=True,
                    timeout=180, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     final = None
     for _ in range(35):
@@ -393,21 +449,20 @@ def restore() -> None:
         or final.get("docker_server_version") != baseline["docker_server_version"]
         or inventory_digests(final.get("docker_inventory")) != baseline["docker_inventory_sha256"]
         or any(final.get(k) is not True for k in ("docker_active","docker_enabled","panel_runtime_absent",
-                                                   "panel_port_closed","partial_marker_absent","partial_unit_absent"))):
+                                                   "panel_port_closed","synthetic_marker_absent","synthetic_unit_absent"))):
         raise RuntimeError("restored guest differs from pre-install baseline")
     _write_new(PROOF, {"schema":"gpupanel.vm.preinstall-rollback.v1",
-      "kind":"REAL TASK-OWNED UBUNTU PRE-INSTALL CHECKPOINT RESTORE AFTER PARTIAL-WRITE FAULT",
+      "kind":"REAL TASK-OWNED UBUNTU PRE-INSTALL CHECKPOINT RESTORE AFTER SYNTHETIC DEBRIS INJECTION",
       "source_sha":local["source_sha"], "guest_machine_id_sha256":baseline["guest_machine_id_sha256"],
       "preinstall_checkpoint_sha256":bound["checkpoint_sha256"], "restored_disk_sha256":restored_sha,
-      "installed_candidate_matched_before_rollback":True, "partial_write_marker_injected":True,
-      "partial_systemd_unit_injected":True, "panel_services_stopped_before_restore":True,
+      "installed_candidate_matched_before_rollback":True, "synthetic_debris_marker_injected":receipt["synthetic_marker_present"],
+      "synthetic_debris_unit_injected":receipt["synthetic_unit_present"], "panel_services_stopped_before_restore":True,
       "restored_guest_rebooted_and_reobserved":True, "guest_machine_id_matches_preinstall":True,
       "docker_server_version_matches_preinstall":True, "docker_inventory_matches_preinstall":True,
       "docker_service_active_and_enabled":True, "gpupanel_runtime_paths_absent":True,
-      "gpupanel_systemd_units_absent":True, "partial_write_state_absent":True, "panel_port_closed":True,
+      "gpupanel_systemd_units_absent":True, "synthetic_debris_state_absent":True, "panel_port_closed":True,
       "full_upgrade_rollback_verified":False, "m0_release_decision":"NO_GO"})
     print("G3_PREINSTALL_ROLLBACK_CODE=restored-and-reobserved release=NO_GO")
-
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Real disposable VM pre-install rollback proof")
