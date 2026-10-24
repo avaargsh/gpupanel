@@ -117,7 +117,7 @@ class InterruptedInstallEvidenceTests(unittest.TestCase):
         ):
             self.assertEqual(failure.app_unknown_op_fence_code(
                 "G5_APP_UNKNOWN_OP_FENCE_CODE=" + category +
-                " release=NO_GO\\n"), category)
+                " release=NO_GO\n"), category)
         for invalid in (
             "delete-generic-error-detail=SECRET",
             "delete-unexpected-error message=PRIVATE",
@@ -125,7 +125,7 @@ class InterruptedInstallEvidenceTests(unittest.TestCase):
         ):
             self.assertEqual(failure.app_unknown_op_fence_code(
                 "G5_APP_UNKNOWN_OP_FENCE_CODE=" + invalid +
-                " release=NO_GO\\n"), "unknown")
+                " release=NO_GO\n"), "unknown")
 
     def test_live_probe_starts_install_in_background_then_observes_taskdb(self):
         probe = (ROOT / "scripts/install-test/app_fault_probe.py").read_text()
