@@ -1,0 +1,126 @@
+"""Regression tests for safe GPUPanel service teardown and explicit purge."""
+import argparse
+import importlib.util
+from pathlib import Path
+import tempfile
+from unittest import mock
+import unittest
+
+ROOT = Path(__file__).resolve().parents[2]
+HELPER_PATH = ROOT / "scripts/gpupanel-uninstall-preflight.py"
+UNINSTALLER_PATH = ROOT / "deploy/uninstall.sh"
+SPEC = importlib.util.spec_from_file_location("gpupanel_uninstall_preflight", HELPER_PATH)
+helper = importlib.util.module_from_spec(SPEC)
+SPEC.loader.exec_module(helper)
+
+
+class UninstallPreflightTests(unittest.TestCase):
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temp.cleanup)
+        self.root = Path(self.temp.name)
+        self.base = self.root / "opt"
+        self.panel = self.base / "gpupanel"
+        self.unit_dir = self.root / "systemd"
+        self.panel.mkdir(parents=True)
+        self.unit_dir.mkdir()
+        (self.panel / "pctl").write_text(
+            "#!/bin/bash\nBASE_DIR=" + str(self.base) + "\n", encoding="utf-8"
+        )
+        (self.panel / "pctl").chmod(0o700)
+        for name in ("gpupanel-core", "gpupanel-agent"):
+            binary = self.panel / name
+            binary.write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
+            binary.chmod(0o755)
+            (self.unit_dir / (name + ".service")).write_text(
+                "[Service]\n"
+                "WorkingDirectory=" + str(self.panel) + "\n"
+                "ExecStart=" + str(binary) + "\n",
+                encoding="utf-8",
+            )
+
+    def args(self, **overrides):
+        values = {
+            "base_dir": str(self.base),
+            "unit_dir": str(self.unit_dir),
+            "systemd": False,
+            "no_systemd": True,
+            "assert_stopped": False,
+            "units_removed": False,
+            "purge": False,
+            "confirm_purge": "",
+        }
+        values.update(overrides)
+        return argparse.Namespace(**values)
+
+    def test_valid_install_is_bound_to_exact_pctl_and_unit_paths(self):
+        with mock.patch.object(helper, "process_paths", return_value=[]):
+            plan = helper.build_plan(self.args())
+        self.assertTrue(plan["ready_to_execute"])
+        self.assertEqual(plan["panel_dir"], str(self.panel))
+        self.assertEqual(plan["data_policy"], "PRESERVE_INSTALLATION_DIRECTORY")
+        self.assertEqual(plan["verified_unit_names"], ["gpupanel-agent", "gpupanel-core"])
+
+    def test_symlinked_installation_path_is_rejected(self):
+        outside = self.root / "owned-elsewhere"
+        outside.mkdir()
+        for item in self.panel.iterdir():
+            item.unlink()
+        self.panel.rmdir()
+        self.panel.symlink_to(outside, target_is_directory=True)
+        with self.assertRaises(helper.Refusal):
+            helper.build_plan(self.args())
+
+    def test_pctl_base_dir_mismatch_is_rejected(self):
+        (self.panel / "pctl").write_text("#!/bin/bash\nBASE_DIR=/another/install\n", encoding="utf-8")
+        with self.assertRaisesRegex(helper.Refusal, "BASE_DIR"):
+            helper.build_plan(self.args())
+
+    def test_unit_execstart_for_another_install_is_rejected(self):
+        unit = self.unit_dir / "gpupanel-core.service"
+        unit.write_text(
+            "[Service]\nWorkingDirectory=/opt/other\nExecStart=/opt/other/gpupanel-core\n",
+            encoding="utf-8",
+        )
+        with self.assertRaisesRegex(helper.Refusal, "does not uniquely execute"):
+            helper.build_plan(self.args())
+
+    def test_systemd_mode_requires_both_owned_units(self):
+        (self.unit_dir / "gpupanel-agent.service").unlink()
+        with mock.patch.object(helper, "verify_systemd_fragment"):
+            with self.assertRaisesRegex(helper.Refusal, "both matching"):
+                helper.build_plan(self.args(systemd=True))
+
+    def test_running_process_without_systemd_is_rejected(self):
+        with mock.patch.object(helper, "process_paths", return_value=["1234"]):
+            with self.assertRaisesRegex(helper.Refusal, "process is running"):
+                helper.build_plan(self.args())
+
+    def test_purge_requires_exact_confirmation_and_rejects_mountpoint(self):
+        with mock.patch.object(helper, "process_paths", return_value=[]):
+            with self.assertRaisesRegex(helper.Refusal, "exact normalized"):
+                helper.build_plan(self.args(purge=True))
+            with mock.patch.object(helper, "mounted_at", return_value=True):
+                with self.assertRaisesRegex(helper.Refusal, "mount point"):
+                    helper.build_plan(self.args(purge=True, confirm_purge=str(self.panel)))
+
+    def test_post_removal_verifier_requires_owned_units_to_be_absent(self):
+        (self.unit_dir / "gpupanel-core.service").unlink()
+        with mock.patch.object(helper, "process_paths", return_value=[]):
+            with self.assertRaisesRegex(helper.Refusal, "unit files still exist"):
+                helper.build_plan(self.args(units_removed=True))
+
+    def test_uninstaller_stops_only_verified_units_and_never_kills_by_name(self):
+        source = UNINSTALLER_PATH.read_text(encoding="utf-8")
+        self.assertIn("gpupanel-uninstall-preflight.py", source)
+        self.assertIn("systemctl disable --now gpupanel-agent.service gpupanel-core.service", source)
+        self.assertNotIn("pkill", source)
+        self.assertNotIn("|| true", source)
+        self.assertIn("--assert-stopped", source)
+        self.assertIn("--units-removed --purge --confirm-purge", source)
+        self.assertIn("rm -rf --one-file-system --", source)
+        self.assertIn('printf \'Binaries, configuration, database and user data remain', source)
+
+
+if __name__ == "__main__":
+    unittest.main()
