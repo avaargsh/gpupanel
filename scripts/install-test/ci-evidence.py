@@ -299,12 +299,12 @@ def summarize(state: Path, *, run_completed: bool, source_sha: str) -> dict:
     rollback_keys = {
         "schema", "kind", "source_sha", "guest_machine_id_sha256",
         "preinstall_checkpoint_sha256", "restored_disk_sha256",
-        "installed_candidate_matched_before_rollback", "partial_write_marker_injected",
-        "partial_systemd_unit_injected", "panel_services_stopped_before_restore",
+        "installed_candidate_matched_before_rollback", "synthetic_debris_marker_injected",
+        "synthetic_debris_unit_injected", "panel_services_stopped_before_restore",
         "restored_guest_rebooted_and_reobserved", "guest_machine_id_matches_preinstall",
         "docker_server_version_matches_preinstall", "docker_inventory_matches_preinstall",
         "docker_service_active_and_enabled", "gpupanel_runtime_paths_absent",
-        "gpupanel_systemd_units_absent", "partial_write_state_absent", "panel_port_closed",
+        "gpupanel_systemd_units_absent", "synthetic_debris_state_absent", "panel_port_closed",
         "full_upgrade_rollback_verified", "m0_release_decision",
     }
     rollback_ok = (
@@ -312,18 +312,18 @@ def summarize(state: Path, *, run_completed: bool, source_sha: str) -> dict:
         and isinstance(preinstall_rollback, dict)
         and set(preinstall_rollback) == rollback_keys
         and preinstall_rollback.get("schema") == "gpupanel.vm.preinstall-rollback.v1"
-        and preinstall_rollback.get("kind") == "REAL TASK-OWNED UBUNTU PRE-INSTALL CHECKPOINT RESTORE AFTER PARTIAL-WRITE FAULT"
+        and preinstall_rollback.get("kind") == "REAL TASK-OWNED UBUNTU PRE-INSTALL CHECKPOINT RESTORE AFTER SYNTHETIC DEBRIS INJECTION"
         and preinstall_rollback.get("source_sha") == source_sha
         and preinstall_rollback.get("guest_machine_id_sha256") == preinstall_baseline.get("guest_machine_id_sha256")
         and preinstall_rollback.get("preinstall_checkpoint_sha256") == preinstall_checkpoint.get("checkpoint_sha256")
         and preinstall_rollback.get("restored_disk_sha256") == preinstall_checkpoint.get("checkpoint_sha256")
         and all(preinstall_rollback.get(key) is True for key in (
-            "installed_candidate_matched_before_rollback", "partial_write_marker_injected",
-            "partial_systemd_unit_injected", "panel_services_stopped_before_restore",
+            "installed_candidate_matched_before_rollback", "synthetic_debris_marker_injected",
+            "synthetic_debris_unit_injected", "panel_services_stopped_before_restore",
             "restored_guest_rebooted_and_reobserved", "guest_machine_id_matches_preinstall",
             "docker_server_version_matches_preinstall", "docker_inventory_matches_preinstall",
             "docker_service_active_and_enabled", "gpupanel_runtime_paths_absent",
-            "gpupanel_systemd_units_absent", "partial_write_state_absent", "panel_port_closed",
+            "gpupanel_systemd_units_absent", "synthetic_debris_state_absent", "panel_port_closed",
         ))
         and preinstall_rollback.get("full_upgrade_rollback_verified") is False
         and preinstall_rollback.get("m0_release_decision") == "NO_GO"
