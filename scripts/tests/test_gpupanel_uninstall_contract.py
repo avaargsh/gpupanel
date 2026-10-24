@@ -143,6 +143,9 @@ class UninstallPreflightTests(unittest.TestCase):
         self.assertIn("trap 'exit 130' INT", source)
         self.assertIn("trap 'exit 143' TERM", source)
         self.assertIn("trap restore_units_on_failure EXIT", source)
+        self.assertIn("--units-removed >/dev/null", source)
+        self.assertLess(source.index("--units-removed >/dev/null"),
+                        source.index("UNIT_REMOVAL_COMMITTED=1"))
         self.assertIn("rm -rf --one-file-system --", source)
         self.assertIn('printf \'Binaries, configuration, database and user data remain', source)
 
