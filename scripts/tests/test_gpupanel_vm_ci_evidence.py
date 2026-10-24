@@ -334,6 +334,41 @@ class LiveVmEvidence(unittest.TestCase):
         self.assertNotIn("SECRET_COOKIE", sanitized)
         self.assertNotIn("PRIVATE_BODY", sanitized)
         self.assertNotIn("private-user", sanitized)
+        # System uninstall diagnostics export only an allowlisted stage/category,
+        # never the dynamic error string, filesystem path, or guest content.
+        self.assertEqual(
+            failure.system_uninstall_stage(
+                "GPUPANEL_SYSTEM_UNINSTALL_STAGE=first-uninstaller release=NO_GO\\n"
+                "password=SECRET_SHOULD_NOT_LEAK\\n"
+            ),
+            "first-uninstaller",
+        )
+        self.assertEqual(
+            failure.system_uninstall_stage(
+                "GPUPANEL_SYSTEM_UNINSTALL_STAGE=first-uninstaller password=LEAK release=NO_GO\\n"
+            ),
+            "unknown",
+        )
+        self.assertEqual(
+            failure.system_uninstall_failure_category(
+                "GPUPanel uninstall refused/failed: systemd did not confirm stop/disable; "
+                "secret=DO_NOT_LEAK"
+            ),
+            "service-stop-disable-unconfirmed",
+        )
+        self.assertEqual(
+            failure.system_uninstall_failure_category(
+                "arbitrary untrusted output: password=DO_NOT_LEAK"
+            ),
+            "unknown",
+        )
+        safe_report = (
+            "GPUPANEL_SYSTEM_UNINSTALL_STAGE="
+            + failure.system_uninstall_stage("password=DO_NOT_LEAK")
+            + " GPUPANEL_SYSTEM_UNINSTALL_CATEGORY="
+            + failure.system_uninstall_failure_category("password=DO_NOT_LEAK")
+        )
+        self.assertNotIn("DO_NOT_LEAK", safe_report)
         # A literal escaped backslash-n log has no real exception line.
         # Never guess a class from a secret-bearing freeform string.
         untrusted_flat = log.replace("\n", r"\n")
@@ -353,7 +388,7 @@ class LiveVmEvidence(unittest.TestCase):
         self.assertEqual(failure.compose_stage(
             "GUEST_COMPOSE_STAGE=up release=GO\n"
         ), "unknown")
-        self.assertEqual(failure.SCRIPTS.keys(), {"browser", "runtime", "compose", "restore", "container", "app-rejection", "app-install"})
+        self.assertEqual(failure.SCRIPTS.keys(), {"browser", "runtime", "compose", "restore", "container", "app-rejection", "app-install", "system-uninstall"})
         self.assertEqual(failure.app_api_stage(
             "G5_APP_API_FAILURE_STAGE=catalog-sync release=NO_GO\n"
             "cookie=UNREDACTABLE_SECRET\n"
