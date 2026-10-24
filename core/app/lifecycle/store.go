@@ -160,7 +160,7 @@ func (s *Store) Claim(ctx context.Context, req ClaimRequest) (Operation, bool, e
 			req.Owner, req.Target, string(req.Kind), req.IdempotencyKey).First(&existing).Error; err != nil {
 			return fmt.Errorf("lifecycle: load idempotent claim: %w", err)
 		}
-		if existing.BindingSHA256 != bindingDigest || existing.ArtifactSHA256 != req.ArtifactSHA256 {
+		if existing.BindingSHA256 != bindingDigest || (req.ArtifactSHA256 != "" && existing.ArtifactSHA256 != req.ArtifactSHA256) {
 			return fmt.Errorf("%w: key already binds a different parameter or artifact digest", ErrBindingMismatch)
 		}
 		result = rowToOperation(existing)
@@ -193,6 +193,9 @@ func (s *Store) advance(ctx context.Context, req TransitionRequest, allowReconci
 			}
 			return fmt.Errorf("lifecycle: load operation: %w", err)
 		}
+		if req.ArtifactSHA256 != "" && current.ArtifactSHA256 != "" && current.ArtifactSHA256 != req.ArtifactSHA256 {
+			return fmt.Errorf("%w: operation is already bound to a different artifact digest", ErrBindingMismatch)
+		}
 		if current.Revision == req.ExpectedRevision+1 && State(current.State) == req.NextState {
 			var previous eventRow
 			if err := tx.Where("operation_id = ? AND sequence = ?", current.ID, current.Revision).First(&previous).Error; err == nil &&
@@ -213,13 +216,17 @@ func (s *Store) advance(ctx context.Context, req TransitionRequest, allowReconci
 		}
 		now := time.Now().UTC().UnixNano()
 		nextRevision := current.Revision + 1
+		artifactDigest := current.ArtifactSHA256
+		if req.ArtifactSHA256 != "" {
+			artifactDigest = req.ArtifactSHA256
+		}
 		update := tx.Model(&operationRow{}).
 			Where("id = ? AND owner = ? AND state = ? AND revision = ?",
 				current.ID, req.Owner, string(req.ExpectedState), req.ExpectedRevision).
 			Updates(map[string]interface{}{
 				"state": string(req.NextState), "revision": nextRevision,
 				"stage": req.Stage, "error_code": req.ErrorCode,
-				"evidence_sha256": req.EvidenceSHA256, "updated_at_ns": now,
+				"evidence_sha256": req.EvidenceSHA256, "artifact_sha256": artifactDigest, "updated_at_ns": now,
 			})
 		if update.Error != nil {
 			return fmt.Errorf("lifecycle: update operation: %w", update.Error)
@@ -241,6 +248,7 @@ func (s *Store) advance(ctx context.Context, req TransitionRequest, allowReconci
 		current.Stage = req.Stage
 		current.ErrorCode = req.ErrorCode
 		current.EvidenceSHA256 = req.EvidenceSHA256
+		current.ArtifactSHA256 = artifactDigest
 		current.UpdatedAtNS = now
 		result = rowToOperation(current)
 		return nil
