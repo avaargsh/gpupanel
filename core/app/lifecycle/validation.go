@@ -77,9 +77,9 @@ func transitionAllowed(from, to State) bool {
 	case StatePreflight:
 		return to == StatePlanReviewed || to == StateFailedNoMutation
 	case StatePlanReviewed:
-		return to == StateBackupSealed || to == StateApplying || to == StateFailedNoMutation
+		return to == StateBackupSealed || to == StateApplying || to == StateFailedNoMutation || to == StateRecoveryRequired
 	case StateBackupSealed:
-		return to == StateApplying || to == StateFailedNoMutation
+		return to == StateApplying || to == StateFailedNoMutation || to == StateRecoveryRequired
 	case StateApplying:
 		return to == StateVerifying || to == StateRolledBack || to == StateUnknown || to == StateRecoveryRequired
 	case StateVerifying:
