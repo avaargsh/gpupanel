@@ -169,11 +169,11 @@ class LiveVmEvidence(unittest.TestCase):
         }
         self.preinstall_rollback = {
             "schema": "gpupanel.vm.preinstall-rollback.v1",
-            "kind": "REAL TASK-OWNED UBUNTU PRE-INSTALL CHECKPOINT RESTORE AFTER PARTIAL-WRITE FAULT",
+            "kind": "REAL TASK-OWNED UBUNTU PRE-INSTALL CHECKPOINT RESTORE AFTER SYNTHETIC DEBRIS INJECTION",
             "source_sha": self.source, "guest_machine_id_sha256": "d" * 64,
             "preinstall_checkpoint_sha256": "f" * 64, "restored_disk_sha256": "f" * 64,
             "installed_candidate_matched_before_rollback": True,
-            "partial_write_marker_injected": True, "partial_systemd_unit_injected": True,
+            "synthetic_debris_marker_injected": True, "synthetic_debris_unit_injected": True,
             "panel_services_stopped_before_restore": True,
             "restored_guest_rebooted_and_reobserved": True,
             "guest_machine_id_matches_preinstall": True,
@@ -181,7 +181,7 @@ class LiveVmEvidence(unittest.TestCase):
             "docker_inventory_matches_preinstall": True,
             "docker_service_active_and_enabled": True,
             "gpupanel_runtime_paths_absent": True, "gpupanel_systemd_units_absent": True,
-            "partial_write_state_absent": True, "panel_port_closed": True,
+            "synthetic_debris_state_absent": True, "panel_port_closed": True,
             "full_upgrade_rollback_verified": False, "m0_release_decision": "NO_GO",
         }
         self.write("preinstall-baseline.json", self.preinstall_baseline)
@@ -437,7 +437,11 @@ class LiveVmEvidence(unittest.TestCase):
         import ast
         source = (ROOT / "scripts/install-test/restore-live.py").read_text()
         ast.parse(source)
-        self.assertIn("vm.guarded_vm_change(exchange)", source)
+        self.assertIn("disk_handoff.atomic_disk_handoff", source)
+        self.assertNotIn("disk.rename(previous)", source)
+        handoff_source = (ROOT / "scripts/install-test/disk_handoff.py").read_text()
+        ast.parse(handoff_source)
+        self.assertIn("os.replace(partial, disk)", handoff_source)
         self.assertIn('VM / "disk.before-ci-restore.qcow2"', source)
         self.assertIn("checkpoint.verify_checkpoint(folder)", source)
         self.assertIn("original.exists() or original.is_symlink()", source)
@@ -455,8 +459,8 @@ class LiveVmEvidence(unittest.TestCase):
             {"preinstall_checkpoint_sha256": "0" * 64},
             {"restored_disk_sha256": "0" * 64},
             {"installed_candidate_matched_before_rollback": False},
-            {"partial_write_marker_injected": False},
-            {"partial_systemd_unit_injected": False},
+            {"synthetic_debris_marker_injected": False},
+            {"synthetic_debris_unit_injected": False},
             {"panel_services_stopped_before_restore": False},
             {"restored_guest_rebooted_and_reobserved": False},
             {"docker_inventory_matches_preinstall": False},
