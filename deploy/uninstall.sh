@@ -96,12 +96,56 @@ fi
 python3 "$PREFLIGHT" --base-dir "$BASE_DIR" --unit-dir "$UNIT_DIR" "${SYSTEMD_ARGS[@]}" --assert-stopped >/dev/null \
     || die "a GPUPanel process is still running or ownership changed; no files were removed"
 
+# Preserve exact unit bytes until systemd has accepted their removal. If a
+# file removal or daemon-reload fails, restore those units and leave the
+# installation directory intact so a later retry starts from a known state.
+UNIT_BACKUP=""
+UNIT_REMOVAL_COMMITTED=0
+restore_units_on_failure() {
+    local rc=$?
+    if [ -n "$UNIT_BACKUP" ] && [ "$UNIT_REMOVAL_COMMITTED" != "1" ]; then
+        local restore_failed=0
+        for unit in gpupanel-core.service gpupanel-agent.service; do
+            if [ -f "$UNIT_BACKUP/$unit" ]; then
+                cp -p -- "$UNIT_BACKUP/$unit" "$UNIT_DIR/$unit" || restore_failed=1
+            fi
+        done
+        if [ "$restore_failed" = "0" ] && [ "${SYSTEMD_ARGS[0]}" = "--systemd" ]; then
+            systemctl daemon-reload || restore_failed=1
+        fi
+        if [ "$restore_failed" = "0" ]; then
+            rm -rf -- "$UNIT_BACKUP"
+        else
+            printf 'GPUPanel uninstall recovery required; original unit backup retained at %s\n' "$UNIT_BACKUP" >&2
+        fi
+    fi
+    exit "$rc"
+}
+
+if [ -f "$UNIT_DIR/gpupanel-core.service" ] || [ -f "$UNIT_DIR/gpupanel-agent.service" ]; then
+    UNIT_BACKUP="$(mktemp -d "$UNIT_DIR/.gpupanel-uninstall.XXXXXX")" \
+        || die "cannot stage owned units for reversible removal"
+    chmod 0700 "$UNIT_BACKUP"
+    trap restore_units_on_failure EXIT
+    for unit in gpupanel-core.service gpupanel-agent.service; do
+        if [ -f "$UNIT_DIR/$unit" ]; then
+            cp -p -- "$UNIT_DIR/$unit" "$UNIT_BACKUP/$unit" \
+                || die "cannot preserve original $unit before removal"
+        fi
+    done
+fi
+
 # The preflight proved these are exact regular files for this installation.
 # Do not kill by process name or command-line substring.
 rm -f -- "$UNIT_DIR/gpupanel-core.service" "$UNIT_DIR/gpupanel-agent.service"
 if [ "${SYSTEMD_ARGS[0]}" = "--systemd" ]; then
-    systemctl daemon-reload || die "systemd daemon-reload failed; installation data was retained"
+    systemctl daemon-reload || die "systemd daemon-reload failed; original units will be restored"
 fi
+UNIT_REMOVAL_COMMITTED=1
+if [ -n "$UNIT_BACKUP" ]; then
+    rm -rf -- "$UNIT_BACKUP" || die "unit removal committed but private staging directory remains"
+fi
+trap - EXIT
 
 if [ "$PURGE" = "1" ]; then
     # Re-check ownership and mount-point state after stopping services and
