@@ -35,6 +35,7 @@ export const navSections: NavSection[] = [
     ] },
     { titleKey: 'workbench.infrastructure', items: [
         { path: '/host', labelKey: 'nav.host', icon: navIcon(Server) },
+        { path: '/vms', labelKey: 'vmWorkbench.title', icon: navIcon(Server) },
         { path: '/gpu', labelKey: 'workbench.gpu', icon: navIcon(Layers) },
         { path: '/containers', labelKey: 'nav.container', icon: navIcon(Box) },
         { path: '/databases', labelKey: 'nav.database', icon: navIcon(Layers) },

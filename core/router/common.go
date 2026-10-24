@@ -12,5 +12,6 @@ func commonGroups() []CommonRouter {
 		&RuntimeDiagnosticsRouter{},
 		&ProjectRouter{},
 		&NativePrincipalRouter{},
+		&VMAccessRouter{},
 	}
 }

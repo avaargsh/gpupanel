@@ -1,6 +1,27 @@
 import type { LocaleResource } from './zh';
 
 const en: LocaleResource = {
+    vmWorkbench: {
+        title: 'Virtual machines',
+        description: 'System libvirt identity and authorization status',
+        preview: 'Read-only onboarding preview',
+        noExecution: 'No browser VM inventory or lifecycle actions. Linux identity proof is not VM operation authority.',
+        localOnly: 'Local workstation only. No remote identity inspection.',
+        status: 'Access readiness',
+        unavailable: 'Identity check unavailable. The local proof listener may be disabled. Failure never means authorization.',
+        connection: 'Connection',
+        identity: 'Linux identity',
+        peerObserved: 'Kernel-observed UID {{uid}} (not an execution grant)',
+        unbound: 'No Linux UID verified',
+        authorization: 'System libvirt authorization',
+        notAssessed: 'Not assessed',
+        blocked: 'VM browser operations remain disabled',
+        identityPage: 'Local identity proof',
+        localCli: 'Current local management',
+        cliDescription: 'A normal Ubuntu user with system libvirt permissions can use the restricted local CLI:',
+        cliCommand: 'VM inventory command',
+        cliWarning: 'Core and browser never execute this command. Mutations require explicit enrollment; see Draft PR #187.',
+    },
     opsCenter: {
         hostReceipts: 'Host controlled operations (current session)',
         agentTasks: 'Agent persisted execution tasks (local host)',
