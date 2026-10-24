@@ -107,7 +107,8 @@ class InterruptedInstallEvidenceTests(unittest.TestCase):
         categories = (
             "agent-evidence-unavailable", "agent-socket-cleanup-unavailable",
             "agent-start-unavailable", "docker-unit-start-unavailable",
-            "docker-api-unavailable",
+            "docker-api-unavailable", "container-side-effects",
+            "network-side-effects", "volume-side-effects",
         )
         for category in categories:
             with self.subTest(category=category):
