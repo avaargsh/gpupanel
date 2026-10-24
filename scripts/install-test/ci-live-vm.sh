@@ -212,6 +212,15 @@ if ! python3 scripts/install-test/restore-live.py > "$STATE/restore.raw.log" 2>&
 fi
 stage 'guest_post_install_offline_restore'
 
-# Full AppInstall, production upgrade/rollback and broader restore remain
+# Exercise the actual release-bundled system uninstaller only after the
+# installed binary/browser/AppInstall/restore evidence is complete. This tests
+# default data preservation; destructive purge and version upgrade stay NOT_RUN.
+if ! python3 scripts/install-test/uninstall-live.py > "$STATE/uninstall-script.raw.log" 2>&1; then
+    echo 'G3_SYSTEM_UNINSTALL_CODE=failed; release=NO_GO' >&2
+    exit 1
+fi
+stage 'guest_system_uninstall_preserved_data'
+
+# Full release upgrade/rollback, explicit purge and broader data restore remain
 # NOT RUN; do not promote this partial CI proof to M0 release GO.
-echo 'LIVE VM partial acceptance PASSED; M0 release decision remains NO_GO'
+echo 'LIVE VM partial acceptance PASSED; system service uninstall/data preservation PASS; M0 release decision remains NO_GO'
