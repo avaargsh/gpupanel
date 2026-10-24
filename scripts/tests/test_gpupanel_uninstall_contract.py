@@ -143,6 +143,8 @@ class UninstallPreflightTests(unittest.TestCase):
         self.assertIn("trap 'exit 130' INT", source)
         self.assertIn("trap 'exit 143' TERM", source)
         self.assertIn("trap restore_units_on_failure EXIT", source)
+        self.assertIn("UNIT_REMOVAL_STARTED=1", source)
+        self.assertIn("possibly half-staged backup", source)
         self.assertIn("--units-removed >/dev/null", source)
         self.assertLess(source.index("--units-removed >/dev/null"),
                         source.index("UNIT_REMOVAL_COMMITTED=1"))
