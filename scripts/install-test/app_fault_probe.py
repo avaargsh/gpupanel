@@ -266,9 +266,16 @@ def inject(*, page, guest, guest_rc, guest_inventory, request, next_id,
         _token("G5_APP_UNKNOWN_FENCE_CODE", "not-unknown")
         raise RuntimeError("interrupted install was retried or resynced")
     after = guest_inventory()
-    for key in ("containers", "networks", "volumes"):
+    categories = {
+        "containers": "container-side-effects",
+        "networks": "network-side-effects",
+        "volumes": "volume-side-effects",
+    }
+    for key, category in categories.items():
         if after[key] != docker_before[key]:
-            _token("G5_APP_UNKNOWN_FENCE_CODE", "side-effects")
+            # Identify only the resource class. Never print container IDs,
+            # network names, volume names, or raw daemon output.
+            _token("G5_APP_UNKNOWN_FENCE_CODE", category)
             raise RuntimeError("interrupted install produced Docker resources")
     return {"installId": install_id, "taskId": task_id}
 
