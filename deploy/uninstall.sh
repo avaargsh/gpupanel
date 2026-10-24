@@ -172,6 +172,11 @@ rm -f -- "$UNIT_DIR/gpupanel-core.service" "$UNIT_DIR/gpupanel-agent.service"
 if [ "${SYSTEMD_ARGS[0]}" = "--systemd" ]; then
     systemctl daemon-reload || die "systemd daemon-reload failed; original units will be restored"
 fi
+# Commit the operation only after independent observation confirms both owned
+# fragments are absent/inactive/disabled. On failure, EXIT restores the bytes.
+python3 "$PREFLIGHT" --base-dir "$BASE_DIR" --unit-dir "$UNIT_DIR" "${SYSTEMD_ARGS[@]}" \
+    --units-removed >/dev/null \
+    || die "post-removal state could not be proven; original units will be restored"
 UNIT_REMOVAL_COMMITTED=1
 if [ -n "$UNIT_BACKUP" ]; then
     rm -rf -- "$UNIT_BACKUP" || die "unit removal committed but private staging directory remains"
