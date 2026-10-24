@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"runtime"
@@ -290,6 +291,17 @@ func TestPythonAndGoUseTheSameDurableJournalSchema(t *testing.T) {
 func TestOpenRejectsRelativeDatabasePath(t *testing.T) {
 	if _, err := Open(filepath.Join(".", "relative-journal.db")); !errors.Is(err, ErrInvalidRequest) {
 		t.Fatalf("relative database path accepted: %v", err)
+	}
+}
+
+func TestOpenRejectsSymlinkedAncestor(t *testing.T) {
+	root := t.TempDir()
+	realDir := filepath.Join(root, "real", "private")
+	if err := os.MkdirAll(realDir, 0700); err != nil { t.Fatal(err) }
+	link := filepath.Join(root, "alias")
+	if err := os.Symlink(filepath.Join(root, "real"), link); err != nil { t.Fatal(err) }
+	if _, err := Open(filepath.Join(link, "private", "operations.db")); err == nil {
+		t.Fatal("journal path through symlinked ancestor was accepted")
 	}
 }
 
