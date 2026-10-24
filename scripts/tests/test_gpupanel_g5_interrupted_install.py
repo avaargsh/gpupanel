@@ -146,6 +146,10 @@ class InterruptedInstallEvidenceTests(unittest.TestCase):
             "docker-api-unavailable", "container-side-effects",
             "network-side-effects", "volume-side-effects",
             "fixture-network-unavailable", "init-barrier-not-reached",
+            "pre-agent-network-count-drift",
+            "pre-agent-network-identity-drift",
+            "post-agent-network-count-drift",
+            "post-agent-network-identity-drift",
         )
         for category in categories:
             with self.subTest(category=category):
@@ -154,6 +158,33 @@ class InterruptedInstallEvidenceTests(unittest.TestCase):
                     " release=NO_GO\n"), category)
         self.assertEqual(failure.app_unknown_fence_code(
             "G5_APP_UNKNOWN_FENCE_CODE=secret release=NO_GO\n"), "unknown")
+
+    def test_network_drift_is_staged_but_never_accepted(self):
+        baseline = {"networks": ["network-id-a", "network-id-b"]}
+        clean = {"networks": ["network-id-a", "network-id-b"]}
+        changed_id = {"networks": ["network-id-a", "network-id-c"]}
+        added = {"networks": ["network-id-a", "network-id-b", "network-id-c"]}
+        cases = (
+            (clean, clean, "ok"),
+            (changed_id, changed_id, "pre-agent-network-identity-drift"),
+            (added, added, "pre-agent-network-count-drift"),
+            (clean, changed_id, "post-agent-network-identity-drift"),
+            (clean, added, "post-agent-network-count-drift"),
+            (changed_id, clean, "ok"),
+        )
+        for before_agent, final, expected in cases:
+            with self.subTest(expected=expected):
+                actual = probe.classify_network_drift(
+                    baseline, before_agent, final)
+                self.assertEqual(actual, expected)
+                self.assertNotIn("network-id", actual)
+
+    def test_network_snapshot_precedes_agent_restart(self):
+        source = (ROOT / "scripts/install-test/app_fault_probe.py").read_text()
+        self.assertLess(
+            source.index("before_agent = guest_inventory()"),
+            source.index('["sudo", "systemctl", "start", "gpupanel-agent"]'))
+        self.assertIn("if after[key] != docker_before[key]:", source)
 
     def test_freeze_requires_inactive_units_and_privileged_api(self):
         commands = [

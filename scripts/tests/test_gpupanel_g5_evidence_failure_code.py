@@ -82,7 +82,11 @@ class G5EvidenceFailureCodeTests(unittest.TestCase):
     def test_interrupted_appinstall_side_effect_labels_are_fixed(self):
         for category in ("container-side-effects", "network-side-effects",
                          "volume-side-effects", "fixture-network-unavailable",
-                         "init-barrier-not-reached"):
+                         "init-barrier-not-reached",
+                         "pre-agent-network-count-drift",
+                         "pre-agent-network-identity-drift",
+                         "post-agent-network-count-drift",
+                         "post-agent-network-identity-drift"):
             self.assertEqual(failure.app_unknown_fence_code(
                 "G5_APP_UNKNOWN_FENCE_CODE=" + category +
                 " release=NO_GO\n"), category)

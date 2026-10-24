@@ -298,6 +298,9 @@ def inject(*, page, guest, guest_rc, guest_inventory, request, next_id,
     if not _wait_docker_ready(guest_rc):
         _token("G5_APP_UNKNOWN_FENCE_CODE", "docker-api-unavailable")
         raise RuntimeError("Docker API did not become ready after the injection")
+    # Snapshot only after Docker recovers and before Agent starts. Compare
+    # against the same pre-admission baseline; no side effect is excluded.
+    before_agent = guest_inventory()
     if guest_rc(["sudo", "systemctl", "start", "gpupanel-agent"]) != 0:
         _token("G5_APP_UNKNOWN_FENCE_CODE", "agent-start-unavailable")
         raise RuntimeError("Agent service did not restart after the injection")
@@ -325,11 +328,35 @@ def inject(*, page, guest, guest_rc, guest_inventory, request, next_id,
     }
     for key, category in categories.items():
         if after[key] != docker_before[key]:
-            # Identify only the resource class. Never print container IDs,
-            # network names, volume names, or raw daemon output.
+            # Identify only fixed classes; never print resource IDs/names or
+            # raw guest output, and never waive the strict equality assertion.
+            if key == "networks":
+                category = classify_network_drift(
+                    docker_before, before_agent, after)
             _token("G5_APP_UNKNOWN_FENCE_CODE", category)
             raise RuntimeError("interrupted install produced Docker resources")
     return {"installId": install_id, "taskId": task_id}
+
+
+def classify_network_drift(before: dict, before_agent: dict, final: dict) -> str:
+    """Locate the first observed network-ID divergence without leaking IDs.
+
+    This classifies observations, not the root cause. A Docker daemon restart
+    may rebuild a built-in network, while a later Agent action might create
+    an application network. Neither explanation may silently waive the
+    strict inventory comparison.
+    """
+    baseline = before["networks"]
+    intermediate = before_agent["networks"]
+    observed = final["networks"]
+    if observed == baseline:
+        return "ok"
+    if intermediate != baseline:
+        phase, changed = "pre-agent", intermediate
+    else:
+        phase, changed = "post-agent", observed
+    kind = "count" if len(changed) != len(baseline) else "identity"
+    return f"{phase}-network-{kind}-drift"
 
 
 def verify_mutation_gate(*, page, guest_inventory, request, next_id,
