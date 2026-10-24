@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -14,6 +15,7 @@ import (
 	"time"
 
 	"github.com/avaargsh/GPUPanel/core/app/dto"
+	"github.com/avaargsh/GPUPanel/core/app/lifecycle"
 	"github.com/avaargsh/GPUPanel/core/app/model"
 	"github.com/avaargsh/GPUPanel/core/app/repo"
 	"github.com/avaargsh/GPUPanel/core/buserr"
@@ -86,7 +88,8 @@ func loadServiceInfo() (serviceInfo, error) {
 type UpgradeService struct{}
 
 type IUpgradeService interface {
-	Upgrade(req dto.Upgrade) error
+	Upgrade(req dto.Upgrade, owner, idempotencyKey string) (lifecycle.Operation, bool, error)
+	GetLifecycleOperation(owner, operationID string) (lifecycle.Operation, error)
 	Rollback(req dto.OperateByID) error
 	LoadNotes(req dto.Upgrade) (string, error)
 	SearchUpgrade() (*dto.UpgradeInfo, error)
@@ -155,152 +158,241 @@ func (u *UpgradeService) LoadNotes(req dto.Upgrade) (string, error) {
 	return notes, nil
 }
 
-func (u *UpgradeService) Upgrade(req dto.Upgrade) error {
+func (u *UpgradeService) Upgrade(req dto.Upgrade, owner, idempotencyKey string) (lifecycle.Operation, bool, error) {
 	if err := validateUpgradeVersion(req.Version); err != nil {
-		return err
+		return lifecycle.Operation{}, false, err
 	}
-	global.LOG.Info("start to upgrade now...")
-	itemArch, err := loadArch()
-	if err != nil {
-		return err
-	}
-	svcInfo, err := loadServiceInfo()
-	if err != nil {
-		return err
-	}
-	if err := checkUpgradeSpace(); err != nil {
-		return err
-	}
-
-	// Take the durable SQLite admission before creating a stage or launching
-	// a worker. Same-name and different-version requests share this fence.
-	if err := claimUpgradeAdmission(settingRepo.UpdateIfMatch); err != nil {
-		return err
-	}
-	// Never erase a previous rollback backup or concurrent transaction.
-	baseDir, err := createUpgradeStage(global.CONF.Base.InstallDir, req.Version)
-	if err != nil {
-		if releaseErr := releaseUpgradeAdmission(settingRepo.UpdateIfMatch); releaseErr != nil {
-			return fmt.Errorf("upgrade stage refused: %v; admission recovery: %w", err, releaseErr)
-		}
-		return err
-	}
-	downloadDir := path.Join(baseDir, "downloads")
-	originalDir := path.Join(baseDir, "original")
-
 	mode := global.CONF.Base.Mode
 	if strings.Contains(req.Version, "beta") {
 		mode = "beta"
 	}
+	target := path.Clean(path.Join(global.CONF.Base.InstallDir, "gpupanel"))
+	binding, err := json.Marshal(map[string]string{
+		"version": req.Version,
+		"channel": mode,
+	})
+	if err != nil {
+		return lifecycle.Operation{}, false, fmt.Errorf("build canonical upgrade binding: %w", err)
+	}
+	store, err := lifecycle.OpenDefault()
+	if err != nil {
+		return lifecycle.Operation{}, false, fmt.Errorf("open durable lifecycle journal: %w", err)
+	}
+	op, created, err := store.Claim(context.Background(), lifecycle.ClaimRequest{
+		Owner: owner,
+		Target: target,
+		Kind: lifecycle.KindUpgrade,
+		IdempotencyKey: idempotencyKey,
+		Binding: binding,
+	})
+	if err != nil {
+		_ = store.Close()
+		return lifecycle.Operation{}, false, err
+	}
+	if !created {
+		// Claim replay is an observation, never permission to start a second
+		// download/worker. UNKNOWN remains blocked until evidence-backed review.
+		_ = store.Close()
+		return op, false, nil
+	}
+	if err := advanceUpgradeOperation(store, &op, lifecycle.StatePreflight,
+		"read_only_preflight_started", "", "", ""); err != nil {
+		_ = store.Close()
+		return op, true, fmt.Errorf("persist upgrade preflight state: %w", err)
+	}
+	failPreflight := func(stage, code string, cause error) (lifecycle.Operation, bool, error) {
+		stateErr := advanceUpgradeOperation(store, &op, lifecycle.StateFailedNoMutation,
+			stage, code, "", "")
+		_ = store.Close()
+		if stateErr != nil {
+			return op, true, fmt.Errorf("%v; record failed_no_mutation: %w", cause, stateErr)
+		}
+		return op, true, cause
+	}
+
+	itemArch, err := loadArch()
+	if err != nil {
+		return failPreflight("architecture_preflight_failed", "architecture_preflight_failed", err)
+	}
+	svcInfo, err := loadServiceInfo()
+	if err != nil {
+		return failPreflight("runtime_identity_preflight_failed", "runtime_identity_preflight_failed", err)
+	}
+	if err := checkUpgradeSpace(); err != nil {
+		return failPreflight("disk_space_preflight_failed", "disk_space_preflight_failed", err)
+	}
+	if err := advanceUpgradeOperation(store, &op, lifecycle.StatePlanReviewed,
+		"operator_confirmed_version_and_preflight_passed", "", "", ""); err != nil {
+		_ = store.Close()
+		return op, true, fmt.Errorf("persist reviewed upgrade plan: %w", err)
+	}
+
+	// Product admission remains a second fence. The durable operation identity
+	// is claimed first, so duplicate requests cannot launch duplicate workers.
+	if err := claimUpgradeAdmission(settingRepo.UpdateIfMatch); err != nil {
+		stateErr := advanceUpgradeOperation(store, &op, lifecycle.StateFailedNoMutation,
+			"upgrade_admission_refused", "upgrade_admission_busy", "", "")
+		_ = store.Close()
+		if stateErr != nil {
+			return op, true, fmt.Errorf("upgrade admission refused: %v; journal transition failed: %w", err, stateErr)
+		}
+		return op, true, err
+	}
+
+	baseDir, err := createUpgradeStage(global.CONF.Base.InstallDir, req.Version)
+	if err != nil {
+		releaseErr := releaseUpgradeAdmission(settingRepo.UpdateIfMatch)
+		next := lifecycle.StateFailedNoMutation
+		code := "upgrade_stage_creation_failed"
+		stage := "stage_creation_failed"
+		if releaseErr != nil {
+			next = lifecycle.StateRecoveryRequired
+			code = "upgrade_admission_release_failed"
+			stage = "stage_creation_and_admission_recovery_failed"
+		}
+		stateErr := advanceUpgradeOperation(store, &op, next, stage, code, "", "")
+		_ = store.Close()
+		if releaseErr != nil {
+			return op, true, fmt.Errorf("upgrade stage refused: %v; admission recovery: %w", err, releaseErr)
+		}
+		if stateErr != nil {
+			return op, true, fmt.Errorf("upgrade stage refused: %v; journal transition failed: %w", err, stateErr)
+		}
+		return op, true, err
+	}
+	downloadDir := path.Join(baseDir, "downloads")
+	originalDir := path.Join(baseDir, "original")
 	downloadPath := fmt.Sprintf("%s/%s/%s/release", global.RepoURL(), mode, req.Version)
 	fileName := fmt.Sprintf("gpupanel-%s-%s-%s.tar.gz", req.Version, "linux", itemArch)
-	// Only pre-mutation failures may release the admission automatically.
-	// Once an executable has been touched, keep the claim until an
-	// independently verified rollback or post-upgrade health review.
-	releaseBeforeMutation := func() {
-		if err := releaseUpgradeAdmission(settingRepo.UpdateIfMatch); err != nil {
-			global.LOG.Errorf("upgrade admission still unresolved: %v", err)
+	workerOp := op
+
+	// Before the first executable replacement, failure can release admission
+	// only if that release is confirmed. A failed release becomes an explicit
+	// recovery hold instead of a falsely terminal failure.
+	releaseBeforeMutation := func() error {
+		return releaseUpgradeAdmission(settingRepo.UpdateIfMatch)
+	}
+	preMutationFailure := func(stage, code string, cause error) {
+		releaseErr := releaseBeforeMutation()
+		next := lifecycle.StateFailedNoMutation
+		stateCode := code
+		stateStage := stage
+		if releaseErr != nil {
+			next = lifecycle.StateRecoveryRequired
+			stateCode = "upgrade_admission_release_failed"
+			stateStage = stage + "_admission_release_failed"
+		}
+		if stateErr := advanceUpgradeOperation(store, &workerOp, next, stateStage, stateCode, "", ""); stateErr != nil {
+			global.LOG.Errorf("upgrade operation %s remains unresolved after %s: %v; admission_release_error=%t",
+				workerOp.ID, stage, stateErr, releaseErr != nil)
+		}
+		if cause != nil {
+			global.LOG.Errorf("upgrade operation %s stopped before executable replacement at %s", workerOp.ID, stage)
+		}
+		if releaseErr != nil {
+			global.LOG.Errorf("upgrade operation %s retains the system admission hold: %v", workerOp.ID, releaseErr)
 		}
 	}
 	rollbackAndReconcile := func(step int) {
 		if err := u.handleRollback(originalDir, step, svcInfo); err != nil {
 			global.LOG.Errorf("automatic rollback incomplete; upgrade remains blocked: %v", err)
-			return
 		}
-		// Copying old binaries/units is NOT an independently verified rollback:
-		// Core and Agent may still be running the prior or partially upgraded
-		// processes, and the SQLite snapshot was intentionally not restored.
-		// Preserve the persistent Upgrading hold until a separately observed,
-		// authorized offline recovery confirms service and data state.
-		global.LOG.Warn("rollback files copied but runtime/database recovery remains unverified; upgrade admission remains blocked")
+		// Even successful file copies do not prove runtime, DB/WAL, service or
+		// data rollback. Keep both system admission and the durable operation
+		// in recovery_required until an independent offline observer reconciles.
+		if stateErr := advanceUpgradeOperation(store, &workerOp, lifecycle.StateRecoveryRequired,
+			"rollback_files_copied_but_runtime_and_data_unverified",
+			"upgrade_rollback_unverified", "", ""); stateErr != nil {
+			global.LOG.Errorf("upgrade operation %s recovery state could not be persisted: %v", workerOp.ID, stateErr)
+		}
+		global.LOG.Warn("rollback files copied or attempted; runtime/database recovery remains unverified; upgrade admission remains blocked")
 	}
+
 	go func() {
+		defer store.Close()
+		defer func() {
+			if err := os.RemoveAll(downloadDir); err != nil {
+				global.LOG.Errorf("upgrade operation %s temporary download cleanup failed", workerOp.ID)
+			}
+		}()
 		if err := files.DownloadFileWithProxyStream(downloadPath+"/"+fileName, downloadDir+"/"+fileName); err != nil {
-			global.LOG.Errorf("download service file failed, err: %v", err)
-			releaseBeforeMutation()
+			preMutationFailure("candidate_download_failed", "candidate_download_failed", err)
 			return
 		}
-		global.LOG.Info("download all file successful!")
-		defer func() {
-			_ = os.Remove(downloadDir)
-		}()
-		// Refuse malformed or redirected members before privileged extraction.
-		// This is a structural check, not authenticated publisher provenance.
+		global.LOG.Info("upgrade operation " + workerOp.ID + " downloaded candidate archive")
 		archiveRoot := strings.TrimSuffix(fileName, ".tar.gz")
 		if err := validateUpgradeArchive(path.Join(downloadDir, fileName), archiveRoot); err != nil {
-			global.LOG.Errorf("upgrade archive rejected before extraction: %v", err)
-			releaseBeforeMutation()
+			preMutationFailure("candidate_archive_rejected", "candidate_archive_rejected", err)
 			return
 		}
 		if err := files.HandleUnTar(downloadDir+"/"+fileName, downloadDir, ""); err != nil {
-			global.LOG.Errorf("decompress file failed, err: %v", err)
-			releaseBeforeMutation()
+			preMutationFailure("candidate_archive_extract_failed", "candidate_archive_extract_failed", err)
 			return
 		}
 		tmpDir := downloadDir + "/" + strings.ReplaceAll(fileName, ".tar.gz", "")
 
 		if err := u.handleBackup(originalDir, svcInfo); err != nil {
-			global.LOG.Errorf("handle backup original file failed, err: %v", err)
-			releaseBeforeMutation()
+			preMutationFailure("rollback_backup_creation_failed", "rollback_backup_creation_failed", err)
 			return
 		}
-		// A successful cp exit code does not establish that the rollback
-		// executables and service definitions survived intact. Check the
-		// complete owned backup before the FIRST binary replacement.
 		if err := verifyUpgradeBackupInventory(originalDir, svcInfo); err != nil {
-			global.LOG.Errorf("upgrade refused: rollback backup is incomplete: %v", err)
-			releaseBeforeMutation()
+			preMutationFailure("rollback_backup_inventory_rejected", "rollback_backup_inventory_rejected", err)
 			return
 		}
-		itemLog := model.UpgradeLog{NodeID: 0, OldVersion: global.CONF.Base.Version, NewVersion: req.Version, BackupFile: baseDir}
+		archiveSHA, backupEvidenceSHA, err := sealUpgradeBackupEvidence(originalDir, path.Join(downloadDir, fileName))
+		if err != nil {
+			preMutationFailure("rollback_backup_seal_failed", "rollback_backup_seal_failed", err)
+			return
+		}
+		itemLog := model.UpgradeLog{
+			NodeID: 0, OldVersion: global.CONF.Base.Version, NewVersion: req.Version, BackupFile: baseDir,
+		}
 		if err := upgradeLogRepo.Create(&itemLog); err != nil {
-			global.LOG.Errorf("upgrade refused: cannot persist rollback record: %v", err)
-			releaseBeforeMutation()
+			preMutationFailure("upgrade_log_persistence_failed", "upgrade_log_persistence_failed", err)
 			return
 		}
+		if err := advanceUpgradeOperation(store, &workerOp, lifecycle.StateBackupSealed,
+			"candidate_and_rollback_inventory_sealed", "", backupEvidenceSHA, ""); err != nil {
+			preMutationFailure("backup_seal_journal_failed", "backup_seal_journal_failed", err)
+			return
+		}
+		global.LOG.Info("upgrade rollback inventory digest verified; SQLite cross-file consistency remains unproven")
 
-		global.LOG.Info("rollback binary/unit snapshot verified; starting upgrade (database consistency still unproven)")
+		// This exact state transition binds the actual downloaded archive SHA
+		// before any executable or systemd unit is replaced.
+		if err := advanceUpgradeOperation(store, &workerOp, lifecycle.StateApplying,
+			"first_executable_replacement_imminent", "", backupEvidenceSHA, archiveSHA); err != nil {
+			preMutationFailure("apply_state_not_persisted", "apply_state_not_persisted", err)
+			return
+		}
 
 		if err := files.CopyFileWithRename(path.Join(tmpDir, "gpupanel-core"), svcInfo.coreBinary); err != nil {
-			global.LOG.Errorf("upgrade gpupanel-core failed, err: %v", err)
 			rollbackAndReconcile(1)
 			return
 		}
 		if err := files.CopyFileWithRename(path.Join(tmpDir, "gpupanel-agent"), svcInfo.agentBinary); err != nil {
-			global.LOG.Errorf("upgrade gpupanel-agent failed, err: %v", err)
 			rollbackAndReconcile(1)
 			return
 		}
-
-		// pctl is no longer part of the GPUPanel runtime; skip copying/updating the legacy ctl binary.
 		initScriptPath := path.Join(tmpDir, "initscript")
-
 		if err := files.CopyItem(false, true, path.Join(initScriptPath, svcInfo.selCoreName), svcInfo.basePath); err != nil {
-			global.LOG.Errorf("upgrade %s failed, err: %v", svcInfo.coreName, err)
 			rollbackAndReconcile(3)
 			return
 		}
 		if err := files.CopyItem(false, true, path.Join(initScriptPath, svcInfo.selAgentName), svcInfo.basePath); err != nil {
-			global.LOG.Errorf("upgrade %s failed, err: %v", svcInfo.agentName, err)
 			rollbackAndReconcile(3)
 			return
 		}
 
-		// The experimental installer may not have a complete app-local lang directory,
-		// and the release builder may omit GeoIP.mmdb. Only replace an
-		// asset that existed before the upgrade AND has a real backup.
-		// Never make rollback require deletion of a newly created asset.
 		langPath := path.Join(global.CONF.Base.InstallDir, "gpupanel/lang")
 		langAllowed, langErr := shouldCopyOptionalUpgradeAsset(
 			langPath, path.Join(originalDir, "lang"), path.Join(tmpDir, "lang"), true)
 		if langErr != nil {
-			global.LOG.Errorf("upgrade refused: unsafe optional language files: %v", langErr)
 			rollbackAndReconcile(3)
 			return
 		}
 		if langAllowed {
 			if err := files.CopyItem(true, true, path.Join(tmpDir, "lang"), path.Join(global.CONF.Base.InstallDir, "gpupanel")); err != nil {
-				global.LOG.Errorf("Update language files failed: %v", err)
 				rollbackAndReconcile(4)
 				return
 			}
@@ -309,34 +401,68 @@ func (u *UpgradeService) Upgrade(req dto.Upgrade) error {
 		geoAllowed, geoErr := shouldCopyOptionalUpgradeAsset(
 			geoPath, path.Join(originalDir, "GeoIP.mmdb"), path.Join(tmpDir, "GeoIP.mmdb"), false)
 		if geoErr != nil {
-			global.LOG.Errorf("upgrade refused: unsafe optional GeoIP file: %v", geoErr)
 			rollbackAndReconcile(4)
 			return
 		}
 		if geoAllowed {
 			if err := files.CopyFileWithRename(path.Join(tmpDir, "GeoIP.mmdb"), geoPath); err != nil {
-				global.LOG.Warnf("Update GeoIP database failed: %v", err)
 				rollbackAndReconcile(4)
 				return
 			}
 		}
 
+		if err := advanceUpgradeOperation(store, &workerOp, lifecycle.StateVerifying,
+			"candidate_files_written_restart_pending", "", backupEvidenceSHA, ""); err != nil {
+			if stateErr := advanceUpgradeOperation(store, &workerOp, lifecycle.StateRecoveryRequired,
+				"candidate_files_written_journal_transition_failed", "verifying_state_not_persisted", "", ""); stateErr != nil {
+				global.LOG.Errorf("upgrade operation %s recovery state persistence failed: %v", workerOp.ID, stateErr)
+			}
+			global.LOG.Errorf("upgrade operation %s cannot restart without a durable verifying state: %v", workerOp.ID, err)
+			return
+		}
+
 		global.LOG.Warn("upgrade files staged; restart and Core/Agent health have NOT been verified")
-		// A restart request is not post-restart health or data-recovery proof.
-		// Do not prune previous rollback snapshots while the upgrade remains
-		// under a durable Upgrading hold. A separate verified reconciliation
-		// must decide when retention/cleanup is safe.
 		xpack.MultiNodeProvider.AutoUpgradeWithMaster()
-		_ = settingRepo.Update("SystemVersion", req.Version)
-		_ = global.AgentDB.Model(&model.Setting{}).Where("key = ?", "SystemVersion").Updates(map[string]interface{}{"value": req.Version}).Error
+		if err := settingRepo.Update("SystemVersion", req.Version); err != nil {
+			if stateErr := advanceUpgradeOperation(store, &workerOp, lifecycle.StateRecoveryRequired,
+				"system_version_update_failed_after_binary_write", "system_version_update_failed", "", ""); stateErr != nil {
+				global.LOG.Errorf("upgrade operation %s recovery state persistence failed: %v", workerOp.ID, stateErr)
+			}
+			global.LOG.Errorf("upgrade operation %s could not persist core version setting", workerOp.ID)
+			return
+		}
+		if err := global.AgentDB.Model(&model.Setting{}).Where("key = ?", "SystemVersion").
+			Updates(map[string]interface{}{"value": req.Version}).Error; err != nil {
+			if stateErr := advanceUpgradeOperation(store, &workerOp, lifecycle.StateRecoveryRequired,
+				"agent_version_update_failed_after_binary_write", "agent_version_update_failed", "", ""); stateErr != nil {
+				global.LOG.Errorf("upgrade operation %s recovery state persistence failed: %v", workerOp.ID, stateErr)
+			}
+			global.LOG.Errorf("upgrade operation %s could not persist agent version setting", workerOp.ID)
+			return
+		}
 		global.CONF.Base.Version = req.Version
-		_ = os.RemoveAll(downloadDir)
-		// No post-restart Core/Agent health proof exists in this asynchronous
-		// legacy path. Keep SystemStatus=Upgrading to reject further upgrades
-		// until a separately observed, authenticated reconciliation exists.
+
+		// Persist UNKNOWN before invoking a restart that may terminate this Core
+		// process. A later request with the same idempotency key can only observe
+		// this record; no automatic worker replay is allowed.
+		if err := advanceUpgradeOperation(store, &workerOp, lifecycle.StateUnknown,
+			"restart_requested_without_independent_health_proof",
+			"post_restart_health_unverified", backupEvidenceSHA, ""); err != nil {
+			global.LOG.Errorf("upgrade operation %s did not restart because UNKNOWN could not be persisted: %v", workerOp.ID, err)
+			return
+		}
 		controller.RestartPanel(true, true, true)
 	}()
-	return nil
+	return op, true, nil
+}
+
+func (u *UpgradeService) GetLifecycleOperation(owner, operationID string) (lifecycle.Operation, error) {
+	store, err := lifecycle.OpenDefault()
+	if err != nil {
+		return lifecycle.Operation{}, err
+	}
+	defer store.Close()
+	return store.Get(context.Background(), owner, operationID)
 }
 
 func (u *UpgradeService) Rollback(req dto.OperateByID) error {
