@@ -120,6 +120,13 @@ class UninstallPreflightTests(unittest.TestCase):
             with self.assertRaisesRegex(helper.Refusal, "unreviewed drop-ins"):
                 helper.build_plan(self.args(systemd=True))
 
+    def test_systemd_query_failure_before_stop_is_rejected(self):
+        with mock.patch.object(helper.subprocess, "run", return_value=subprocess.CompletedProcess(
+            ["systemctl", "show"], 1, stdout="", stderr="manager unavailable"
+        )):
+            with self.assertRaisesRegex(helper.Refusal, "systemd query failed"):
+                helper.verify_systemd_fragment(self.unit_dir, "gpupanel-core")
+
     def test_post_removal_query_failure_is_not_treated_as_absence(self):
         values = iter(("not-found", "inactive", "", ""))
         with mock.patch.object(helper, "systemd_show", side_effect=lambda *_: next(values)), \
@@ -195,8 +202,11 @@ class UninstallPreflightTests(unittest.TestCase):
         helper_source = HELPER_PATH.read_text(encoding="utf-8")
         self.assertIn("DropInPaths", helper_source)
         self.assertIn('LoadState") != "not-found"', helper_source)
-        self.assertIn("retained_tree_digest", (ROOT / "scripts/install-test/uninstall-live.py").read_text(encoding="utf-8"))
-        self.assertIn("retention_sentinel_sha256", (ROOT / "scripts/install-test/uninstall-live.py").read_text(encoding="utf-8"))
+        live_source = (ROOT / "scripts/install-test/uninstall-live.py").read_text(encoding="utf-8")
+        self.assertIn("retained_tree_digest", live_source)
+        self.assertIn("retention_sentinel_sha256", live_source)
+        self.assertIn('"retained_tree_unchanged": before["retained_tree_sha256"] == after["retained_tree_sha256"]', live_source)
+        self.assertIn("retained_tree_unchanged", (ROOT / "scripts/install-test/ci-evidence.py").read_text(encoding="utf-8"))
         self.assertIn("systemctl disable --now gpupanel-agent.service gpupanel-core.service", source)
         self.assertNotIn("pkill", source)
         self.assertNotIn("|| true", source)
