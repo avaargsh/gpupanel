@@ -231,7 +231,9 @@ def summarize(state: Path, *, run_completed: bool, source_sha: str) -> dict:
         isinstance(uninstall, dict)
         and set(uninstall) == {
             "schema", "kind", "source_sha", "guest_machine_id_sha256",
-            "binary_sha256", "retained_file_sha256", "unit_file_sha256",
+            "binary_sha256", "retained_file_sha256", "retained_tree_sha256",
+            "retained_tree_unchanged", "retention_sentinel_sha256",
+            "retention_sentinel_preserved", "unit_file_sha256",
             "docker_inventory_sha256", "docker_server_version",
             "owned_units_removed", "repeat_default_uninstall_idempotent",
             "services_inactive_and_disabled", "running_processes_absent",
@@ -249,6 +251,8 @@ def summarize(state: Path, *, run_completed: bool, source_sha: str) -> dict:
         and isinstance(uninstall.get("retained_file_sha256"), dict)
         and set(uninstall["retained_file_sha256"]) == {"pctl", "core_db", "app_yaml"}
         and all(valid_digest(value) for value in uninstall["retained_file_sha256"].values())
+        and valid_digest(uninstall.get("retained_tree_sha256"))
+        and valid_digest(uninstall.get("retention_sentinel_sha256"))
         and isinstance(uninstall.get("unit_file_sha256"), dict)
         and set(uninstall["unit_file_sha256"]) == {"gpupanel-core", "gpupanel-agent"}
         and all(valid_digest(value) for value in uninstall["unit_file_sha256"].values())
@@ -261,6 +265,7 @@ def summarize(state: Path, *, run_completed: bool, source_sha: str) -> dict:
             "owned_units_removed", "repeat_default_uninstall_idempotent",
             "services_inactive_and_disabled", "running_processes_absent",
             "binaries_and_data_retained", "data_digests_unchanged",
+            "retained_tree_unchanged", "retention_sentinel_preserved",
             "docker_inventory_unchanged",
         ))
         and uninstall.get("purge") == "NOT_RUN"
