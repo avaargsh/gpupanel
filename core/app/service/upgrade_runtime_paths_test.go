@@ -189,6 +189,66 @@ func TestG3UpgradeStagingPreservesExistingRollbackEvidence(t *testing.T) {
 	}
 }
 
+
+func TestG3UpgradeStagingCleansEmptyPartialTransactionOnChildFailure(t *testing.T) {
+	base, _, _ := upgradeRuntimeFixture(t)
+	upgradeRoot := filepath.Join(base, "gpupanel", "tmp", "upgrade")
+	if err := os.MkdirAll(upgradeRoot, 0700); err != nil {
+		t.Fatal(err)
+	}
+	transaction := filepath.Join(upgradeRoot, "v2.0.0")
+	if err := os.Mkdir(transaction, 0700); err != nil {
+		t.Fatal(err)
+	}
+	injected := errors.New("injected original-directory failure")
+	mkdir := func(path string, mode os.FileMode) error {
+		if filepath.Base(path) == "original" {
+			return injected
+		}
+		return os.Mkdir(path, mode)
+	}
+	if err := createUpgradeStageChildren(transaction, mkdir, os.Remove); !errors.Is(err, injected) {
+		t.Fatalf("expected injected child creation failure, got %v", err)
+	}
+	if _, err := os.Lstat(transaction); !os.IsNotExist(err) {
+		t.Fatalf("empty partial transaction was not cleaned: err=%v", err)
+	}
+	// A safe cleanup makes an ordinary retry possible for the same version.
+	if _, err := createUpgradeStage(base, "v2.0.0"); err != nil {
+		t.Fatalf("retry after empty partial setup failed: %v", err)
+	}
+}
+
+func TestG3UpgradeStagingPreservesNonEmptyPartialDirectoriesOnFailure(t *testing.T) {
+	base, _, _ := upgradeRuntimeFixture(t)
+	upgradeRoot := filepath.Join(base, "gpupanel", "tmp", "upgrade")
+	if err := os.MkdirAll(upgradeRoot, 0700); err != nil {
+		t.Fatal(err)
+	}
+	transaction := filepath.Join(upgradeRoot, "v2.0.0")
+	if err := os.Mkdir(transaction, 0700); err != nil {
+		t.Fatal(err)
+	}
+	injected := errors.New("injected original-directory failure")
+	mkdir := func(path string, mode os.FileMode) error {
+		if filepath.Base(path) == "original" {
+			// Model a concurrent writer placing data after downloads was created.
+			if err := os.WriteFile(filepath.Join(transaction, "downloads", "keep.bin"), []byte("preserve"), 0600); err != nil {
+				return err
+			}
+			return injected
+		}
+		return os.Mkdir(path, mode)
+	}
+	if err := createUpgradeStageChildren(transaction, mkdir, os.Remove); !errors.Is(err, injected) {
+		t.Fatalf("expected injected child creation failure, got %v", err)
+	}
+	preserved, err := os.ReadFile(filepath.Join(transaction, "downloads", "keep.bin"))
+	if err != nil || string(preserved) != "preserve" {
+		t.Fatalf("partial-stage evidence was removed: data=%q err=%v", preserved, err)
+	}
+}
+
 func TestG3UpgradeStagingRejectsRedirectedParents(t *testing.T) {
 	base, _, _ := upgradeRuntimeFixture(t)
 	foreign := t.TempDir()

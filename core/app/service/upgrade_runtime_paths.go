@@ -125,12 +125,37 @@ func createUpgradeStage(installDir, version string) (string, error) {
 	if err := os.Mkdir(transaction, 0700); err != nil {
 		return "", fmt.Errorf("%w: upgrade stage already exists or cannot be created: %v", errUpgradeRuntimeOwnership, err)
 	}
-	for _, child := range []string{"downloads", "original"} {
-		if err := os.Mkdir(filepath.Join(transaction, child), 0700); err != nil {
-			return "", fmt.Errorf("%w: incomplete upgrade stage: %v", errUpgradeRuntimeOwnership, err)
-		}
+	if err := createUpgradeStageChildren(transaction, os.Mkdir, os.Remove); err != nil {
+		return "", fmt.Errorf("%w: incomplete upgrade stage: %v", errUpgradeRuntimeOwnership, err)
 	}
 	return transaction, nil
+}
+
+// createUpgradeStageChildren creates the private staging subdirectories. If a
+// child cannot be created, remove only directories created by this invocation,
+// and only with os.Remove (which refuses non-empty directories). This allows a
+// safe retry after ordinary partial setup failures without deleting rollback
+// evidence or any data another actor may have placed in the transaction.
+func createUpgradeStageChildren(
+	transaction string,
+	mkdir func(string, os.FileMode) error,
+	remove func(string) error,
+) error {
+	created := make([]string, 0, 2)
+	for _, child := range []string{"downloads", "original"} {
+		childPath := filepath.Join(transaction, child)
+		if err := mkdir(childPath, 0700); err != nil {
+			for i := len(created) - 1; i >= 0; i-- {
+				// Best effort only. Non-empty directories must remain intact.
+				_ = remove(created[i])
+			}
+			// The transaction directory is removed only if now empty.
+			_ = remove(transaction)
+			return fmt.Errorf("create %s: %w", child, err)
+		}
+		created = append(created, childPath)
+	}
+	return nil
 }
 
 // validateUpgradeBackupPath refuses a different directory or symlinked
