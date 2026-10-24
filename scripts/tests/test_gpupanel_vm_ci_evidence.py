@@ -122,6 +122,27 @@ class LiveVmEvidence(unittest.TestCase):
             "m0_release_decision": "NO_GO",
             "secret": "NEVER_REPORT_ME",
         }
+        self.uninstall = {
+            "schema": "gpupanel.vm.system-uninstall.v1",
+            "kind": "REAL UBUNTU PACKAGE SYSTEMD UNINSTALL; DEFAULT DATA PRESERVATION; NO MOCKS",
+            "source_sha": self.source,
+            "guest_machine_id_sha256": "d" * 64,
+            "binary_sha256": self.candidate["binary_sha256"],
+            "retained_file_sha256": {"pctl": "1" * 64, "core_db": "2" * 64, "app_yaml": "3" * 64},
+            "unit_file_sha256": {"gpupanel-core": "4" * 64, "gpupanel-agent": "5" * 64},
+            "docker_inventory_sha256": {"containers": "6" * 64, "networks": "7" * 64,
+                                        "volumes": "8" * 64, "images": "9" * 64},
+            "docker_server_version": "27.0.3",
+            "owned_units_removed": True,
+            "services_inactive_and_disabled": True,
+            "running_processes_absent": True,
+            "binaries_and_data_retained": True,
+            "data_digests_unchanged": True,
+            "docker_inventory_unchanged": True,
+            "purge": "NOT_RUN",
+            "upgrade_and_rollback": "NOT_RUN",
+            "m0_release_decision": "NO_GO",
+        }
         (self.state / "ubuntu2404").mkdir()
         self.write("ubuntu2404/image-provenance.json", {
             "signed_checksum_verified": True,
@@ -144,6 +165,7 @@ class LiveVmEvidence(unittest.TestCase):
         self.write("app-install-live.json", self.app_install)
         self.write("app-rejection-live.json", self.app_rejection)
         self.write("restore-live.json", self.restore)
+        self.write("uninstall-live.json", self.uninstall)
         (self.state / "ci-stages.txt").write_text(
             "\n".join(audit.STAGES) + "\n"
         )
@@ -172,6 +194,35 @@ class LiveVmEvidence(unittest.TestCase):
                        "DO_NOT_PRINT_VM_IMAGE_PROVIDER", "NEVER_REPORT_ME",
                        "NEVER_EXPOSE_CONTAINER_TASK_LOG"):
             self.assertNotIn(secret, encoded)
+
+    def test_system_uninstall_evidence_is_exact_and_preserves_data(self):
+        result = self.summarise()
+        self.assertEqual(result["system_uninstall"], "PASS")
+        self.assertEqual(result["uninstall_data_preservation"], "PASS")
+        self.assertEqual(result["uninstall_purge"], "NOT_RUN")
+        faults = (
+            {"source_sha": "0" * 40},
+            {"guest_machine_id_sha256": "0" * 64},
+            {"owned_units_removed": False},
+            {"data_digests_unchanged": False},
+            {"docker_inventory_unchanged": False},
+            {"purge": "PASS"},
+            {"upgrade_and_rollback": "PASS"},
+            {"m0_release_decision": "GO"},
+            {"extra_field": "reject"},
+        )
+        for fault in faults:
+            with self.subTest(fault=fault):
+                self.write("uninstall-live.json", {**self.uninstall, **fault})
+                report = self.summarise()
+                self.assertEqual(report["status"], "BLOCKED_OR_FAILED")
+                self.assertEqual(report["system_uninstall"], "NOT_ATTESTED")
+        self.write("uninstall-live.json", self.uninstall)
+        (self.state / "uninstall-live.json").unlink()
+        report = self.summarise()
+        self.assertEqual(report["status"], "BLOCKED_OR_FAILED")
+        self.assertEqual(report["system_uninstall"], "NOT_ATTESTED")
+        self.write("uninstall-live.json", self.uninstall)
 
     def test_archive_integrity_and_guest_binding_are_required(self):
         baseline = self.summarise()
