@@ -203,7 +203,7 @@ func (operationRow) TableName() string { return "lifecycle_operations" }
 
 type eventRow struct {
 	ID             uint64 `gorm:"column:id;primaryKey;autoIncrement"`
-	OperationID    string `gorm:"column:operation_id;not null;size:36;index:idx_lifecycle_event_operation"`
+	OperationID    string `gorm:"column:operation_id;not null;size:36;index:idx_lifecycle_event_operation;uniqueIndex:idx_lifecycle_event_sequence,priority:1"`
 	Sequence       uint64 `gorm:"column:sequence;not null;uniqueIndex:idx_lifecycle_event_sequence,priority:2"`
 	Owner          string `gorm:"column:owner;not null;size:128"`
 	FromState      string `gorm:"column:from_state;not null;size:32"`
@@ -374,6 +374,10 @@ func (s *Store) Claim(ctx context.Context, req ClaimRequest) (Operation, bool, e
 }
 
 func (s *Store) Advance(ctx context.Context, req TransitionRequest) (Operation, bool, error) {
+	return s.advance(ctx, req, false)
+}
+
+func (s *Store) advance(ctx context.Context, req TransitionRequest, allowReconcile bool) (Operation, bool, error) {
 	if s == nil || s.db == nil {
 		return Operation{}, false, fmt.Errorf("%w: store is not open", ErrInvalidRequest)
 	}
@@ -408,7 +412,7 @@ func (s *Store) Advance(ctx context.Context, req TransitionRequest) (Operation, 
 			return fmt.Errorf("%w: expected %s/revision %d; found %s/revision %d",
 				ErrRevisionConflict, req.ExpectedState, req.ExpectedRevision, current.State, current.Revision)
 		}
-		if !transitionAllowed(req.ExpectedState, req.NextState) {
+		if !transitionAllowed(req.ExpectedState, req.NextState) && !(allowReconcile && reconciliationTransitionAllowed(req.ExpectedState, req.NextState)) {
 			return fmt.Errorf("%w: %s -> %s", ErrInvalidTransition, req.ExpectedState, req.NextState)
 		}
 		now := time.Now().UTC().UnixNano()
@@ -468,12 +472,12 @@ func (s *Store) Reconcile(ctx context.Context, req ReconcileRequest) (Operation,
 	if req.NextState == StateRecoveryRequired && errorCode == "" {
 		return Operation{}, fmt.Errorf("%w: recovery error code required", ErrInvalidRequest)
 	}
-	out, _, err := s.Advance(ctx, TransitionRequest{
+	out, _, err := s.advance(ctx, TransitionRequest{
 		Owner: req.Owner, OperationID: req.OperationID,
 		ExpectedState: req.ExpectedState, ExpectedRevision: req.ExpectedRevision,
 		NextState: req.NextState, Actor: req.Actor, ErrorCode: errorCode,
 		EvidenceSHA256: req.EvidenceSHA256,
-	})
+	}, true)
 	return out, err
 }
 
@@ -587,6 +591,13 @@ func transitionAllowed(from, to State) bool {
 	default:
 		return false
 	}
+}
+
+func reconciliationTransitionAllowed(from, to State) bool {
+	if to != StateCompleted && to != StateRolledBack && to != StateRecoveryRequired {
+		return false
+	}
+	return from == StateUnknown || from == StateRecoveryRequired
 }
 
 func rowToOperation(rec operationRow) Operation {
