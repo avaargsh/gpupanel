@@ -121,8 +121,8 @@ Tag、HTTP 2xx、systemd active、子进程退出码或“命令已发送”单�
 ## 9. 当前已知治理缺口
 
 1. deploy/install.sh 是实验性的 fresh-install 路径，默认拒绝且只允许明确授权的 disposable VM；它尚未形成面向生产的完整升级契约。
-2. deploy/uninstall.sh 具备 purge，但不能据此认定路径边界、服务停止失败语义和全量数据保留矩阵已安全通过；必须先补操作计划和隔离 VM 负向验收。
-3. deploy/build.sh 的 release tarball layout 被 Core 的升级代码消费；升级入口与包格式、DB schema generation、数据保留和回滚行为必须放在一个候选链下验收。
+2. 当前主线的 `deploy/uninstall.sh` 尚不能被认定为完整安全卸载。Draft [PR #194](https://github.com/avaargsh/gpupanel/pull/194) 正在补齐归属绑定的 systemd 服务拆除、drop-in/异常查询的 fail-closed 围栏、嵌套挂载点拒绝和整棵安装目录保留证据；其默认模式**只拆除已验证的 systemd 集成，保留二进制、配置、数据库及用户数据**，并非全量二进制卸载。显式 purge 与同候选真实 Ubuntu 24.04 验收/独立审查仍未接收，不得将 Draft 代码作为主线已通过结论。
+3. `deploy/build.sh` 的 release tarball layout 被 Core 的升级代码消费。当前 `UpgradeService.Upgrade` 在异步 goroutine 完成前就返回，文件替换后的 Core/Agent 重启和数据恢复未独立确认；在线 `Rollback` 入口因停服与数据库恢复未验证而被拒绝。该拒绝应保持，直到同候选的升级状态回执、启动/健康对账、DB/schema 兼容和 A→B→A 或明确禁止回退的证据完整；不能把 API 接收请求视为升级已提交。
 4. 当前 PR #190 只覆盖一次性 VM 的合成残留清除与安装前快照恢复；不是安装中断故障、系统卸载或 A→B→A 升级回滚证明。
 5. 包完整性校验和发布者身份认证是两项独立保证。不能把内层 manifest/自校验 SHA 当作可信发布签名。
 
