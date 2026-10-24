@@ -147,7 +147,58 @@ class SystemVMTests(unittest.TestCase):
             vm.manage(self.v, self.root, self.req("reconcile"))
         self.assertTrue(vm.unresolved(self.root, UUID))
         output = vm.manage(self.v, self.root, self.req("reconcile", acknowledge=True))
-        self.assertTrue(output["reconciled"])
+        self.assertEqual(output["outcome"], "ACKNOWLEDGED_UNVERIFIED")
+        self.assertFalse(output["reconciled"])
+
+    def test_start_crashed_does_not_claim_observed_success(self):
+        self.enroll()
+        original_run = self.v.run
+
+        def crash_on_start(*args):
+            result = original_run(*args)
+            if args[0] == "start":
+                self.v.state = "crashed"
+            return result
+
+        self.v.run = crash_on_start
+        result = vm.manage(self.v, self.root, self.req("start"))
+        self.assertNotEqual(result["outcome"], "OBSERVED")
+        self.assertTrue(vm.unresolved(self.root, UUID))
+
+    def test_shutdown_paused_does_not_claim_observed_success(self):
+        self.enroll()
+        self.v.state = "running"
+        original_run = self.v.run
+
+        def pause_on_shutdown(*args):
+            result = original_run(*args)
+            if args[0] == "shutdown":
+                self.v.state = "paused"
+            return result
+
+        self.v.run = pause_on_shutdown
+        result = vm.manage(self.v, self.root, self.req("shutdown"))
+        self.assertEqual(result["outcome"], "PENDING")
+        self.assertTrue(vm.unresolved(self.root, UUID))
+
+    def test_unknown_start_not_automatically_cleared_by_unchanged_state(self):
+        self.enroll()
+        vm.event(self.root, {"uuid": UUID, "op": "start", "outcome": "unknown"})
+        with self.assertRaisesRegex(vm.Refused, "acknowledge"):
+            vm.manage(self.v, self.root, self.req("reconcile"))
+        self.assertTrue(vm.unresolved(self.root, UUID))
+        resolution = vm.manage(self.v, self.root, self.req("reconcile", acknowledge=True))
+        self.assertEqual(resolution["outcome"], "ACKNOWLEDGED_UNVERIFIED")
+        self.assertFalse(resolution.get("reconciled", False))
+        self.assertFalse(vm.unresolved(self.root, UUID))
+
+    def test_reboot_running_is_never_mistaken_for_independent_reboot_proof(self):
+        self.enroll()
+        self.v.state = "running"
+        vm.event(self.root, {"uuid": UUID, "op": "reboot", "outcome": "pending"})
+        result = vm.manage(self.v, self.root, self.req("reconcile", acknowledge=True))
+        self.assertEqual(result["outcome"], "ACKNOWLEDGED_UNVERIFIED")
+        self.assertNotIn("verified", result)
 
     def test_virsh_system_reads_readonly_writes_nonroot_without_sudo(self):
         with patch.object(vm.shutil, "which", return_value="/usr/bin/virsh"), patch.object(vm.subprocess, "run") as run:

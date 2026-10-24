@@ -58,8 +58,8 @@ class VMManagementTests(unittest.TestCase):
         self.root = Path(self.temp.name)
         self.api = FakeVirsh()
 
-    def req(self, cmd, identity=UUID, name=None):
-        return types.SimpleNamespace(command=cmd, uuid=identity, confirm_name=name)
+    def req(self, cmd, identity=UUID, name=None, acknowledge=False):
+        return types.SimpleNamespace(command=cmd, uuid=identity, confirm_name=name, acknowledge_unknown=acknowledge)
 
     def enroll(self):
         return vm.manage(self.api, self.root, self.req("enroll", name="personal-vm"))
@@ -94,7 +94,9 @@ class VMManagementTests(unittest.TestCase):
         self.assertEqual(vm.manage(self.api, self.root, self.req("reboot"))["outcome"], "PENDING")
         with self.assertRaisesRegex(vm.Refused, "UNKNOWN"):
             vm.manage(self.api, self.root, self.req("shutdown"))
-        vm.manage(self.api, self.root, self.req("reconcile"))
+        with self.assertRaisesRegex(vm.Refused, "acknowledge"):
+            vm.manage(self.api, self.root, self.req("reconcile"))
+        vm.manage(self.api, self.root, self.req("reconcile", acknowledge=True))
         self.assertEqual(vm.manage(self.api, self.root, self.req("shutdown"))["state"], "shut off")
         self.api.domains[UUID][0] = "changed-behind-our-back"
         with self.assertRaisesRegex(vm.Refused, "name changed"):
@@ -109,8 +111,10 @@ class VMManagementTests(unittest.TestCase):
         with self.assertRaisesRegex(vm.Refused, "UNKNOWN"):
             vm.manage(self.api, self.root, self.req("start"))
         self.assertEqual(len(self.api.calls), 1)
-        observed = vm.manage(self.api, self.root, self.req("reconcile"))
-        self.assertTrue(observed["reconciled"])
+        with self.assertRaisesRegex(vm.Refused, "acknowledge"):
+            vm.manage(self.api, self.root, self.req("reconcile"))
+        observed = vm.manage(self.api, self.root, self.req("reconcile", acknowledge=True))
+        self.assertEqual(observed["outcome"], "ACKNOWLEDGED_UNVERIFIED")
         self.assertFalse(vm.unresolved(self.root, UUID))
 
     def test_delete_requires_stopped_and_exact_name_no_storage_delete(self):

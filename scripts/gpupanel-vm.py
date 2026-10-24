@@ -42,6 +42,9 @@ UUID = re.compile(r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}
 STATES = {"running", "shut off", "paused", "in shutdown", "pmsuspended", "crashed", "idle", "blocked"}
 ACTIONS = {"start": ("shut off", "start"), "shutdown": ("running", "shutdown"),
            "reboot": ("running", "reboot")}
+# An ACK is not proof of desired or guest-level outcome. libvirt reboot returns
+# before the guest actually reboots, so it has no state-only completion oracle.
+TARGET_STATES = {"start": "running", "shutdown": "shut off"}
 
 
 class Refused(Exception):
@@ -272,9 +275,22 @@ def manage(virsh: Virsh, root: Path, args: argparse.Namespace) -> dict:
             before = virsh.detail(identity)
             if before["name"] != entry["name"]:
                 raise Refused("VM identity changed; cannot reconcile")
-            event(root, {"uuid": identity, "op": "reconcile", "outcome": "reconciled",
+            prior_action = last.get("op")
+            # A reboot cannot be proved by a running->running state. A failed
+            # start/shutdown likewise must not be declared successful merely
+            # because libvirt answered another state. Explicit acknowledgement
+            # clears the local fence but is never represented as verification.
+            verified = (prior_action in TARGET_STATES
+                        and before["state"] == TARGET_STATES[prior_action])
+            if not verified and not getattr(args, "acknowledge_unknown", False):
+                raise Refused("Target state not independently observed; inspect and use --acknowledge-unknown to release the local fence")
+            event(root, {"uuid": identity, "op": "reconcile",
+                         "outcome": "reconciled" if verified else "acknowledged",
                          "state": before["state"], "at": int(time.time())})
-            return {**before, "reconciled": True}
+            if verified:
+                return {**before, "reconciled": True, "outcome": "OBSERVED"}
+            return {**before, "reconciled": False, "outcome": "ACKNOWLEDGED_UNVERIFIED",
+                    "note": "Manual acknowledgement only; prior VM effect was not proved."}
         before = virsh.detail(identity)
         if before["name"] != entry["name"]:
             raise Refused("VM name changed since enrollment; refusing mutation")
@@ -314,8 +330,9 @@ def manage(virsh: Virsh, root: Path, args: argparse.Namespace) -> dict:
                         "note": "VM definition removed. All storage volumes were preserved."}
             virsh.run(command, identity)
             after = virsh.detail(identity)
-            outcome = "observed" if (args.command != "reboot"
-                                     and after["state"] != before["state"]) else "pending"
+            outcome = ("observed" if args.command in TARGET_STATES
+                       and after["state"] == TARGET_STATES[args.command]
+                       else "pending")
             event(root, {"uuid": identity, "operation": opid, "op": command,
                          "outcome": outcome, "at": int(time.time())})
             return {**after, "operationId": opid, "outcome": outcome.upper(),
@@ -339,7 +356,7 @@ def main(argv: list[str] | None = None) -> int:
             p.add_argument("--confirm-system", help="Required for system VM adoption/deletion: MANAGE qemu:///system")
         if cmd == "reconcile":
             p.add_argument("--acknowledge-unknown", action="store_true",
-                           help="After reviewing the latest VM state, explicitly acknowledge the unresolved operation")
+                           help="Explicitly release an unresolved local fence without claiming VM effect verification")
     args = parser.parse_args(argv)
     try:
         connection = scope_connection(args.system)

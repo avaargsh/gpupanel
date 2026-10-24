@@ -31,6 +31,8 @@ python3 scripts/gpupanel-vm.py reboot <uuid>
 # On ambiguous/pending outcome, inspect with show before explicit reconciliation:
 python3 scripts/gpupanel-vm.py show <uuid>
 python3 scripts/gpupanel-vm.py reconcile <uuid>
+# If the desired state was not observed, only after manual VM inspection:
+python3 scripts/gpupanel-vm.py reconcile <uuid> --acknowledge-unknown
 # Deletion is deliberately definition-only, requires shut off + confirmation:
 python3 scripts/gpupanel-vm.py delete <uuid> --confirm-name '<exact name>'
 ```
@@ -64,6 +66,7 @@ python3 scripts/gpupanel-vm.py --system reboot <exact-uuid>
 # A lost response / reboot leaves an unresolved operation. Inspect first.
 python3 scripts/gpupanel-vm.py --system show <exact-uuid>
 python3 scripts/gpupanel-vm.py --system reconcile <exact-uuid> --acknowledge-unknown
+# ACKNOWLEDGED_UNVERIFIED only releases the CLI fence; it does not prove reboot.
 # Only if shut off and independently backed up as needed: undefine, KEEP disks.
 python3 scripts/gpupanel-vm.py --system delete <exact-uuid> \
   --confirm-name '<exact VM name>' \
@@ -98,8 +101,12 @@ Official references: <https://libvirt.org/auth.html>,
   JSONL journal records intent before calling `virsh` (fsync) and outcome
   after. Unknown/pending results block the next mutation until explicitly
   inspected and reconciled. There is **no automatic retry** after lost ACK.
-- Start/shutdown are graceful. Reboot is treated as pending because a running
-  state after a reboot request does not prove the guest completed a cycle.
+- Start/shutdown are graceful. Only observed **target states** (`running` for
+  start and `shut off` for shutdown) count as `OBSERVED`; intermediate `paused`,
+  `crashed`, `in shutdown` or unchanged states remain `PENDING` and block a
+  further mutation. This proves the libvirt state, not in-guest application
+  readiness. Reboot always remains pending: `running` → `running` does not prove
+  the guest actually rebooted.
 - Delete only calls `virsh undefine <uuid> --keep-nvram`; never removes guest
   disks or runs `destroy`. It requires `shut off` and exact name confirmation.
   Independently observes UUID absence in the same session before considering
@@ -109,9 +116,16 @@ Official references: <https://libvirt.org/auth.html>,
   `$XDG_STATE_HOME/gpupanel/vms` for session and `/vms/system` for system.
   Files and operation locks reject symlinks, wrong owner and shared permissions;
   these are local operator recovery evidence, not a Core multi-user database.
-- `reconcile` acknowledges an unresolved state after the operator has viewed
-  `show`; system scope requires `--acknowledge-unknown`. It is **not** a
-  cryptographic attestation or proof of guest health.
+- `reconcile` checks the current libvirt state under the operation lock. It
+  records `OBSERVED` only when the prior start/shutdown's **expected target**
+  state is now independently visible, or when a prior delete's exact UUID is
+  absent from the same libvirt connection. Otherwise the local operation fence
+  stays blocked until an operator explicitly supplies `--acknowledge-unknown`;
+  this returns `ACKNOWLEDGED_UNVERIFIED`, not success, and writes that fact to
+  the durable journal. System scope always requires this explicit flag for
+  reconciliation. A reboot cannot be certified by a same-state read, even
+  after acknowledgement. **Do not repeat an ambiguous mutation without an
+  independent guest/operator health check.**
 
 ## Tests and gaps
 
