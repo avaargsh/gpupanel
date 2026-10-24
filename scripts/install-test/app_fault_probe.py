@@ -205,6 +205,22 @@ def _start_docker(guest) -> None:
     guest(["sudo", "systemctl", "start", "docker.socket", "docker.service"])
 
 
+def _docker_is_frozen(guest_rc) -> bool:
+    """Require both units inactive and the privileged Docker API unreachable.
+
+    The guest SSH user has sudo but no docker group membership. Checking the
+    API as that unprivileged user would report a permission denial even while
+    Docker was still running, falsely declaring a successful fault injection.
+    """
+    probes = (
+        ["sudo", "systemctl", "is-active", "--quiet", "docker.service"],
+        ["sudo", "systemctl", "is-active", "--quiet", "docker.socket"],
+        ["sudo", "timeout", "3", "docker", "version", "--format",
+         "{{.Server.Version}}"],
+    )
+    return all(guest_rc(args) != 0 for args in probes)
+
+
 def _wait_docker_ready(guest_rc, attempts: int = 20) -> bool:
     for _ in range(attempts):
         # The disposable VM's SSH user is only in the sudo group; do not
@@ -257,9 +273,7 @@ def inject(*, page, guest, guest_rc, guest_inventory, request, next_id,
         docker_stopped = guest_rc([
             "sudo", "systemctl", "stop", "docker.service",
             "docker.socket"]) == 0
-        if not docker_stopped or guest_rc([
-                "timeout", "3", "docker", "version",
-                "--format", "{{.Server.Version}}"]) == 0:
+        if not docker_stopped or not _docker_is_frozen(guest_rc):
             _token("G5_APP_UNKNOWN_FENCE_CODE", "freeze-unavailable")
             raise RuntimeError("Docker daemon was not stopped and verified")
         _kill_agent(guest_rc)

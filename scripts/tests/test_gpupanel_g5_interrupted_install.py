@@ -155,6 +155,33 @@ class InterruptedInstallEvidenceTests(unittest.TestCase):
         self.assertEqual(failure.app_unknown_fence_code(
             "G5_APP_UNKNOWN_FENCE_CODE=secret release=NO_GO\n"), "unknown")
 
+    def test_freeze_requires_inactive_units_and_privileged_api(self):
+        commands = [
+            ["sudo", "systemctl", "is-active", "--quiet", "docker.service"],
+            ["sudo", "systemctl", "is-active", "--quiet", "docker.socket"],
+            ["sudo", "timeout", "3", "docker", "version", "--format",
+             "{{.Server.Version}}"],
+        ]
+        observed = []
+        self.assertTrue(probe._docker_is_frozen(
+            lambda args: observed.append(args) or 1))
+        self.assertEqual(observed, commands)
+
+        # If either unit is still active, or the privileged API is usable,
+        # Docker was not actually frozen, regardless of the stop command's rc.
+        for index in range(len(commands)):
+            with self.subTest(active_check=index):
+                observed = []
+                codes = [1, 1, 1]
+                codes[index] = 0
+
+                def guest_rc(args):
+                    observed.append(args)
+                    return codes[len(observed) - 1]
+
+                self.assertFalse(probe._docker_is_frozen(guest_rc))
+                self.assertEqual(observed, commands[:index + 1])
+
     def test_docker_readiness_probe_is_bounded(self):
         calls = []
         self.assertTrue(probe._wait_docker_ready(
