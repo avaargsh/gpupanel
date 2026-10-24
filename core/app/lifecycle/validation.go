@@ -119,23 +119,64 @@ func newOperationID() (string, error) {
 func ensurePrivateDBFile(path string) error {
 	info, err := os.Lstat(path)
 	if err == nil {
-		if !info.Mode().IsRegular() || info.Mode()&os.ModeSymlink != 0 {
-			return fmt.Errorf("lifecycle: database file must be a regular non-symlink file")
-		}
-		if info.Mode().Perm()&0077 != 0 {
-			return fmt.Errorf("lifecycle: database file permissions must exclude group/other access")
-		}
-		return checkOwner(info, os.Geteuid())
+		return validatePrivateDBInfo(info)
 	}
 	if !errors.Is(err, os.ErrNotExist) {
 		return fmt.Errorf("lifecycle: inspect database path: %w", err)
 	}
-	file, err := os.OpenFile(path, os.O_CREATE|os.O_EXCL|os.O_RDWR, 0600)
+	file, err := os.OpenFile(path, os.O_CREATE|os.O_EXCL|os.O_RDWR|syscall.O_NOFOLLOW, 0600)
 	if err != nil {
-		if errors.Is(err, os.ErrExist) { return ensurePrivateDBFile(path) }
+		if errors.Is(err, os.ErrExist) {
+			// Resolve a concurrent creator once. Do not recurse on a raced path:
+			// an attacker-controlled rename loop must not grow the stack.
+			info, statErr := os.Lstat(path)
+			if statErr != nil {
+				return fmt.Errorf("lifecycle: inspect concurrently created database: %w", statErr)
+			}
+			return validatePrivateDBInfo(info)
+		}
 		return fmt.Errorf("lifecycle: create private database file: %w", err)
 	}
 	if err := file.Close(); err != nil { return err }
+	info, err = os.Lstat(path)
+	if err != nil { return fmt.Errorf("lifecycle: inspect newly created database: %w", err) }
+	return validatePrivateDBInfo(info)
+}
+
+func validatePrivateDBInfo(info os.FileInfo) error {
+	if !info.Mode().IsRegular() || info.Mode()&os.ModeSymlink != 0 {
+		return fmt.Errorf("lifecycle: database file must be a regular non-symlink file")
+	}
+	if info.Mode().Perm()&0077 != 0 {
+		return fmt.Errorf("lifecycle: database file permissions must exclude group/other access")
+	}
+	return checkOwner(info, os.Geteuid())
+}
+
+func checkDirectoryAncestors(dir string, uid int) error {
+	for current := filepath.Clean(dir); ; current = filepath.Dir(current) {
+		info, err := os.Lstat(current)
+		if err == nil {
+			if info.Mode()&os.ModeSymlink != 0 || !info.IsDir() {
+				return fmt.Errorf("lifecycle: journal ancestor is redirected or not a directory")
+			}
+			statInfo, ok := info.Sys().(*syscall.Stat_t)
+			if !ok || (int(statInfo.Uid) != uid && statInfo.Uid != 0) {
+				return fmt.Errorf("lifecycle: journal ancestor is owned by an untrusted UID")
+			}
+			// The only writable ancestor accepted is root-owned sticky storage
+			// such as /tmp; the journal's own directory is checked more strictly.
+			if info.Mode().Perm()&0022 != 0 && !(statInfo.Uid == 0 && info.Mode()&os.ModeSticky != 0) {
+				return fmt.Errorf("lifecycle: journal ancestor is group/world writable")
+			}
+		} else if !errors.Is(err, os.ErrNotExist) {
+			return fmt.Errorf("lifecycle: inspect journal ancestor: %w", err)
+		}
+		parent := filepath.Dir(current)
+		if parent == current {
+			break
+		}
+	}
 	return nil
 }
 
