@@ -71,6 +71,17 @@ class UninstallPreflightTests(unittest.TestCase):
         with self.assertRaises(helper.Refusal):
             helper.build_plan(self.args())
 
+    def test_group_or_world_writable_binary_and_unit_are_rejected(self):
+        binary = self.panel / "gpupanel-core"
+        binary.chmod(0o777)
+        with self.assertRaisesRegex(helper.Refusal, "writable by group/world"):
+            helper.build_plan(self.args())
+        binary.chmod(0o755)
+        unit = self.unit_dir / "gpupanel-agent.service"
+        unit.chmod(0o666)
+        with self.assertRaisesRegex(helper.Refusal, "writable by group/world"):
+            helper.build_plan(self.args())
+
     def test_pctl_base_dir_mismatch_is_rejected(self):
         (self.panel / "pctl").write_text("#!/bin/bash\nBASE_DIR=/another/install\n", encoding="utf-8")
         with self.assertRaisesRegex(helper.Refusal, "BASE_DIR"):
@@ -133,6 +144,9 @@ class UninstallPreflightTests(unittest.TestCase):
 
     def test_uninstaller_stops_only_verified_units_and_never_kills_by_name(self):
         source = UNINSTALLER_PATH.read_text(encoding="utf-8")
+        syntax = subprocess.run(["bash", "-n", str(UNINSTALLER_PATH)],
+                                capture_output=True, text=True, check=False)
+        self.assertEqual(syntax.returncode, 0, syntax.stderr)
         self.assertIn("gpupanel-uninstall-preflight.py", source)
         self.assertIn("systemctl disable --now gpupanel-agent.service gpupanel-core.service", source)
         self.assertNotIn("pkill", source)
