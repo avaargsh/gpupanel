@@ -32,6 +32,7 @@ STAGES = (
     "real_core_agent_container_lifecycle",
     "real_offline_appinstall_core_taskdb_docker",
     "guest_post_install_offline_restore",
+    "guest_system_uninstall_preserved_data",
 )
 
 
@@ -51,6 +52,12 @@ def _digest(path: Path):
         return hashlib.file_digest(source, "sha256").hexdigest()
 
 
+def valid_digest(value: object) -> bool:
+    return isinstance(value, str) and len(value) == 64 and all(
+        char in "0123456789abcdef" for char in value
+    )
+
+
 def summarize(state: Path, *, run_completed: bool, source_sha: str) -> dict:
     observed = (state / "ci-stages.txt")
     marks = [] if observed.is_symlink() or not observed.is_file() else (
@@ -67,6 +74,7 @@ def summarize(state: Path, *, run_completed: bool, source_sha: str) -> dict:
     app_install = _load(state / "app-install-live.json")
     app_rejection = _load(state / "app-rejection-live.json")
     restore = _load(state / "restore-live.json")
+    uninstall = _load(state / "uninstall-live.json")
     valid_source = (
         isinstance(source_sha, str) and len(source_sha) == 40
         and all(char in "0123456789abcdef" for char in source_sha)
@@ -219,6 +227,59 @@ def summarize(state: Path, *, run_completed: bool, source_sha: str) -> dict:
         and restore.get("full_data_restore_verified") is False
         and restore.get("m0_release_decision") == "NO_GO"
     )
+    uninstall_ok = (
+        isinstance(uninstall, dict)
+        and set(uninstall) == {
+            "schema", "kind", "source_sha", "guest_machine_id_sha256",
+            "binary_sha256", "retained_file_sha256", "retained_tree_policy",
+            "retained_tree_before_sha256", "retained_tree_after_sha256",
+            "retained_tree_unchanged", "retention_sentinel_before_sha256",
+            "retention_sentinel_after_sha256", "retention_sentinel_preserved",
+            "unit_file_sha256",
+            "docker_inventory_sha256", "docker_server_version",
+            "owned_units_removed", "repeat_default_uninstall_idempotent",
+            "services_inactive_and_disabled", "running_processes_absent",
+            "binaries_and_data_retained",
+            "data_digests_unchanged", "docker_inventory_unchanged",
+            "purge", "upgrade_and_rollback", "m0_release_decision",
+        }
+        and restore_ok
+        and uninstall.get("schema") == "gpupanel.vm.system-uninstall.v1"
+        and uninstall.get("kind") ==
+            "REAL UBUNTU PACKAGE SYSTEMD UNINSTALL; DEFAULT DATA PRESERVATION; NO MOCKS"
+        and uninstall.get("source_sha") == source_sha
+        and uninstall.get("guest_machine_id_sha256") == browser.get("guest_machine_id_sha256")
+        and uninstall.get("binary_sha256") == expected_binary
+        and isinstance(uninstall.get("retained_file_sha256"), dict)
+        and set(uninstall["retained_file_sha256"]) == {"pctl", "core_db", "app_yaml"}
+        and all(valid_digest(value) for value in uninstall["retained_file_sha256"].values())
+        and uninstall.get("retained_tree_policy") ==
+            "ALL_PATHS_TYPES_MODES_OWNERS; FILE_DIGESTS_EXCEPT_VOLATILE_LOG_CONTENTS"
+        and valid_digest(uninstall.get("retained_tree_before_sha256"))
+        and valid_digest(uninstall.get("retained_tree_after_sha256"))
+        and uninstall.get("retained_tree_before_sha256") == uninstall.get("retained_tree_after_sha256")
+        and valid_digest(uninstall.get("retention_sentinel_before_sha256"))
+        and valid_digest(uninstall.get("retention_sentinel_after_sha256"))
+        and uninstall.get("retention_sentinel_before_sha256") == uninstall.get("retention_sentinel_after_sha256")
+        and isinstance(uninstall.get("unit_file_sha256"), dict)
+        and set(uninstall["unit_file_sha256"]) == {"gpupanel-core", "gpupanel-agent"}
+        and all(valid_digest(value) for value in uninstall["unit_file_sha256"].values())
+        and isinstance(uninstall.get("docker_inventory_sha256"), dict)
+        and set(uninstall["docker_inventory_sha256"]) == {"containers", "networks", "volumes", "images"}
+        and all(valid_digest(value) for value in uninstall["docker_inventory_sha256"].values())
+        and isinstance(uninstall.get("docker_server_version"), str)
+        and bool(uninstall["docker_server_version"])
+        and all(uninstall.get(key) is True for key in (
+            "owned_units_removed", "repeat_default_uninstall_idempotent",
+            "services_inactive_and_disabled", "running_processes_absent",
+            "binaries_and_data_retained", "data_digests_unchanged",
+            "retained_tree_unchanged", "retention_sentinel_preserved",
+            "docker_inventory_unchanged",
+        ))
+        and uninstall.get("purge") == "NOT_RUN"
+        and uninstall.get("upgrade_and_rollback") == "NOT_RUN"
+        and uninstall.get("m0_release_decision") == "NO_GO"
+    )
     app_rejection_ok = (
         isinstance(app_rejection, dict) and runtime_ok
         and set(app_rejection) == {
@@ -242,7 +303,7 @@ def summarize(state: Path, *, run_completed: bool, source_sha: str) -> dict:
     success = (
         run_completed and valid_source and release_ok and sequence_ok
         and marks == list(STAGES) and browser_ok and runtime_ok and compose_ok
-        and container_ok and restore_ok and app_rejection_ok and app_install_ok
+        and container_ok and restore_ok and uninstall_ok and app_rejection_ok and app_install_ok
         and isinstance(prepared, dict)
         and prepared.get("signed_checksum_verified") is True
     )
@@ -277,6 +338,9 @@ def summarize(state: Path, *, run_completed: bool, source_sha: str) -> dict:
         "gpupanel_offline_appinstall_lifecycle": "PARTIAL_PASS" if success else "NOT_ATTESTED",
         "real_appinstall_missing_detail_rejection": "PASS" if success else "NOT_ATTESTED",
         "post_install_offline_disk_restore": "PASS" if success else "NOT_ATTESTED",
+        "system_uninstall": "PASS" if success else "NOT_ATTESTED",
+        "uninstall_data_preservation": "PASS" if success else "NOT_ATTESTED",
+        "uninstall_purge": "NOT_RUN",
         "full_app_compose_install_lifecycle": "NOT_RUN",
         "upgrade_and_rollback": "NOT_RUN",
         "full_data_restore": "NOT_RUN",

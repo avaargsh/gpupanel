@@ -18,6 +18,7 @@ SCRIPTS = {
     "container": ("container.raw.log", "container.py"),
     "app-rejection": ("app-rejection.raw.log", "app-rejection-live.py"),
     "app-install": ("app-install.raw.log", "app-install-live.py"),
+    "system-uninstall": ("uninstall-script.raw.log", "uninstall-live.py"),
 }
 LINE = re.compile(r'File "[^"\n]*/([^/"]+\.py)", line ([1-9][0-9]{0,5})')
 CLASS = re.compile(r"^(AssertionError|AttributeError|FileNotFoundError|"
@@ -160,6 +161,63 @@ G5_APP_UNKNOWN_OP_FENCE = re.compile(
 )
 
 
+
+SYSTEM_UNINSTALL_STAGE = re.compile(
+    r"(?m)^GPUPANEL_SYSTEM_UNINSTALL_STAGE=(startup|candidate-validation|"
+    r"preflight-evidence|before-observation|first-uninstaller|after-observation|"
+    r"postcondition-comparison|repeat-uninstaller|repeat-observation|"
+    r"repeat-comparison|persist-evidence) release=NO_GO$"
+)
+
+
+def system_uninstall_stage(raw: str) -> str:
+    hits = SYSTEM_UNINSTALL_STAGE.findall(raw)
+    return hits[-1] if hits else "unknown"
+
+
+# Values below are fixed labels. Never copy free-form uninstaller messages,
+# helper JSON, paths, environment data or exception text into a CI summary.
+SYSTEM_UNINSTALL_FAILURES = (
+    ("GPUPanel uninstall refused/failed: missing safe uninstall preflight helper",
+     "missing-preflight-helper"),
+    ("GPUPanel uninstall refused/failed: ownership/path preflight failed",
+     "ownership-preflight-rejected"),
+    ("GPUPanel uninstall refused/failed: systemd did not confirm stop/disable",
+     "service-stop-disable-unconfirmed"),
+    ("GPUPanel uninstall refused/failed: systemd daemon-reload failed",
+     "daemon-reload-failed"),
+    ("GPUPanel uninstall refused/failed: post-removal state could not be proven",
+     "post-removal-verification-failed"),
+    ("GPUPanel uninstall refused/failed: a GPUPanel process is still running or ownership changed",
+     "post-stop-process-or-ownership-check-failed"),
+    ("GPUPanel uninstall refused/failed: a GPUPanel process is still running",
+     "process-still-running"),
+    ("GPUPanel uninstall refused/failed: cannot stage owned units for reversible removal",
+     "unit-backup-creation-failed"),
+    ("GPUPanel uninstall refused/failed: cannot preserve original",
+     "unit-backup-copy-failed"),
+    ("GPUPanel uninstall refused/failed: final purge guard failed",
+     "purge-preflight-failed"),
+    ("GPUPanel uninstall refused/failed: unit removal committed but private staging directory remains",
+     "unit-backup-cleanup-failed"),
+)
+
+
+def system_uninstall_failure_category(raw: str) -> str:
+    for marker, category in SYSTEM_UNINSTALL_FAILURES:
+        if marker in raw:
+            return category
+    if "systemd query failed for gpupanel-" in raw:
+        return "systemd-query-failed"
+    if "systemd gpupanel-" in raw and "unknown load state" in raw:
+        return "systemd-postcondition-unknown"
+    if "systemd gpupanel-" in raw and "still loaded" in raw:
+        return "systemd-postcondition-not-absent"
+    if not raw.strip():
+        return "uninstaller-log-missing"
+    return "unknown"
+
+
 def app_unknown_op_fence_code(raw: str) -> str:
     hits = G5_APP_UNKNOWN_OP_FENCE.findall(raw)
     return hits[-1] if hits else "unknown"
@@ -201,7 +259,7 @@ def diagnostic(raw: str, basename: str) -> str:
 
 def main() -> int:
     if len(sys.argv) != 2 or sys.argv[1] not in SCRIPTS:
-        print("Usage: ci-failure.py browser|runtime|compose|restore|container", file=sys.stderr)
+        print("Usage: ci-failure.py browser|runtime|compose|restore|container|system-uninstall", file=sys.stderr)
         return 2
     file_name, basename = SCRIPTS[sys.argv[1]]
     path = STATE / file_name
@@ -225,6 +283,14 @@ def main() -> int:
         print("G5_APP_INFLIGHT_CODE=" + app_inflight_code(raw) + " release=NO_GO")
         print("G5_APP_UNKNOWN_FENCE_CODE=" + app_unknown_fence_code(raw) + " release=NO_GO")
         print("G5_APP_UNKNOWN_OP_FENCE_CODE=" + app_unknown_op_fence_code(raw) + " release=NO_GO")
+    if sys.argv[1] == "system-uninstall":
+        print("GPUPANEL_SYSTEM_UNINSTALL_STAGE=" + system_uninstall_stage(raw) + " release=NO_GO")
+        private_uninstaller_log = STATE / "uninstall.raw.log"
+        if private_uninstaller_log.is_symlink() or not private_uninstaller_log.is_file():
+            uninstaller_raw = ""
+        else:
+            uninstaller_raw = private_uninstaller_log.read_text(encoding="utf-8", errors="replace")[-200_000:]
+        print("GPUPANEL_SYSTEM_UNINSTALL_CATEGORY=" + system_uninstall_failure_category(uninstaller_raw) + " release=NO_GO")
     print(diagnostic(raw, basename))
     return 0
 

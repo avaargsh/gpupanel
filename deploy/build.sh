@@ -90,6 +90,7 @@ install -m 0755 "$ROOT/scripts/gpupanel-install-preflight.py" "$PKG_DIR/gpupanel
 cp "$ROOT/LICENSE" "$ROOT/NOTICE.md" "$PKG_DIR/"
 install -m 0755 "$ROOT/deploy/install.sh" "$PKG_DIR/install.sh"
 install -m 0755 "$ROOT/deploy/uninstall.sh" "$PKG_DIR/uninstall.sh"
+install -m 0755 "$ROOT/scripts/gpupanel-uninstall-preflight.py" "$PKG_DIR/gpupanel-uninstall-preflight.py"
 cp "$ROOT/deploy/conf/app.yaml" "$PKG_DIR/app.yaml"
 
 # initscript/ holds the units the in-app upgrade copies into the service

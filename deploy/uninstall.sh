@@ -1,60 +1,206 @@
 #!/usr/bin/env bash
 #
-# GPUPanel uninstaller.
+# GPUPanel service teardown.
 #
-#   sudo uninstall.sh [--base-dir DIR] [--purge]
+# Usage:
+#   sudo uninstall.sh [--base-dir DIR] [--purge --confirm-purge DIR]
 #
-# By default the panel data under <base-dir>/gpupanel is kept. Pass --purge to
-# delete it as well.
+# By default, only the verified GPUPanel systemd integration is removed. The
+# complete installation directory, binaries, configuration and user data are
+# retained so a later recovery is possible. Purge is a separate explicit action.
 set -euo pipefail
 
 BASE_DIR="/opt"
 PURGE=0
+CONFIRM_PURGE=""
+
+die() {
+    printf 'GPUPanel uninstall refused/failed: %s\n' "$*" >&2
+    exit 1
+}
 
 while [ $# -gt 0 ]; do
     case "$1" in
-        --base-dir) BASE_DIR="${2:-}"; shift 2 ;;
-        --purge) PURGE=1; shift ;;
-        -h|--help) sed -n '2,/^[^#]/p' "$0" | sed -e 's/^# \{0,1\}//' | head -n -1; exit 0 ;;
-        *) echo "unknown argument: $1" >&2; exit 1 ;;
+        --base-dir)
+            [ $# -ge 2 ] || die "--base-dir requires a path"
+            BASE_DIR="$2"
+            shift 2
+            ;;
+        --purge)
+            PURGE=1
+            shift
+            ;;
+        --confirm-purge)
+            [ $# -ge 2 ] || die "--confirm-purge requires the exact installation path"
+            CONFIRM_PURGE="$2"
+            shift 2
+            ;;
+        -h|--help)
+            sed -n '2,/^[^#]/p' "$0" | sed -e 's/^# \{0,1\}//' | head -n -1
+            exit 0
+            ;;
+        *)
+            die "unknown argument: $1"
+            ;;
     esac
 done
 
-[ -n "$BASE_DIR" ] || { echo "--base-dir needs a value" >&2; exit 1; }
-case "$BASE_DIR" in /*) ;; *) echo "--base-dir must be an absolute path (got: $BASE_DIR)" >&2; exit 1 ;; esac
+[ -n "$BASE_DIR" ] || die "--base-dir needs a value"
+case "$BASE_DIR" in
+    /*) ;;
+    *) die "--base-dir must be an absolute path (got: $BASE_DIR)" ;;
+esac
 BASE_DIR="${BASE_DIR%/}"
+[ -n "$BASE_DIR" ] || die "refuse the filesystem root as base-dir"
 
-if [ "$(id -u)" != "0" ]; then
-    echo "uninstall.sh must run as root (try: sudo $0 $*)" >&2
-    exit 1
+[ "$(id -u)" = "0" ] || die "uninstall.sh must run as root"
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PREFLIGHT="$SCRIPT_DIR/gpupanel-uninstall-preflight.py"
+if [ ! -f "$PREFLIGHT" ] || [ -L "$PREFLIGHT" ]; then
+    PREFLIGHT="$SCRIPT_DIR/../scripts/gpupanel-uninstall-preflight.py"
 fi
+[ -f "$PREFLIGHT" ] && [ ! -L "$PREFLIGHT" ] || die "missing safe uninstall preflight helper"
+command -v python3 >/dev/null 2>&1 || die "Python 3 is required for uninstall preflight"
 
-PANEL_DIR="${BASE_DIR}/gpupanel"
+PANEL_DIR="$BASE_DIR/gpupanel"
 UNIT_DIR="/etc/systemd/system"
+UNIT_CORE="$UNIT_DIR/gpupanel-core.service"
+UNIT_AGENT="$UNIT_DIR/gpupanel-agent.service"
+SYSTEMD_ARGS=(--no-systemd)
+if command -v systemctl >/dev/null 2>&1 && [ -d /run/systemd/system ]; then
+    SYSTEMD_ARGS=(--systemd)
+fi
+UNITS_ALREADY_REMOVED=0
+if [ ! -e "$UNIT_CORE" ] && [ ! -L "$UNIT_CORE" ] &&
+   [ ! -e "$UNIT_AGENT" ] && [ ! -L "$UNIT_AGENT" ]; then
+    UNITS_ALREADY_REMOVED=1
+fi
+PREFLIGHT_ARGS=(--base-dir "$BASE_DIR" --unit-dir "$UNIT_DIR" "${SYSTEMD_ARGS[@]}")
+if [ "$UNITS_ALREADY_REMOVED" = "1" ]; then
+    PREFLIGHT_ARGS+=(--units-removed)
+fi
+if [ "$PURGE" = "1" ]; then
+    PREFLIGHT_ARGS+=(--purge --confirm-purge "$CONFIRM_PURGE")
+elif [ -n "$CONFIRM_PURGE" ]; then
+    die "--confirm-purge is valid only with --purge"
+fi
 
-echo "==> stopping GPUPanel"
-if command -v systemctl >/dev/null 2>&1; then
-    systemctl disable --now gpupanel-agent gpupanel-core 2>/dev/null || true
+# Read-only plan: prove the target and each systemd unit belong to this install
+# before sending stop/disable commands or deleting any unit/data.
+PLAN="$(python3 "$PREFLIGHT" "${PREFLIGHT_ARGS[@]}")" || die "ownership/path preflight failed; no changes were requested"
+printf 'Verified GPUPanel uninstall plan: %s\n' "$PLAN"
+
+# Re-entry after a successful default uninstall is safe: verify no owned units,
+# fragments, or processes remain, then either preserve data or purge by exact
+# separately confirmed path. Never issue disable/stop against an unrelated unit.
+if [ "$UNITS_ALREADY_REMOVED" = "1" ]; then
+    if [ "$PURGE" = "1" ]; then
+        rm -rf --one-file-system -- "$PANEL_DIR"
+        printf 'GPUPanel installation directory and its data were purged: %s\n' "$PANEL_DIR"
+    else
+        printf 'GPUPanel systemd units are already removed; installation directory remains: %s\n' "$PANEL_DIR"
+        printf 'Binaries, configuration, database and user data remain for recovery.\n'
+        printf 'To permanently delete it, rerun with --purge --confirm-purge %s\n' "$PANEL_DIR"
+    fi
+    exit 0
 fi
-# Never let one stubborn file abort the uninstall half-way and leave services running.
-rm -f "$UNIT_DIR/gpupanel-core.service" "$UNIT_DIR/gpupanel-agent.service" 2>/dev/null \
-    || echo "    warning: could not remove the unit files from $UNIT_DIR"
-if command -v systemctl >/dev/null 2>&1; then
-    systemctl daemon-reload 2>/dev/null || true
-    systemctl reset-failed 2>/dev/null || true
+
+if [ "${SYSTEMD_ARGS[0]}" = "--systemd" ]; then
+    if ! systemctl disable --now gpupanel-agent.service gpupanel-core.service; then
+        die "systemd did not confirm stop/disable; unit files and installation directory retained"
+    fi
+    for service in gpupanel-agent.service gpupanel-core.service; do
+        if systemctl is-active --quiet "$service"; then
+            die "$service is still active; refusing to remove its unit or installation directory"
+        fi
+    done
 fi
-pkill -x gpupanel-agent 2>/dev/null || true
-pkill -x gpupanel-core 2>/dev/null || true
-pkill -f "$PANEL_DIR/gpupanel-agent" 2>/dev/null || true
-pkill -f "$PANEL_DIR/gpupanel-core" 2>/dev/null || true
-sleep 1
+
+# This second read-only check catches manual nohup processes and stop races.
+python3 "$PREFLIGHT" --base-dir "$BASE_DIR" --unit-dir "$UNIT_DIR" "${SYSTEMD_ARGS[@]}" --assert-stopped >/dev/null \
+    || die "a GPUPanel process is still running or ownership changed; no files were removed"
+
+# Preserve exact unit bytes until systemd has accepted their removal. If a
+# file removal or daemon-reload fails, restore those units and leave the
+# installation directory intact so a later retry starts from a known state.
+UNIT_BACKUP=""
+UNIT_REMOVAL_STARTED=0
+UNIT_REMOVAL_COMMITTED=0
+restore_units_on_failure() {
+    local rc=$?
+    if [ -n "$UNIT_BACKUP" ] && [ "$UNIT_REMOVAL_COMMITTED" != "1" ]; then
+        local restore_failed=0
+        # Before removal starts the live unit files are untouched; never copy a
+        # possibly half-staged backup over them if a signal interrupts staging.
+        if [ "$UNIT_REMOVAL_STARTED" = "1" ]; then
+            for unit in gpupanel-core.service gpupanel-agent.service; do
+                if [ -f "$UNIT_BACKUP/$unit" ]; then
+                    cp -p -- "$UNIT_BACKUP/$unit" "$UNIT_DIR/$unit" || restore_failed=1
+                fi
+            done
+        fi
+        if [ "$restore_failed" = "0" ] && [ "${SYSTEMD_ARGS[0]}" = "--systemd" ]; then
+            systemctl daemon-reload || restore_failed=1
+        fi
+        if [ "$restore_failed" = "0" ]; then
+            rm -rf -- "$UNIT_BACKUP"
+        else
+            printf 'GPUPanel uninstall recovery required; original unit backup retained at %s\n' "$UNIT_BACKUP" >&2
+        fi
+    fi
+    exit "$rc"
+}
+
+if [ -f "$UNIT_DIR/gpupanel-core.service" ] || [ -f "$UNIT_DIR/gpupanel-agent.service" ]; then
+    UNIT_BACKUP="$(mktemp -d "$UNIT_DIR/.gpupanel-uninstall.XXXXXX")" \
+        || die "cannot stage owned units for reversible removal"
+    chmod 0700 "$UNIT_BACKUP"
+    trap restore_units_on_failure EXIT
+    # Convert ordinary interruption signals to an exit so the EXIT recovery
+    # trap restores the original unit files. SIGKILL/power loss still require
+    # operator recovery from the retained private staging directory.
+    trap 'exit 129' HUP
+    trap 'exit 130' INT
+    trap 'exit 143' TERM
+    for unit in gpupanel-core.service gpupanel-agent.service; do
+        if [ -f "$UNIT_DIR/$unit" ]; then
+            cp -p -- "$UNIT_DIR/$unit" "$UNIT_BACKUP/$unit" \
+                || die "cannot preserve original $unit before removal"
+        fi
+    done
+fi
+
+# The preflight proved these are exact regular files for this installation.
+# Set this only after the complete backup copy is durable; earlier interrupts
+# leave live unit files untouched and must not restore partial backup bytes.
+UNIT_REMOVAL_STARTED=1
+# Do not kill by process name or command-line substring.
+rm -f -- "$UNIT_DIR/gpupanel-core.service" "$UNIT_DIR/gpupanel-agent.service"
+if [ "${SYSTEMD_ARGS[0]}" = "--systemd" ]; then
+    systemctl daemon-reload || die "systemd daemon-reload failed; original units will be restored"
+fi
+# Commit the operation only after independent observation confirms both owned
+# fragments are absent/inactive/disabled. On failure, EXIT restores the bytes.
+python3 "$PREFLIGHT" --base-dir "$BASE_DIR" --unit-dir "$UNIT_DIR" "${SYSTEMD_ARGS[@]}" \
+    --units-removed >/dev/null \
+    || die "post-removal state could not be proven; original units will be restored"
+UNIT_REMOVAL_COMMITTED=1
+if [ -n "$UNIT_BACKUP" ]; then
+    rm -rf -- "$UNIT_BACKUP" || die "unit removal committed but private staging directory remains"
+fi
+trap - EXIT HUP INT TERM
 
 if [ "$PURGE" = "1" ]; then
-    echo "==> purging $PANEL_DIR"
-    rm -rf "$PANEL_DIR"
+    # Re-check ownership and mount-point state after stopping services and
+    # removing unit files, before the only recursive deletion in this script.
+    python3 "$PREFLIGHT" --base-dir "$BASE_DIR" --unit-dir "$UNIT_DIR" "${SYSTEMD_ARGS[@]}" \
+        --units-removed --purge --confirm-purge "$PANEL_DIR" >/dev/null \
+        || die "final purge guard failed; installation directory retained"
+    rm -rf --one-file-system -- "$PANEL_DIR"
+    printf 'GPUPanel installation directory and its data were purged: %s\n' "$PANEL_DIR"
 else
-    echo "==> keeping $PANEL_DIR (pass --purge to remove)"
+    printf 'GPUPanel systemd units removed; the installation directory is retained: %s\n' "$PANEL_DIR"
+    printf 'Binaries, configuration, database and user data remain for recovery. This is not a full package purge.\n'
+    printf 'To permanently delete it, rerun with --purge --confirm-purge %s\n' "$PANEL_DIR"
 fi
-
-echo "GPUPanel uninstalled."
-echo "  note: all GPUPanel-managed language resources remain under $PANEL_DIR."

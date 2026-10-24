@@ -166,6 +166,7 @@ if [ "$SOURCE_BUILD_MODE" = "0" ]; then
     [ -d "$PAYLOAD" ] && [ ! -L "$PAYLOAD" ] || die "release payload directory must be an ordinary directory"
     [ ! -L "$PAYLOAD/initscript" ] || die "release unit directory must not be a symlink"
     for rel in gpupanel-core gpupanel-agent pctl app.yaml gpupanel-install-preflight.py \
+               gpupanel-uninstall-preflight.py \
                initscript/gpupanel-core.service initscript/gpupanel-agent.service; do
         [ -f "$PAYLOAD/$rel" ] && [ ! -L "$PAYLOAD/$rel" ] \
             || die "incomplete or redirected release payload: $rel"

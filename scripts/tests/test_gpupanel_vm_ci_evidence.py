@@ -122,6 +122,35 @@ class LiveVmEvidence(unittest.TestCase):
             "m0_release_decision": "NO_GO",
             "secret": "NEVER_REPORT_ME",
         }
+        self.uninstall = {
+            "schema": "gpupanel.vm.system-uninstall.v1",
+            "kind": "REAL UBUNTU PACKAGE SYSTEMD UNINSTALL; DEFAULT DATA PRESERVATION; NO MOCKS",
+            "source_sha": self.source,
+            "guest_machine_id_sha256": "d" * 64,
+            "binary_sha256": self.candidate["binary_sha256"],
+            "retained_file_sha256": {"pctl": "1" * 64, "core_db": "2" * 64, "app_yaml": "3" * 64},
+            "retained_tree_policy": "ALL_PATHS_TYPES_MODES_OWNERS; FILE_DIGESTS_EXCEPT_VOLATILE_LOG_CONTENTS",
+            "retained_tree_before_sha256": "a" * 64,
+            "retained_tree_after_sha256": "a" * 64,
+            "retained_tree_unchanged": True,
+            "retention_sentinel_before_sha256": "b" * 64,
+            "retention_sentinel_after_sha256": "b" * 64,
+            "retention_sentinel_preserved": True,
+            "unit_file_sha256": {"gpupanel-core": "4" * 64, "gpupanel-agent": "5" * 64},
+            "docker_inventory_sha256": {"containers": "6" * 64, "networks": "7" * 64,
+                                        "volumes": "8" * 64, "images": "9" * 64},
+            "docker_server_version": "27.0.3",
+            "owned_units_removed": True,
+            "repeat_default_uninstall_idempotent": True,
+            "services_inactive_and_disabled": True,
+            "running_processes_absent": True,
+            "binaries_and_data_retained": True,
+            "data_digests_unchanged": True,
+            "docker_inventory_unchanged": True,
+            "purge": "NOT_RUN",
+            "upgrade_and_rollback": "NOT_RUN",
+            "m0_release_decision": "NO_GO",
+        }
         (self.state / "ubuntu2404").mkdir()
         self.write("ubuntu2404/image-provenance.json", {
             "signed_checksum_verified": True,
@@ -144,6 +173,7 @@ class LiveVmEvidence(unittest.TestCase):
         self.write("app-install-live.json", self.app_install)
         self.write("app-rejection-live.json", self.app_rejection)
         self.write("restore-live.json", self.restore)
+        self.write("uninstall-live.json", self.uninstall)
         (self.state / "ci-stages.txt").write_text(
             "\n".join(audit.STAGES) + "\n"
         )
@@ -172,6 +202,43 @@ class LiveVmEvidence(unittest.TestCase):
                        "DO_NOT_PRINT_VM_IMAGE_PROVIDER", "NEVER_REPORT_ME",
                        "NEVER_EXPOSE_CONTAINER_TASK_LOG"):
             self.assertNotIn(secret, encoded)
+
+    def test_system_uninstall_evidence_is_exact_and_preserves_data(self):
+        result = self.summarise()
+        self.assertEqual(result["system_uninstall"], "PASS")
+        self.assertEqual(result["uninstall_data_preservation"], "PASS")
+        self.assertEqual(result["uninstall_purge"], "NOT_RUN")
+        faults = (
+            {"source_sha": "0" * 40},
+            {"guest_machine_id_sha256": "0" * 64},
+            {"owned_units_removed": False},
+            {"repeat_default_uninstall_idempotent": False},
+            {"data_digests_unchanged": False},
+            {"retained_tree_after_sha256": "invalid"},
+            {"retained_tree_after_sha256": "c" * 64},
+            {"retained_tree_unchanged": False},
+            {"retained_tree_policy": "ALL_FILES_UNFILTERED"},
+            {"retention_sentinel_after_sha256": "invalid"},
+            {"retention_sentinel_after_sha256": "c" * 64},
+            {"retention_sentinel_preserved": False},
+            {"docker_inventory_unchanged": False},
+            {"purge": "PASS"},
+            {"upgrade_and_rollback": "PASS"},
+            {"m0_release_decision": "GO"},
+            {"extra_field": "reject"},
+        )
+        for fault in faults:
+            with self.subTest(fault=fault):
+                self.write("uninstall-live.json", {**self.uninstall, **fault})
+                report = self.summarise()
+                self.assertEqual(report["status"], "BLOCKED_OR_FAILED")
+                self.assertEqual(report["system_uninstall"], "NOT_ATTESTED")
+        self.write("uninstall-live.json", self.uninstall)
+        (self.state / "uninstall-live.json").unlink()
+        report = self.summarise()
+        self.assertEqual(report["status"], "BLOCKED_OR_FAILED")
+        self.assertEqual(report["system_uninstall"], "NOT_ATTESTED")
+        self.write("uninstall-live.json", self.uninstall)
 
     def test_archive_integrity_and_guest_binding_are_required(self):
         baseline = self.summarise()
@@ -246,6 +313,7 @@ class LiveVmEvidence(unittest.TestCase):
             'python3 scripts/install-test/vm.py ssh -- python3 "/tmp/$package/gpupanel-install-preflight.py" --json',
             script,
         )
+        self.assertIn("python3 scripts/install-test/ci-failure.py system-uninstall", script)
 
     def test_private_browser_failure_is_redacted_to_line_and_class(self):
         failure_source = ROOT / "scripts/install-test/ci-failure.py"
@@ -267,6 +335,41 @@ class LiveVmEvidence(unittest.TestCase):
         self.assertNotIn("SECRET_COOKIE", sanitized)
         self.assertNotIn("PRIVATE_BODY", sanitized)
         self.assertNotIn("private-user", sanitized)
+        # System uninstall diagnostics export only an allowlisted stage/category,
+        # never the dynamic error string, filesystem path, or guest content.
+        self.assertEqual(
+            failure.system_uninstall_stage(
+                "GPUPANEL_SYSTEM_UNINSTALL_STAGE=first-uninstaller release=NO_GO\n"
+                "password=SECRET_SHOULD_NOT_LEAK\\n"
+            ),
+            "first-uninstaller",
+        )
+        self.assertEqual(
+            failure.system_uninstall_stage(
+                "GPUPANEL_SYSTEM_UNINSTALL_STAGE=first-uninstaller password=LEAK release=NO_GO\n"
+            ),
+            "unknown",
+        )
+        self.assertEqual(
+            failure.system_uninstall_failure_category(
+                "GPUPanel uninstall refused/failed: systemd did not confirm stop/disable; "
+                "secret=DO_NOT_LEAK"
+            ),
+            "service-stop-disable-unconfirmed",
+        )
+        self.assertEqual(
+            failure.system_uninstall_failure_category(
+                "arbitrary untrusted output: password=DO_NOT_LEAK"
+            ),
+            "unknown",
+        )
+        safe_report = (
+            "GPUPANEL_SYSTEM_UNINSTALL_STAGE="
+            + failure.system_uninstall_stage("password=DO_NOT_LEAK")
+            + " GPUPANEL_SYSTEM_UNINSTALL_CATEGORY="
+            + failure.system_uninstall_failure_category("password=DO_NOT_LEAK")
+        )
+        self.assertNotIn("DO_NOT_LEAK", safe_report)
         # A literal escaped backslash-n log has no real exception line.
         # Never guess a class from a secret-bearing freeform string.
         untrusted_flat = log.replace("\n", r"\n")
@@ -286,7 +389,7 @@ class LiveVmEvidence(unittest.TestCase):
         self.assertEqual(failure.compose_stage(
             "GUEST_COMPOSE_STAGE=up release=GO\n"
         ), "unknown")
-        self.assertEqual(failure.SCRIPTS.keys(), {"browser", "runtime", "compose", "restore", "container", "app-rejection", "app-install"})
+        self.assertEqual(failure.SCRIPTS.keys(), {"browser", "runtime", "compose", "restore", "container", "app-rejection", "app-install", "system-uninstall"})
         self.assertEqual(failure.app_api_stage(
             "G5_APP_API_FAILURE_STAGE=catalog-sync release=NO_GO\n"
             "cookie=UNREDACTABLE_SECRET\n"
