@@ -570,7 +570,80 @@ SQLite 重开后仍一致；随后的同 TaskID 重放与同规范化名称新 I
 `ci-evidence.py` 仍为 `BLOCKED_OR_FAILED`。
 
 边界：这是**干净重启**（`systemctl restart`），不是安装中途 SIGKILL；
-也不覆盖 UNKNOWN 证据审查、丢失 ACK 恢复、安装中 Docker 停摆、名称释放
-审批或卸载后重装。`full_app_compose_install_lifecycle`、
-`upgrade_and_rollback`、`full_data_restore` 继续为 `NOT_RUN`，
-`m0_release_decision=NO_GO`。
+安装中途崩溃由下一节的独立注入覆盖。本节不覆盖丢失 ACK 恢复、名称释放
+审批、已提交 Docker 写操作后的 UNKNOWN 对账/清理或卸载后重装。
+`full_app_compose_install_lifecycle`、`upgrade_and_rollback`、
+`full_data_restore` 继续为 `NOT_RUN`，`m0_release_decision=NO_GO`。
+
+## 2026-10-21 — G5 安装中途 SIGKILL 后的 UNKNOWN 围栏（同一 VM）
+
+在真实卸载与资源移除之后、fixture 目录清理之前，同一 guest 再执行一次
+**受控的安装中途崩溃注入**。这里要区分产品的同步 admission 预备阶段与
+真正的异步安装屏障：`AppService.installWithHooks` 会在创建 AppInstall 行和
+TaskDB `resourceID` 之前调用 `CreateDefaultDockerNetwork`。因此，探针先在
+一次性 guest 中确保共享网络 `gpupanel-network` 已存在并可检查，再删除固定
+marker 并拍摄 Docker inventory 基线；这不是放宽网络检查，基线后的全部网络
+ID 仍须完全一致，也不把任何网络变化加入豁免名单。
+
+仅 fault 后缀的本地 fixture 安装会运行固定 `scripts/init.sh` barrier。进入
+该脚本后，它先写入 `/run/gpupanel-g5-init-entered`，再等待
+`/run/gpupanel-g5-init-release`；注入器必须观察到本轮的 entered marker，才允许
+停止 Docker 与强杀 Agent。这样 `TaskDB Executing/resourceID` 与“执行确实到达
+init barrier”是两个独立观察事实，不再只凭回执推断脚本已暂停：
+
+1. 通过认证 Core API 后台提交第二个固定名称的离线 fixture 安装（与已卸载
+   安装不同的 durable 名称，独立 Task UUID）；API 响应不被等待或重试；
+2. 只读轮询 TaskDB，直到同一 task 为 `Executing` 且携带正整数
+   `resourceID`；随后有界轮询本轮固定 entered marker，只有真实进入 init
+   barrier 后才可继续，未到达就输出固定类别并以 NO-GO 结束；
+3. 停止 `docker.service` 与 `docker.socket`，并用有界
+   `sudo timeout 3 docker version` 确认 daemon 已停止应答；entered marker
+   已证明 fixture 进入 `upApp` 前的 barrier，因此此时尚不应有 Compose
+   容器/项目网络/卷写操作；
+4. 在 daemon 仍停止时，对 `gpupanel-agent` 主进程及整个 unit cgroup
+   发送 `SIGKILL`（终止等待中的 init 脚本），再显式启动 Docker socket/service；
+5. 产品对异常 socket 的 fail-closed 行为保持不变；fixture 操作员显式
+   删除 stale `/etc/gpupanel/agent.sock` 后
+   `systemctl start gpupanel-agent`；
+6. 有界只读轮询 `GET /apps/installed/evidence/{id}`，直到 AppInstall 与
+   TaskDB 均为 `Unknown`、classification 为 `UNKNOWN` 且 reasons 含
+   `INSTALL_OUTCOME_NOT_RECONCILED`（`verified=false`）；
+7. 再等待 3 秒复核仍未重试/未重同步，并比较共享网络已预置后的基线与
+   注入后 Docker containers/networks/volumes 完全一致；任一差异都 fail closed，
+   不对网络类别做豁免（本探针不声称覆盖首次创建共享默认网络时的启动路径）；
+8. `operate=sync` 只读检查仍被接受；`operate=delete forceDelete=true`
+   必须被 reconciliation gate 以业务错误拒绝，且 inventory 不变、
+   install 仍为 UNKNOWN。
+
+失败时只输出固定类别：
+`G5_APP_INFLIGHT_CODE=<absent|terminal|malformed>`、
+`G5_APP_UNKNOWN_FENCE_CODE=<unavailable|agent-evidence-unavailable|agent-socket-cleanup-unavailable|agent-start-unavailable|docker-unit-start-unavailable|docker-api-unavailable|malformed|not-unknown|evidence-changed|side-effects|fixture-network-unavailable|init-barrier-not-reached|container-side-effects|network-side-effects|volume-side-effects|freeze-unavailable>`、
+`G5_APP_UNKNOWN_OP_FENCE_CODE=<control-unavailable|delete-accepted|delete-unavailable|delete-malformed|delete-inventory-changed|delete-evidence-changed>`，
+不输出响应体、ID、名称或错误文本。证据步骤增加
+`interrupted_install_marked_unknown_without_retry` 与
+`unknown_install_operations_blocked_without_side_effects`；
+`app-install-live.json` 必须携带
+`interrupted_install_unknown_fences_observed=true`、
+`distinct_operation_task_ids=true`（安装、卸载、被中断安装 3 个不同
+Task UUID），否则 `ci-evidence.py` 仍为 `BLOCKED_OR_FAILED`。
+
+边界：注入点是“AppInstall 与 TaskDB 已持久化、并且 entered marker 已证明
+init barrier 正在等待时崩溃”，**不是** Docker 写请求已提交后的崩溃；共享
+`gpupanel-network` 在基线前作为受控环境前提确认存在，因此该探针不验证首次
+安装时默认网络初始化失败/中断的行为；不证明已提交写操作后的 UNKNOWN 资源重建、丢失 ACK 后
+的恢复、自动对账/清理、名称释放审批或卸载后重装。UNKNOWN 行按设计保留
+供操作员审查，由随后 sealed post-install checkpoint 的磁盘恢复丢弃。
+`full_app_compose_install_lifecycle`、`upgrade_and_rollback`、
+`full_data_restore` 继续为 `NOT_RUN`，`m0_release_decision=NO_GO`。
+
+### G5 中断安装网络漂移定位
+
+网络清单在原始安装前基线、Docker 恢复但 Agent 尚未启动时、以及 Agent 恢复后分别采样。
+Moby 的 `configureNetworking` 会在守护进程启动时删除并重建默认 `bridge` 网络，因此跨这次
+明确注入的 Docker 重启，只允许该网络 ID 变化；仍必须验证它的名称、`bridge` 驱动和 `local` 作用域。
+来源：[Moby daemon networking initialization](https://github.com/moby/moby/blob/master/daemon/daemon_unix.go)。
+
+所有其他网络 ID、名称、驱动、作用域和成员集合都必须与安装前基线一致；Agent 恢复后的网络清单
+还必须与 Docker 恢复后、Agent 启动前的快照**逐项严格相等**。容器和卷在两个检查点也继续严格比较。
+网络 ID/名称只保留在私有探针中；CI 仅输出固定类别标签。上述唯一的 `bridge` ID 规则是已知的
+Docker 守护进程生命周期行为，不是对 App/Agent 网络副作用的豁免；任何其他漂移仍失败。

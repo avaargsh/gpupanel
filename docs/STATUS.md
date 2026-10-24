@@ -1,6 +1,6 @@
 # GPUPanel 当前工程状态
 
-> 更新：2026-10-18；最近完成源码合并的固定基线为 `main @ 8b390e3ed1528604c79022f2ee21962ba39a6d07`（#125）。**这是唯一默认状态入口**，并非实时分支指针；后续 HEAD、Actions 和实际安装二进制必须分别核对。源码成功合并不等于 G3–G6 真实验收。
+> 更新：2026-10-23；本次核对的主线基线为 `main @ 77e737056243dab49133681697c952ed0bc0c91e`（#180）。**这是唯一默认状态入口**，并非实时分支指针；后续 HEAD、Actions 和实际安装二进制必须分别核对。源码成功合并不等于 G3–G6 真实验收。
 
 ## 2026-10-18 已合入主线的源码增量（非发布验收）
 
@@ -16,6 +16,18 @@
 Core→Agent→Docker/App 生命周期、授权拒绝和中断恢复的统一证据采集。
 `--approve-disposable-vm-install` 仅供人工审核的可销毁 Ubuntu 24.04
 测试 VM 使用；该选项不是生产部署授权，普通安装默认拒绝。
+
+## 2026-10-21 后续合并（主线基线 #180）
+
+| PR / 合并 SHA | 用户可见增量 | 当前证据边界 |
+| --- | --- | --- |
+| [#159](https://github.com/avaargsh/gpupanel/pull/159) · `7341bf2a` | Ubuntu 24.04 离线 AppInstall → TaskDB → Docker → 卸载的真实单路径验收 | 同一候选 VM 的 CI PASS；完整 App/Compose 生命周期及 M0 仍未通过 |
+| [#179](https://github.com/avaargsh/gpupanel/pull/179) · `87b1728a` | G5 重复 TaskID 与同名准入拒绝，核对 TaskDB/AppInstall/Docker 无副作用 | 真实 Ubuntu 24.04 VM CI PASS；不覆盖 Agent 重启或安装中断 |
+| [#180](https://github.com/avaargsh/gpupanel/pull/180) · `77e73705` | Agent 干净重启及 SQLite 重开后，既有 AppInstall 回执与重复请求围栏保持有效 | 真实 Ubuntu 24.04 VM CI PASS；仅证明干净重启，不证明崩溃恢复或丢 ACK |
+
+上述增量均为 G5 局部证据；`full_app_compose_install_lifecycle`、
+`upgrade_and_rollback`、`full_data_restore` 仍为 `NOT_RUN`，G5 为
+`PARTIAL / NO-GO`，M0 维持 `NO-GO`。当前主线之后的未合并工作树不属于本基线。
 
 仍需优先完成 [#69](https://github.com/avaargsh/gpupanel/issues/69)
 以及 [#70](https://github.com/avaargsh/gpupanel/issues/70)

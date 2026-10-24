@@ -79,6 +79,33 @@ class G5EvidenceFailureCodeTests(unittest.TestCase):
             self.assertEqual(failure.app_evidence_code(malicious), "unknown")
         self.assertEqual(failure.app_evidence_code("password=SECRET\n"), "unknown")
 
+    def test_interrupted_appinstall_side_effect_labels_are_fixed(self):
+        for category in ("container-side-effects", "network-side-effects",
+                         "volume-side-effects", "fixture-network-unavailable",
+                         "init-barrier-not-reached",
+                         "pre-agent-network-count-drift",
+                         "pre-agent-network-identity-drift",
+                         "post-agent-network-count-drift",
+                         "post-agent-network-identity-drift",
+                         "pre-agent-network-membership-drift",
+                         "post-agent-network-membership-drift",
+                         "pre-agent-builtin-network-identity-drift",
+                         "post-agent-builtin-network-identity-drift",
+                         "pre-agent-shared-network-identity-drift",
+                         "post-agent-shared-network-identity-drift",
+                         "pre-agent-custom-network-identity-drift",
+                         "post-agent-custom-network-identity-drift",
+                         "pre-agent-mixed-network-identity-drift",
+                         "post-agent-mixed-network-identity-drift"):
+            self.assertEqual(failure.app_unknown_fence_code(
+                "G5_APP_UNKNOWN_FENCE_CODE=" + category +
+                " release=NO_GO\n"), category)
+        for invalid in ("PRIVATE_CONTAINER", "container:/var/lib/docker",
+                        "network-side-effects name=SECRET"):
+            self.assertEqual(failure.app_unknown_fence_code(
+                "G5_APP_UNKNOWN_FENCE_CODE=" + invalid +
+                " release=NO_GO\n"), "unknown")
+
     def test_docker_state_summary_allowlist_and_forgery_rejection(self):
         for state in ("running", "created", "exited", "restarting", "paused",
                       "removing", "dead", "missing", "other", "unavailable"):
@@ -104,7 +131,7 @@ class G5EvidenceFailureCodeTests(unittest.TestCase):
         self.assertIn('G5_APP_EVIDENCE_FAILURE_CODE=', script)
         self.assertIn('raise RuntimeError("task outcome ambiguous; do NOT retry")', script)
         self.assertIn('evidence_code != "ok"', script)
-
+        self.assertIn("message:parsed.message", script)
 
 class G5AppInstallRemovalObservationTests(unittest.TestCase):
     """The uninstalled AppInstall must be observed gone by payload contract.
@@ -416,13 +443,26 @@ class G5AppInstallRemovalObservationTests(unittest.TestCase):
     def test_live_script_restarts_agent_before_duplicate_admission(self):
         script = (ROOT / "scripts/install-test/app-install-live.py").read_text()
         self.assertIn('"systemctl", "restart", "gpupanel-agent"', script)
-        self.assertIn("wait_agent_raw_ready(install_id, install_task)", script)
+        self.assertIn("app_fault_probe.wait_restart_ready(page, install_id, install_task)", script)
         self.assertIn('"durable_admission_survives_agent_restart"', script)
         self.assertIn('"durable_admission_survived_agent_restart": True',
                       script)
+        probe = (ROOT / "scripts/install-test/app_fault_probe.py").read_text()
         self.assertIn(
-            'print("G5_APP_RESTART_FENCE_CODE=" + last + " release=NO_GO"',
-            script)
+            '_token("G5_APP_RESTART_FENCE_CODE", last)', probe)
+
+    def test_live_script_marks_interrupted_install_unknown_before_cleanup(self):
+        script = (ROOT / "scripts/install-test/app-install-live.py").read_text()
+        inject = script.index("fault = app_fault_probe.inject(")
+        unknown_step = script.index(
+            'steps.append("interrupted_install_marked_unknown_without_retry")')
+        cleanup = script.index('fixture("remove")', unknown_step)
+        self.assertLess(inject, unknown_step)
+        self.assertLess(unknown_step, cleanup)
+        self.assertIn('"interrupted_install_unknown_fences_observed": True',
+                      script)
+        self.assertIn('"distinct_operation_task_ids": len(observed_ids) == 3',
+                      script)
 
     def test_live_script_observes_removal_by_payload_not_http_refusal(self):
         script = (ROOT / "scripts/install-test/app-install-live.py").read_text()
@@ -467,6 +507,8 @@ class G5AppInstallRemovalObservationTests(unittest.TestCase):
              "replay_install_taskid_denied_without_side_effects",
              "same_name_install_denied_without_side_effects",
              "real_app_uninstall_and_resource_removal",
+             "interrupted_install_marked_unknown_without_retry",
+             "unknown_install_operations_blocked_without_side_effects",
              "fixture_catalog_cleanup"])
 
 

@@ -109,12 +109,18 @@ Before G5 acceptance, additionally require:
    UNKNOWN evidence inspection, DB reopen, and safe cleanup.
    Live coverage 2026-10-21: duplicate POST (same TaskID replay and a
    case/whitespace variant of the same normalized name with a new ID, both
-   refused with unchanged TaskDB/AppInstall/Docker inventory) and a clean
+   refused with unchanged TaskDB/AppInstall/Docker inventory), a clean
    Agent `systemctl restart` followed by reopened-DB evidence and the same
-   duplicate refusals are exercised by `scripts/install-test/app-install-live.py`
-   on the real Ubuntu VM. Installation-time SIGKILL, UNKNOWN evidence
-   inspection, lost-ACK recovery and name release remain NOT RUN; this is not
-   G5 GO.
+   duplicate refusals, and an installation-time Agent/cgroup SIGKILL while
+   Docker is stopped. A fixed, fault-name-only init barrier holds after the
+   AppInstall row and TaskDB resource identity are durable, before Compose
+   writes begin. In the interrupted-install probe the AppInstall and TaskDB
+   receipt stay `Unknown` (never FAILED/Success, never auto-retried),
+   evidence reports `UNKNOWN` with `INSTALL_OUTCOME_NOT_RECONCILED`, Docker
+   inventory is unchanged, `operate=sync` is accepted and a forced delete is
+   refused. All are exercised by
+   `scripts/install-test/app-install-live.py` on the real Ubuntu VM.
+   Lost-ACK recovery and name release remain NOT RUN; this is not G5 GO.
 5. Maintain a NO-GO until #69-#72 complete; tests and migration are not a
    release signature or an execution proof.
 
