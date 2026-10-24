@@ -3,8 +3,10 @@ on:
   pull_request:
     paths:
       - 'scripts/gpupanel-vm.py'
+      - 'scripts/gpupanel-vm-worker.py'
       - 'scripts/tests/test_gpupanel_vm_*.py'
       - 'docs/gpupanel/VM_LIFECYCLE_LOCAL.md'
+      - 'docs/gpupanel/VM_LOCAL_WORKER.md'
       - '.github/workflows/gpupanel-vm-contract.yml'
   workflow_dispatch:
 permissions:
@@ -23,7 +25,7 @@ jobs:
       - name: Check default Ubuntu Python
         run: python3 --version
       - name: Compile VM entrypoint and contract tests
-        run: python3 -m py_compile scripts/gpupanel-vm.py scripts/tests/test_gpupanel_vm_lifecycle.py scripts/tests/test_gpupanel_vm_system.py
+        run: python3 -m py_compile scripts/gpupanel-vm.py scripts/gpupanel-vm-worker.py scripts/tests/test_gpupanel_vm_lifecycle.py scripts/tests/test_gpupanel_vm_system.py scripts/tests/test_gpupanel_vm_worker.py
       - name: Exercise session/system negative safety contracts (no KVM)
         run: python3 -m unittest discover -s scripts/tests -p 'test_gpupanel_vm_*.py' -v
       - name: CLI help only (no VM connection or mutation)
