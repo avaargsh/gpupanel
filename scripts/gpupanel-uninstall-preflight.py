@@ -128,6 +128,22 @@ def verify_systemd_fragment(unit_dir: Path, name: str) -> None:
         fail(f"systemd {name} fragment does not resolve to the verified unit file")
 
 
+def verify_systemd_unit_absent(name: str) -> None:
+    for action in ("is-active", "is-enabled"):
+        result = subprocess.run(
+            ["systemctl", action, "--quiet", f"{name}.service"],
+            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=8, check=False,
+        )
+        if result.returncode == 0:
+            fail(f"systemd {name} is still {action.removeprefix('is-')}")
+    result = subprocess.run(
+        ["systemctl", "show", "--property=FragmentPath", "--value", f"{name}.service"],
+        capture_output=True, text=True, timeout=8, check=False,
+    )
+    if result.returncode == 0 and result.stdout.strip():
+        fail(f"systemd {name} still resolves to another unit fragment")
+
+
 def build_plan(args: argparse.Namespace) -> dict:
     base = canonical_absolute(args.base_dir, "base-dir")
     panel_dir = base / "gpupanel"
@@ -167,9 +183,18 @@ def build_plan(args: argparse.Namespace) -> dict:
             panel_dir,
             name,
         )
-    if args.systemd and not all(unit_files.values()):
-        fail("systemd uninstall requires both matching owned unit files")
-    if args.systemd:
+    if args.units_removed:
+        if any(unit_files.values()):
+            fail("owned systemd unit files still exist after removal")
+        if args.systemd:
+            for name in UNIT_NAMES:
+                verify_systemd_unit_absent(name)
+        running = process_paths(panel_dir)
+        if running:
+            fail("GPUPanel executable still runs after unit removal")
+    elif args.systemd:
+        if not all(unit_files.values()):
+            fail("systemd uninstall requires both matching owned unit files")
         for name in UNIT_NAMES:
             verify_systemd_fragment(unit_dir, name)
     else:
@@ -181,13 +206,6 @@ def build_plan(args: argparse.Namespace) -> dict:
         running = process_paths(panel_dir)
         if running:
             fail("GPUPanel executable still runs after the stop request")
-    if args.units_removed:
-        if any((unit_dir / f"{name}.service").exists() or
-               (unit_dir / f"{name}.service").is_symlink() for name in UNIT_NAMES):
-            fail("owned systemd unit files still exist after removal")
-        running = process_paths(panel_dir)
-        if running:
-            fail("GPUPanel executable still runs after unit removal")
     if args.purge:
         if args.confirm_purge != str(panel_dir):
             fail("purge requires --confirm-purge with the exact normalized installation path")
@@ -220,8 +238,6 @@ def main() -> int:
     parser.add_argument("--confirm-purge", default="")
     args = parser.parse_args()
     try:
-        if args.units_removed and args.systemd:
-            fail("--units-removed cannot run the systemd fragment check")
         plan = build_plan(args)
     except (Refusal, OSError, UnicodeError, subprocess.SubprocessError) as exc:
         print(json.dumps({"schema": "gpupanel.uninstall-plan.v1", "ready_to_execute": False,
