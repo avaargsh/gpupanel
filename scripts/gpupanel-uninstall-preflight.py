@@ -75,6 +75,8 @@ def regular_owned_file(path: Path, label: str) -> None:
         fail(f"{label} must be an ordinary, non-symlink file")
     if info.st_uid not in {0, os.getuid()}:
         fail(f"{label} has an unexpected owner")
+    if info.st_mode & 0o022:
+        fail(f"{label} is writable by group/world")
 
 
 def verify_unit(path: Path, binary: Path, panel_dir: Path, name: str) -> bool:
