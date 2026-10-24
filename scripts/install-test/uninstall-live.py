@@ -219,12 +219,15 @@ def _read_record(name: str) -> dict:
     return value
 
 
-def _run_uninstaller(local: dict) -> None:
+def _run_uninstaller(local: dict, log_name: str) -> None:
+    if log_name not in ("uninstall.raw.log", "uninstall-repeat.raw.log"):
+        raise ValueError("unsupported uninstall attempt")
     package = f"gpupanel-ci-{local['source_sha'][:12]}-linux-amd64"
     guest_path = f"/tmp/{package}/uninstall.sh"
-    if RAW_LOG.exists() or RAW_LOG.is_symlink():
-        raise RuntimeError("uninstall log already exists; do not replay the mutation")
-    fd = os.open(RAW_LOG, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW, 0o600)
+    log_path = STATE / log_name
+    if log_path.exists() or log_path.is_symlink():
+        raise RuntimeError("uninstall attempt already recorded; do not replay it")
+    fd = os.open(log_path, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW, 0o600)
     with os.fdopen(fd, "wb") as log:
         result = subprocess.run(
             vm.ssh_args() + [shlex.join(["sudo", guest_path, "--base-dir", "/opt"])],
@@ -258,7 +261,7 @@ def main() -> int:
     if PROOF.exists() or PROOF.is_symlink():
         raise RuntimeError("system uninstall proof already exists; do not replay")
     before = _guest_probe("capture", local, machine)
-    _run_uninstaller(local)
+    _run_uninstaller(local, "uninstall.raw.log")
     after = _guest_probe("verify", local, machine)
     if (
         before.get("schema") != "gpupanel.vm.system-uninstall-probe.v1"
@@ -276,6 +279,13 @@ def main() -> int:
         ))
     ):
         raise RuntimeError("independent post-uninstall state differs from the pre-operation baseline")
+
+    # Only replay after the first command returned success and its post-state
+    # independently matched. The second call must converge without side effects.
+    _run_uninstaller(local, "uninstall-repeat.raw.log")
+    after_repeat = _guest_probe("verify", local, machine)
+    if after_repeat != after:
+        raise RuntimeError("repeated default uninstall changed the verified post-state")
     proof = {
         "schema": "gpupanel.vm.system-uninstall.v1",
         "kind": "REAL UBUNTU PACKAGE SYSTEMD UNINSTALL; DEFAULT DATA PRESERVATION; NO MOCKS",
@@ -287,6 +297,7 @@ def main() -> int:
         "docker_inventory_sha256": _digest_rows(before["docker_inventory"]),
         "docker_server_version": before["docker_server_version"],
         "owned_units_removed": True,
+        "repeat_default_uninstall_idempotent": True,
         "services_inactive_and_disabled": True,
         "running_processes_absent": True,
         "binaries_and_data_retained": True,
