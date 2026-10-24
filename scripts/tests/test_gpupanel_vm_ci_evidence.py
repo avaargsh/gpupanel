@@ -144,6 +144,49 @@ class LiveVmEvidence(unittest.TestCase):
         self.write("app-install-live.json", self.app_install)
         self.write("app-rejection-live.json", self.app_rejection)
         self.write("restore-live.json", self.restore)
+        self.preinstall_inventory = {
+            "containers": "1" * 64, "networks": "2" * 64,
+            "volumes": "3" * 64, "images": "4" * 64,
+        }
+        self.preinstall_baseline = {
+            "schema": "gpupanel.vm.preinstall-baseline.v1",
+            "source_sha": self.source, "guest_machine_id_sha256": "d" * 64,
+            "binary_sha256": self.candidate["binary_sha256"],
+            "docker_server_version": "27.0.3",
+            "docker_inventory_sha256": self.preinstall_inventory,
+            "docker_active": True, "docker_enabled": True,
+            "panel_runtime_absent": True, "panel_port_closed": True,
+        }
+        self.preinstall_checkpoint = {
+            "schema": "gpupanel.vm.preinstall-checkpoint.v1",
+            "source_sha": self.source,
+            "checkpoint_name": "checkpoint-20261024T120000Z-abcdef12",
+            "checkpoint_sha256": "f" * 64,
+            "guest_machine_id_sha256": "d" * 64,
+            "binary_sha256": self.candidate["binary_sha256"],
+            "docker_server_version": "27.0.3",
+            "docker_inventory_sha256": self.preinstall_inventory,
+        }
+        self.preinstall_rollback = {
+            "schema": "gpupanel.vm.preinstall-rollback.v1",
+            "kind": "REAL TASK-OWNED UBUNTU PRE-INSTALL CHECKPOINT RESTORE AFTER SYNTHETIC DEBRIS INJECTION",
+            "source_sha": self.source, "guest_machine_id_sha256": "d" * 64,
+            "preinstall_checkpoint_sha256": "f" * 64, "restored_disk_sha256": "f" * 64,
+            "installed_candidate_matched_before_rollback": True,
+            "synthetic_debris_marker_injected": True, "synthetic_debris_unit_injected": True,
+            "panel_services_stopped_before_restore": True,
+            "restored_guest_rebooted_and_reobserved": True,
+            "guest_machine_id_matches_preinstall": True,
+            "docker_server_version_matches_preinstall": True,
+            "docker_inventory_matches_preinstall": True,
+            "docker_service_active_and_enabled": True,
+            "gpupanel_runtime_paths_absent": True, "gpupanel_systemd_units_absent": True,
+            "synthetic_debris_state_absent": True, "panel_port_closed": True,
+            "full_upgrade_rollback_verified": False, "m0_release_decision": "NO_GO",
+        }
+        self.write("preinstall-baseline.json", self.preinstall_baseline)
+        self.write("preinstall-checkpoint.json", self.preinstall_checkpoint)
+        self.write("preinstall-rollback-live.json", self.preinstall_rollback)
         (self.state / "ci-stages.txt").write_text(
             "\n".join(audit.STAGES) + "\n"
         )
@@ -403,6 +446,61 @@ class LiveVmEvidence(unittest.TestCase):
         runner = (ROOT / "scripts/install-test/ci-live-vm.sh").read_text()
         self.assertIn("python3 scripts/install-test/restore-live.py", runner)
         self.assertIn("stage 'guest_post_install_offline_restore'", runner)
+
+
+    def test_preinstall_checkpoint_rollback_proof_is_required_and_exact(self):
+        faults = [
+            {"source_sha": "0" * 40},
+            {"guest_machine_id_sha256": "0" * 64},
+            {"preinstall_checkpoint_sha256": "0" * 64},
+            {"restored_disk_sha256": "0" * 64},
+            {"installed_candidate_matched_before_rollback": False},
+            {"synthetic_debris_marker_injected": False},
+            {"synthetic_debris_unit_injected": False},
+            {"panel_services_stopped_before_restore": False},
+            {"restored_guest_rebooted_and_reobserved": False},
+            {"docker_inventory_matches_preinstall": False},
+            {"gpupanel_runtime_paths_absent": False},
+            {"full_upgrade_rollback_verified": True},
+            {"m0_release_decision": "GO"},
+            {"private": "must-not-be-accepted"},
+        ]
+        for fault in faults:
+            with self.subTest(fault=fault):
+                self.write("preinstall-rollback-live.json",
+                           {**self.preinstall_rollback, **fault})
+                result = self.summarise()
+                self.assertEqual(result["status"], "BLOCKED_OR_FAILED")
+                self.assertEqual(result["pre_install_snapshot_rollback"], "NOT_ATTESTED")
+        self.write("preinstall-rollback-live.json", self.preinstall_rollback)
+        for name in ("preinstall-baseline.json", "preinstall-checkpoint.json"):
+            original = json.loads((self.state / name).read_text())
+            self.write(name, {**original, "source_sha": "0" * 40})
+            result = self.summarise()
+            self.assertEqual(result["status"], "BLOCKED_OR_FAILED")
+            self.assertEqual(result["pre_install_snapshot_rollback"], "NOT_ATTESTED")
+            self.write(name, original)
+
+    def test_preinstall_rollback_script_and_live_order_are_fail_closed(self):
+        import ast
+        source = (ROOT / "scripts/install-test/preinstall-rollback-live.py").read_text()
+        ast.parse(source)
+        self.assertLessEqual(len(source.splitlines()), 500)
+        self.assertIn("checkpoint.verify_checkpoint(folder)", source)
+        self.assertIn('VM / "disk.before-ci-install-rollback.qcow2"', source)
+        self.assertIn("disk_handoff.atomic_disk_handoff", source)
+        self.assertNotIn("disk.rename(previous)", source)
+        handoff_source = (ROOT / "scripts/install-test/disk_handoff.py").read_text()
+        ast.parse(handoff_source)
+        self.assertIn("os.replace(partial, disk)", handoff_source)
+        self.assertIn("canonical_network_inventory", source)
+        runner = (ROOT / "scripts/install-test/ci-live-vm.sh").read_text()
+        self.assertLess(runner.index("preinstall-rollback-live.py capture"),
+                        runner.index("python3 scripts/install-test/vm.py stop"))
+        self.assertLess(runner.index("stage 'guest_post_install_offline_restore'"),
+                        runner.index("preinstall-rollback-live.py restore"))
+        self.assertLess(runner.index("preinstall-rollback-live.py restore"),
+                        runner.index("stage 'guest_preinstall_rollback_recovered'"))
 
     def test_container_evidence_requires_exact_guest_and_complete_lifecycle(self):
         for invalid in (
