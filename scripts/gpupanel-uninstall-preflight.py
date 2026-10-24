@@ -126,15 +126,31 @@ def process_paths(panel_dir: Path) -> list[str]:
     return sorted(set(running))
 
 
-def mounted_at(path: Path) -> bool:
-    # mountinfo escapes spaces, tabs, newlines and backslashes in field 5.
-    decoded = str(path).replace("\\", "\\134").replace(" ", "\\040").replace("\t", "\\011")
+def mountpoint_paths() -> list[str]:
+    # mountinfo encodes whitespace and backslashes as octal escapes.
     try:
         lines = Path("/proc/self/mountinfo").read_text(encoding="utf-8").splitlines()
     except OSError:
         fail("cannot inspect mount points before purge")
-    return any(len(parts := line.split()) > 4 and parts[4] == decoded for line in lines)
+    paths = []
+    for line in lines:
+        parts = line.split()
+        if len(parts) <= 4:
+            fail("malformed mountinfo; cannot safely purge")
+        decoded = (parts[4].replace("\\040", " ").replace("\\011", "\t")
+                   .replace("\\012", "\n").replace("\\134", "\\"))
+        paths.append(decoded)
+    return paths
 
+
+def mounted_at(path: Path) -> bool:
+    # A nested bind/volume mount makes recursive purge partial, even with
+    # rm --one-file-system. Reject the entire target subtree before any delete.
+    target = str(path).rstrip("/") or "/"
+    prefix = target if target == "/" else target + "/"
+    return any(point == target or (target == "/" and point.startswith("/")) or
+               (target != "/" and point.startswith(prefix))
+               for point in mountpoint_paths())
 
 def systemd_show(name: str, property_name: str) -> str:
     result = subprocess.run(
@@ -240,7 +256,7 @@ def build_plan(args: argparse.Namespace) -> dict:
         if args.confirm_purge != str(panel_dir):
             fail("purge requires --confirm-purge with the exact normalized installation path")
         if mounted_at(panel_dir):
-            fail("refuse purge when the installation directory is a mount point")
+            fail("refuse purge when the installation directory or a descendant is a mount point")
     elif args.confirm_purge:
         fail("--confirm-purge is valid only together with --purge")
 
