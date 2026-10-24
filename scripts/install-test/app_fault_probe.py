@@ -177,7 +177,9 @@ def _start_docker(guest) -> None:
 
 def _wait_docker_ready(guest_rc, attempts: int = 20) -> bool:
     for _ in range(attempts):
-        if guest_rc(["timeout", "3", "docker", "version", "--format",
+        # The disposable VM's SSH user is only in the sudo group; do not
+        # mistake Docker socket permission denial for a daemon recovery failure.
+        if guest_rc(["sudo", "timeout", "3", "docker", "version", "--format",
                      "{{.Server.Version}}"]) == 0:
             return True
         time.sleep(1)
