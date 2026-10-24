@@ -60,14 +60,37 @@ def digest(path):
         return hashlib.file_digest(stream, "sha256").hexdigest()
 
 
+def systemd_value(name, property_name):
+    value, _ = run(["systemctl", "show", f"--property={property_name}", "--value", name], check=True)
+    return value
+
+
 def active(name):
-    _, code = run(["systemctl", "is-active", "--quiet", name], check=False)
-    return code == 0
+    load_state = systemd_value(name, "LoadState")
+    active_state = systemd_value(name, "ActiveState")
+    fragment = systemd_value(name, "FragmentPath")
+    dropins = systemd_value(name, "DropInPaths")
+    if (load_state == "loaded" and active_state == "active"
+        and fragment == str(UNIT_DIR / name) and not dropins):
+        return True
+    if (load_state == "not-found" and active_state == "inactive"
+        and not fragment and not dropins):
+        return False
+    raise RuntimeError("systemd active/load state is unknown or inconsistent")
 
 
 def enabled(name):
-    _, code = run(["systemctl", "is-enabled", "--quiet", name], check=False)
-    return code == 0
+    result = subprocess.run(
+        ["systemctl", "is-enabled", name],
+        stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
+        text=True, timeout=8, check=False,
+    )
+    state = result.stdout.strip()
+    if result.returncode == 0 and state == "enabled":
+        return True
+    if result.returncode == 4 and state == "not-found":
+        return False
+    raise RuntimeError("systemd enabled state is unknown or inconsistent")
 
 
 def process_paths():
@@ -78,8 +101,10 @@ def process_paths():
             continue
         try:
             path = os.readlink(entry / "exe").removesuffix(" (deleted)")
-        except OSError:
+        except (FileNotFoundError, ProcessLookupError):
             continue
+        except OSError as exc:
+            raise RuntimeError("cannot independently inspect a process identity") from exc
         if path in expected:
             found.append(entry.name)
     return sorted(set(found))
