@@ -22,6 +22,12 @@ class LocalDeployContract(unittest.TestCase):
         self.assertIn("'install authorization denied' in repeated.stdout", runtime)
         self.assertIn("assert pid_before == pid_after", runtime)
 
+    def test_release_installer_requires_the_paired_uninstall_guard(self):
+        src = INSTALLER.read_text(encoding="utf-8")
+        build = (ROOT / "deploy/build.sh").read_text(encoding="utf-8")
+        self.assertIn("gpupanel-uninstall-preflight.py", src)
+        self.assertIn('install -m 0755 "$ROOT/scripts/gpupanel-uninstall-preflight.py" "$PKG_DIR/gpupanel-uninstall-preflight.py"', build)
+
     def test_g3_default_is_loopback_and_public_http_is_opt_in_only(self):
         # Source-level installation guard: this test never starts a daemon
         # or modifies a host. Real first-login/TLS acceptance is G4 NOT RUN.
@@ -202,6 +208,7 @@ class LocalDeployContract(unittest.TestCase):
             required = (
                 "gpupanel-core", "gpupanel-agent", "pctl", "app.yaml",
                 "gpupanel-install-preflight.py",
+                "gpupanel-uninstall-preflight.py",
                 "initscript/gpupanel-core.service",
                 "initscript/gpupanel-agent.service",
             )
