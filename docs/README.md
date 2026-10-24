@@ -7,7 +7,7 @@
 | 产品 | [ROADMAP](gpupanel/ROADMAP.md) · [vNext](gpupanel/VNEXT_WORKBENCH.md) |
 | 工程 | [AGENTS](../AGENTS.md) · [开发](engineering/development.md) · [React/shadcn](engineering/SHADCN_MIGRATION.md) |
 | 测试与回执 | [测试指南](engineering/testing.md) · [证据保留](evidence/README.md) |
-| Ubuntu Host | [安装](operations/host-install.md) · [VM](operations/local-install-test.md) · [受控操作](engineering/host-operations.md) |
+| Ubuntu Host | [安装](operations/host-install.md) · [VM](operations/local-install-test.md) · [软件生命周期契约](operations/software-lifecycle-contract.md) · [受控操作](engineering/host-operations.md) |
 | 后端重写 | [接口与迁移](engineering/CORE_AGENT_REWRITE.md) · [诊断设计](engineering/OPERATIONS_HOLMES_DESIGN.md) · [审计问题](engineering/GOVERNANCE_FINDINGS.md) |
 | 许可 | [许可门槛](gpupanel/LICENSE_MIGRATION.md) · [文件级 Apache 范围](gpupanel/APACHE_FILE_SCOPE.md) |
 
