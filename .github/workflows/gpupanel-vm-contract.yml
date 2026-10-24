@@ -1,0 +1,30 @@
+name: GPUPanel VM lifecycle contract
+on:
+  pull_request:
+    paths:
+      - 'scripts/gpupanel-vm.py'
+      - 'scripts/tests/test_gpupanel_vm_*.py'
+      - 'docs/gpupanel/VM_LIFECYCLE_LOCAL.md'
+      - '.github/workflows/gpupanel-vm-contract.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: vm-contract-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+jobs:
+  local-libvirt-contract:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - name: Check default Ubuntu Python
+        run: python3 --version
+      - name: Compile VM entrypoint and contract tests
+        run: python3 -m py_compile scripts/gpupanel-vm.py scripts/tests/test_gpupanel_vm_lifecycle.py scripts/tests/test_gpupanel_vm_system.py
+      - name: Exercise session/system negative safety contracts (no KVM)
+        run: python3 -m unittest discover -s scripts/tests -p 'test_gpupanel_vm_*.py' -v
+      - name: CLI help only (no VM connection or mutation)
+        run: python3 scripts/gpupanel-vm.py --help
