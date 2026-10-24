@@ -3,6 +3,7 @@ import argparse
 import importlib.util
 from pathlib import Path
 import tempfile
+import subprocess
 from unittest import mock
 import unittest
 
