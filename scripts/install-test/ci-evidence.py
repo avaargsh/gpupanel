@@ -8,6 +8,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import re
 from pathlib import Path
 import sys
 
@@ -32,7 +33,9 @@ STAGES = (
     "real_core_agent_container_lifecycle",
     "real_offline_appinstall_core_taskdb_docker",
     "guest_post_install_offline_restore",
+    "guest_preinstall_rollback_recovered",
 )
+CHECKPOINT_NAME = re.compile(r"^checkpoint-[0-9]{8}T[0-9]{6}Z-[0-9a-f]{8}$")
 
 
 def _load(path: Path):
@@ -67,6 +70,9 @@ def summarize(state: Path, *, run_completed: bool, source_sha: str) -> dict:
     app_install = _load(state / "app-install-live.json")
     app_rejection = _load(state / "app-rejection-live.json")
     restore = _load(state / "restore-live.json")
+    preinstall_baseline = _load(state / "preinstall-baseline.json")
+    preinstall_checkpoint = _load(state / "preinstall-checkpoint.json")
+    preinstall_rollback = _load(state / "preinstall-rollback-live.json")
     valid_source = (
         isinstance(source_sha, str) and len(source_sha) == 40
         and all(char in "0123456789abcdef" for char in source_sha)
@@ -239,10 +245,93 @@ def summarize(state: Path, *, run_completed: bool, source_sha: str) -> dict:
         and app_rejection["duplicate_task_replay"] == "NOT_RUN"
         and app_rejection["release_decision"] == "NO_GO"
     )
+    def valid_digest(value):
+        return isinstance(value, str) and len(value) == 64 and all(
+            char in "0123456789abcdef" for char in value
+        )
+
+    inventory_keys = {"containers", "networks", "volumes", "images"}
+    baseline_keys = {
+        "schema", "source_sha", "guest_machine_id_sha256", "binary_sha256",
+        "docker_server_version", "docker_inventory_sha256", "docker_active",
+        "docker_enabled", "panel_runtime_absent", "panel_port_closed",
+    }
+    baseline_inventory = (
+        preinstall_baseline.get("docker_inventory_sha256")
+        if isinstance(preinstall_baseline, dict) else None
+    )
+    baseline_ok = (
+        isinstance(preinstall_baseline, dict)
+        and set(preinstall_baseline) == baseline_keys
+        and preinstall_baseline.get("schema") == "gpupanel.vm.preinstall-baseline.v1"
+        and preinstall_baseline.get("source_sha") == source_sha
+        and preinstall_baseline.get("guest_machine_id_sha256") == browser.get("guest_machine_id_sha256")
+        and preinstall_baseline.get("binary_sha256") == expected_binary
+        and isinstance(preinstall_baseline.get("docker_server_version"), str)
+        and bool(preinstall_baseline["docker_server_version"])
+        and isinstance(baseline_inventory, dict)
+        and set(baseline_inventory) == inventory_keys
+        and all(valid_digest(baseline_inventory.get(key)) for key in inventory_keys)
+        and all(preinstall_baseline.get(key) is True for key in (
+            "docker_active", "docker_enabled", "panel_runtime_absent", "panel_port_closed"
+        ))
+    )
+    checkpoint_keys = {
+        "schema", "source_sha", "checkpoint_name", "checkpoint_sha256",
+        "guest_machine_id_sha256", "binary_sha256", "docker_server_version",
+        "docker_inventory_sha256",
+    }
+    checkpoint_ok = (
+        baseline_ok
+        and isinstance(preinstall_checkpoint, dict)
+        and set(preinstall_checkpoint) == checkpoint_keys
+        and preinstall_checkpoint.get("schema") == "gpupanel.vm.preinstall-checkpoint.v1"
+        and preinstall_checkpoint.get("source_sha") == source_sha
+        and isinstance(preinstall_checkpoint.get("checkpoint_name"), str)
+        and CHECKPOINT_NAME.fullmatch(preinstall_checkpoint["checkpoint_name"]) is not None
+        and valid_digest(preinstall_checkpoint.get("checkpoint_sha256"))
+        and preinstall_checkpoint.get("guest_machine_id_sha256") == preinstall_baseline.get("guest_machine_id_sha256")
+        and preinstall_checkpoint.get("binary_sha256") == expected_binary
+        and preinstall_checkpoint.get("docker_server_version") == preinstall_baseline.get("docker_server_version")
+        and preinstall_checkpoint.get("docker_inventory_sha256") == baseline_inventory
+    )
+    rollback_keys = {
+        "schema", "kind", "source_sha", "guest_machine_id_sha256",
+        "preinstall_checkpoint_sha256", "restored_disk_sha256",
+        "installed_candidate_matched_before_rollback", "partial_write_marker_injected",
+        "partial_systemd_unit_injected", "panel_services_stopped_before_restore",
+        "restored_guest_rebooted_and_reobserved", "guest_machine_id_matches_preinstall",
+        "docker_server_version_matches_preinstall", "docker_inventory_matches_preinstall",
+        "docker_service_active_and_enabled", "gpupanel_runtime_paths_absent",
+        "gpupanel_systemd_units_absent", "partial_write_state_absent", "panel_port_closed",
+        "full_upgrade_rollback_verified", "m0_release_decision",
+    }
+    rollback_ok = (
+        checkpoint_ok and restore_ok
+        and isinstance(preinstall_rollback, dict)
+        and set(preinstall_rollback) == rollback_keys
+        and preinstall_rollback.get("schema") == "gpupanel.vm.preinstall-rollback.v1"
+        and preinstall_rollback.get("kind") == "REAL TASK-OWNED UBUNTU PRE-INSTALL CHECKPOINT RESTORE AFTER PARTIAL-WRITE FAULT"
+        and preinstall_rollback.get("source_sha") == source_sha
+        and preinstall_rollback.get("guest_machine_id_sha256") == preinstall_baseline.get("guest_machine_id_sha256")
+        and preinstall_rollback.get("preinstall_checkpoint_sha256") == preinstall_checkpoint.get("checkpoint_sha256")
+        and preinstall_rollback.get("restored_disk_sha256") == preinstall_checkpoint.get("checkpoint_sha256")
+        and all(preinstall_rollback.get(key) is True for key in (
+            "installed_candidate_matched_before_rollback", "partial_write_marker_injected",
+            "partial_systemd_unit_injected", "panel_services_stopped_before_restore",
+            "restored_guest_rebooted_and_reobserved", "guest_machine_id_matches_preinstall",
+            "docker_server_version_matches_preinstall", "docker_inventory_matches_preinstall",
+            "docker_service_active_and_enabled", "gpupanel_runtime_paths_absent",
+            "gpupanel_systemd_units_absent", "partial_write_state_absent", "panel_port_closed",
+        ))
+        and preinstall_rollback.get("full_upgrade_rollback_verified") is False
+        and preinstall_rollback.get("m0_release_decision") == "NO_GO"
+    )
     success = (
         run_completed and valid_source and release_ok and sequence_ok
         and marks == list(STAGES) and browser_ok and runtime_ok and compose_ok
         and container_ok and restore_ok and app_rejection_ok and app_install_ok
+        and rollback_ok
         and isinstance(prepared, dict)
         and prepared.get("signed_checksum_verified") is True
     )
@@ -277,6 +366,7 @@ def summarize(state: Path, *, run_completed: bool, source_sha: str) -> dict:
         "gpupanel_offline_appinstall_lifecycle": "PARTIAL_PASS" if success else "NOT_ATTESTED",
         "real_appinstall_missing_detail_rejection": "PASS" if success else "NOT_ATTESTED",
         "post_install_offline_disk_restore": "PASS" if success else "NOT_ATTESTED",
+        "pre_install_snapshot_rollback": "PASS" if success else "NOT_ATTESTED",
         "full_app_compose_install_lifecycle": "NOT_RUN",
         "upgrade_and_rollback": "NOT_RUN",
         "full_data_restore": "NOT_RUN",

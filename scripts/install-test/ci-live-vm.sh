@@ -54,6 +54,9 @@ python3 scripts/install-test/vm.py ssh -- sudo systemctl enable --now docker
 python3 scripts/install-test/vm.py ssh -- sudo docker info --format '{{.ServerVersion}}'
 stage 'guest_docker_ready'
 
+# Capture the real pre-install baseline before sealing the checkpoint.
+python3 scripts/install-test/preinstall-rollback-live.py capture
+
 # Mandatory offline, standalone pre-install disk checkpoint.
 python3 scripts/install-test/vm.py stop
 python3 scripts/install-test/vm.py checkpoint
@@ -64,6 +67,7 @@ if [[ "$checkpoint_count" != 1 ]]; then
 fi
 checkpoint_name="$(find "$STATE/ubuntu2404/checkpoints" -mindepth 1 -maxdepth 1 -type d -name 'checkpoint-*' -printf '%f\n')"
 python3 scripts/install-test/vm.py verify-checkpoint "$checkpoint_name" >/dev/null
+python3 scripts/install-test/preinstall-rollback-live.py bind-checkpoint "$checkpoint_name"
 stage 'offline_checkpoint_sealed'
 python3 scripts/install-test/vm.py start
 
@@ -212,6 +216,14 @@ if ! python3 scripts/install-test/restore-live.py > "$STATE/restore.raw.log" 2>&
 fi
 stage 'guest_post_install_offline_restore'
 
-# Full AppInstall, production upgrade/rollback and broader restore remain
-# NOT RUN; do not promote this partial CI proof to M0 release GO.
-echo 'LIVE VM partial acceptance PASSED; M0 release decision remains NO_GO'
+# Restore the pre-install disk after a controlled partial-write fault.
+# This proves manual fresh-install rollback only; A->B->A upgrade stays NOT_RUN.
+if ! python3 scripts/install-test/preinstall-rollback-live.py restore > "$STATE/preinstall-rollback.raw.log" 2>&1; then
+    echo 'G3_PREINSTALL_ROLLBACK_CODE=restore-failed release=NO_GO' >&2
+    exit 1
+fi
+stage 'guest_preinstall_rollback_recovered'
+
+# Full AppInstall, production upgrade/rollback and broad data restore remain
+# NOT RUN; do not promote this partial proof to M0 release GO.
+echo 'LIVE VM partial acceptance PASSED; fresh-install snapshot rollback PASS; M0 release decision remains NO_GO'
