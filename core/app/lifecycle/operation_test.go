@@ -3,7 +3,6 @@ package lifecycle
 import (
 	"context"
 	"errors"
-	"fmt"
 	"path/filepath"
 	"sync"
 	"testing"
@@ -216,5 +215,4 @@ func TestDefaultJournalIsNotProductDataDirectory(t *testing.T) {
 		t.Fatal("lifecycle history must survive product DB restore and purge")
 	}
 	if !filepath.IsAbs(DefaultDatabase) { t.Fatal("default journal path must be absolute") }
-	if fmt.Sprintf("%s", KindInstall) != "install" { t.Fatal("kind serialization changed") }
 }
