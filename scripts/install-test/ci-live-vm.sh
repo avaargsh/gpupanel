@@ -216,6 +216,9 @@ stage 'guest_post_install_offline_restore'
 # installed binary/browser/AppInstall/restore evidence is complete. This tests
 # default data preservation; destructive purge and version upgrade stay NOT_RUN.
 if ! python3 scripts/install-test/uninstall-live.py > "$STATE/uninstall-script.raw.log" 2>&1; then
+    # Export only allowlisted failure stage/category and source line/class.
+    # The private guest and uninstaller logs themselves are never printed.
+    python3 scripts/install-test/ci-failure.py system-uninstall
     echo 'G3_SYSTEM_UNINSTALL_CODE=failed; release=NO_GO' >&2
     exit 1
 fi
