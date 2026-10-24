@@ -109,12 +109,14 @@ class WorkerTests(unittest.TestCase):
                 worker.decode(bad)
 
     def test_kernel_peer_uid_is_read_directly_from_unix_socket(self):
-        with socket.socketpair(socket.AF_UNIX, socket.SOCK_STREAM) as (a, b):
+        a, b = socket.socketpair(socket.AF_UNIX, socket.SOCK_STREAM)
+        with a, b:
             self.assertEqual(worker.peer_uid(a), os.geteuid())
             self.assertEqual(worker.peer_uid(b), os.geteuid())
 
     def test_other_uid_rejected_before_vm_provider_call(self):
-        with socket.socketpair(socket.AF_UNIX, socket.SOCK_STREAM) as (a, b):
+        a, b = socket.socketpair(socket.AF_UNIX, socket.SOCK_STREAM)
+        with a, b:
             with patch.object(worker, "peer_uid", return_value=1002):
                 worker.handle(a, 1001, self.vm, self.uri, True)
             result = json.loads(b.recv(1024))
@@ -122,7 +124,8 @@ class WorkerTests(unittest.TestCase):
             self.assertEqual(self.vm.reads, [])
 
     def test_same_uid_readonly_socket_roundtrip(self):
-        with socket.socketpair(socket.AF_UNIX, socket.SOCK_STREAM) as (a, b):
+        a, b = socket.socketpair(socket.AF_UNIX, socket.SOCK_STREAM)
+        with a, b:
             with patch.object(worker, "peer_uid", return_value=1001):
                 thread = threading.Thread(target=lambda: worker.handle(a, 1001, self.vm, self.uri, False))
                 thread.start()
