@@ -50,20 +50,49 @@ def _owner_uid(path: Path) -> int | None:
     return path.lstat().st_uid
 
 
+def _check_directory_chain(directory: Path) -> None:
+    for current in (directory, *directory.parents):
+        try:
+            info = current.lstat()
+        except FileNotFoundError:
+            continue
+        except OSError:
+            fail("PATH_UNAVAILABLE", "journal directory ancestry cannot be inspected")
+        if not stat.S_ISDIR(info.st_mode):
+            fail("PATH_REDIRECTED", "symlink or non-directory in journal path ancestry")
+        if info.st_uid not in {0, os.geteuid()}:
+            fail("PATH_OWNERSHIP", "journal path ancestry is owned by an untrusted UID")
+        if info.st_mode & 0o022 and not (info.st_uid == 0 and info.st_mode & stat.S_ISVTX):
+            fail("PATH_OWNERSHIP", "journal path ancestry is group/world writable")
+
+
 def _ensure_private_path(path: Path) -> None:
     if not path.is_absolute() or str(path) != os.path.normpath(str(path)):
         fail("INVALID_PATH", "journal path must be a normalized absolute path")
     directory = path.parent
-    if not directory.exists():
-        directory.mkdir(mode=0o700, parents=True, exist_ok=True)
-        os.chmod(directory, 0o700)
+    _check_directory_chain(directory)
     try:
-        d_info = directory.lstat()
+        directory_info = directory.lstat()
+    except FileNotFoundError:
+        # Create only the final directory under a verified existing parent.
+        parent = directory.parent
+        try:
+            parent_info = parent.lstat()
+        except OSError:
+            fail("PATH_UNAVAILABLE", "journal parent directory must already exist")
+        if not stat.S_ISDIR(parent_info.st_mode):
+            fail("PATH_REDIRECTED", "journal parent is not an ordinary directory")
+        try:
+            directory.mkdir(mode=0o700)
+        except OSError:
+            fail("PATH_UNAVAILABLE", "cannot create private journal directory")
+        directory_info = directory.lstat()
     except OSError:
         fail("PATH_UNAVAILABLE", "journal directory cannot be inspected")
-    if not stat.S_ISDIR(d_info.st_mode):
+    if not stat.S_ISDIR(directory_info.st_mode):
         fail("PATH_REDIRECTED", "journal directory is not an ordinary directory")
-    if d_info.st_uid != os.geteuid() or (d_info.st_mode & 0o077):
+    _check_directory_chain(directory)
+    if directory_info.st_uid != os.geteuid() or (directory_info.st_mode & 0o077):
         fail("PATH_OWNERSHIP", "journal directory must be owned by the current service UID and mode 0700")
     try:
         f_info = path.lstat()
@@ -75,7 +104,6 @@ def _ensure_private_path(path: Path) -> None:
         fail("PATH_UNAVAILABLE", "journal file cannot be inspected")
     if not stat.S_ISREG(f_info.st_mode) or f_info.st_uid != os.geteuid() or (f_info.st_mode & 0o077):
         fail("PATH_OWNERSHIP", "journal file must be an ordinary file owned by the current service UID and mode 0600")
-    os.chmod(path, 0o600)
 
 
 def _create_schema(db: sqlite3.Connection) -> None:
