@@ -121,7 +121,10 @@ class InterruptedInstallEvidenceTests(unittest.TestCase):
         calls = []
         self.assertTrue(probe._wait_docker_ready(
             lambda args: calls.append(args) or 0))
-        self.assertEqual(len(calls), 1)
+        self.assertEqual(calls, [[
+            "sudo", "timeout", "3", "docker", "version", "--format",
+            "{{.Server.Version}}",
+        ]])
         self.assertFalse(probe._wait_docker_ready(
             lambda command: 1, attempts=0))
 
