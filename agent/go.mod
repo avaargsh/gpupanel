@@ -1,6 +1,6 @@
 module github.com/avaargsh/GPUPanel/agent
 
-go 1.26.6
+go 1.26.10
 
 replace github.com/go-acme/lego/v5 => github.com/1Panel-dev/lego/v5 v5.3.1
 
