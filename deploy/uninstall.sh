@@ -125,16 +125,21 @@ python3 "$PREFLIGHT" --base-dir "$BASE_DIR" --unit-dir "$UNIT_DIR" "${SYSTEMD_AR
 # file removal or daemon-reload fails, restore those units and leave the
 # installation directory intact so a later retry starts from a known state.
 UNIT_BACKUP=""
+UNIT_REMOVAL_STARTED=0
 UNIT_REMOVAL_COMMITTED=0
 restore_units_on_failure() {
     local rc=$?
     if [ -n "$UNIT_BACKUP" ] && [ "$UNIT_REMOVAL_COMMITTED" != "1" ]; then
         local restore_failed=0
-        for unit in gpupanel-core.service gpupanel-agent.service; do
-            if [ -f "$UNIT_BACKUP/$unit" ]; then
-                cp -p -- "$UNIT_BACKUP/$unit" "$UNIT_DIR/$unit" || restore_failed=1
-            fi
-        done
+        # Before removal starts the live unit files are untouched; never copy a
+        # possibly half-staged backup over them if a signal interrupts staging.
+        if [ "$UNIT_REMOVAL_STARTED" = "1" ]; then
+            for unit in gpupanel-core.service gpupanel-agent.service; do
+                if [ -f "$UNIT_BACKUP/$unit" ]; then
+                    cp -p -- "$UNIT_BACKUP/$unit" "$UNIT_DIR/$unit" || restore_failed=1
+                fi
+            done
+        fi
         if [ "$restore_failed" = "0" ] && [ "${SYSTEMD_ARGS[0]}" = "--systemd" ]; then
             systemctl daemon-reload || restore_failed=1
         fi
@@ -167,6 +172,9 @@ if [ -f "$UNIT_DIR/gpupanel-core.service" ] || [ -f "$UNIT_DIR/gpupanel-agent.se
 fi
 
 # The preflight proved these are exact regular files for this installation.
+# Set this only after the complete backup copy is durable; earlier interrupts
+# leave live unit files untouched and must not restore partial backup bytes.
+UNIT_REMOVAL_STARTED=1
 # Do not kill by process name or command-line substring.
 rm -f -- "$UNIT_DIR/gpupanel-core.service" "$UNIT_DIR/gpupanel-agent.service"
 if [ "${SYSTEMD_ARGS[0]}" = "--systemd" ]; then
