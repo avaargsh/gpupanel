@@ -184,17 +184,29 @@ class InterruptedInstallEvidenceTests(unittest.TestCase):
 
     def test_network_drift_family_labels_are_fixed_and_redacted(self):
         baseline = {"networks": [
-            "id-a|bridge", "id-b|gpupanel-network", "id-c|project_default"]}
+            "id-a|bridge|bridge|local",
+            "id-b|gpupanel-network|bridge|local",
+            "id-c|project_default|bridge|local"]}
         built_in = {"networks": [
-            "id-x|bridge", "id-b|gpupanel-network", "id-c|project_default"]}
+            "id-x|bridge|bridge|local",
+            "id-b|gpupanel-network|bridge|local",
+            "id-c|project_default|bridge|local"]}
         shared = {"networks": [
-            "id-a|bridge", "id-y|gpupanel-network", "id-c|project_default"]}
+            "id-a|bridge|bridge|local",
+            "id-y|gpupanel-network|bridge|local",
+            "id-c|project_default|bridge|local"]}
         custom = {"networks": [
-            "id-a|bridge", "id-b|gpupanel-network", "id-z|project_default"]}
+            "id-a|bridge|bridge|local",
+            "id-b|gpupanel-network|bridge|local",
+            "id-z|project_default|bridge|local"]}
         membership = {"networks": [
-            "id-a|bridge", "id-b|gpupanel-network", "id-c|other_default"]}
+            "id-a|bridge|bridge|local",
+            "id-b|gpupanel-network|bridge|local",
+            "id-c|other_default|bridge|local"]}
         mixed = {"networks": [
-            "id-x|bridge", "id-b|gpupanel-network", "id-z|project_default"]}
+            "id-x|bridge|bridge|local",
+            "id-b|gpupanel-network|bridge|local",
+            "id-z|project_default|bridge|local"]}
         cases = (
             (built_in, built_in, "pre-agent-builtin-network-identity-drift"),
             (baseline, shared, "post-agent-shared-network-identity-drift"),
@@ -213,12 +225,54 @@ class InterruptedInstallEvidenceTests(unittest.TestCase):
                 ):
                     self.assertNotIn(private_value, actual)
 
+    def test_docker_restart_only_allows_builtin_bridge_id_rotation(self):
+        baseline = {"networks": [
+            "id-a|bridge|bridge|local",
+            "id-b|host|host|local",
+            "id-c|none|null|local",
+            "id-d|gpupanel-network|bridge|local",
+            "id-e|project_default|bridge|local"]}
+        bridge_rotated = {"networks": [
+            "id-x|bridge|bridge|local",
+            "id-b|host|host|local",
+            "id-c|none|null|local",
+            "id-d|gpupanel-network|bridge|local",
+            "id-e|project_default|bridge|local"]}
+        shared_rotated = {"networks": [
+            "id-x|bridge|bridge|local",
+            "id-b|host|host|local",
+            "id-c|none|null|local",
+            "id-y|gpupanel-network|bridge|local",
+            "id-e|project_default|bridge|local"]}
+        membership_changed = {"networks": [
+            "id-x|bridge|bridge|local",
+            "id-b|host|host|local",
+            "id-c|none|null|local",
+            "id-d|gpupanel-network|bridge|local",
+            "id-e|other_default|bridge|local"]}
+        invalid_bridge = {"networks": [
+            "id-x|bridge|other-driver|local",
+            "id-b|host|host|local",
+            "id-c|none|null|local",
+            "id-d|gpupanel-network|bridge|local",
+            "id-e|project_default|bridge|local"]}
+        self.assertTrue(probe.network_inventory_unchanged_after_docker_restart(
+            baseline, bridge_rotated))
+        for changed in (shared_rotated, membership_changed, invalid_bridge):
+            with self.subTest(changed=changed["networks"][0]):
+                self.assertFalse(
+                    probe.network_inventory_unchanged_after_docker_restart(
+                        baseline, changed))
+
     def test_network_snapshot_precedes_agent_restart(self):
         source = (ROOT / "scripts/install-test/app_fault_probe.py").read_text()
         self.assertLess(
             source.index("before_agent = guest_inventory()"),
             source.index('["sudo", "systemctl", "start", "gpupanel-agent"]'))
-        self.assertIn("if after[key] != docker_before[key]:", source)
+        self.assertLess(
+            source.index("network_inventory_unchanged_after_docker_restart("),
+            source.index('["sudo", "systemctl", "start", "gpupanel-agent"]'))
+        self.assertIn('if after["networks"] != before_agent["networks"]:', source)
 
     def test_freeze_requires_inactive_units_and_privileged_api(self):
         commands = [

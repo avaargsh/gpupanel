@@ -100,7 +100,7 @@ print(json.dumps({
  'apps':count('agent.db','app_installs'),
  'tasks':count('task.db','tasks'),
  'containers':docker('ps','-aq','--no-trunc'),
- 'networks':docker('network','ls','--no-trunc','--format','{{.ID}}|{{.Name}}'),
+ 'networks':docker('network','ls','--no-trunc','--format','{{.ID}}|{{.Name}}|{{.Driver}}|{{.Scope}}'),
  'volumes':docker('volume','ls','-q'),
 },sort_keys=True))
 """

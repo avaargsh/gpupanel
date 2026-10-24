@@ -638,7 +638,12 @@ init barrier 正在等待时崩溃”，**不是** Docker 写请求已提交后�
 
 ### G5 中断安装网络漂移定位
 
-故障注入在原始安装前基线、Docker 恢复但 Agent 尚未启动时、以及 Agent 恢复后比较网络清单。
-网络 ID 和名称只保留在私有探针内；CI 仅输出固定阶段和类别标签，用于区分内置网络、共享网络、
-其他自定义网络或成员集合变化。最终容器、网络和卷仍必须与原始基线严格相等；诊断标签不豁免
-任何漂移，也不会把失败变成 GO。
+网络清单在原始安装前基线、Docker 恢复但 Agent 尚未启动时、以及 Agent 恢复后分别采样。
+Moby 的 `configureNetworking` 会在守护进程启动时删除并重建默认 `bridge` 网络，因此跨这次
+明确注入的 Docker 重启，只允许该网络 ID 变化；仍必须验证它的名称、`bridge` 驱动和 `local` 作用域。
+来源：[Moby daemon networking initialization](https://github.com/moby/moby/blob/master/daemon/daemon_unix.go)。
+
+所有其他网络 ID、名称、驱动、作用域和成员集合都必须与安装前基线一致；Agent 恢复后的网络清单
+还必须与 Docker 恢复后、Agent 启动前的快照**逐项严格相等**。容器和卷在两个检查点也继续严格比较。
+网络 ID/名称只保留在私有探针中；CI 仅输出固定类别标签。上述唯一的 `bridge` ID 规则是已知的
+Docker 守护进程生命周期行为，不是对 App/Agent 网络副作用的豁免；任何其他漂移仍失败。

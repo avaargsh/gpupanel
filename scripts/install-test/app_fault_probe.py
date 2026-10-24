@@ -301,6 +301,22 @@ def inject(*, page, guest, guest_rc, guest_inventory, request, next_id,
     # Snapshot only after Docker recovers and before Agent starts. Compare
     # against the same pre-admission baseline; no side effect is excluded.
     before_agent = guest_inventory()
+    # Moby's configureNetworking intentionally deletes/recreates the built-in
+    # bridge at daemon startup. Normalize only that generated ID transition;
+    # all other network identities, names, drivers and scopes remain strict.
+    # See github.com/moby/moby/daemon/daemon_unix.go configureNetworking.
+    for key, category in (
+            ("containers", "container-side-effects"),
+            ("volumes", "volume-side-effects")):
+        if before_agent[key] != docker_before[key]:
+            _token("G5_APP_UNKNOWN_FENCE_CODE", category)
+            raise RuntimeError("Docker restart changed pre-install resource inventory")
+    if not network_inventory_unchanged_after_docker_restart(
+            docker_before, before_agent):
+        category = classify_network_drift(
+            docker_before, before_agent, before_agent)
+        _token("G5_APP_UNKNOWN_FENCE_CODE", category)
+        raise RuntimeError("Docker restart changed unexpected network inventory")
     if guest_rc(["sudo", "systemctl", "start", "gpupanel-agent"]) != 0:
         _token("G5_APP_UNKNOWN_FENCE_CODE", "agent-start-unavailable")
         raise RuntimeError("Agent service did not restart after the injection")
@@ -323,44 +339,66 @@ def inject(*, page, guest, guest_rc, guest_inventory, request, next_id,
     after = guest_inventory()
     categories = {
         "containers": "container-side-effects",
-        "networks": "network-side-effects",
         "volumes": "volume-side-effects",
     }
     for key, category in categories.items():
         if after[key] != docker_before[key]:
-            # Identify only fixed classes; never print resource IDs/names or
-            # raw guest output, and never waive the strict equality assertion.
-            if key == "networks":
-                category = classify_network_drift(
-                    docker_before, before_agent, after)
             _token("G5_APP_UNKNOWN_FENCE_CODE", category)
             raise RuntimeError("interrupted install produced Docker resources")
+    # Agent recovery must be exactly side-effect free relative to the snapshot
+    # taken after Docker's own startup transition has completed.
+    if after["networks"] != before_agent["networks"]:
+        category = classify_network_drift(before_agent, before_agent, after)
+        _token("G5_APP_UNKNOWN_FENCE_CODE", category)
+        raise RuntimeError("Agent restart changed Docker network inventory")
     return {"installId": install_id, "taskId": task_id}
 
 
-def _network_name_map(snapshot: dict) -> dict[str, str] | None:
-    """Parse private ID|name inventory without returning either value to CI."""
+def _network_name_map(snapshot: dict) -> dict[str, tuple[str, str, str]] | None:
+    """Parse private ID|name|driver|scope records without leaking values to CI."""
     records = snapshot.get("networks")
     if not isinstance(records, list):
         return None
     parsed = {}
     for record in records:
-        if not isinstance(record, str) or record.count("|") != 1:
+        if not isinstance(record, str):
             return None
-        network_id, name = record.split("|", 1)
-        if not network_id or not name or name in parsed:
+        parts = record.split("|")
+        if len(parts) != 4:
             return None
-        parsed[name] = network_id
+        network_id, name, driver, scope = parts
+        if not network_id or not name or not driver or not scope or name in parsed:
+            return None
+        parsed[name] = (network_id, driver, scope)
     return parsed
 
 
-def classify_network_drift(before: dict, before_agent: dict, final: dict) -> str:
-    """Locate the first persistent network divergence using fixed safe labels.
+def network_inventory_unchanged_after_docker_restart(before: dict, after: dict) -> bool:
+    """Allow only Moby's default bridge ID regeneration across daemon startup.
 
-    Network IDs and names remain private to the probe. This classification
-    narrows the phase and family of drift; it never waives strict equality.
-    Older synthetic callers without ID|name records retain generic labels.
+    All network names, drivers, scopes and non-bridge IDs must remain equal.
+    The bridge must exist with driver=bridge and scope=local on both sides.
     """
+    before_map = _network_name_map(before)
+    after_map = _network_name_map(after)
+    if before_map is None or after_map is None:
+        return False
+    if set(before_map) != set(after_map) or "bridge" not in before_map:
+        return False
+    old_bridge = before_map["bridge"]
+    new_bridge = after_map["bridge"]
+    if old_bridge[1:] != ("bridge", "local") or new_bridge[1:] != ("bridge", "local"):
+        return False
+    for name in before_map:
+        if name == "bridge":
+            continue
+        if before_map[name] != after_map[name]:
+            return False
+    return True
+
+
+def classify_network_drift(before: dict, before_agent: dict, final: dict) -> str:
+    """Locate persistent network drift with fixed labels and no raw identifiers."""
     baseline = before["networks"]
     intermediate = before_agent["networks"]
     observed = final["networks"]
@@ -407,7 +445,6 @@ def classify_network_drift(before: dict, before_agent: dict, final: dict) -> str
     if families == {"custom"}:
         return f"{phase}-custom-network-identity-drift"
     return f"{phase}-network-identity-drift"
-
 
 def verify_mutation_gate(*, page, guest_inventory, request, next_id,
                          install_id: int, task_id: str) -> None:
