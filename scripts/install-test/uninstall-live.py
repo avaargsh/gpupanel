@@ -84,6 +84,21 @@ def process_paths():
     return sorted(set(found))
 
 
+def verify_running_service_processes():
+    expected_pids = []
+    for name in ("gpupanel-core", "gpupanel-agent"):
+        pid, _ = run(["systemctl", "show", "--property=MainPID", "--value", name + ".service"])
+        if not pid.isdecimal() or int(pid) <= 0:
+            raise RuntimeError("service has no observable main process before uninstall")
+        actual = os.readlink(Path("/proc") / pid / "exe").removesuffix(" (deleted)")
+        if actual != str(PANEL / name):
+            raise RuntimeError("service main process does not execute the owned binary")
+        expected_pids.append(pid)
+    if sorted(expected_pids) != process_paths():
+        raise RuntimeError("additional or missing GPUPanel executable process before uninstall")
+    return sorted(expected_pids)
+
+
 def docker_inventory():
     version, _ = run(["docker", "info", "--format", "{{.ServerVersion}}"], timeout=30)
     rows = {
@@ -140,8 +155,7 @@ retained = {
     "app_yaml": digest(PANEL / "conf/app.yaml"),
 }
 if ACTION == "capture":
-    if process_paths():
-        raise RuntimeError("unexpected extra runtime process before uninstall")
+    verify_running_service_processes()
 elif ACTION == "verify":
     if process_paths():
         raise RuntimeError("GPUPanel process survived uninstall")
@@ -296,5 +310,6 @@ if __name__ == "__main__":
     try:
         raise SystemExit(main())
     except Exception as exc:
-        print("GPUPANEL_SYSTEM_UNINSTALL_CODE=blocked_or_failed; M0=NO_GO", file=sys.stderr)
+        print("GPUPANEL_SYSTEM_UNINSTALL_CODE=blocked_or_failed; M0=NO_GO; detail="
+              + type(exc).__name__ + ":" + str(exc)[:200], file=sys.stderr)
         raise SystemExit(1)
