@@ -233,8 +233,9 @@ def summarize(state: Path, *, run_completed: bool, source_sha: str) -> dict:
             "schema", "kind", "source_sha", "guest_machine_id_sha256",
             "binary_sha256", "retained_file_sha256", "unit_file_sha256",
             "docker_inventory_sha256", "docker_server_version",
-            "owned_units_removed", "services_inactive_and_disabled",
-            "running_processes_absent", "binaries_and_data_retained",
+            "owned_units_removed", "repeat_default_uninstall_idempotent",
+            "services_inactive_and_disabled", "running_processes_absent",
+            "binaries_and_data_retained",
             "data_digests_unchanged", "docker_inventory_unchanged",
             "purge", "upgrade_and_rollback", "m0_release_decision",
         }
@@ -257,9 +258,10 @@ def summarize(state: Path, *, run_completed: bool, source_sha: str) -> dict:
         and isinstance(uninstall.get("docker_server_version"), str)
         and bool(uninstall["docker_server_version"])
         and all(uninstall.get(key) is True for key in (
-            "owned_units_removed", "services_inactive_and_disabled",
-            "running_processes_absent", "binaries_and_data_retained",
-            "data_digests_unchanged", "docker_inventory_unchanged",
+            "owned_units_removed", "repeat_default_uninstall_idempotent",
+            "services_inactive_and_disabled", "running_processes_absent",
+            "binaries_and_data_retained", "data_digests_unchanged",
+            "docker_inventory_unchanged",
         ))
         and uninstall.get("purge") == "NOT_RUN"
         and uninstall.get("upgrade_and_rollback") == "NOT_RUN"
