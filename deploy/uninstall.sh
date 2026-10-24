@@ -65,11 +65,21 @@ command -v python3 >/dev/null 2>&1 || die "Python 3 is required for uninstall pr
 
 PANEL_DIR="$BASE_DIR/gpupanel"
 UNIT_DIR="/etc/systemd/system"
+UNIT_CORE="$UNIT_DIR/gpupanel-core.service"
+UNIT_AGENT="$UNIT_DIR/gpupanel-agent.service"
 SYSTEMD_ARGS=(--no-systemd)
 if command -v systemctl >/dev/null 2>&1 && [ -d /run/systemd/system ]; then
     SYSTEMD_ARGS=(--systemd)
 fi
+UNITS_ALREADY_REMOVED=0
+if [ ! -e "$UNIT_CORE" ] && [ ! -L "$UNIT_CORE" ] &&
+   [ ! -e "$UNIT_AGENT" ] && [ ! -L "$UNIT_AGENT" ]; then
+    UNITS_ALREADY_REMOVED=1
+fi
 PREFLIGHT_ARGS=(--base-dir "$BASE_DIR" --unit-dir "$UNIT_DIR" "${SYSTEMD_ARGS[@]}")
+if [ "$UNITS_ALREADY_REMOVED" = "1" ]; then
+    PREFLIGHT_ARGS+=(--units-removed)
+fi
 if [ "$PURGE" = "1" ]; then
     PREFLIGHT_ARGS+=(--purge --confirm-purge "$CONFIRM_PURGE")
 elif [ -n "$CONFIRM_PURGE" ]; then
@@ -80,6 +90,21 @@ fi
 # before sending stop/disable commands or deleting any unit/data.
 PLAN="$(python3 "$PREFLIGHT" "${PREFLIGHT_ARGS[@]}")" || die "ownership/path preflight failed; no changes were requested"
 printf 'Verified GPUPanel uninstall plan: %s\n' "$PLAN"
+
+# Re-entry after a successful default uninstall is safe: verify no owned units,
+# fragments, or processes remain, then either preserve data or purge by exact
+# separately confirmed path. Never issue disable/stop against an unrelated unit.
+if [ "$UNITS_ALREADY_REMOVED" = "1" ]; then
+    if [ "$PURGE" = "1" ]; then
+        rm -rf --one-file-system -- "$PANEL_DIR"
+        printf 'GPUPanel installation directory and its data were purged: %s\n' "$PANEL_DIR"
+    else
+        printf 'GPUPanel systemd units are already removed; installation directory remains: %s\n' "$PANEL_DIR"
+        printf 'Binaries, configuration, database and user data remain for recovery.\n'
+        printf 'To permanently delete it, rerun with --purge --confirm-purge %s\n' "$PANEL_DIR"
+    fi
+    exit 0
+fi
 
 if [ "${SYSTEMD_ARGS[0]}" = "--systemd" ]; then
     if ! systemctl disable --now gpupanel-agent.service gpupanel-core.service; then
@@ -150,7 +175,7 @@ trap - EXIT
 if [ "$PURGE" = "1" ]; then
     # Re-check ownership and mount-point state after stopping services and
     # removing unit files, before the only recursive deletion in this script.
-    python3 "$PREFLIGHT" --base-dir "$BASE_DIR" --unit-dir "$UNIT_DIR" --no-systemd \
+    python3 "$PREFLIGHT" --base-dir "$BASE_DIR" --unit-dir "$UNIT_DIR" "${SYSTEMD_ARGS[@]}" \
         --units-removed --purge --confirm-purge "$PANEL_DIR" >/dev/null \
         || die "final purge guard failed; installation directory retained"
     rm -rf --one-file-system -- "$PANEL_DIR"
