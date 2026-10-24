@@ -162,7 +162,7 @@ class LifecycleJournalContract(unittest.TestCase):
         target_dir = Path(self.temp.name) / "target"
         target_dir.mkdir()
         link.symlink_to(target_dir, target_is_directory=True)
-        with self.assertRaisesRegex(journal.JournalError, "ordinary directory"):
+        with self.assertRaisesRegex(journal.JournalError, "symlink"):
             journal.open_journal(str(link / "operations.db"))
         permissive = Path(self.temp.name) / "permissive"
         permissive.mkdir(mode=0o700)
