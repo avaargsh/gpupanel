@@ -79,6 +79,18 @@ class G5EvidenceFailureCodeTests(unittest.TestCase):
             self.assertEqual(failure.app_evidence_code(malicious), "unknown")
         self.assertEqual(failure.app_evidence_code("password=SECRET\n"), "unknown")
 
+    def test_interrupted_appinstall_side_effect_labels_are_fixed(self):
+        for category in ("container-side-effects", "network-side-effects",
+                         "volume-side-effects"):
+            self.assertEqual(failure.app_unknown_fence_code(
+                "G5_APP_UNKNOWN_FENCE_CODE=" + category +
+                " release=NO_GO\\n"), category)
+        for invalid in ("PRIVATE_CONTAINER", "container:/var/lib/docker",
+                        "network-side-effects name=SECRET"):
+            self.assertEqual(failure.app_unknown_fence_code(
+                "G5_APP_UNKNOWN_FENCE_CODE=" + invalid +
+                " release=NO_GO\\n"), "unknown")
+
     def test_docker_state_summary_allowlist_and_forgery_rejection(self):
         for state in ("running", "created", "exited", "restarting", "paused",
                       "removing", "dead", "missing", "other", "unavailable"):
