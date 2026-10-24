@@ -58,6 +58,9 @@ func validateTransitionRequest(req TransitionRequest) error {
 	if req.EvidenceSHA256 != "" && !digestPattern.MatchString(req.EvidenceSHA256) {
 		return fmt.Errorf("%w: invalid evidence digest", ErrInvalidRequest)
 	}
+	if req.ArtifactSHA256 != "" && !digestPattern.MatchString(req.ArtifactSHA256) {
+		return fmt.Errorf("%w: invalid artifact digest", ErrInvalidRequest)
+	}
 	if (req.NextState == StateCompleted || req.NextState == StateRolledBack || req.NextState == StateBackupSealed) && req.EvidenceSHA256 == "" {
 		return fmt.Errorf("%w: %s requires independently produced evidence", ErrInvalidRequest, req.NextState)
 	}
