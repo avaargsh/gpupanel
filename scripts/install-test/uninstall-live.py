@@ -33,7 +33,7 @@ DATA_PATHS = {
 
 
 GUEST_SOURCE = r'''
-import hashlib, json, os, socket, subprocess
+import hashlib, json, os, socket, stat, subprocess
 from pathlib import Path
 
 ACTION = __ACTION__
@@ -42,6 +42,7 @@ EXPECTED_BINARY = json.loads(__BINARY_JSON__)
 EXPECTED_MACHINE = __MACHINE_JSON__
 PANEL = Path("/opt/gpupanel")
 UNIT_DIR = Path("/etc/systemd/system")
+RETENTION_SENTINEL = PANEL / "conf/.gpupanel-ci-uninstall-retention"
 
 
 def run(args, check=True, timeout=20):
@@ -99,6 +100,64 @@ def verify_running_service_processes():
     return sorted(expected_pids)
 
 
+def retained_tree_digest():
+    """Digest the complete retained tree without reading volatile log contents."""
+    rows = []
+    def visit(path):
+        rel = "." if path == PANEL else path.relative_to(PANEL).as_posix()
+        info = path.lstat()
+        record = {
+            "path": rel,
+            "mode": stat.S_IMODE(info.st_mode),
+            "uid": info.st_uid,
+            "gid": info.st_gid,
+        }
+        if stat.S_ISLNK(info.st_mode):
+            record["type"] = "symlink"
+            record["target_sha256"] = hashlib.sha256(os.readlink(path).encode("utf-8")).hexdigest()
+        elif stat.S_ISDIR(info.st_mode):
+            record["type"] = "directory"
+            rows.append(record)
+            for child in sorted(path.iterdir(), key=lambda p: p.name):
+                visit(child)
+            return
+        elif stat.S_ISREG(info.st_mode):
+            record["type"] = "file"
+            # Logs may append during graceful service stop. Their presence,
+            # kind, owner and permissions remain covered, contents/size do not.
+            if rel.startswith("log/"):
+                record["volatile_log_contents"] = True
+            else:
+                record["size"] = info.st_size
+                with path.open("rb") as stream:
+                    record["content_sha256"] = hashlib.file_digest(stream, "sha256").hexdigest()
+        else:
+            record["type"] = "special"
+        rows.append(record)
+    if PANEL.is_symlink() or not PANEL.is_dir():
+        raise RuntimeError("retained installation root is missing or redirected")
+    visit(PANEL)
+    encoded = json.dumps(rows, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    return hashlib.sha256(encoded).hexdigest()
+
+
+def ensure_retention_sentinel():
+    expected = ("GPUPANEL-CI-UNINSTALL-RETENTION:" + SOURCE_SHA).encode("ascii")
+    if ACTION == "capture":
+        if RETENTION_SENTINEL.exists() or RETENTION_SENTINEL.is_symlink():
+            raise RuntimeError("retention sentinel path already exists")
+        fd = os.open(RETENTION_SENTINEL, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW, 0o600)
+        with os.fdopen(fd, "wb") as stream:
+            stream.write(expected)
+            stream.flush()
+            os.fsync(stream.fileno())
+    if RETENTION_SENTINEL.is_symlink() or not RETENTION_SENTINEL.is_file():
+        raise RuntimeError("retention sentinel was deleted or redirected")
+    if RETENTION_SENTINEL.read_bytes() != expected:
+        raise RuntimeError("retention sentinel bytes changed")
+    return hashlib.sha256(expected).hexdigest()
+
+
 def docker_inventory():
     version, _ = run(["docker", "info", "--format", "{{.ServerVersion}}"], timeout=30)
     rows = {
@@ -154,6 +213,8 @@ retained = {
     "core_db": digest(PANEL / "db/core.db"),
     "app_yaml": digest(PANEL / "conf/app.yaml"),
 }
+sentinel_sha = ensure_retention_sentinel()
+tree_sha = retained_tree_digest()
 if ACTION == "capture":
     verify_running_service_processes()
 elif ACTION == "verify":
@@ -167,6 +228,8 @@ print(json.dumps({
     "guest_machine_id_sha256": machine_sha,
     "binary_sha256": binary_hashes,
     "retained_file_sha256": retained,
+    "retained_tree_sha256": tree_sha,
+    "retention_sentinel_sha256": sentinel_sha,
     "unit_file_sha256": unit_hashes,
     "docker_server_version": docker_version,
     "docker_inventory": docker_rows,
@@ -268,6 +331,8 @@ def main() -> int:
         or after.get("schema") != "gpupanel.vm.system-uninstall-probe.v1"
         or before.get("binary_sha256") != after.get("binary_sha256")
         or before.get("retained_file_sha256") != after.get("retained_file_sha256")
+        or before.get("retained_tree_sha256") != after.get("retained_tree_sha256")
+        or before.get("retention_sentinel_sha256") != after.get("retention_sentinel_sha256")
         or before.get("docker_server_version") != after.get("docker_server_version")
         or before.get("docker_inventory") != after.get("docker_inventory")
         or not isinstance(before.get("unit_file_sha256"), dict)
@@ -293,6 +358,10 @@ def main() -> int:
         "guest_machine_id_sha256": machine,
         "binary_sha256": local["binary_sha256"],
         "retained_file_sha256": after["retained_file_sha256"],
+        "retained_tree_sha256": after["retained_tree_sha256"],
+        "retained_tree_unchanged": before["retained_tree_sha256"] == after["retained_tree_sha256"],
+        "retention_sentinel_sha256": after["retention_sentinel_sha256"],
+        "retention_sentinel_preserved": before["retention_sentinel_sha256"] == after["retention_sentinel_sha256"],
         "unit_file_sha256": before["unit_file_sha256"],
         "docker_inventory_sha256": _digest_rows(before["docker_inventory"]),
         "docker_server_version": before["docker_server_version"],
