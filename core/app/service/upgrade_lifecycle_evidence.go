@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
@@ -9,6 +10,8 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/avaargsh/GPUPanel/core/app/lifecycle"
 )
 
 const maxUpgradeSealEntries = 20000
@@ -80,4 +83,22 @@ func sealUpgradeBackupEvidence(originalDir, archivePath string) (string, string,
 		return "", "", fmt.Errorf("rollback inventory is empty")
 	}
 	return archiveSHA, hex.EncodeToString(manifest.Sum(nil)), nil
+}
+
+func advanceUpgradeOperation(store *lifecycle.Store, op *lifecycle.Operation,
+	next lifecycle.State, stage, errorCode, evidenceSHA256, artifactSHA256 string) error {
+	if store == nil || op == nil {
+		return fmt.Errorf("lifecycle operation state is unavailable")
+	}
+	updated, _, err := store.Advance(context.Background(), lifecycle.TransitionRequest{
+		Owner: op.Owner, OperationID: op.ID, ExpectedState: op.State,
+		ExpectedRevision: op.Revision, NextState: next,
+		Actor: "gpupanel-core-upgrade", Stage: stage, ErrorCode: errorCode,
+		EvidenceSHA256: evidenceSHA256, ArtifactSHA256: artifactSHA256,
+	})
+	if err != nil {
+		return err
+	}
+	*op = updated
+	return nil
 }
