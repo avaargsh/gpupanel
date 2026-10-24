@@ -147,6 +147,17 @@ class UninstallPreflightTests(unittest.TestCase):
             with self.assertRaisesRegex(helper.Refusal, "cannot inspect process identity"):
                 helper.process_paths(self.panel)
 
+    def test_multiple_execstart_or_non_simple_type_are_rejected(self):
+        unit = self.unit_dir / "gpupanel-core.service"
+        expected = str(self.panel / "gpupanel-core")
+        unit.write_text(
+            "[Service]\nType=oneshot\nWorkingDirectory=" + str(self.panel) + "\n"
+            "ExecStart=" + expected + "\nExecStart=/bin/true\n",
+            encoding="utf-8",
+        )
+        with self.assertRaisesRegex(helper.Refusal, "does not uniquely execute"):
+            helper.build_plan(self.args())
+
     def test_systemd_mode_requires_both_owned_units(self):
         (self.unit_dir / "gpupanel-agent.service").unlink()
         with mock.patch.object(helper, "verify_systemd_fragment"):
