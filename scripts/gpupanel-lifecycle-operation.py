@@ -238,7 +238,7 @@ def claim(db: sqlite3.Connection, *, owner: str, target: str, kind: str, key: st
         """, (owner, target, kind, key)).fetchone()
         if row is None:
             fail("CLAIM_FAILED", "claim did not produce a durable operation")
-        if not created and (row["binding_sha256"] != binding_sha256 or row["artifact_sha256"] != artifact_sha256):
+        if not created and (row["binding_sha256"] != binding_sha256 or (artifact_sha256 and row["artifact_sha256"] != artifact_sha256)):
             fail("BINDING_MISMATCH", "idempotency key is already bound to different parameters or artifact")
         if created:
             db.execute("""
@@ -273,7 +273,8 @@ def transition_allowed(source: str, target: str, *, reconcile: bool = False) -> 
 
 def advance(db: sqlite3.Connection, *, owner: str, op_id: str, expected_state: str,
             expected_revision: int, next_state: str, actor: str, stage: str = "",
-            error_code: str = "", evidence_sha256: str = "", reconcile: bool = False) -> dict:
+            error_code: str = "", evidence_sha256: str = "", artifact_sha256: str = "",
+            reconcile: bool = False) -> dict:
     _validate_owner(owner)
     if not op_id or len(op_id) > 36:
         fail("INVALID_OPERATION_ID", "operation ID is invalid")
@@ -286,6 +287,7 @@ def advance(db: sqlite3.Connection, *, owner: str, op_id: str, expected_state: s
     if len(error_code.encode()) > MAX_ERROR_CODE or any(c in error_code for c in "\r\n\x00"):
         fail("INVALID_ERROR_CODE", "error code is invalid")
     _validate_sha(evidence_sha256, "evidence digest")
+    _validate_sha(artifact_sha256, "artifact digest")
     if next_state in {"completed", "rolled_back", "backup_sealed"} and not evidence_sha256:
         fail("EVIDENCE_REQUIRED", f"{next_state} requires an independent evidence digest")
     if next_state in {"failed_no_mutation", "unknown", "recovery_required"} and not error_code:
@@ -298,6 +300,8 @@ def advance(db: sqlite3.Connection, *, owner: str, op_id: str, expected_state: s
         current = db.execute("SELECT * FROM lifecycle_operations WHERE id=? AND owner=?", (op_id, owner)).fetchone()
         if current is None:
             fail("NOT_FOUND", "operation is not visible to this owner")
+        if artifact_sha256 and current["artifact_sha256"] and current["artifact_sha256"] != artifact_sha256:
+            fail("BINDING_MISMATCH", "operation is already bound to a different artifact digest")
         if current["revision"] == expected_revision + 1 and current["state"] == next_state:
             latest = db.execute("""
                 SELECT * FROM lifecycle_operation_events WHERE operation_id=? AND sequence=?
@@ -309,11 +313,13 @@ def advance(db: sqlite3.Connection, *, owner: str, op_id: str, expected_state: s
             fail("REVISION_CONFLICT", "operation state/revision changed; reconcile before retrying")
         next_revision = expected_revision + 1
         now = time.time_ns()
+        bound_artifact = current["artifact_sha256"] or artifact_sha256
         cursor = db.execute("""
             UPDATE lifecycle_operations
-            SET state=?, revision=?, stage=?, error_code=?, evidence_sha256=?, updated_at_ns=?
+            SET state=?, revision=?, stage=?, error_code=?, evidence_sha256=?,
+                artifact_sha256=?, updated_at_ns=?
             WHERE id=? AND owner=? AND state=? AND revision=?
-        """, (next_state, next_revision, stage, error_code, evidence_sha256, now,
+        """, (next_state, next_revision, stage, error_code, evidence_sha256, bound_artifact, now,
               op_id, owner, expected_state, expected_revision))
         if cursor.rowcount != 1:
             fail("REVISION_CONFLICT", "state compare-and-swap rejected the transition")
@@ -373,6 +379,7 @@ def main(argv: list[str] | None = None) -> int:
     advance_parser.add_argument("--stage", default="")
     advance_parser.add_argument("--error-code", default="")
     advance_parser.add_argument("--evidence-sha256", default="")
+    advance_parser.add_argument("--artifact-sha256", default="")
     advance_parser.add_argument("--reconcile", action="store_true")
     get_parser = sub.add_parser("get")
     get_parser.add_argument("--owner", required=True)
@@ -392,7 +399,8 @@ def main(argv: list[str] | None = None) -> int:
                 db, owner=args.owner, op_id=args.id, expected_state=args.expected_state,
                 expected_revision=args.expected_revision, next_state=args.next_state,
                 actor=args.actor, stage=args.stage, error_code=args.error_code,
-                evidence_sha256=args.evidence_sha256, reconcile=args.reconcile,
+                evidence_sha256=args.evidence_sha256, artifact_sha256=args.artifact_sha256,
+                reconcile=args.reconcile,
             )
         elif args.command == "get":
             payload = get_operation(db, args.owner, args.id)
