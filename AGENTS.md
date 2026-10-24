@@ -32,7 +32,7 @@ This contract applies to this fork. Current engineering and operations entrypoin
 
 ## 3. Actual repository gates (do not invent Bun commands)
 
-Verified manifests: `frontend/pnpm-lock.yaml` + `frontend/package.json` (pnpm React workspace), and separate `core/go.mod` / `agent/go.mod` (Go 1.26.6 declared in both). There is **no established root Bun workspace or Bun precheck/db migration task** at this revision. Never report `bun run precheck`, `bun run build:web`, `bun run db:generate`, `bun run db:migrate` or `bun run run-data-migrations` as completed unless the actual project has gained those scripts and they were executed.
+Verified manifests: `frontend/pnpm-lock.yaml` + `frontend/package.json` (pnpm React workspace), and separate `core/go.mod` / `agent/go.mod` (Go 1.26.10 declared in both). There is **no established root Bun workspace or Bun precheck/db migration task** at this revision. Never report `bun run precheck`, `bun run build:web`, `bun run db:generate`, `bun run db:migrate` or `bun run run-data-migrations` as completed unless the actual project has gained those scripts and they were executed.
 
 Evidence retention: follow `docs/evidence/README.md`. Keep concise results and essential receipts; replace superseded attachments instead of accumulating per-run logs/manifests/screenshots. Run `python3 scripts/gpupanel-evidence-budget.py`; the read-only budget is enforced by Python contracts. Do not delete active runtime state, credentials or rollback backups as documentation cleanup.
 
