@@ -177,7 +177,10 @@ class InterruptedInstallEvidenceTests(unittest.TestCase):
                 actual = probe.classify_network_drift(
                     baseline, before_agent, final)
                 self.assertEqual(actual, expected)
-                self.assertNotIn("network-id", actual)
+                # Reject synthetic network IDs without mistaking the fixed
+                # diagnostic word "identity" for an ID leak.
+                for network_id in ("network-id-a", "network-id-b", "network-id-c"):
+                    self.assertNotIn(network_id, actual)
 
     def test_network_snapshot_precedes_agent_restart(self):
         source = (ROOT / "scripts/install-test/app_fault_probe.py").read_text()
