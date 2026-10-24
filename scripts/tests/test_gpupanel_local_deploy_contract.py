@@ -147,7 +147,7 @@ class LocalDeployContract(unittest.TestCase):
             payload = root / "payload"
             units = payload / "initscript"
             units.mkdir(parents=True)
-            for name in ("gpupanel-core", "gpupanel-agent", "pctl", "app.yaml"):
+            for name in ("gpupanel-core", "gpupanel-agent", "pctl", "app.yaml", "gpupanel-uninstall-preflight.py"):
                 (payload / name).write_text("synthetic placeholder, never run", encoding="utf-8")
             for name in ("gpupanel-core.service", "gpupanel-agent.service"):
                 (units / name).write_text("[Service]\nType=simple\n", encoding="utf-8")
