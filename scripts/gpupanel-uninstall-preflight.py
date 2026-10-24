@@ -84,19 +84,24 @@ def verify_unit(path: Path, binary: Path, panel_dir: Path, name: str) -> bool:
         return False
     regular_owned_file(path, f"{name} unit")
     lines = path.read_text(encoding="utf-8").splitlines()
-    if lines.count(f"ExecStart={binary}") != 1:
-        fail(f"{name} unit does not uniquely execute the selected installation")
-    if lines.count(f"WorkingDirectory={panel_dir}") != 1:
-        fail(f"{name} unit working directory does not match selected installation")
-    # A unit that adds another Exec* hook can run arbitrary code during stop
-    # or start. Only the reviewed ExecStart command is permitted in the file.
+    directives: dict[str, list[str]] = {}
     for line in lines:
         stripped = line.strip()
         if not stripped or stripped.startswith(("#", ";")) or "=" not in stripped:
             continue
-        directive = stripped.split("=", 1)[0].strip()
-        if directive.startswith("Exec") and directive != "ExecStart":
-            fail(f"{name} unit contains an unreviewed execution hook: {directive}")
+        key, value = stripped.split("=", 1)
+        key, value = key.strip(), value.strip()
+        directives.setdefault(key, []).append(value)
+        # A unit that adds another Exec* hook can run arbitrary code during
+        # stop or start. Only the reviewed ExecStart command is permitted.
+        if key.startswith("Exec") and key != "ExecStart":
+            fail(f"{name} unit contains an unreviewed execution hook: {key}")
+    if directives.get("ExecStart") != [str(binary)]:
+        fail(f"{name} unit does not uniquely execute the selected installation")
+    if directives.get("WorkingDirectory") != [str(panel_dir)]:
+        fail(f"{name} unit working directory does not uniquely match the installation")
+    if directives.get("Type") != ["simple"]:
+        fail(f"{name} unit must use the reviewed Type=simple service contract")
     return True
 
 
