@@ -65,12 +65,17 @@ def prepare():
         "    security_opt: [no-new-privileges:true]\n"
         "    command: [/bin/busybox, sleep, '600']\n"
     )
+    # This fixed guest-owned marker proves the asynchronous task entered the
+    # init barrier before the fault injector stops Docker and kills the Agent.
+    Path("/run/gpupanel-g5-init-entered").unlink(missing_ok=True)
+    Path("/run/gpupanel-g5-init-release").unlink(missing_ok=True)
     scripts = version / "scripts"
     scripts.mkdir(mode=0o755)
     (scripts / "init.sh").write_text(
         "#!/bin/sh\n"
         "case \"${PWD##*/}\" in\n"
         "  *-fault)\n"
+        "    : > /run/gpupanel-g5-init-entered\n"
         "    while [ ! -e /run/gpupanel-g5-init-release ]; do sleep 0.1; done\n"
         "    ;;\n"
         "esac\n"
@@ -90,6 +95,11 @@ def remove():
     actual = {p for p in APP.rglob("*") if p.is_file() or p.is_symlink()}
     if actual != known or any(p.is_symlink() for p in actual):
         raise RuntimeError("unexpected local application files; refuse cleanup")
+    for marker in (
+        Path("/run/gpupanel-g5-init-entered"),
+        Path("/run/gpupanel-g5-init-release"),
+    ):
+        marker.unlink(missing_ok=True)
     for item in known:
         item.unlink()
     (APP / VERSION / "scripts").rmdir()

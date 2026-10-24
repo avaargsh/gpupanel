@@ -91,7 +91,9 @@ class InterruptedInstallEvidenceTests(unittest.TestCase):
         probe = (ROOT / "scripts/install-test/app_fault_probe.py").read_text()
         self.assertIn("void fetch('/api/v1/apps/install'", probe)
         self.assertIn("install_id = wait_task_executing(request, task_id)", probe)
-        self.assertLess(probe.index("install_id = wait_task_executing"),
+        self.assertLess(probe.index("install_id = wait_task_executing(request, task_id)"),
+                        probe.index("if not _wait_init_barrier(guest_rc):"))
+        self.assertLess(probe.index("if not _wait_init_barrier(guest_rc):"),
                         probe.index('"stop", "docker.service"'))
         self.assertIn('"resourceID"',
                       (ROOT / "scripts/install-test/app_evidence_codes.py").read_text())
@@ -100,8 +102,42 @@ class InterruptedInstallEvidenceTests(unittest.TestCase):
     def test_fixture_barrier_is_fault_name_scoped_and_cleaned(self):
         fixture = (ROOT / "scripts/install-test/app-fixture-guest.py").read_text()
         self.assertIn('*-fault)', fixture)
+        self.assertIn("/run/gpupanel-g5-init-entered", fixture)
+        self.assertIn(": > /run/gpupanel-g5-init-entered", fixture)
         self.assertIn("/run/gpupanel-g5-init-release", fixture)
         self.assertIn('version / "scripts"', fixture)
+        self.assertIn('marker.unlink(missing_ok=True)', fixture)
+
+    def test_default_network_is_verified_as_a_fixture_precondition(self):
+        inspect = ["sudo", "timeout", "10", "docker", "network",
+                   "inspect", "gpupanel-network"]
+        create = ["sudo", "timeout", "10", "docker", "network",
+                  "create", "gpupanel-network"]
+        calls = []
+        outcomes = iter((1, 0, 0))
+        self.assertIsNone(probe._ensure_default_network(
+            lambda args: calls.append(args) or next(outcomes)))
+        self.assertEqual(calls, [inspect, create, inspect])
+        calls = []
+        self.assertIsNone(probe._ensure_default_network(
+            lambda args: calls.append(args) or 0))
+        self.assertEqual(calls, [inspect])
+
+    def test_init_barrier_wait_is_bounded_and_uses_fixed_guest_marker(self):
+        calls = []
+        self.assertTrue(probe._wait_init_barrier(
+            lambda args: calls.append(args) or 0, attempts=1))
+        self.assertEqual(calls, [["sudo", "test", "-f",
+                                  "/run/gpupanel-g5-init-entered"]])
+        self.assertFalse(probe._wait_init_barrier(lambda args: 1, attempts=0))
+
+    def test_fault_probe_preconditions_inventory_and_waits_for_barrier(self):
+        source = (ROOT / "scripts/install-test/app_fault_probe.py").read_text()
+        body = source[source.index("def inject("):]
+        self.assertLess(body.index("_ensure_default_network(guest_rc)"),
+                        body.index("docker_before = guest_inventory()"))
+        self.assertLess(body.index("if not _wait_init_barrier(guest_rc):"),
+                        body.index('"stop", "docker.service"'))
 
     def test_failure_output_uses_only_fixed_recovery_categories(self):
         categories = (
@@ -109,6 +145,7 @@ class InterruptedInstallEvidenceTests(unittest.TestCase):
             "agent-start-unavailable", "docker-unit-start-unavailable",
             "docker-api-unavailable", "container-side-effects",
             "network-side-effects", "volume-side-effects",
+            "fixture-network-unavailable", "init-barrier-not-reached",
         )
         for category in categories:
             with self.subTest(category=category):

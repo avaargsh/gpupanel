@@ -37,6 +37,36 @@ def _token(name: str, category: str) -> None:
     print(name + "=" + category + " release=NO_GO", flush=True)
 
 
+# AppService.installWithHooks bootstraps this shared network before it
+# creates the AppInstall row and TaskDB resourceID. Make it an explicit,
+# verified fixture precondition before taking the fault-injection baseline;
+# never mask network inventory changes after the baseline.
+DEFAULT_DOCKER_NETWORK = "gpupanel-network"
+FAULT_INIT_ENTERED = "/run/gpupanel-g5-init-entered"
+FAULT_INIT_RELEASE = "/run/gpupanel-g5-init-release"
+
+
+def _ensure_default_network(guest_rc) -> None:
+    inspect = ["sudo", "timeout", "10", "docker", "network", "inspect",
+               DEFAULT_DOCKER_NETWORK]
+    if guest_rc(inspect) == 0:
+        return
+    guest_rc(["sudo", "timeout", "10", "docker", "network", "create",
+              DEFAULT_DOCKER_NETWORK])
+    if guest_rc(inspect) != 0:
+        _token("G5_APP_UNKNOWN_FENCE_CODE", "fixture-network-unavailable")
+        raise RuntimeError("shared Docker network fixture precondition unavailable")
+
+
+def _wait_init_barrier(guest_rc, attempts: int = 30) -> bool:
+    """Require the guest init script to prove it reached the blocking barrier."""
+    for _ in range(max(0, attempts)):
+        if guest_rc(["sudo", "test", "-f", FAULT_INIT_ENTERED]) == 0:
+            return True
+        time.sleep(1)
+    return False
+
+
 def raw_evidence(page, endpoint: str):
     """One read-only Core proxy GET with a fixed, never-raised shape."""
     return page.evaluate("""async ({endpoint}) => {
@@ -209,6 +239,10 @@ def inject(*, page, guest, guest_rc, guest_inventory, request, next_id,
     after UNKNOWN evidence, no-retry recheck and unchanged Docker inventory.
     """
     task_id = next_id()
+    _ensure_default_network(guest_rc)
+    # Remove stale markers in this disposable guest before the new attempt;
+    # the entered marker below must belong to this exact faulted installation.
+    guest(["sudo", "rm", "-f", FAULT_INIT_ENTERED, FAULT_INIT_RELEASE])
     docker_before = guest_inventory()
     docker_stopped = False
     install_started = False
@@ -217,6 +251,9 @@ def inject(*, page, guest, guest_rc, guest_inventory, request, next_id,
         start_install_without_waiting(page, detail_id, name, task_id)
         install_started = True
         install_id = wait_task_executing(request, task_id)
+        if not _wait_init_barrier(guest_rc):
+            _token("G5_APP_UNKNOWN_FENCE_CODE", "init-barrier-not-reached")
+            raise RuntimeError("fault fixture init barrier was not observed")
         docker_stopped = guest_rc([
             "sudo", "systemctl", "stop", "docker.service",
             "docker.socket"]) == 0
@@ -253,8 +290,9 @@ def inject(*, page, guest, guest_rc, guest_inventory, request, next_id,
     wait_fault_unknown(page, install_id, task_id)
 
     # No automatic retry and no Docker side effects: after a bounded settle
-    # the receipt must still be UNKNOWN; the init barrier prevented Compose
-    # from issuing Docker operations before the daemon stopped.
+    # the receipt must still be UNKNOWN. The explicit entered marker was
+    # observed before Docker stopped; strict inventory equality still checks
+    # all containers, networks and volumes against the pre-admission baseline.
     time.sleep(3)
     try:
         recheck = raw_evidence(page, f"/apps/installed/evidence/{install_id}")
