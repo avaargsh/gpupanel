@@ -165,7 +165,7 @@ class VMManagementTests(unittest.TestCase):
             with patch.dict(vm.os.environ, {"LIBVIRT_DEFAULT_URI": "qemu+ssh://danger/system"}):
                 virsh.run("uri")
             argv = run.call_args.args[0]
-            self.assertEqual(argv, ["/usr/bin/virsh", "--connect", "qemu:///session", "uri"])
+            self.assertEqual(argv, ["/usr/bin/virsh", "--readonly", "--connect", "qemu:///session", "uri"])
             self.assertEqual(run.call_args.kwargs["env"]["LIBVIRT_DEFAULT_URI"], vm.URI)
 
 
