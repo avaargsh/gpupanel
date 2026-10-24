@@ -20,6 +20,7 @@ class FakeVirsh:
                         OTHER: ["foreign-user-session-vm", "running"]}
         self.calls = []
         self.fail_next = False
+        self.fail_inventory_once = False
 
     def detail(self, identity):
         identity = vm.valid_uuid(identity)
@@ -34,6 +35,9 @@ class FakeVirsh:
             self.fail_next = False
             raise vm.Refused("timeout")
         if args == ("list", "--all", "--uuid"):
+            if self.fail_inventory_once:
+                self.fail_inventory_once = False
+                raise vm.Refused("temporary loss of connection")
             return "\n".join(self.domains)
         cmd, identity = args[:2]
         if cmd == "start":
@@ -119,6 +123,29 @@ class VMManagementTests(unittest.TestCase):
         self.assertIn(("undefine", UUID, "--keep-nvram"), self.api.calls)
         self.assertNotIn(UUID, self.api.domains)
         self.assertFalse(any("storage" in str(c) or "wipe" in str(c) for c in self.api.calls))
+
+    def test_delete_lost_ack_recovers_by_independent_inventory(self):
+        self.enroll()
+        self.api.fail_inventory_once = True
+        with self.assertRaisesRegex(vm.Refused, "UNKNOWN"):
+            vm.manage(self.api, self.root, self.req("delete", name="personal-vm"))
+        self.assertNotIn(UUID, self.api.domains)
+        self.assertTrue(vm.unresolved(self.root, UUID))
+        result = vm.manage(self.api, self.root, self.req("reconcile"))
+        self.assertEqual(result["outcome"], "OBSERVED")
+        self.assertFalse((self.root / (UUID + ".json")).exists())
+        self.assertFalse(vm.unresolved(self.root, UUID))
+        self.assertEqual(len([c for c in self.api.calls if c[0] == "undefine"]), 1)
+
+    def test_cannot_reconcile_non_delete_after_external_removal(self):
+        self.enroll()
+        self.api.fail_next = True
+        with self.assertRaises(vm.Refused):
+            vm.manage(self.api, self.root, self.req("start"))
+        del self.api.domains[UUID]
+        with self.assertRaisesRegex(vm.Refused, "unexpectedly absent"):
+            vm.manage(self.api, self.root, self.req("reconcile"))
+        self.assertTrue(vm.unresolved(self.root, UUID))
 
     def test_operation_journal_rejects_symlink(self):
         self.enroll()

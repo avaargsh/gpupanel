@@ -165,12 +165,12 @@ def event(root: Path, payload: dict) -> None:
         os.fsync(file.fileno())
 
 
-def unresolved(root: Path, identity: str) -> bool:
+def latest_event(root: Path, identity: str) -> dict | None:
     path = root / "operations.jsonl"
     try:
         fd = os.open(path, os.O_RDONLY | os.O_NOFOLLOW)
     except FileNotFoundError:
-        return False
+        return None
     with os.fdopen(fd) as file:
         st = os.fstat(file.fileno())
         if not stat.S_ISREG(st.st_mode) or st.st_uid != os.geteuid() or st.st_size > 2_000_000:
@@ -179,17 +179,26 @@ def unresolved(root: Path, identity: str) -> bool:
         try:
             for line in file:
                 item = json.loads(line)
+                if not isinstance(item, dict):
+                    raise ValueError("bad journal item")
                 if item.get("uuid") == identity:
-                    last = item.get("outcome")
+                    last = item
         except (ValueError, AttributeError):
             raise Refused("Operation journal invalid; do not mutate") from None
-    return last in ("pending", "unknown")
+    return last
+
+
+def unresolved(root: Path, identity: str) -> bool:
+    last = latest_event(root, identity)
+    return last is not None and last.get("outcome") in ("pending", "unknown")
 
 
 def manage(virsh: Virsh, root: Path, args: argparse.Namespace) -> dict:
     identity = valid_uuid(args.uuid)
     with exclusive(root):
         if args.command == "enroll":
+            if unresolved(root, identity):
+                raise Refused("Previous operation on this UUID is unresolved")
             observed = virsh.detail(identity)
             if observed["name"] != args.confirm_name:
                 raise Refused("Confirmation must exactly match the observed VM name")
@@ -199,15 +208,31 @@ def manage(virsh: Virsh, root: Path, args: argparse.Namespace) -> dict:
                       "uuid": identity, "name": observed["name"]})
             return {**observed, "enrolled": True}
         entry = record(root, identity)
-        before = virsh.detail(identity)
-        if before["name"] != entry["name"]:
-            raise Refused("VM name changed since enrollment; refusing mutation")
         if args.command == "reconcile":
             if not unresolved(root, identity):
                 raise Refused("No ambiguous or pending operation to reconcile")
+            last = latest_event(root, identity)
+            inventory = {
+                valid_uuid(line.strip()) for line in
+                virsh.run("list", "--all", "--uuid").splitlines() if line.strip()
+            }
+            if identity not in inventory:
+                if last.get("op") not in ("delete", "undefine"):
+                    raise Refused("VM unexpectedly absent; cannot reconcile a non-deletion")
+                event(root, {"uuid": identity, "op": "reconcile",
+                             "outcome": "reconciled", "at": int(time.time())})
+                (root / (identity + ".json")).unlink()
+                return {"uuid": identity, "outcome": "OBSERVED",
+                        "note": "Definition absent in libvirt; storage preserved."}
+            before = virsh.detail(identity)
+            if before["name"] != entry["name"]:
+                raise Refused("VM identity changed; cannot reconcile")
             event(root, {"uuid": identity, "op": "reconcile", "outcome": "reconciled",
                          "state": before["state"], "at": int(time.time())})
             return {**before, "reconciled": True}
+        before = virsh.detail(identity)
+        if before["name"] != entry["name"]:
+            raise Refused("VM name changed since enrollment; refusing mutation")
         if unresolved(root, identity):
             raise Refused("Prior operation outcome UNKNOWN; inspect and reconcile before retry")
         if args.command == "delete":
